@@ -47,7 +47,7 @@ const Login = () => {
             <Users className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
-            Granja Familiar
+            SkyRanch
           </CardTitle>
           <p className="text-gray-600">
             Inicia sesión para gestionar tus animales

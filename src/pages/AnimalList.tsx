@@ -11,47 +11,47 @@ const AnimalList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data - in a real app this would come from a database
+  // Mock data for SkyRanch initial animals
   const animals = [
     {
       id: '001',
-      name: 'Bella',
-      species: 'Bovino',
-      breed: 'Holstein',
-      age: '3 años',
-      status: 'Saludable',
-      lastCheckup: '2024-05-15',
-      weight: '450 kg'
-    },
-    {
-      id: '002',
-      name: 'Max',
-      species: 'Bovino',
-      breed: 'Angus',
-      age: '4 años',
-      status: 'En Tratamiento',
-      lastCheckup: '2024-05-20',
-      weight: '520 kg'
-    },
-    {
-      id: '003',
-      name: 'Luna',
+      name: 'Dolly',
       species: 'Ovino',
       breed: 'Merino',
       age: '2 años',
-      status: 'Gestante',
-      lastCheckup: '2024-05-18',
+      status: 'Saludable',
+      lastCheckup: '2024-05-15',
       weight: '65 kg'
     },
     {
+      id: '002',
+      name: 'Woolly',
+      species: 'Ovino',
+      breed: 'Romney',
+      age: '3 años',
+      status: 'Saludable',
+      lastCheckup: '2024-05-20',
+      weight: '70 kg'
+    },
+    {
+      id: '003',
+      name: 'Burrito',
+      species: 'Asno',
+      breed: 'Andaluz',
+      age: '5 años',
+      status: 'Saludable',
+      lastCheckup: '2024-05-18',
+      weight: '180 kg'
+    },
+    {
       id: '004',
-      name: 'Rocco',
-      species: 'Caprino',
-      breed: 'Boer',
-      age: '1 año',
+      name: 'Bessie',
+      species: 'Bovino',
+      breed: 'Holstein',
+      age: '4 años',
       status: 'Saludable',
       lastCheckup: '2024-05-10',
-      weight: '45 kg'
+      weight: '520 kg'
     }
   ];
 

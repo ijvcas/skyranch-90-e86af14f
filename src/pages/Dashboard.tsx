@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,10 +8,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const stats = [
-    { title: 'Total de Animales', value: '24', color: 'bg-green-100 text-green-800' },
-    { title: 'Registros de Salud', value: '15', color: 'bg-blue-100 text-blue-800' },
-    { title: 'Próximas Citas', value: '3', color: 'bg-yellow-100 text-yellow-800' },
-    { title: 'Usuarios Activos', value: '4', color: 'bg-purple-100 text-purple-800' },
+    { title: 'Total de Animales', value: '4', color: 'bg-green-100 text-green-800' },
+    { title: 'Registros de Salud', value: '4', color: 'bg-blue-100 text-blue-800' },
+    { title: 'Próximas Citas', value: '2', color: 'bg-yellow-100 text-yellow-800' },
+    { title: 'Usuarios Activos', value: '1', color: 'bg-purple-100 text-purple-800' },
   ];
 
   const quickActions = [
@@ -52,7 +51,7 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Panel de Control - Granja Familiar
+            Panel de Control - SkyRanch
           </h1>
           <p className="text-gray-600">Gestiona tus animales, registros y más</p>
         </div>
