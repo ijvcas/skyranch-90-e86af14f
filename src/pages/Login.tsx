@@ -40,23 +40,23 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center pb-6">
-          <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-white" />
+          <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Users className="w-10 h-10 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
+          <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
             SkyRanch
           </CardTitle>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-lg">
             Inicia sesión para gestionar tus animales
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="email">Correo Electrónico</Label>
+              <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
               <Input
                 id="email"
                 type="email"
@@ -64,12 +64,12 @@ const Login = () => {
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder="tu@correo.com"
                 required
-                className="mt-1"
+                className="mt-2 h-12 text-base"
               />
             </div>
             
             <div>
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="password" className="text-base font-medium">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
@@ -77,24 +77,24 @@ const Login = () => {
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 placeholder="Tu contraseña"
                 required
-                className="mt-1"
+                className="mt-2 h-12 text-base"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white mt-6"
+              className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-semibold mt-8"
             >
               Iniciar Sesión
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+          <div className="mt-8 text-center">
+            <p className="text-base text-gray-600">
               ¿No tienes cuenta?{' '}
               <Button 
                 variant="link" 
-                className="p-0 text-green-600"
+                className="p-0 text-green-600 text-base font-semibold"
                 onClick={() => navigate('/register')}
               >
                 Registrarse
@@ -102,8 +102,8 @@ const Login = () => {
             </p>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 text-center">
+          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-500 text-center">
               Demo: usa cualquier email y contraseña
             </p>
           </div>
