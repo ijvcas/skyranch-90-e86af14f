@@ -26,20 +26,55 @@ const loadAnimalsFromStorage = (): Record<string, Animal> => {
     if (stored) {
       const parsed = JSON.parse(stored);
       console.log('Loaded animals from storage:', Object.keys(parsed).length, 'animals');
+      console.log('Animal IDs:', Object.keys(parsed));
+      console.log('Full animal data:', parsed);
       return parsed;
     }
   } catch (error) {
     console.error('Error loading animals from storage:', error);
+    // Try to recover from backup if available
+    const backup = localStorage.getItem(STORAGE_KEY + '_backup');
+    if (backup) {
+      console.log('Attempting to restore from backup...');
+      try {
+        const backupData = JSON.parse(backup);
+        localStorage.setItem(STORAGE_KEY, backup);
+        return backupData;
+      } catch (backupError) {
+        console.error('Backup also corrupted:', backupError);
+      }
+    }
   }
   return {};
 };
 
 const saveAnimalsToStorage = (animals: Record<string, Animal>): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(animals));
+    // Create backup before saving
+    const current = localStorage.getItem(STORAGE_KEY);
+    if (current) {
+      localStorage.setItem(STORAGE_KEY + '_backup', current);
+    }
+    
+    const dataToSave = JSON.stringify(animals);
+    localStorage.setItem(STORAGE_KEY, dataToSave);
     console.log('Saved animals to storage:', Object.keys(animals).length, 'animals');
+    console.log('Saved animal IDs:', Object.keys(animals));
+    
+    // Verify the save worked
+    const verification = localStorage.getItem(STORAGE_KEY);
+    if (!verification || verification !== dataToSave) {
+      console.error('Storage verification failed! Data may not have been saved correctly.');
+      throw new Error('Storage verification failed');
+    }
   } catch (error) {
     console.error('Error saving animals to storage:', error);
+    // Try to restore from backup
+    const backup = localStorage.getItem(STORAGE_KEY + '_backup');
+    if (backup) {
+      console.log('Restoring from backup due to save error...');
+      localStorage.setItem(STORAGE_KEY, backup);
+    }
   }
 };
 
@@ -54,14 +89,17 @@ export const getAnimal = (id: string): Animal | null => {
 export const getAllAnimals = (): Animal[] => {
   const allAnimals = Object.values(animals);
   console.log('Getting all animals, count:', allAnimals.length);
+  console.log('Current animals in memory:', Object.keys(animals));
   return allAnimals;
 };
 
 export const updateAnimal = (id: string, updatedData: Omit<Animal, 'id'>): boolean => {
   if (animals[id]) {
+    console.log('Updating animal:', id, 'Current animals before update:', Object.keys(animals));
     animals[id] = { id, ...updatedData };
     saveAnimalsToStorage(animals);
     console.log('Animal updated in store:', animals[id]);
+    console.log('Animals after update:', Object.keys(animals));
     return true;
   }
   console.log('Failed to update animal - not found:', id);
@@ -69,18 +107,28 @@ export const updateAnimal = (id: string, updatedData: Omit<Animal, 'id'>): boole
 };
 
 export const addAnimal = (animal: Animal): void => {
+  console.log('Adding animal:', animal.id, 'Current animals before add:', Object.keys(animals));
+  
+  // Check if animal already exists
+  if (animals[animal.id]) {
+    console.warn('Animal with this ID already exists, overwriting:', animal.id);
+  }
+  
   animals[animal.id] = animal;
   saveAnimalsToStorage(animals);
   console.log('Animal added to store:', animal);
-  console.log('Total animals in store:', Object.keys(animals).length);
+  console.log('Total animals in store after add:', Object.keys(animals).length);
+  console.log('All animal IDs after add:', Object.keys(animals));
 };
 
 export const deleteAnimal = (id: string): boolean => {
   if (animals[id]) {
+    console.log('Deleting animal:', id, 'Current animals before delete:', Object.keys(animals));
     delete animals[id];
     saveAnimalsToStorage(animals);
     console.log('Animal deleted from store:', id);
     console.log('Remaining animals in store:', Object.keys(animals).length);
+    console.log('Remaining animal IDs:', Object.keys(animals));
     return true;
   }
   console.log('Failed to delete animal - not found:', id);
@@ -127,6 +175,7 @@ export const searchAnimals = (query: string): Animal[] => {
 };
 
 export const clearAllAnimals = (): void => {
+  console.log('Clearing all animals. Current count:', Object.keys(animals).length);
   animals = {};
   saveAnimalsToStorage(animals);
   console.log('All animals cleared from store');
@@ -134,8 +183,39 @@ export const clearAllAnimals = (): void => {
 
 // Debug function to check store state
 export const debugStore = () => {
-  console.log('Current store state:');
-  console.log('Animals count:', Object.keys(animals).length);
-  console.log('Animals:', animals);
-  console.log('localStorage data:', localStorage.getItem(STORAGE_KEY));
+  console.log('=== ANIMAL STORE DEBUG ===');
+  console.log('Animals in memory count:', Object.keys(animals).length);
+  console.log('Animals in memory:', animals);
+  
+  const storageData = localStorage.getItem(STORAGE_KEY);
+  console.log('Raw localStorage data:', storageData);
+  
+  if (storageData) {
+    try {
+      const parsed = JSON.parse(storageData);
+      console.log('Parsed storage data count:', Object.keys(parsed).length);
+      console.log('Parsed storage data:', parsed);
+    } catch (e) {
+      console.error('Error parsing storage data:', e);
+    }
+  }
+  
+  const backup = localStorage.getItem(STORAGE_KEY + '_backup');
+  if (backup) {
+    console.log('Backup exists:', backup.length, 'characters');
+    try {
+      const parsedBackup = JSON.parse(backup);
+      console.log('Backup data count:', Object.keys(parsedBackup).length);
+    } catch (e) {
+      console.error('Error parsing backup:', e);
+    }
+  }
+  console.log('=== END DEBUG ===');
+};
+
+// Force reload from storage (useful for debugging)
+export const reloadFromStorage = (): void => {
+  console.log('Reloading animals from storage...');
+  animals = loadAnimalsFromStorage();
+  console.log('Reloaded', Object.keys(animals).length, 'animals');
 };
