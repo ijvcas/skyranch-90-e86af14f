@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AnimalList from "./pages/AnimalList";
 import AnimalForm from "./pages/AnimalForm";
+import AnimalEdit from "./pages/AnimalEdit";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import Navigation from "./components/Navigation";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/animals" element={<AnimalList />} />
             <Route path="/animals/new" element={<AnimalForm />} />
+            <Route path="/animals/:id/edit" element={<AnimalEdit />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
