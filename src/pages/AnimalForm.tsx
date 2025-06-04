@@ -53,8 +53,19 @@ const AnimalForm = () => {
       return;
     }
 
-    // Generate ID if not provided via tag
+    // Use the tag as ID, or generate one if tag is empty
     const animalId = formData.tag || generateNextId();
+    
+    // Check if animal with this ID already exists
+    const existingAnimal = getAnimal(animalId);
+    if (existingAnimal) {
+      toast({
+        title: "Error",
+        description: `Ya existe un animal con la etiqueta ${animalId}. Use una etiqueta diferente.`,
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Create the animal object
     const newAnimal = {
@@ -80,15 +91,24 @@ const AnimalForm = () => {
     addAnimal(newAnimal);
     
     // Verify it was saved
-    const savedAnimal = getAnimal(animalId);
-    console.log('Verification - animal retrieved after save:', savedAnimal);
-    
-    toast({
-      title: "Animal Registrado",
-      description: `${formData.name} ha sido registrado exitosamente con ID ${animalId}.`,
-    });
-    
-    navigate('/animals');
+    setTimeout(() => {
+      const savedAnimal = getAnimal(animalId);
+      console.log('Verification - animal retrieved after save:', savedAnimal);
+      
+      if (savedAnimal) {
+        toast({
+          title: "Animal Registrado",
+          description: `${formData.name} ha sido registrado exitosamente con ID ${animalId}.`,
+        });
+        navigate('/animals');
+      } else {
+        toast({
+          title: "Error",
+          description: "Hubo un problema al guardar el animal. Intente nuevamente.",
+          variant: "destructive"
+        });
+      }
+    }, 200);
   };
 
   const handleInputChange = (field: string, value: string) => {

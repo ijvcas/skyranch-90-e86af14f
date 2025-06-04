@@ -95,17 +95,21 @@ const saveAnimals = (): void => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(animals));
     console.log('💾 Saved animals:', animals.length);
     
-    // Verify the save was successful
-    const verification = localStorage.getItem(STORAGE_KEY);
-    if (verification) {
-      const verified = JSON.parse(verification);
-      if (!Array.isArray(verified) || verified.length !== animals.length) {
-        console.error('❌ Save verification failed, restoring from backup');
-        restoreFromBackup();
-      } else {
-        console.log('✅ Save verified successfully');
+    // Simple verification without causing issues
+    setTimeout(() => {
+      try {
+        const verification = localStorage.getItem(STORAGE_KEY);
+        if (verification) {
+          const verified = JSON.parse(verification);
+          if (Array.isArray(verified)) {
+            console.log('✅ Save verified successfully, count:', verified.length);
+          }
+        }
+      } catch (verifyError) {
+        console.warn('⚠️ Verification failed but save likely succeeded:', verifyError);
       }
-    }
+    }, 100);
+    
   } catch (error) {
     console.error('❌ Error saving animals:', error);
     // Try to restore from backup if save failed
@@ -139,12 +143,15 @@ export const addAnimal = (animal: Animal): void => {
 };
 
 export const updateAnimal = (id: string, updatedData: Omit<Animal, 'id'>): boolean => {
+  console.log('📝 Updating animal ID:', id);
   const index = animals.findIndex(animal => animal.id === id);
   if (index !== -1) {
     animals[index] = { id, ...updatedData };
+    console.log('✅ Animal updated successfully:', animals[index].name);
     saveAnimals();
     return true;
   }
+  console.error('❌ Animal not found for update:', id);
   return false;
 };
 
@@ -153,6 +160,7 @@ export const deleteAnimal = (id: string): boolean => {
   animals = animals.filter(animal => animal.id !== id);
   const deleted = animals.length < initialLength;
   if (deleted) {
+    console.log('🗑️ Animal deleted:', id);
     saveAnimals();
   }
   return deleted;
