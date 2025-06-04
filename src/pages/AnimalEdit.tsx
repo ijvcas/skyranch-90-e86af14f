@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft } from 'lucide-react';
+import ImageUpload from '@/components/ImageUpload';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -27,7 +27,8 @@ const AnimalEdit = () => {
     motherId: '',
     fatherId: '',
     notes: '',
-    healthStatus: 'healthy'
+    healthStatus: 'healthy',
+    image: null as string | null
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +47,8 @@ const AnimalEdit = () => {
       motherId: '',
       fatherId: '',
       notes: 'Animal muy dócil y saludable',
-      healthStatus: 'healthy'
+      healthStatus: 'healthy',
+      image: 'https://images.unsplash.com/photo-1452960962994-acf4fd70b632'
     },
     '002': {
       name: 'Woolly',
@@ -126,6 +128,10 @@ const AnimalEdit = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageChange = (imageUrl: string | null) => {
+    setFormData(prev => ({ ...prev, image: imageUrl }));
   };
 
   if (!id) {
@@ -328,14 +334,11 @@ const AnimalEdit = () => {
               <CardTitle className="text-xl text-gray-900">Fotografía</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">Toca para cambiar la foto del animal</p>
-                <Button type="button" variant="outline" disabled={isLoading}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Cambiar Foto
-                </Button>
-              </div>
+              <ImageUpload
+                currentImage={formData.image}
+                onImageChange={handleImageChange}
+                disabled={isLoading}
+              />
             </CardContent>
           </Card>
 

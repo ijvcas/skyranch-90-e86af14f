@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Plus } from 'lucide-react';
+import ImageUpload from '@/components/ImageUpload';
 
 const AnimalForm = () => {
   const navigate = useNavigate();
@@ -26,7 +26,8 @@ const AnimalForm = () => {
     motherId: '',
     fatherId: '',
     notes: '',
-    healthStatus: 'healthy'
+    healthStatus: 'healthy',
+    image: null as string | null
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,6 +46,10 @@ const AnimalForm = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageChange = (imageUrl: string | null) => {
+    setFormData(prev => ({ ...prev, image: imageUrl }));
   };
 
   return (
@@ -241,14 +246,10 @@ const AnimalForm = () => {
               <CardTitle className="text-xl text-gray-900">Fotografía</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">Toca para añadir una foto del animal</p>
-                <Button type="button" variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Seleccionar Foto
-                </Button>
-              </div>
+              <ImageUpload
+                currentImage={formData.image}
+                onImageChange={handleImageChange}
+              />
             </CardContent>
           </Card>
 

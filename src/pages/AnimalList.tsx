@@ -11,7 +11,7 @@ const AnimalList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data for SkyRanch initial animals
+  // Mock data for SkyRanch initial animals with images
   const animals = [
     {
       id: '001',
@@ -21,7 +21,8 @@ const AnimalList = () => {
       age: '2 años',
       status: 'Saludable',
       lastCheckup: '2024-05-15',
-      weight: '65 kg'
+      weight: '65 kg',
+      image: 'https://images.unsplash.com/photo-1452960962994-acf4fd70b632'
     },
     {
       id: '002',
@@ -31,7 +32,8 @@ const AnimalList = () => {
       age: '3 años',
       status: 'Saludable',
       lastCheckup: '2024-05-20',
-      weight: '70 kg'
+      weight: '70 kg',
+      image: 'https://images.unsplash.com/photo-1452960962994-acf4fd70b632'
     },
     {
       id: '003',
@@ -41,7 +43,8 @@ const AnimalList = () => {
       age: '5 años',
       status: 'Saludable',
       lastCheckup: '2024-05-18',
-      weight: '180 kg'
+      weight: '180 kg',
+      image: 'https://images.unsplash.com/photo-1452378174528-3090a4bba7b2'
     },
     {
       id: '004',
@@ -51,7 +54,8 @@ const AnimalList = () => {
       age: '4 años',
       status: 'Saludable',
       lastCheckup: '2024-05-10',
-      weight: '520 kg'
+      weight: '520 kg',
+      image: 'https://images.unsplash.com/photo-1465379944081-7f47de8d74ac'
     }
   ];
 
@@ -128,6 +132,15 @@ const AnimalList = () => {
               onClick={() => navigate(`/animals/${animal.id}`)}
             >
               <CardHeader className="pb-3">
+                {animal.image && (
+                  <div className="w-full h-32 mb-3 rounded-lg overflow-hidden">
+                    <img
+                      src={animal.image}
+                      alt={animal.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-gray-900">
                     {animal.name}
