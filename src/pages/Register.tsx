@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Users, ArrowLeft } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -42,34 +40,15 @@ const Register = () => {
 
     setIsLoading(true);
     
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (error) {
-        toast({
-          title: "Error de registro",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else if (data.user) {
-        toast({
-          title: "Registro exitoso",
-          description: "Por favor revisa tu correo para confirmar tu cuenta.",
-        });
-        navigate('/login');
-      }
-    } catch (error) {
+    // Simulate registration process
+    setTimeout(() => {
       toast({
-        title: "Error",
-        description: "Ocurrió un error inesperado.",
-        variant: "destructive"
+        title: "Registro exitoso",
+        description: "Cuenta creada correctamente.",
       });
-    } finally {
+      navigate('/login');
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   const handleInputChange = (field: string, value: string) => {

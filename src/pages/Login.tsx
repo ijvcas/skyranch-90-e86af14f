@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,34 +20,15 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (error) {
-        toast({
-          title: "Error de autenticación",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else if (data.user) {
-        toast({
-          title: "Bienvenido",
-          description: "Sesión iniciada correctamente.",
-        });
-        navigate('/dashboard');
-      }
-    } catch (error) {
+    // Simulate login process
+    setTimeout(() => {
       toast({
-        title: "Error",
-        description: "Ocurrió un error inesperado.",
-        variant: "destructive"
+        title: "Bienvenido",
+        description: "Sesión iniciada correctamente.",
       });
-    } finally {
+      navigate('/dashboard');
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   const handleInputChange = (field: string, value: string) => {
