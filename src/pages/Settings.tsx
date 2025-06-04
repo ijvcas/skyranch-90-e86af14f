@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,20 +11,68 @@ import { debugStore, clearAllAnimals, getAllAnimals } from '@/stores/animalStore
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/UserManagement';
 
+interface AppSettings {
+  notifications: {
+    vaccineReminders: boolean;
+    healthAlerts: boolean;
+    weeklyReports: boolean;
+  };
+  system: {
+    language: string;
+    timezone: string;
+    dateFormat: string;
+  };
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedTimezone, setSelectedTimezone] = useState('America/Lima');
   const [showUserManagement, setShowUserManagement] = useState(false);
+  
+  // Settings state
+  const [settings, setSettings] = useState<AppSettings>({
+    notifications: {
+      vaccineReminders: true,
+      healthAlerts: true,
+      weeklyReports: false,
+    },
+    system: {
+      language: 'es',
+      timezone: 'America/Lima',
+      dateFormat: 'DD/MM/YYYY',
+    },
+  });
 
-  // Load saved timezone on component mount
+  // Load settings from localStorage on mount
   useEffect(() => {
+    const savedSettings = localStorage.getItem('appSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings(parsed);
+        console.log('Loaded settings from storage:', parsed);
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
+    }
+
+    // Also load the old timezone setting for backward compatibility
     const savedTimezone = localStorage.getItem('selectedTimezone');
-    if (savedTimezone) {
-      setSelectedTimezone(savedTimezone);
-      console.log('Loaded timezone from storage:', savedTimezone);
+    if (savedTimezone && !savedSettings) {
+      setSettings(prev => ({
+        ...prev,
+        system: { ...prev.system, timezone: savedTimezone }
+      }));
     }
   }, []);
+
+  // Save settings to localStorage whenever they change
+  const saveSettings = (newSettings: AppSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem('appSettings', JSON.stringify(newSettings));
+    localStorage.setItem('selectedTimezone', newSettings.system.timezone); // Backward compatibility
+    console.log('Settings saved to storage:', newSettings);
+  };
 
   const timezones = [
     { value: 'America/Lima', label: 'UTC-5 (América/Lima)' },
@@ -35,6 +84,64 @@ const Settings = () => {
     { value: 'Asia/Tokyo', label: 'UTC+9 (Asia/Tokio)' },
     { value: 'Australia/Sydney', label: 'UTC+10 (Australia/Sídney)' },
   ];
+
+  const languages = [
+    { value: 'es', label: 'Español' },
+    { value: 'en', label: 'English' },
+    { value: 'pt', label: 'Português' },
+    { value: 'fr', label: 'Français' },
+  ];
+
+  const dateFormats = [
+    { value: 'DD/MM/YYYY', label: 'DD/MM/AAAA (31/12/2024)' },
+    { value: 'MM/DD/YYYY', label: 'MM/DD/AAAA (12/31/2024)' },
+    { value: 'YYYY-MM-DD', label: 'AAAA-MM-DD (2024-12-31)' },
+    { value: 'DD-MM-YYYY', label: 'DD-MM-AAAA (31-12-2024)' },
+  ];
+
+  const handleNotificationToggle = (key: keyof AppSettings['notifications']) => {
+    const newSettings = {
+      ...settings,
+      notifications: {
+        ...settings.notifications,
+        [key]: !settings.notifications[key]
+      }
+    };
+    saveSettings(newSettings);
+    
+    const notificationLabels = {
+      vaccineReminders: 'Recordatorios de Vacunas',
+      healthAlerts: 'Alertas de Salud',
+      weeklyReports: 'Reportes Semanales'
+    };
+    
+    toast({
+      title: "Notificación Actualizada",
+      description: `${notificationLabels[key]} ${newSettings.notifications[key] ? 'activado' : 'desactivado'}`,
+    });
+  };
+
+  const handleSystemSetting = (key: keyof AppSettings['system'], value: string) => {
+    const newSettings = {
+      ...settings,
+      system: {
+        ...settings.system,
+        [key]: value
+      }
+    };
+    saveSettings(newSettings);
+    
+    const settingLabels = {
+      language: 'Idioma',
+      timezone: 'Zona Horaria',
+      dateFormat: 'Formato de Fecha'
+    };
+    
+    toast({
+      title: "Configuración Actualizada",
+      description: `${settingLabels[key]} actualizado correctamente`,
+    });
+  };
 
   const handleDebugStore = () => {
     debugStore();
@@ -53,6 +160,48 @@ const Settings = () => {
         description: "Todos los datos de animales han sido eliminados.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleSyncData = () => {
+    // Simulate sync operation
+    toast({
+      title: "Sincronización Iniciada",
+      description: "Sincronizando datos con el servidor...",
+    });
+    
+    setTimeout(() => {
+      toast({
+        title: "Sincronización Completa",
+        description: "Todos los datos han sido sincronizados correctamente.",
+      });
+    }, 2000);
+  };
+
+  const handleTechnicalSupport = () => {
+    toast({
+      title: "Soporte Técnico",
+      description: "Contacto: soporte@granja.com | Tel: +1-800-GRANJA",
+    });
+  };
+
+  const handleAbout = () => {
+    toast({
+      title: "Acerca del Sistema",
+      description: "Sistema de Gestión Ganadera v1.0.0 - Desarrollado con ❤️",
+    });
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+      // Clear any user session data if needed
+      toast({
+        title: "Sesión Cerrada",
+        description: "Has cerrado sesión exitosamente",
+        variant: "destructive"
+      });
+      // In a real app, you would redirect to login
+      navigate('/');
     }
   };
 
@@ -79,22 +228,57 @@ const Settings = () => {
       title: 'Notificaciones',
       icon: Bell,
       items: [
-        { label: 'Recordatorios de Vacunas', description: 'Alertas automáticas', hasSwitch: true },
-        { label: 'Alertas de Salud', description: 'Notificaciones de estado crítico', hasSwitch: true },
-        { label: 'Reportes Semanales', description: 'Resumen automático por email', hasSwitch: true },
+        { 
+          label: 'Recordatorios de Vacunas', 
+          description: 'Alertas automáticas', 
+          hasSwitch: true,
+          checked: settings.notifications.vaccineReminders,
+          onToggle: () => handleNotificationToggle('vaccineReminders')
+        },
+        { 
+          label: 'Alertas de Salud', 
+          description: 'Notificaciones de estado crítico', 
+          hasSwitch: true,
+          checked: settings.notifications.healthAlerts,
+          onToggle: () => handleNotificationToggle('healthAlerts')
+        },
+        { 
+          label: 'Reportes Semanales', 
+          description: 'Resumen automático por email', 
+          hasSwitch: true,
+          checked: settings.notifications.weeklyReports,
+          onToggle: () => handleNotificationToggle('weeklyReports')
+        },
       ]
     },
     {
       title: 'Sistema',
       icon: SettingsIcon,
       items: [
-        { label: 'Idioma', description: 'Español (predeterminado)' },
+        { 
+          label: 'Idioma', 
+          description: 'Selecciona el idioma de la aplicación',
+          hasSelect: true,
+          value: settings.system.language,
+          options: languages,
+          onChange: (value: string) => handleSystemSetting('language', value)
+        },
         { 
           label: 'Zona Horaria', 
           description: 'Selecciona tu zona horaria',
-          hasTimezone: true 
+          hasSelect: true,
+          value: settings.system.timezone,
+          options: timezones,
+          onChange: (value: string) => handleSystemSetting('timezone', value)
         },
-        { label: 'Formato de Fecha', description: 'DD/MM/AAAA' },
+        { 
+          label: 'Formato de Fecha', 
+          description: 'Formato de visualización de fechas',
+          hasSelect: true,
+          value: settings.system.dateFormat,
+          options: dateFormats,
+          onChange: (value: string) => handleSystemSetting('dateFormat', value)
+        },
       ]
     },
     {
@@ -106,6 +290,12 @@ const Settings = () => {
           description: 'Verificar estado del almacén de datos',
           hasAction: true,
           action: handleDebugStore
+        },
+        { 
+          label: 'Sincronizar Datos', 
+          description: 'Sincronizar con el servidor',
+          hasAction: true,
+          action: handleSyncData
         },
         { 
           label: 'Limpiar Datos', 
@@ -120,22 +310,27 @@ const Settings = () => {
       title: 'Información',
       icon: Info,
       items: [
-        { label: 'Versión de la App', description: 'v1.0.0' },
-        { label: 'Última Sincronización', description: 'Hace 5 minutos' },
-        { label: 'Espacio Utilizado', description: '2.3 GB de 10 GB' },
+        { 
+          label: 'Versión de la App', 
+          description: 'v1.0.0 - Última actualización: Hoy',
+          hasAction: true,
+          action: handleAbout
+        },
+        { 
+          label: 'Última Sincronización', 
+          description: new Date().toLocaleString('es-ES'),
+          hasAction: true,
+          action: handleSyncData
+        },
+        { 
+          label: 'Espacio Utilizado', 
+          description: `${(JSON.stringify(localStorage).length / 1024).toFixed(1)} KB de datos locales`,
+          hasAction: true,
+          action: handleDebugStore
+        },
       ]
     }
   ];
-
-  const handleTimezoneChange = (value: string) => {
-    setSelectedTimezone(value);
-    localStorage.setItem('selectedTimezone', value);
-    console.log('Timezone saved to storage:', value);
-    toast({
-      title: "Zona Horaria Actualizada",
-      description: `Configurada a ${timezones.find(tz => tz.value === value)?.label}`,
-    });
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20 md:pb-4">
@@ -199,21 +394,25 @@ const Settings = () => {
                       </div>
                       {item.hasSwitch ? (
                         <div className="flex items-center space-x-2">
-                          <Switch id={`setting-${index}-${itemIndex}`} />
+                          <Switch 
+                            id={`setting-${index}-${itemIndex}`} 
+                            checked={item.checked || false}
+                            onCheckedChange={item.onToggle}
+                          />
                           <Label htmlFor={`setting-${index}-${itemIndex}`} className="sr-only">
                             {item.label}
                           </Label>
                         </div>
-                      ) : item.hasTimezone ? (
+                      ) : item.hasSelect ? (
                         <div className="min-w-[200px]">
-                          <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
+                          <Select value={item.value} onValueChange={item.onChange}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecciona zona horaria" />
+                              <SelectValue placeholder={`Selecciona ${item.label.toLowerCase()}`} />
                             </SelectTrigger>
                             <SelectContent>
-                              {timezones.map((timezone) => (
-                                <SelectItem key={timezone.value} value={timezone.value}>
-                                  {timezone.label}
+                              {item.options?.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -228,8 +427,8 @@ const Settings = () => {
                           {item.isDestructive ? "Eliminar" : item.label.includes('Gestionar') ? "Abrir" : "Ejecutar"}
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="sm">
-                          Configurar
+                        <Button variant="ghost" size="sm" onClick={item.action}>
+                          Ver
                         </Button>
                       )}
                     </div>
@@ -254,13 +453,13 @@ const Settings = () => {
                 Desarrollado para granjas familiares con amor y tecnología
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleTechnicalSupport}>
                   Soporte Técnico
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleAbout}>
                   Acerca de
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50">
+                <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50" onClick={handleLogout}>
                   Cerrar Sesión
                 </Button>
               </div>
