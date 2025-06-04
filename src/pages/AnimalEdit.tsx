@@ -62,7 +62,8 @@ const AnimalEdit = () => {
       motherId: '',
       fatherId: '',
       notes: 'Buen reproductor',
-      healthStatus: 'healthy'
+      healthStatus: 'healthy',
+      image: null
     },
     '003': {
       name: 'Burrito',
@@ -76,7 +77,8 @@ const AnimalEdit = () => {
       motherId: '',
       fatherId: '',
       notes: 'Animal de trabajo',
-      healthStatus: 'healthy'
+      healthStatus: 'healthy',
+      image: null
     },
     '004': {
       name: 'Bessie',
@@ -90,7 +92,8 @@ const AnimalEdit = () => {
       motherId: '',
       fatherId: '',
       notes: 'Excelente productora de leche',
-      healthStatus: 'healthy'
+      healthStatus: 'healthy',
+      image: null
     }
   };
 
