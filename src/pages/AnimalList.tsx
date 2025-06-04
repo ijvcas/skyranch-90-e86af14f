@@ -11,6 +11,14 @@ const AnimalList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
+  const calculateAge = (birthDate: string): string => {
+    if (!birthDate) return 'N/A';
+    const birth = new Date(birthDate);
+    const now = new Date();
+    const years = now.getFullYear() - birth.getFullYear();
+    return `${years} años`;
+  };
+
   // Get animals from the shared store
   const animals = getAllAnimals().map(animal => ({
     id: animal.id,
@@ -29,14 +37,6 @@ const AnimalList = () => {
     weight: `${animal.weight} kg`,
     image: animal.image
   }));
-
-  const calculateAge = (birthDate: string): string => {
-    if (!birthDate) return 'N/A';
-    const birth = new Date(birthDate);
-    const now = new Date();
-    const years = now.getFullYear() - birth.getFullYear();
-    return `${years} años`;
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
