@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ImageUpload';
-import { addAnimal, getAllAnimals } from '@/stores/animalStore';
+import { addAnimal, getAllAnimals, getAnimal } from '@/stores/animalStore';
 
 const AnimalForm = () => {
   const navigate = useNavigate();
@@ -39,6 +39,9 @@ const AnimalForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('Form submission started');
+    console.log('Form data:', formData);
     
     // Validate required fields
     if (!formData.name || !formData.tag || !formData.species) {
@@ -71,9 +74,14 @@ const AnimalForm = () => {
       image: formData.image
     };
 
+    console.log('About to save animal:', newAnimal);
+
     // Save to store
     addAnimal(newAnimal);
-    console.log('New animal added:', newAnimal);
+    
+    // Verify it was saved
+    const savedAnimal = getAnimal(animalId);
+    console.log('Verification - animal retrieved after save:', savedAnimal);
     
     toast({
       title: "Animal Registrado",
