@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings as SettingsIcon, Users, Bell, Info } from 'lucide-react';
-import { clearAllAnimals, getAllAnimals } from '@/stores/animalStore';
+import { clearAllAnimals, getAllAnimals, restoreAnimalsFromBackup, getBackupInfo } from '@/stores/animalStore';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/UserManagement';
 

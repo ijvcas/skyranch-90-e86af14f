@@ -18,9 +18,42 @@ export interface Animal {
 }
 
 const STORAGE_KEY = 'skyranch_animals';
+const BACKUP_KEY = 'skyranch_animals_backup';
 
 // Simple in-memory store
 let animals: Animal[] = [];
+
+// Create a backup before any operation that could lose data
+const createBackup = (): void => {
+  try {
+    const currentData = localStorage.getItem(STORAGE_KEY);
+    if (currentData) {
+      localStorage.setItem(BACKUP_KEY, currentData);
+      console.log('🔄 Backup created successfully');
+    }
+  } catch (error) {
+    console.error('❌ Error creating backup:', error);
+  }
+};
+
+// Restore from backup if main data is corrupted
+const restoreFromBackup = (): boolean => {
+  try {
+    const backup = localStorage.getItem(BACKUP_KEY);
+    if (backup) {
+      const parsed = JSON.parse(backup);
+      if (Array.isArray(parsed)) {
+        localStorage.setItem(STORAGE_KEY, backup);
+        animals = parsed;
+        console.log('🔄 Restored from backup:', animals.length, 'animals');
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error restoring from backup:', error);
+  }
+  return false;
+};
 
 // Load from localStorage on initialization
 const loadAnimals = (): void => {
@@ -28,25 +61,55 @@ const loadAnimals = (): void => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      animals = Array.isArray(parsed) ? parsed : [];
-      console.log('✅ Loaded animals:', animals.length);
+      if (Array.isArray(parsed)) {
+        animals = parsed;
+        console.log('✅ Loaded animals:', animals.length);
+      } else {
+        console.warn('⚠️ Invalid data format, attempting restore from backup');
+        if (!restoreFromBackup()) {
+          animals = [];
+          console.log('📝 Starting fresh - no valid data found');
+        }
+      }
     } else {
       animals = [];
       console.log('📝 No stored animals found, starting fresh');
     }
   } catch (error) {
     console.error('❌ Error loading animals:', error);
-    animals = [];
+    console.log('🔄 Attempting to restore from backup');
+    if (!restoreFromBackup()) {
+      animals = [];
+      console.log('📝 Starting fresh after failed restore');
+    }
   }
 };
 
-// Save to localStorage
+// Save to localStorage with backup
 const saveAnimals = (): void => {
   try {
+    // Create backup before saving
+    createBackup();
+    
+    // Save new data
     localStorage.setItem(STORAGE_KEY, JSON.stringify(animals));
     console.log('💾 Saved animals:', animals.length);
+    
+    // Verify the save was successful
+    const verification = localStorage.getItem(STORAGE_KEY);
+    if (verification) {
+      const verified = JSON.parse(verification);
+      if (!Array.isArray(verified) || verified.length !== animals.length) {
+        console.error('❌ Save verification failed, restoring from backup');
+        restoreFromBackup();
+      } else {
+        console.log('✅ Save verified successfully');
+      }
+    }
   } catch (error) {
     console.error('❌ Error saving animals:', error);
+    // Try to restore from backup if save failed
+    restoreFromBackup();
   }
 };
 
@@ -54,6 +117,7 @@ const saveAnimals = (): void => {
 loadAnimals();
 
 export const getAllAnimals = (): Animal[] => {
+  // Always return a fresh copy to prevent external mutations
   return [...animals];
 };
 
@@ -121,6 +185,29 @@ export const searchAnimals = (query: string): Animal[] => {
 };
 
 export const clearAllAnimals = (): void => {
+  createBackup();
   animals = [];
   saveAnimals();
+};
+
+// New function to manually restore from backup
+export const restoreAnimalsFromBackup = (): boolean => {
+  return restoreFromBackup();
+};
+
+// New function to get backup info
+export const getBackupInfo = (): { hasBackup: boolean; backupCount: number } => {
+  try {
+    const backup = localStorage.getItem(BACKUP_KEY);
+    if (backup) {
+      const parsed = JSON.parse(backup);
+      return {
+        hasBackup: true,
+        backupCount: Array.isArray(parsed) ? parsed.length : 0
+      };
+    }
+  } catch (error) {
+    console.error('Error checking backup:', error);
+  }
+  return { hasBackup: false, backupCount: 0 };
 };
