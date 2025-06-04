@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,12 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings as SettingsIcon, Users, Bell, Info } from 'lucide-react';
+import { debugStore, clearAllAnimals, getAllAnimals } from '@/stores/animalStore';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [selectedTimezone, setSelectedTimezone] = useState('America/Lima');
 
   const timezones = [
@@ -22,6 +24,26 @@ const Settings = () => {
     { value: 'Asia/Tokyo', label: 'UTC+9 (Asia/Tokio)' },
     { value: 'Australia/Sydney', label: 'UTC+10 (Australia/Sídney)' },
   ];
+
+  const handleDebugStore = () => {
+    debugStore();
+    const animals = getAllAnimals();
+    toast({
+      title: "Debug Info",
+      description: `Store has ${animals.length} animals. Check console for details.`,
+    });
+  };
+
+  const handleClearData = () => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar todos los datos de animales? Esta acción no se puede deshacer.')) {
+      clearAllAnimals();
+      toast({
+        title: "Datos Eliminados",
+        description: "Todos los datos de animales han sido eliminados.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const settingsSections = [
     {
@@ -52,6 +74,25 @@ const Settings = () => {
           hasTimezone: true 
         },
         { label: 'Formato de Fecha', description: 'DD/MM/AAAA' },
+      ]
+    },
+    {
+      title: 'Datos y Depuración',
+      icon: SettingsIcon,
+      items: [
+        { 
+          label: 'Debug Store', 
+          description: 'Verificar estado del almacén de datos',
+          hasAction: true,
+          action: handleDebugStore
+        },
+        { 
+          label: 'Limpiar Datos', 
+          description: 'Eliminar todos los datos de animales',
+          hasAction: true,
+          action: handleClearData,
+          isDestructive: true
+        },
       ]
     },
     {
@@ -131,6 +172,14 @@ const Settings = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                    ) : item.hasAction ? (
+                      <Button 
+                        variant={item.isDestructive ? "destructive" : "ghost"} 
+                        size="sm"
+                        onClick={item.action}
+                      >
+                        {item.isDestructive ? "Eliminar" : "Ejecutar"}
+                      </Button>
                     ) : (
                       <Button variant="ghost" size="sm">
                         Configurar

@@ -75,6 +75,18 @@ export const addAnimal = (animal: Animal): void => {
   console.log('Total animals in store:', Object.keys(animals).length);
 };
 
+export const deleteAnimal = (id: string): boolean => {
+  if (animals[id]) {
+    delete animals[id];
+    saveAnimalsToStorage(animals);
+    console.log('Animal deleted from store:', id);
+    console.log('Remaining animals in store:', Object.keys(animals).length);
+    return true;
+  }
+  console.log('Failed to delete animal - not found:', id);
+  return false;
+};
+
 export const getAnimalCountBySpecies = (): Record<string, number> => {
   const allAnimals = getAllAnimals();
   const counts: Record<string, number> = {};
@@ -85,6 +97,39 @@ export const getAnimalCountBySpecies = (): Record<string, number> => {
   
   console.log('Species counts:', counts);
   return counts;
+};
+
+export const getAnimalsBySpecies = (species: string): Animal[] => {
+  const allAnimals = getAllAnimals();
+  const filtered = allAnimals.filter(animal => animal.species === species);
+  console.log(`Animals of species ${species}:`, filtered.length);
+  return filtered;
+};
+
+export const getAnimalsByHealthStatus = (status: string): Animal[] => {
+  const allAnimals = getAllAnimals();
+  const filtered = allAnimals.filter(animal => animal.healthStatus === status);
+  console.log(`Animals with health status ${status}:`, filtered.length);
+  return filtered;
+};
+
+export const searchAnimals = (query: string): Animal[] => {
+  const allAnimals = getAllAnimals();
+  const lowercaseQuery = query.toLowerCase();
+  const filtered = allAnimals.filter(animal => 
+    animal.name.toLowerCase().includes(lowercaseQuery) ||
+    animal.tag.toLowerCase().includes(lowercaseQuery) ||
+    animal.species.toLowerCase().includes(lowercaseQuery) ||
+    animal.breed.toLowerCase().includes(lowercaseQuery)
+  );
+  console.log(`Search results for "${query}":`, filtered.length, 'animals found');
+  return filtered;
+};
+
+export const clearAllAnimals = (): void => {
+  animals = {};
+  saveAnimalsToStorage(animals);
+  console.log('All animals cleared from store');
 };
 
 // Debug function to check store state
