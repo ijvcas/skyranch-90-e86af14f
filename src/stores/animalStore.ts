@@ -18,6 +18,7 @@ export interface Animal {
 }
 
 const STORAGE_KEY = 'skyranch_animals';
+const BACKUP_KEY = 'skyranch_animals_backup';
 
 // Simple in-memory store
 let animals: Animal[] = [];
@@ -46,10 +47,17 @@ const debugLog = (message: string, data?: any) => {
   }
 };
 
-// Simple save function
+// Simple save function with backup
 const saveAnimals = (): boolean => {
   try {
     debugLog('🔄 Attempting to save animals', `${animals.length} animals`);
+    
+    // Create backup before saving
+    const currentData = localStorage.getItem(STORAGE_KEY);
+    if (currentData) {
+      localStorage.setItem(BACKUP_KEY, currentData);
+      debugLog('💾 Created backup');
+    }
     
     const dataToSave = JSON.stringify(animals);
     debugLog('📝 Data to save:', dataToSave.substring(0, 200) + '...');
@@ -70,6 +78,18 @@ const saveAnimals = (): boolean => {
   } catch (error) {
     debugLog('❌ Save failed', error);
     console.error('Full save error:', error);
+    
+    // Try to restore from backup
+    try {
+      const backup = localStorage.getItem(BACKUP_KEY);
+      if (backup) {
+        localStorage.setItem(STORAGE_KEY, backup);
+        debugLog('🔄 Restored from backup');
+      }
+    } catch (backupError) {
+      debugLog('❌ Backup restore failed', backupError);
+    }
+    
     return false;
   }
 };
@@ -180,6 +200,69 @@ export const searchAnimals = (query: string): Animal[] => {
     animal.species.toLowerCase().includes(lowercaseQuery) ||
     animal.breed.toLowerCase().includes(lowercaseQuery)
   );
+};
+
+// Function to get animal count by species (for Dashboard)
+export const getAnimalCountBySpecies = (): Record<string, number> => {
+  const counts: Record<string, number> = {};
+  animals.forEach(animal => {
+    counts[animal.species] = (counts[animal.species] || 0) + 1;
+  });
+  return counts;
+};
+
+// Function to clear all animals (for Settings)
+export const clearAllAnimals = async (): Promise<boolean> => {
+  debugLog('🗑️ Clearing all animals');
+  animals = [];
+  const saved = saveAnimals();
+  debugLog('💾 Clear result', saved ? 'success' : 'failed');
+  return saved;
+};
+
+// Function to restore from backup (for Settings)
+export const restoreAnimalsFromBackup = async (): Promise<boolean> => {
+  try {
+    debugLog('🔄 Restoring from backup');
+    const backup = localStorage.getItem(BACKUP_KEY);
+    if (backup) {
+      const parsed = JSON.parse(backup);
+      if (Array.isArray(parsed)) {
+        animals = parsed;
+        const saved = saveAnimals();
+        debugLog('✅ Restored from backup', `${animals.length} animals`);
+        return saved;
+      }
+    }
+    debugLog('❌ No valid backup found');
+    return false;
+  } catch (error) {
+    debugLog('❌ Backup restore failed', error);
+    return false;
+  }
+};
+
+// Function to get backup info (for Settings)
+export const getBackupInfo = (): { hasBackup: boolean; backupCount: number; backupDate: string } => {
+  try {
+    const backup = localStorage.getItem(BACKUP_KEY);
+    if (backup) {
+      const parsed = JSON.parse(backup);
+      return {
+        hasBackup: true,
+        backupCount: Array.isArray(parsed) ? parsed.length : 0,
+        backupDate: 'Available'
+      };
+    }
+  } catch (error) {
+    debugLog('❌ Error reading backup info', error);
+  }
+  
+  return {
+    hasBackup: false,
+    backupCount: 0,
+    backupDate: 'None'
+  };
 };
 
 // Debug function to check storage manually
