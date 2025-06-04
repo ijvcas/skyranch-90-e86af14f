@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,15 @@ const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedTimezone, setSelectedTimezone] = useState('America/Lima');
+
+  // Load saved timezone on component mount
+  useEffect(() => {
+    const savedTimezone = localStorage.getItem('selectedTimezone');
+    if (savedTimezone) {
+      setSelectedTimezone(savedTimezone);
+      console.log('Loaded timezone from storage:', savedTimezone);
+    }
+  }, []);
 
   const timezones = [
     { value: 'America/Lima', label: 'UTC-5 (América/Lima)' },
@@ -108,8 +117,12 @@ const Settings = () => {
 
   const handleTimezoneChange = (value: string) => {
     setSelectedTimezone(value);
-    // Here you could save to localStorage or send to backend
     localStorage.setItem('selectedTimezone', value);
+    console.log('Timezone saved to storage:', value);
+    toast({
+      title: "Zona Horaria Actualizada",
+      description: `Configurada a ${timezones.find(tz => tz.value === value)?.label}`,
+    });
   };
 
   return (
