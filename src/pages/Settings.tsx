@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Settings as SettingsIcon, Users, Bell, Info } from 'lucide-react';
 import { debugStore, clearAllAnimals, getAllAnimals } from '@/stores/animalStore';
 import { useToast } from '@/hooks/use-toast';
+import UserManagement from '@/components/UserManagement';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedTimezone, setSelectedTimezone] = useState('America/Lima');
+  const [showUserManagement, setShowUserManagement] = useState(false);
 
   // Load saved timezone on component mount
   useEffect(() => {
@@ -59,8 +61,18 @@ const Settings = () => {
       title: 'Usuarios y Permisos',
       icon: Users,
       items: [
-        { label: 'Gestionar Usuarios', description: 'Añadir o eliminar usuarios de la granja' },
-        { label: 'Roles y Permisos', description: 'Configurar niveles de acceso' },
+        { 
+          label: 'Gestionar Usuarios', 
+          description: 'Añadir o eliminar usuarios de la granja',
+          hasAction: true,
+          action: () => setShowUserManagement(true)
+        },
+        { 
+          label: 'Roles y Permisos', 
+          description: 'Configurar niveles de acceso',
+          hasAction: true,
+          action: () => setShowUserManagement(true)
+        },
       ]
     },
     {
@@ -143,93 +155,118 @@ const Settings = () => {
           <p className="text-gray-600">Ajusta las preferencias del sistema</p>
         </div>
 
-        {/* Settings Sections */}
-        <div className="space-y-6">
-          {settingsSections.map((section, index) => (
-            <Card key={index} className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl text-gray-900">
-                  <section.icon className="w-5 h-5 mr-3" />
-                  {section.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {section.items.map((item, itemIndex) => (
-                  <div 
-                    key={itemIndex}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{item.label}</div>
-                      <div className="text-sm text-gray-600">{item.description}</div>
-                    </div>
-                    {item.hasSwitch ? (
-                      <div className="flex items-center space-x-2">
-                        <Switch id={`setting-${index}-${itemIndex}`} />
-                        <Label htmlFor={`setting-${index}-${itemIndex}`} className="sr-only">
-                          {item.label}
-                        </Label>
-                      </div>
-                    ) : item.hasTimezone ? (
-                      <div className="min-w-[200px]">
-                        <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona zona horaria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {timezones.map((timezone) => (
-                              <SelectItem key={timezone.value} value={timezone.value}>
-                                {timezone.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : item.hasAction ? (
-                      <Button 
-                        variant={item.isDestructive ? "destructive" : "ghost"} 
-                        size="sm"
-                        onClick={item.action}
-                      >
-                        {item.isDestructive ? "Eliminar" : "Ejecutar"}
-                      </Button>
-                    ) : (
-                      <Button variant="ghost" size="sm">
-                        Configurar
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* User Management Modal/Section */}
+        {showUserManagement && (
+          <Card className="shadow-lg mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Gestión de Usuarios y Permisos</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowUserManagement(false)}
+                >
+                  ← Volver
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UserManagement />
+            </CardContent>
+          </Card>
+        )}
 
-        {/* App Info */}
-        <Card className="shadow-lg mt-8">
-          <CardContent className="p-6 text-center">
-            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Sistema de Gestión Ganadera
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Desarrollado para granjas familiares con amor y tecnología
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button variant="outline" size="sm">
-                Soporte Técnico
-              </Button>
-              <Button variant="outline" size="sm">
-                Acerca de
-              </Button>
-              <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50">
-                Cerrar Sesión
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Settings Sections - only show if user management is not active */}
+        {!showUserManagement && (
+          <div className="space-y-6">
+            {settingsSections.map((section, index) => (
+              <Card key={index} className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-xl text-gray-900">
+                    <section.icon className="w-5 h-5 mr-3" />
+                    {section.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {section.items.map((item, itemIndex) => (
+                    <div 
+                      key={itemIndex}
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{item.label}</div>
+                        <div className="text-sm text-gray-600">{item.description}</div>
+                      </div>
+                      {item.hasSwitch ? (
+                        <div className="flex items-center space-x-2">
+                          <Switch id={`setting-${index}-${itemIndex}`} />
+                          <Label htmlFor={`setting-${index}-${itemIndex}`} className="sr-only">
+                            {item.label}
+                          </Label>
+                        </div>
+                      ) : item.hasTimezone ? (
+                        <div className="min-w-[200px]">
+                          <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona zona horaria" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {timezones.map((timezone) => (
+                                <SelectItem key={timezone.value} value={timezone.value}>
+                                  {timezone.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : item.hasAction ? (
+                        <Button 
+                          variant={item.isDestructive ? "destructive" : "default"} 
+                          size="sm"
+                          onClick={item.action}
+                        >
+                          {item.isDestructive ? "Eliminar" : item.label.includes('Gestionar') ? "Abrir" : "Ejecutar"}
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm">
+                          Configurar
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* App Info - only show if user management is not active */}
+        {!showUserManagement && (
+          <Card className="shadow-lg mt-8">
+            <CardContent className="p-6 text-center">
+              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Sistema de Gestión Ganadera
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Desarrollado para granjas familiares con amor y tecnología
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button variant="outline" size="sm">
+                  Soporte Técnico
+                </Button>
+                <Button variant="outline" size="sm">
+                  Acerca de
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50">
+                  Cerrar Sesión
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

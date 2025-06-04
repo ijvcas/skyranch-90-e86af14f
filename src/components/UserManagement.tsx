@@ -1,0 +1,325 @@
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
+import { Users, UserPlus, UserMinus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  getAllUsers, 
+  addUser, 
+  deleteUser, 
+  toggleUserStatus, 
+  getCurrentUser,
+  debugUserStore,
+  clearAllUsers 
+} from '@/stores/userStore';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'manager' | 'worker';
+  createdAt: string;
+  isActive: boolean;
+}
+
+const UserManagement = () => {
+  const { toast } = useToast();
+  const [users, setUsers] = useState<User[]>(getAllUsers());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    role: 'worker' as User['role'],
+    isActive: true
+  });
+
+  const currentUser = getCurrentUser();
+
+  const refreshUsers = () => {
+    setUsers(getAllUsers());
+  };
+
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newUser.name || !newUser.email) {
+      toast({
+        title: "Error",
+        description: "Nombre y email son requeridos",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      addUser(newUser);
+      refreshUsers();
+      setNewUser({ name: '', email: '', role: 'worker', isActive: true });
+      setShowAddForm(false);
+      toast({
+        title: "Usuario Agregado",
+        description: `${newUser.name} ha sido agregado exitosamente`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el usuario",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteUser = (id: string, userName: string) => {
+    if (currentUser?.id === id) {
+      toast({
+        title: "Error",
+        description: "No puedes eliminar tu propia cuenta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (window.confirm(`¿Estás seguro de eliminar a ${userName}?`)) {
+      if (deleteUser(id)) {
+        refreshUsers();
+        toast({
+          title: "Usuario Eliminado",
+          description: `${userName} ha sido eliminado`,
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleToggleStatus = (id: string, userName: string) => {
+    if (currentUser?.id === id) {
+      toast({
+        title: "Error",
+        description: "No puedes desactivar tu propia cuenta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedUser = toggleUserStatus(id);
+    if (updatedUser) {
+      refreshUsers();
+      toast({
+        title: "Estado Actualizado",
+        description: `${userName} ${updatedUser.isActive ? 'activado' : 'desactivado'}`,
+      });
+    }
+  };
+
+  const handleDebugUsers = () => {
+    debugUserStore();
+    toast({
+      title: "Debug Info",
+      description: `Sistema tiene ${users.length} usuarios. Ver consola para detalles.`,
+    });
+  };
+
+  const handleClearUsers = () => {
+    if (window.confirm('¿Estás seguro de eliminar todos los usuarios excepto el admin? Esta acción no se puede deshacer.')) {
+      clearAllUsers();
+      refreshUsers();
+      toast({
+        title: "Usuarios Eliminados",
+        description: "Todos los usuarios han sido eliminados excepto el admin.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    const labels = {
+      admin: 'Administrador',
+      manager: 'Gerente',
+      worker: 'Trabajador'
+    };
+    return labels[role as keyof typeof labels] || role;
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    const colors = {
+      admin: 'bg-red-100 text-red-800',
+      manager: 'bg-blue-100 text-blue-800',
+      worker: 'bg-green-100 text-green-800'
+    };
+    return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header with actions */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Users className="w-5 h-5 mr-2" />
+            Gestión de Usuarios
+          </h3>
+          <p className="text-sm text-gray-600">Administra usuarios y sus permisos</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-2"
+            size="sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            Agregar Usuario
+          </Button>
+          <Button
+            onClick={handleDebugUsers}
+            variant="outline"
+            size="sm"
+          >
+            Debug
+          </Button>
+        </div>
+      </div>
+
+      {/* Add User Form */}
+      {showAddForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Agregar Nuevo Usuario</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Nombre Completo</Label>
+                  <Input
+                    id="name"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                    placeholder="Juan Pérez"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    placeholder="juan@granja.com"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="role">Rol</Label>
+                <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value as User['role']})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="worker">Trabajador</SelectItem>
+                    <SelectItem value="manager">Gerente</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-3">
+                <Button type="submit">Agregar Usuario</Button>
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Users Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Usuarios del Sistema ({users.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Usuario</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Fecha Registro</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                      {getRoleLabel(user.role)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={user.isActive}
+                        onCheckedChange={() => handleToggleStatus(user.id, user.name)}
+                        disabled={currentUser?.id === user.id}
+                      />
+                      <span className="text-sm">
+                        {user.isActive ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      onClick={() => handleDeleteUser(user.id, user.name)}
+                      variant="ghost"
+                      size="sm"
+                      disabled={currentUser?.id === user.id}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-600">Zona Peligrosa</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={handleClearUsers}
+            variant="destructive"
+            size="sm"
+          >
+            Eliminar Todos los Usuarios
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default UserManagement;
