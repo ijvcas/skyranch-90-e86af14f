@@ -1,14 +1,27 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings as SettingsIcon, Users, Bell, Info } from 'lucide-react';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const [selectedTimezone, setSelectedTimezone] = useState('America/Lima');
+
+  const timezones = [
+    { value: 'America/Lima', label: 'UTC-5 (América/Lima)' },
+    { value: 'America/Mexico_City', label: 'UTC-6 (América/Ciudad de México)' },
+    { value: 'America/New_York', label: 'UTC-5 (América/Nueva York)' },
+    { value: 'America/Los_Angeles', label: 'UTC-8 (América/Los Ángeles)' },
+    { value: 'Europe/Madrid', label: 'UTC+1 (Europa/Madrid)' },
+    { value: 'Europe/London', label: 'UTC+0 (Europa/Londres)' },
+    { value: 'Asia/Tokyo', label: 'UTC+9 (Asia/Tokio)' },
+    { value: 'Australia/Sydney', label: 'UTC+10 (Australia/Sídney)' },
+  ];
 
   const settingsSections = [
     {
@@ -33,7 +46,11 @@ const Settings = () => {
       icon: SettingsIcon,
       items: [
         { label: 'Idioma', description: 'Español (predeterminado)' },
-        { label: 'Zona Horaria', description: 'UTC-5 (América/Lima)' },
+        { 
+          label: 'Zona Horaria', 
+          description: 'Selecciona tu zona horaria',
+          hasTimezone: true 
+        },
         { label: 'Formato de Fecha', description: 'DD/MM/AAAA' },
       ]
     },
@@ -47,6 +64,12 @@ const Settings = () => {
       ]
     }
   ];
+
+  const handleTimezoneChange = (value: string) => {
+    setSelectedTimezone(value);
+    // Here you could save to localStorage or send to backend
+    localStorage.setItem('selectedTimezone', value);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20 md:pb-4">
@@ -92,6 +115,21 @@ const Settings = () => {
                         <Label htmlFor={`setting-${index}-${itemIndex}`} className="sr-only">
                           {item.label}
                         </Label>
+                      </div>
+                    ) : item.hasTimezone ? (
+                      <div className="min-w-[200px]">
+                        <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona zona horaria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timezones.map((timezone) => (
+                              <SelectItem key={timezone.value} value={timezone.value}>
+                                {timezone.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     ) : (
                       <Button variant="ghost" size="sm">
