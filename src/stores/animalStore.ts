@@ -1,4 +1,3 @@
-
 // Simple animal data store
 export interface Animal {
   id: string;
@@ -20,31 +19,80 @@ export interface Animal {
 // Use localStorage to persist data
 const STORAGE_KEY = 'skyranch_animals';
 
-// Simple loading function
+// Simple loading function with extensive debugging
 const loadAnimalsFromStorage = (): Record<string, Animal> => {
+  console.log('🔍 LOAD: Starting to load animals from storage...');
+  
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
+    console.log('🔍 LOAD: Raw stored data length:', stored?.length || 0);
+    console.log('🔍 LOAD: Raw stored data preview:', stored?.substring(0, 200) || 'null');
+    
     if (stored) {
       const parsed = JSON.parse(stored);
-      console.log('✅ Loaded animals from storage:', Object.keys(parsed).length);
+      console.log('🔍 LOAD: Parsed data type:', typeof parsed);
+      console.log('🔍 LOAD: Parsed data keys:', Object.keys(parsed));
+      console.log('🔍 LOAD: Animal count from parsed data:', Object.keys(parsed).length);
+      
+      // Log each animal
+      Object.values(parsed).forEach((animal: any, index) => {
+        console.log(`🔍 LOAD: Animal ${index + 1}:`, {
+          id: animal.id,
+          name: animal.name,
+          tag: animal.tag
+        });
+      });
+      
+      console.log('✅ LOAD: Successfully loaded animals from storage:', Object.keys(parsed).length);
       return parsed;
     }
   } catch (error) {
-    console.error('❌ Error loading from storage:', error);
+    console.error('❌ LOAD: Error loading from storage:', error);
   }
   
-  console.log('⚠️ No valid data found, starting with empty store');
+  console.log('⚠️ LOAD: No valid data found, starting with empty store');
   return {};
 };
 
-// Simple saving function
+// Simple saving function with extensive debugging
 const saveAnimalsToStorage = (animals: Record<string, Animal>): void => {
+  console.log('💾 SAVE: Starting to save animals to storage...');
+  console.log('💾 SAVE: Animals to save count:', Object.keys(animals).length);
+  
+  // Log each animal being saved
+  Object.values(animals).forEach((animal, index) => {
+    console.log(`💾 SAVE: Animal ${index + 1} being saved:`, {
+      id: animal.id,
+      name: animal.name,
+      tag: animal.tag
+    });
+  });
+  
   try {
     const dataToSave = JSON.stringify(animals);
+    console.log('💾 SAVE: JSON string length:', dataToSave.length);
+    console.log('💾 SAVE: JSON preview:', dataToSave.substring(0, 200));
+    
     localStorage.setItem(STORAGE_KEY, dataToSave);
-    console.log('✅ Saved', Object.keys(animals).length, 'animals to storage');
+    console.log('✅ SAVE: Successfully saved to localStorage');
+    
+    // Immediate verification
+    const verification = localStorage.getItem(STORAGE_KEY);
+    if (verification) {
+      const verifiedData = JSON.parse(verification);
+      console.log('✅ SAVE: Verification successful - count:', Object.keys(verifiedData).length);
+      
+      if (Object.keys(verifiedData).length !== Object.keys(animals).length) {
+        console.error('❌ SAVE: VERIFICATION FAILED! Saved count does not match!');
+        console.error('❌ SAVE: Expected:', Object.keys(animals).length);
+        console.error('❌ SAVE: Actually saved:', Object.keys(verifiedData).length);
+      }
+    } else {
+      console.error('❌ SAVE: VERIFICATION FAILED! No data found after save!');
+    }
+    
   } catch (error) {
-    console.error('❌ Error saving to storage:', error);
+    console.error('❌ SAVE: Error saving to storage:', error);
   }
 };
 
@@ -54,52 +102,76 @@ let animals: Record<string, Animal> = loadAnimalsFromStorage();
 console.log('🚀 Animal store initialized with', Object.keys(animals).length, 'animals');
 
 export const getAnimal = (id: string): Animal | null => {
-  return animals[id] || null;
+  const animal = animals[id] || null;
+  console.log('🔍 GET: Requesting animal', id, animal ? 'FOUND' : 'NOT FOUND');
+  return animal;
 };
 
 export const getAllAnimals = (): Animal[] => {
   const allAnimals = Object.values(animals);
-  console.log('📋 Getting all animals, count:', allAnimals.length);
+  console.log('📋 GET ALL: Current animals in memory:', Object.keys(animals).length);
+  console.log('📋 GET ALL: Animal IDs:', Object.keys(animals));
   return allAnimals;
 };
 
 export const updateAnimal = (id: string, updatedData: Omit<Animal, 'id'>): boolean => {
+  console.log('✏️ UPDATE: Attempting to update animal:', id);
+  
   if (animals[id]) {
-    console.log('✏️ Updating animal:', id);
+    console.log('✏️ UPDATE: Animal found, updating...');
     animals[id] = { id, ...updatedData };
     saveAnimalsToStorage(animals);
-    console.log('✅ Animal updated');
+    console.log('✅ UPDATE: Animal updated successfully');
     return true;
   }
-  console.log('❌ Failed to update animal - not found:', id);
+  
+  console.log('❌ UPDATE: Failed to update animal - not found:', id);
   return false;
 };
 
 export const addAnimal = (animal: Animal): void => {
-  console.log('➕ Adding animal:', animal.id, animal.name);
-  console.log('➕ Current count before add:', Object.keys(animals).length);
+  console.log('➕ ADD: Starting to add animal...');
+  console.log('➕ ADD: Animal data:', { id: animal.id, name: animal.name, tag: animal.tag });
+  console.log('➕ ADD: Current count before add:', Object.keys(animals).length);
+  console.log('➕ ADD: Current animal IDs before add:', Object.keys(animals));
   
   // Add to memory
   animals[animal.id] = { ...animal };
   
-  console.log('➕ Memory updated, new count:', Object.keys(animals).length);
-  console.log('➕ All animals in memory:', Object.keys(animals));
+  console.log('➕ ADD: Animal added to memory');
+  console.log('➕ ADD: New count in memory:', Object.keys(animals).length);
+  console.log('➕ ADD: All animal IDs in memory:', Object.keys(animals));
   
   // Save to storage
+  console.log('➕ ADD: About to save to storage...');
   saveAnimalsToStorage(animals);
   
-  console.log('✅ Animal add operation complete');
+  // Double verification
+  console.log('➕ ADD: Performing post-save verification...');
+  const verification = getAllAnimals();
+  console.log('➕ ADD: Verification count:', verification.length);
+  
+  if (verification.find(a => a.id === animal.id)) {
+    console.log('✅ ADD: Animal successfully verified in storage');
+  } else {
+    console.error('❌ ADD: CRITICAL ERROR - Animal not found after save!');
+  }
+  
+  console.log('✅ ADD: Animal add operation complete');
 };
 
 export const deleteAnimal = (id: string): boolean => {
+  console.log('🗑️ DELETE: Attempting to delete animal:', id);
+  
   if (animals[id]) {
-    console.log('🗑️ Deleting animal:', id);
+    console.log('🗑️ DELETE: Animal found, deleting...');
     delete animals[id];
     saveAnimalsToStorage(animals);
-    console.log('✅ Animal deleted');
+    console.log('✅ DELETE: Animal deleted successfully');
     return true;
   }
-  console.log('❌ Failed to delete animal - not found:', id);
+  
+  console.log('❌ DELETE: Failed to delete animal - not found:', id);
   return false;
 };
 
@@ -136,13 +208,26 @@ export const searchAnimals = (query: string): Animal[] => {
 };
 
 export const clearAllAnimals = (): void => {
-  console.log('🗑️ Clearing all animals');
+  console.log('🗑️ CLEAR: Clearing all animals');
   animals = {};
   saveAnimalsToStorage(animals);
-  console.log('✅ All animals cleared');
+  console.log('✅ CLEAR: All animals cleared');
 };
 
 export const debugStore = () => {
-  console.log('🐛 Animals in memory:', Object.keys(animals).length);
-  console.log('🐛 Storage check:', localStorage.getItem(STORAGE_KEY)?.length || 0, 'characters');
+  console.log('🐛 DEBUG: Animals in memory:', Object.keys(animals).length);
+  console.log('🐛 DEBUG: Animal IDs in memory:', Object.keys(animals));
+  
+  const storage = localStorage.getItem(STORAGE_KEY);
+  if (storage) {
+    try {
+      const parsed = JSON.parse(storage);
+      console.log('🐛 DEBUG: Animals in storage:', Object.keys(parsed).length);
+      console.log('🐛 DEBUG: Animal IDs in storage:', Object.keys(parsed));
+    } catch (e) {
+      console.log('🐛 DEBUG: Storage parse error:', e);
+    }
+  } else {
+    console.log('🐛 DEBUG: No data in storage');
+  }
 };
