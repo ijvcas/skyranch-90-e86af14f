@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings as SettingsIcon, Users, Bell, Info } from 'lucide-react';
-import { debugStore, clearAllAnimals, getAllAnimals } from '@/stores/animalStore';
+import { clearAllAnimals, getAllAnimals } from '@/stores/animalStore';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/UserManagement';
 
@@ -144,8 +143,13 @@ const Settings = () => {
   };
 
   const handleDebugStore = () => {
-    debugStore();
     const animals = getAllAnimals();
+    console.log('🔍 Debug Store Info:');
+    console.log('📊 Total animals:', animals.length);
+    console.log('🐄 Animals data:', animals);
+    console.log('💾 LocalStorage size:', JSON.stringify(localStorage).length, 'bytes');
+    console.log('🗄️ All localStorage keys:', Object.keys(localStorage));
+    
     toast({
       title: "Debug Info",
       description: `Store has ${animals.length} animals. Check console for details.`,
