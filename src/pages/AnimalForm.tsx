@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ImageUpload';
+import { addAnimal, getAllAnimals } from '@/stores/animalStore';
 
 const AnimalForm = () => {
   const navigate = useNavigate();
@@ -30,15 +30,54 @@ const AnimalForm = () => {
     image: null as string | null
   });
 
+  const generateNextId = (): string => {
+    const existingAnimals = getAllAnimals();
+    const existingIds = existingAnimals.map(animal => parseInt(animal.id)).filter(id => !isNaN(id));
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    return String(maxId + 1).padStart(3, '0');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Here you would typically save to a database
-    console.log('Animal data:', formData);
+    // Validate required fields
+    if (!formData.name || !formData.tag || !formData.species) {
+      toast({
+        title: "Error",
+        description: "Por favor complete todos los campos requeridos (Nombre, Etiqueta, Especie).",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Generate ID if not provided via tag
+    const animalId = formData.tag || generateNextId();
+    
+    // Create the animal object
+    const newAnimal = {
+      id: animalId,
+      name: formData.name,
+      tag: formData.tag || animalId,
+      species: formData.species,
+      breed: formData.breed,
+      birthDate: formData.birthDate,
+      gender: formData.gender,
+      weight: formData.weight,
+      color: formData.color,
+      motherId: formData.motherId,
+      fatherId: formData.fatherId,
+      notes: formData.notes,
+      healthStatus: formData.healthStatus,
+      image: formData.image
+    };
+
+    // Save to store
+    addAnimal(newAnimal);
+    console.log('New animal added:', newAnimal);
     
     toast({
       title: "Animal Registrado",
-      description: `${formData.name} ha sido registrado exitosamente.`,
+      description: `${formData.name} ha sido registrado exitosamente con ID ${animalId}.`,
     });
     
     navigate('/animals');
@@ -59,10 +98,10 @@ const AnimalForm = () => {
         <div className="mb-8">
           <Button 
             variant="outline" 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/animals')}
             className="mb-4"
           >
-            ← Volver al Panel
+            ← Volver a Animales
           </Button>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Registrar Nuevo Animal
@@ -97,7 +136,7 @@ const AnimalForm = () => {
                     type="text"
                     value={formData.tag}
                     onChange={(e) => handleInputChange('tag', e.target.value)}
-                    placeholder="Ej: 001"
+                    placeholder={`Ej: ${generateNextId()}`}
                     required
                     className="mt-1"
                   />
