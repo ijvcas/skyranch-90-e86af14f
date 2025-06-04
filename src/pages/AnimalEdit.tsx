@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
+import { getAnimal, updateAnimal, type Animal } from '@/stores/animalStore';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -33,81 +34,34 @@ const AnimalEdit = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - in real app this would come from API
-  const mockAnimals = {
-    '001': {
-      name: 'Dolly',
-      tag: '001',
-      species: 'ovino',
-      breed: 'Merino',
-      birthDate: '2022-03-15',
-      gender: 'hembra',
-      weight: '65',
-      color: 'Blanco',
-      motherId: '',
-      fatherId: '',
-      notes: 'Animal muy dócil y saludable',
-      healthStatus: 'healthy',
-      image: 'https://images.unsplash.com/photo-1452960962994-acf4fd70b632'
-    },
-    '002': {
-      name: 'Woolly',
-      tag: '002',
-      species: 'ovino',
-      breed: 'Romney',
-      birthDate: '2021-05-20',
-      gender: 'macho',
-      weight: '70',
-      color: 'Gris',
-      motherId: '',
-      fatherId: '',
-      notes: 'Buen reproductor',
-      healthStatus: 'healthy',
-      image: null
-    },
-    '003': {
-      name: 'Burrito',
-      tag: '003',
-      species: 'equino',
-      breed: 'Andaluz',
-      birthDate: '2019-08-10',
-      gender: 'macho',
-      weight: '180',
-      color: 'Marrón',
-      motherId: '',
-      fatherId: '',
-      notes: 'Animal de trabajo',
-      healthStatus: 'healthy',
-      image: null
-    },
-    '004': {
-      name: 'Bessie',
-      tag: '004',
-      species: 'bovino',
-      breed: 'Holstein',
-      birthDate: '2020-11-05',
-      gender: 'hembra',
-      weight: '520',
-      color: 'Negro con manchas blancas',
-      motherId: '',
-      fatherId: '',
-      notes: 'Excelente productora de leche',
-      healthStatus: 'healthy',
-      image: null
-    }
-  };
-
   useEffect(() => {
-    // Load animal data
-    if (id && mockAnimals[id as keyof typeof mockAnimals]) {
-      setFormData(mockAnimals[id as keyof typeof mockAnimals]);
-    } else {
-      toast({
-        title: "Animal no encontrado",
-        description: "El animal que intentas editar no existe.",
-        variant: "destructive"
-      });
-      navigate('/animals');
+    // Load animal data from store
+    if (id) {
+      const animal = getAnimal(id);
+      if (animal) {
+        setFormData({
+          name: animal.name,
+          tag: animal.tag,
+          species: animal.species,
+          breed: animal.breed,
+          birthDate: animal.birthDate,
+          gender: animal.gender,
+          weight: animal.weight,
+          color: animal.color,
+          motherId: animal.motherId,
+          fatherId: animal.fatherId,
+          notes: animal.notes,
+          healthStatus: animal.healthStatus,
+          image: animal.image
+        });
+      } else {
+        toast({
+          title: "Animal no encontrado",
+          description: "El animal que intentas editar no existe.",
+          variant: "destructive"
+        });
+        navigate('/animals');
+      }
     }
   }, [id, navigate, toast]);
 
@@ -115,17 +69,30 @@ const AnimalEdit = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
+    // Simulate API call and update the store
     setTimeout(() => {
-      console.log('Updated animal data:', formData);
-      
-      toast({
-        title: "Animal Actualizado",
-        description: `${formData.name} ha sido actualizado exitosamente.`,
-      });
+      if (id) {
+        const success = updateAnimal(id, formData);
+        
+        if (success) {
+          console.log('Updated animal data:', formData);
+          
+          toast({
+            title: "Animal Actualizado",
+            description: `${formData.name} ha sido actualizado exitosamente.`,
+          });
+          
+          navigate('/animals');
+        } else {
+          toast({
+            title: "Error",
+            description: "No se pudo actualizar el animal.",
+            variant: "destructive"
+          });
+        }
+      }
       
       setIsLoading(false);
-      navigate('/animals');
     }, 1000);
   };
 

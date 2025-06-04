@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,58 +5,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Users } from 'lucide-react';
+import { getAllAnimals } from '@/stores/animalStore';
 
 const AnimalList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data for SkyRanch initial animals with images
-  const animals = [
-    {
-      id: '001',
-      name: 'Dolly',
-      species: 'Ovino',
-      breed: 'Merino',
-      age: '2 años',
-      status: 'Saludable',
-      lastCheckup: '2024-05-15',
-      weight: '65 kg',
-      image: 'https://images.unsplash.com/photo-1452960962994-acf4fd70b632'
-    },
-    {
-      id: '002',
-      name: 'Woolly',
-      species: 'Ovino',
-      breed: 'Romney',
-      age: '3 años',
-      status: 'Saludable',
-      lastCheckup: '2024-05-20',
-      weight: '70 kg',
-      image: 'https://images.unsplash.com/photo-1452960962994-acf4fd70b632'
-    },
-    {
-      id: '003',
-      name: 'Burrito',
-      species: 'Asno',
-      breed: 'Andaluz',
-      age: '5 años',
-      status: 'Saludable',
-      lastCheckup: '2024-05-18',
-      weight: '180 kg',
-      image: 'https://images.unsplash.com/photo-1452378174528-3090a4bba7b2'
-    },
-    {
-      id: '004',
-      name: 'Bessie',
-      species: 'Bovino',
-      breed: 'Holstein',
-      age: '4 años',
-      status: 'Saludable',
-      lastCheckup: '2024-05-10',
-      weight: '520 kg',
-      image: 'https://images.unsplash.com/photo-1465379944081-7f47de8d74ac'
-    }
-  ];
+  // Get animals from the shared store
+  const animals = getAllAnimals().map(animal => ({
+    id: animal.id,
+    name: animal.name,
+    species: animal.species === 'ovino' ? 'Ovino' : 
+             animal.species === 'bovino' ? 'Bovino' :
+             animal.species === 'equino' ? 'Asno' : 
+             animal.species.charAt(0).toUpperCase() + animal.species.slice(1),
+    breed: animal.breed,
+    age: calculateAge(animal.birthDate),
+    status: animal.healthStatus === 'healthy' ? 'Saludable' : 
+            animal.healthStatus === 'sick' ? 'Enfermo' :
+            animal.healthStatus === 'pregnant' ? 'Gestante' :
+            animal.healthStatus === 'treatment' ? 'En Tratamiento' : 'Saludable',
+    lastCheckup: '2024-05-15', // This would come from health records in a real app
+    weight: `${animal.weight} kg`,
+    image: animal.image
+  }));
+
+  const calculateAge = (birthDate: string): string => {
+    if (!birthDate) return 'N/A';
+    const birth = new Date(birthDate);
+    const now = new Date();
+    const years = now.getFullYear() - birth.getFullYear();
+    return `${years} años`;
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
