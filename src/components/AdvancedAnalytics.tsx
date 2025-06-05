@@ -17,12 +17,12 @@ const AdvancedAnalytics = () => {
 
   const { data: healthRecords = [] } = useQuery({
     queryKey: ['health-records'],
-    queryFn: () => getHealthRecords(''), // Get all health records
+    queryFn: getHealthRecords,
   });
 
   const { data: breedingRecords = [] } = useQuery({
     queryKey: ['breeding-records'],
-    queryFn: () => getBreedingRecords(''), // Get all breeding records
+    queryFn: getBreedingRecords,
   });
 
   const { data: users = [] } = useQuery({
@@ -38,9 +38,10 @@ const AdvancedAnalytics = () => {
   // Recent activity (animals added in last 30 days)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const recentAnimals = animals.filter(animal => 
-    new Date(animal.createdAt || animal.created_at) > thirtyDaysAgo
-  );
+  const recentAnimals = animals.filter(animal => {
+    const createdDate = animal.created_at ? new Date(animal.created_at) : null;
+    return createdDate && createdDate > thirtyDaysAgo;
+  });
 
   // Species distribution for pie chart
   const speciesData = animals.reduce((acc, animal) => {
@@ -74,8 +75,9 @@ const AdvancedAnalytics = () => {
     const monthYear = date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
     
     const animalsInMonth = animals.filter(animal => {
-      const animalDate = new Date(animal.createdAt || animal.created_at);
-      return animalDate.getMonth() === date.getMonth() && 
+      const animalDate = animal.created_at ? new Date(animal.created_at) : null;
+      return animalDate && 
+             animalDate.getMonth() === date.getMonth() && 
              animalDate.getFullYear() === date.getFullYear();
     }).length;
 
