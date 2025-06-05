@@ -14,6 +14,7 @@ import AnimalList from "./pages/AnimalList";
 import AnimalForm from "./pages/AnimalForm";
 import AnimalDetail from "./pages/AnimalDetail";
 import AnimalEdit from "./pages/AnimalEdit";
+import HealthRecords from "./pages/HealthRecords";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import Navigation from "./components/Navigation";

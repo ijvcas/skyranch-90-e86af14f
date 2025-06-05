@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Calendar, Weight, Palette, Users } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, Weight, Palette, Users, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getAnimal } from '@/services/animalService';
 
@@ -307,6 +306,14 @@ const AnimalDetail = () => {
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Editar Información
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate(`/animals/${id}/health`)}
+                >
+                  <Activity className="w-4 h-4 mr-2" />
+                  Registros de Salud
                 </Button>
                 <Button 
                   variant="outline" 

@@ -84,6 +84,68 @@ export type Database = {
           },
         ]
       }
+      health_records: {
+        Row: {
+          animal_id: string
+          cost: number | null
+          created_at: string
+          date_administered: string
+          description: string | null
+          dosage: string | null
+          id: string
+          medication: string | null
+          next_due_date: string | null
+          notes: string | null
+          record_type: string
+          title: string
+          updated_at: string
+          user_id: string
+          veterinarian: string | null
+        }
+        Insert: {
+          animal_id: string
+          cost?: number | null
+          created_at?: string
+          date_administered: string
+          description?: string | null
+          dosage?: string | null
+          id?: string
+          medication?: string | null
+          next_due_date?: string | null
+          notes?: string | null
+          record_type: string
+          title: string
+          updated_at?: string
+          user_id: string
+          veterinarian?: string | null
+        }
+        Update: {
+          animal_id?: string
+          cost?: number | null
+          created_at?: string
+          date_administered?: string
+          description?: string | null
+          dosage?: string | null
+          id?: string
+          medication?: string | null
+          next_due_date?: string | null
+          notes?: string | null
+          record_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          veterinarian?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_records_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
