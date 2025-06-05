@@ -15,6 +15,7 @@ import AnimalForm from "./pages/AnimalForm";
 import AnimalDetail from "./pages/AnimalDetail";
 import AnimalEdit from "./pages/AnimalEdit";
 import HealthRecords from "./pages/HealthRecords";
+import Breeding from "./pages/Breeding";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import Navigation from "./components/Navigation";
@@ -57,6 +58,11 @@ const App = () => (
               <Route path="/animals/:id/edit" element={
                 <ProtectedRoute>
                   <AnimalEdit />
+                </ProtectedRoute>
+              } />
+              <Route path="/breeding" element={
+                <ProtectedRoute>
+                  <Breeding />
                 </ProtectedRoute>
               } />
               <Route path="/calendar" element={

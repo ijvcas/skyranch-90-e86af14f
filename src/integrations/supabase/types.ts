@@ -84,6 +84,87 @@ export type Database = {
           },
         ]
       }
+      breeding_records: {
+        Row: {
+          actual_birth_date: string | null
+          breeding_date: string
+          breeding_method: string
+          breeding_notes: string | null
+          cost: number | null
+          created_at: string
+          expected_due_date: string | null
+          father_id: string
+          gestation_length: number | null
+          id: string
+          mother_id: string
+          offspring_count: number | null
+          pregnancy_confirmation_date: string | null
+          pregnancy_confirmed: boolean | null
+          pregnancy_method: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          veterinarian: string | null
+        }
+        Insert: {
+          actual_birth_date?: string | null
+          breeding_date: string
+          breeding_method: string
+          breeding_notes?: string | null
+          cost?: number | null
+          created_at?: string
+          expected_due_date?: string | null
+          father_id: string
+          gestation_length?: number | null
+          id?: string
+          mother_id: string
+          offspring_count?: number | null
+          pregnancy_confirmation_date?: string | null
+          pregnancy_confirmed?: boolean | null
+          pregnancy_method?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          veterinarian?: string | null
+        }
+        Update: {
+          actual_birth_date?: string | null
+          breeding_date?: string
+          breeding_method?: string
+          breeding_notes?: string | null
+          cost?: number | null
+          created_at?: string
+          expected_due_date?: string | null
+          father_id?: string
+          gestation_length?: number | null
+          id?: string
+          mother_id?: string
+          offspring_count?: number | null
+          pregnancy_confirmation_date?: string | null
+          pregnancy_confirmed?: boolean | null
+          pregnancy_method?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          veterinarian?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breeding_records_father_id_fkey"
+            columns: ["father_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_records_mother_id_fkey"
+            columns: ["mother_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_records: {
         Row: {
           animal_id: string
@@ -142,6 +223,54 @@ export type Database = {
             columns: ["animal_id"]
             isOneToOne: false
             referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offspring: {
+        Row: {
+          animal_id: string | null
+          birth_status: string | null
+          birth_weight: number | null
+          breeding_record_id: string
+          created_at: string
+          gender: string | null
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          animal_id?: string | null
+          birth_status?: string | null
+          birth_weight?: number | null
+          breeding_record_id: string
+          created_at?: string
+          gender?: string | null
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          animal_id?: string | null
+          birth_status?: string | null
+          birth_weight?: number | null
+          breeding_record_id?: string
+          created_at?: string
+          gender?: string | null
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offspring_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offspring_breeding_record_id_fkey"
+            columns: ["breeding_record_id"]
+            isOneToOne: false
+            referencedRelation: "breeding_records"
             referencedColumns: ["id"]
           },
         ]

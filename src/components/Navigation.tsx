@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, Users, Calendar, Settings } from 'lucide-react';
+import { Home, Users, Calendar, Settings, Heart } from 'lucide-react';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ const Navigation = () => {
   const navItems = [
     { path: '/dashboard', icon: Home, label: 'Inicio' },
     { path: '/animals', icon: Users, label: 'Animales' },
+    { path: '/breeding', icon: Heart, label: 'Cruza' },
     { path: '/calendar', icon: Calendar, label: 'Calendario' },
     { path: '/settings', icon: Settings, label: 'Ajustes' },
   ];
