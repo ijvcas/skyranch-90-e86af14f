@@ -1,3 +1,5 @@
+
+import React, { useMemo } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,10 +27,23 @@ import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import { useIsMobile } from "./hooks/use-mobile";
 
-const queryClient = new QueryClient();
+// Create QueryClient with optimized settings
+const createQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => {
   const isMobile = useIsMobile();
+  
+  // Memoize queryClient to prevent recreation on every render
+  const queryClient = useMemo(() => createQueryClient(), []);
 
   return (
     <QueryClientProvider client={queryClient}>

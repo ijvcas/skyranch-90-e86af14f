@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,28 +7,29 @@ import { Plus, Users, Calendar, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-import { getAllAnimals, getAnimalCountBySpecies } from '@/services/animalService';
+import { getAllAnimals } from '@/services/animalService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   
-  // Fetch animals data using React Query
-  const { data: allAnimals = [], isLoading } = useQuery({
+  // Single optimized query for all animal data
+  const { data: allAnimals = [], isLoading, error } = useQuery({
     queryKey: ['animals'],
     queryFn: getAllAnimals,
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
-  const { data: speciesCounts = {} } = useQuery({
-    queryKey: ['animalCounts'],
-    queryFn: getAnimalCountBySpecies,
-    enabled: !!user
-  });
-  
+  // Calculate all stats from the single query result
   const totalAnimals = allAnimals.length;
-
+  const speciesCounts = allAnimals.reduce((counts, animal) => {
+    counts[animal.species] = (counts[animal.species] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+  
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -87,6 +89,14 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-lg text-gray-600">Cargando datos...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg text-red-600">Error al cargar datos. Intenta recargar la página.</div>
       </div>
     );
   }
