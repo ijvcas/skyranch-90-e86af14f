@@ -6,10 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings as SettingsIcon, Users, Bell, Info } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings as SettingsIcon, Users, Bell, Info, Database } from 'lucide-react';
 import { clearAllAnimals, getAllAnimals, restoreAnimalsFromBackup, getBackupInfo } from '@/stores/animalStore';
 import { useToast } from '@/hooks/use-toast';
+import { useTimezone } from '@/hooks/useTimezone';
 import UserManagement from '@/components/UserManagement';
+import DataImportExport from '@/components/DataImportExport';
 
 interface AppSettings {
   notifications: {
@@ -27,6 +30,7 @@ interface AppSettings {
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { timezone, setTimezone } = useTimezone();
   const [showUserManagement, setShowUserManagement] = useState(false);
   
   // Settings state
@@ -38,7 +42,7 @@ const Settings = () => {
     },
     system: {
       language: 'es',
-      timezone: 'America/Lima',
+      timezone: timezone,
       dateFormat: 'DD/MM/YYYY',
     },
   });
@@ -49,28 +53,24 @@ const Settings = () => {
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        setSettings(parsed);
+        setSettings(prev => ({
+          ...parsed,
+          system: {
+            ...parsed.system,
+            timezone: timezone // Use timezone from hook
+          }
+        }));
         console.log('Loaded settings from storage:', parsed);
       } catch (error) {
         console.error('Error parsing saved settings:', error);
       }
     }
-
-    // Also load the old timezone setting for backward compatibility
-    const savedTimezone = localStorage.getItem('selectedTimezone');
-    if (savedTimezone && !savedSettings) {
-      setSettings(prev => ({
-        ...prev,
-        system: { ...prev.system, timezone: savedTimezone }
-      }));
-    }
-  }, []);
+  }, [timezone]);
 
   // Save settings to localStorage whenever they change
   const saveSettings = (newSettings: AppSettings) => {
     setSettings(newSettings);
     localStorage.setItem('appSettings', JSON.stringify(newSettings));
-    localStorage.setItem('selectedTimezone', newSettings.system.timezone); // Backward compatibility
     console.log('Settings saved to storage:', newSettings);
   };
 
@@ -129,6 +129,12 @@ const Settings = () => {
         [key]: value
       }
     };
+    
+    // Special handling for timezone
+    if (key === 'timezone') {
+      setTimezone(value);
+    }
+    
     saveSettings(newSettings);
     
     const settingLabels = {
@@ -150,6 +156,7 @@ const Settings = () => {
     console.log('🐄 Animals data:', animals);
     console.log('💾 LocalStorage size:', JSON.stringify(localStorage).length, 'bytes');
     console.log('🗄️ All localStorage keys:', Object.keys(localStorage));
+    console.log('🕒 Current timezone:', timezone);
     
     toast({
       title: "Debug Info",
@@ -210,131 +217,86 @@ const Settings = () => {
     }
   };
 
-  const settingsSections = [
-    {
-      title: 'Usuarios y Permisos',
-      icon: Users,
-      items: [
-        { 
-          label: 'Gestionar Usuarios', 
-          description: 'Añadir o eliminar usuarios de la granja',
-          hasAction: true,
-          action: () => setShowUserManagement(true)
-        },
-        { 
-          label: 'Roles y Permisos', 
-          description: 'Configurar niveles de acceso',
-          hasAction: true,
-          action: () => setShowUserManagement(true)
-        },
-      ]
+  const notificationSettings = [
+    { 
+      label: 'Recordatorios de Vacunas', 
+      description: 'Alertas automáticas', 
+      key: 'vaccineReminders' as const,
+      checked: settings.notifications.vaccineReminders
     },
-    {
-      title: 'Notificaciones',
-      icon: Bell,
-      items: [
-        { 
-          label: 'Recordatorios de Vacunas', 
-          description: 'Alertas automáticas', 
-          hasSwitch: true,
-          checked: settings.notifications.vaccineReminders,
-          onToggle: () => handleNotificationToggle('vaccineReminders')
-        },
-        { 
-          label: 'Alertas de Salud', 
-          description: 'Notificaciones de estado crítico', 
-          hasSwitch: true,
-          checked: settings.notifications.healthAlerts,
-          onToggle: () => handleNotificationToggle('healthAlerts')
-        },
-        { 
-          label: 'Reportes Semanales', 
-          description: 'Resumen automático por email', 
-          hasSwitch: true,
-          checked: settings.notifications.weeklyReports,
-          onToggle: () => handleNotificationToggle('weeklyReports')
-        },
-      ]
+    { 
+      label: 'Alertas de Salud', 
+      description: 'Notificaciones de estado crítico', 
+      key: 'healthAlerts' as const,
+      checked: settings.notifications.healthAlerts
     },
-    {
-      title: 'Sistema',
-      icon: SettingsIcon,
-      items: [
-        { 
-          label: 'Idioma', 
-          description: 'Selecciona el idioma de la aplicación',
-          hasSelect: true,
-          value: settings.system.language,
-          options: languages,
-          onChange: (value: string) => handleSystemSetting('language', value)
-        },
-        { 
-          label: 'Zona Horaria', 
-          description: 'Selecciona tu zona horaria',
-          hasSelect: true,
-          value: settings.system.timezone,
-          options: timezones,
-          onChange: (value: string) => handleSystemSetting('timezone', value)
-        },
-        { 
-          label: 'Formato de Fecha', 
-          description: 'Formato de visualización de fechas',
-          hasSelect: true,
-          value: settings.system.dateFormat,
-          options: dateFormats,
-          onChange: (value: string) => handleSystemSetting('dateFormat', value)
-        },
-      ]
+    { 
+      label: 'Reportes Semanales', 
+      description: 'Resumen automático por email', 
+      key: 'weeklyReports' as const,
+      checked: settings.notifications.weeklyReports
     },
-    {
-      title: 'Datos y Depuración',
-      icon: SettingsIcon,
-      items: [
-        { 
-          label: 'Debug Store', 
-          description: 'Verificar estado del almacén de datos',
-          hasAction: true,
-          action: handleDebugStore
-        },
-        { 
-          label: 'Sincronizar Datos', 
-          description: 'Sincronizar con el servidor',
-          hasAction: true,
-          action: handleSyncData
-        },
-        { 
-          label: 'Limpiar Datos', 
-          description: 'Eliminar todos los datos de animales',
-          hasAction: true,
-          action: handleClearData,
-          isDestructive: true
-        },
-      ]
+  ];
+
+  const systemSettings = [
+    { 
+      label: 'Idioma', 
+      description: 'Selecciona el idioma de la aplicación',
+      key: 'language' as const,
+      value: settings.system.language,
+      options: languages
     },
-    {
-      title: 'Información',
-      icon: Info,
-      items: [
-        { 
-          label: 'Versión de la App', 
-          description: 'v1.0.0 - Última actualización: Hoy',
-          hasAction: true,
-          action: handleAbout
-        },
-        { 
-          label: 'Última Sincronización', 
-          description: new Date().toLocaleString('es-ES'),
-          hasAction: true,
-          action: handleSyncData
-        },
-        { 
-          label: 'Espacio Utilizado', 
-          description: `${(JSON.stringify(localStorage).length / 1024).toFixed(1)} KB de datos locales`,
-          hasAction: true,
-          action: handleDebugStore
-        },
-      ]
-    }
+    { 
+      label: 'Zona Horaria', 
+      description: 'Selecciona tu zona horaria',
+      key: 'timezone' as const,
+      value: settings.system.timezone,
+      options: timezones
+    },
+    { 
+      label: 'Formato de Fecha', 
+      description: 'Formato de visualización de fechas',
+      key: 'dateFormat' as const,
+      value: settings.system.dateFormat,
+      options: dateFormats
+    },
+  ];
+
+  const dataSettings = [
+    { 
+      label: 'Debug Store', 
+      description: 'Verificar estado del almacén de datos',
+      action: handleDebugStore
+    },
+    { 
+      label: 'Sincronizar Datos', 
+      description: 'Sincronizar con el servidor',
+      action: handleSyncData
+    },
+    { 
+      label: 'Limpiar Datos', 
+      description: 'Eliminar todos los datos de animales',
+      action: handleClearData,
+      isDestructive: true
+    },
+  ];
+
+  const infoSettings = [
+    { 
+      label: 'Versión de la App', 
+      description: 'v1.0.0 - Última actualización: Hoy',
+      action: handleAbout
+    },
+    { 
+      label: 'Última Sincronización', 
+      description: new Date().toLocaleString('es-ES'),
+      action: handleSyncData
+    },
+    { 
+      label: 'Espacio Utilizado', 
+      description: `${(JSON.stringify(localStorage).length / 1024).toFixed(1)} KB de datos locales`,
+      action: handleDebugStore
+    },
   ];
 
   return (
@@ -355,122 +317,195 @@ const Settings = () => {
           <p className="text-gray-600">Ajusta las preferencias del sistema</p>
         </div>
 
-        {/* User Management Modal/Section */}
-        {showUserManagement && (
-          <Card className="shadow-lg mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Gestión de Usuarios y Permisos</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setShowUserManagement(false)}
-                >
-                  ← Volver
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <UserManagement />
-            </CardContent>
-          </Card>
-        )}
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="users">Usuarios</TabsTrigger>
+            <TabsTrigger value="data">Datos</TabsTrigger>
+            <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+            <TabsTrigger value="info">Info</TabsTrigger>
+          </TabsList>
 
-        {/* Settings Sections - only show if user management is not active */}
-        {!showUserManagement && (
-          <div className="space-y-6">
-            {settingsSections.map((section, index) => (
-              <Card key={index} className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-xl text-gray-900">
-                    <section.icon className="w-5 h-5 mr-3" />
-                    {section.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {section.items.map((item, itemIndex) => (
-                    <div 
-                      key={itemIndex}
-                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900">{item.label}</div>
-                        <div className="text-sm text-gray-600">{item.description}</div>
-                      </div>
-                      {item.hasSwitch ? (
-                        <div className="flex items-center space-x-2">
-                          <Switch 
-                            id={`setting-${index}-${itemIndex}`} 
-                            checked={item.checked || false}
-                            onCheckedChange={item.onToggle}
-                          />
-                          <Label htmlFor={`setting-${index}-${itemIndex}`} className="sr-only">
-                            {item.label}
-                          </Label>
-                        </div>
-                      ) : item.hasSelect ? (
-                        <div className="min-w-[200px]">
-                          <Select value={item.value} onValueChange={item.onChange}>
-                            <SelectTrigger>
-                              <SelectValue placeholder={`Selecciona ${item.label.toLowerCase()}`} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {item.options?.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : item.hasAction ? (
-                        <Button 
-                          variant={item.isDestructive ? "destructive" : "default"} 
-                          size="sm"
-                          onClick={item.action}
-                        >
-                          {item.isDestructive ? "Eliminar" : item.label.includes('Gestionar') ? "Abrir" : "Ejecutar"}
-                        </Button>
-                      ) : (
-                        <Button variant="ghost" size="sm" onClick={item.action}>
-                          Ver
-                        </Button>
-                      )}
+          <TabsContent value="general" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl text-gray-900">
+                  <SettingsIcon className="w-5 h-5 mr-3" />
+                  Configuración del Sistema
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {systemSettings.map((setting, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{setting.label}</div>
+                      <div className="text-sm text-gray-600">{setting.description}</div>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                    <div className="min-w-[200px]">
+                      <Select 
+                        value={setting.value} 
+                        onValueChange={(value) => handleSystemSetting(setting.key, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Selecciona ${setting.label.toLowerCase()}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {setting.options.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* App Info - only show if user management is not active */}
-        {!showUserManagement && (
-          <Card className="shadow-lg mt-8">
-            <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Sistema de Gestión Ganadera
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Desarrollado para granjas familiares con amor y tecnología
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button variant="outline" size="sm" onClick={handleTechnicalSupport}>
-                  Soporte Técnico
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleAbout}>
-                  Acerca de
-                </Button>
-                <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50" onClick={handleLogout}>
-                  Cerrar Sesión
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          <TabsContent value="users" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl text-gray-900">
+                  <Users className="w-5 h-5 mr-3" />
+                  Gestión de Usuarios y Permisos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UserManagement />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="data" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl text-gray-900">
+                  <Database className="w-5 h-5 mr-3" />
+                  Gestión de Datos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DataImportExport />
+                
+                <div className="mt-8 pt-6 border-t">
+                  <h3 className="text-lg font-semibold mb-4">Herramientas Avanzadas</h3>
+                  <div className="space-y-4">
+                    {dataSettings.map((setting, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">{setting.label}</div>
+                          <div className="text-sm text-gray-600">{setting.description}</div>
+                        </div>
+                        <Button 
+                          variant={setting.isDestructive ? "destructive" : "default"} 
+                          size="sm"
+                          onClick={setting.action}
+                        >
+                          {setting.isDestructive ? "Eliminar" : "Ejecutar"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl text-gray-900">
+                  <Bell className="w-5 h-5 mr-3" />
+                  Configuración de Notificaciones
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {notificationSettings.map((setting, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{setting.label}</div>
+                      <div className="text-sm text-gray-600">{setting.description}</div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id={`setting-${index}`} 
+                        checked={setting.checked}
+                        onCheckedChange={() => handleNotificationToggle(setting.key)}
+                      />
+                      <Label htmlFor={`setting-${index}`} className="sr-only">
+                        {setting.label}
+                      </Label>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="info" className="space-y-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl text-gray-900">
+                  <Info className="w-5 h-5 mr-3" />
+                  Información del Sistema
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {infoSettings.map((setting, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{setting.label}</div>
+                      <div className="text-sm text-gray-600">{setting.description}</div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={setting.action}>
+                      Ver
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* App Info */}
+            <Card className="shadow-lg">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Sistema de Gestión Ganadera
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Desarrollado para granjas familiares con amor y tecnología
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button variant="outline" size="sm" onClick={handleTechnicalSupport}>
+                    Soporte Técnico
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleAbout}>
+                    Acerca de
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50" onClick={handleLogout}>
+                    Cerrar Sesión
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
