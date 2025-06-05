@@ -12,6 +12,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AnimalList from "./pages/AnimalList";
 import AnimalForm from "./pages/AnimalForm";
+import AnimalDetail from "./pages/AnimalDetail";
 import AnimalEdit from "./pages/AnimalEdit";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
@@ -45,6 +46,11 @@ const App = () => (
               <Route path="/animals/new" element={
                 <ProtectedRoute>
                   <AnimalForm />
+                </ProtectedRoute>
+              } />
+              <Route path="/animals/:id" element={
+                <ProtectedRoute>
+                  <AnimalDetail />
                 </ProtectedRoute>
               } />
               <Route path="/animals/:id/edit" element={
