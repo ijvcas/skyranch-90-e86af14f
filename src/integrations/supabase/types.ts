@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      animal_attachments: {
+        Row: {
+          animal_id: string
+          attachment_type: string | null
+          created_at: string
+          description: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          animal_id: string
+          attachment_type?: string | null
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          animal_id?: string
+          attachment_type?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       animals: {
         Row: {
           birth_date: string | null
@@ -165,6 +204,72 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          all_day: boolean | null
+          animal_id: string | null
+          cost: number | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          event_date: string
+          event_type: string
+          id: string
+          location: string | null
+          notes: string | null
+          recurrence_pattern: string | null
+          recurring: boolean | null
+          reminder_minutes: number | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          veterinarian: string | null
+        }
+        Insert: {
+          all_day?: boolean | null
+          animal_id?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          event_date: string
+          event_type: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          recurrence_pattern?: string | null
+          recurring?: boolean | null
+          reminder_minutes?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          veterinarian?: string | null
+        }
+        Update: {
+          all_day?: boolean | null
+          animal_id?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          recurrence_pattern?: string | null
+          recurring?: boolean | null
+          reminder_minutes?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          veterinarian?: string | null
+        }
+        Relationships: []
+      }
       health_records: {
         Row: {
           animal_id: string
@@ -296,6 +401,39 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          date_range: Json | null
+          filters: Json | null
+          id: string
+          name: string
+          report_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_range?: Json | null
+          filters?: Json | null
+          id?: string
+          name: string
+          report_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_range?: Json | null
+          filters?: Json | null
+          id?: string
+          name?: string
+          report_type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

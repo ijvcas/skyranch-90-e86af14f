@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, Users, Calendar, Settings, Heart } from 'lucide-react';
+import { Home, Users, Calendar, Settings, Heart, FileText } from 'lucide-react';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ const Navigation = () => {
     { path: '/animals', icon: Users, label: 'Animales' },
     { path: '/breeding', icon: Heart, label: 'Breeding' },
     { path: '/calendar', icon: Calendar, label: 'Calendario' },
-    { path: '/settings', icon: Settings, label: 'Ajustes' },
+    { path: '/reports', icon: FileText, label: 'Reportes' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
