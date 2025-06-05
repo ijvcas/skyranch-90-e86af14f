@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,7 @@ const BreedingRecordsList: React.FC = () => {
       setAnimals(allAnimals);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Error al cargar los registros de cruza');
+      toast.error('Error al cargar los registros de breeding');
     } finally {
       setLoading(false);
     }
@@ -44,14 +43,14 @@ const BreedingRecordsList: React.FC = () => {
     try {
       const success = await deleteBreedingRecord(id);
       if (success) {
-        toast.success('Registro de cruza eliminado');
+        toast.success('Registro de breeding eliminado');
         fetchData();
       } else {
-        toast.error('Error al eliminar el registro de cruza');
+        toast.error('Error al eliminar el registro de breeding');
       }
     } catch (error) {
       console.error('Error deleting breeding record:', error);
-      toast.error('Error al eliminar el registro de cruza');
+      toast.error('Error al eliminar el registro de breeding');
     }
   };
 
@@ -84,24 +83,24 @@ const BreedingRecordsList: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-4">Cargando registros de cruza...</div>;
+    return <div className="text-center py-4">Cargando registros de breeding...</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Registros de Cruza</h2>
+        <h2 className="text-2xl font-bold">Registros de Breeding</h2>
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogTrigger asChild>
             <Button onClick={() => setSelectedRecord(null)}>
               <Plus className="w-4 h-4 mr-2" />
-              Nueva Cruza
+              Nuevo Breeding
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {selectedRecord ? 'Editar Registro de Cruza' : 'Nueva Cruza'}
+                {selectedRecord ? 'Editar Registro de Breeding' : 'Nuevo Breeding'}
               </DialogTitle>
             </DialogHeader>
             <BreedingForm
@@ -120,9 +119,9 @@ const BreedingRecordsList: React.FC = () => {
         <Card>
           <CardContent className="text-center py-8">
             <Heart className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500">No hay registros de cruza aún.</p>
+            <p className="text-gray-500">No hay registros de breeding aún.</p>
             <p className="text-sm text-gray-400 mt-2">
-              Haz clic en "Nueva Cruza" para empezar a registrar.
+              Haz clic en "Nuevo Breeding" para empezar a registrar.
             </p>
           </CardContent>
         </Card>
@@ -164,7 +163,7 @@ const BreedingRecordsList: React.FC = () => {
                       </DialogTrigger>
                       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Editar Registro de Cruza</DialogTitle>
+                          <DialogTitle>Editar Registro de Breeding</DialogTitle>
                         </DialogHeader>
                         <BreedingForm
                           record={selectedRecord || undefined}
@@ -186,7 +185,7 @@ const BreedingRecordsList: React.FC = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Eliminar Registro</AlertDialogTitle>
                           <AlertDialogDescription>
-                            ¿Estás seguro de que quieres eliminar este registro de cruza? Esta acción no se puede deshacer.
+                            ¿Estás seguro de que quieres eliminar este registro de breeding? Esta acción no se puede deshacer.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,8 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { createBreedingRecord } from '@/services/breedingService';
-import { getAnimals } from '@/services/animalService';
+import { createBreedingRecord, BreedingRecord } from '@/services/breedingService';
+import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -42,25 +41,37 @@ const breedingFormSchema = z.object({
 type BreedingFormData = z.infer<typeof breedingFormSchema>;
 
 interface BreedingFormProps {
+  record?: BreedingRecord;
   onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
+const BreedingForm: React.FC<BreedingFormProps> = ({ record, onSuccess, onCancel }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const form = useForm<BreedingFormData>({
     resolver: zodResolver(breedingFormSchema),
     defaultValues: {
-      breedingMethod: 'natural',
-      pregnancyConfirmed: false,
-      status: 'planned',
+      motherId: record?.motherId || '',
+      fatherId: record?.fatherId || '',
+      breedingDate: record?.breedingDate ? new Date(record.breedingDate) : undefined,
+      breedingMethod: record?.breedingMethod || 'natural',
+      expectedDueDate: record?.expectedDueDate ? new Date(record.expectedDueDate) : undefined,
+      pregnancyConfirmed: record?.pregnancyConfirmed || false,
+      pregnancyConfirmationDate: record?.pregnancyConfirmationDate ? new Date(record.pregnancyConfirmationDate) : undefined,
+      pregnancyMethod: record?.pregnancyMethod,
+      gestationLength: record?.gestationLength,
+      breedingNotes: record?.breedingNotes || '',
+      veterinarian: record?.veterinarian || '',
+      cost: record?.cost,
+      status: record?.status || 'planned',
     },
   });
 
   const { data: animals = [] } = useQuery({
     queryKey: ['animals'],
-    queryFn: getAnimals,
+    queryFn: getAllAnimals,
   });
 
   const createMutation = useMutation({
@@ -69,7 +80,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
       queryClient.invalidateQueries({ queryKey: ['breeding-records'] });
       toast({
         title: "Éxito",
-        description: "Registro de cruza creado exitosamente",
+        description: "Registro de breeding creado exitosamente",
       });
       form.reset();
       onSuccess?.();
@@ -78,7 +89,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
       console.error('Error creating breeding record:', error);
       toast({
         title: "Error",
-        description: "Error al crear el registro de cruza",
+        description: "Error al crear el registro de breeding",
         variant: "destructive",
       });
     },
@@ -97,6 +108,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
       pregnancyConfirmationDate: data.pregnancyConfirmationDate?.toISOString().split('T')[0],
       pregnancyMethod: data.pregnancyMethod,
       gestationLength: data.gestationLength || 0,
+      offspringCount: 0,
       breedingNotes: data.breedingNotes || '',
       veterinarian: data.veterinarian || '',
       cost: data.cost || 0,
@@ -106,13 +118,13 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
     createMutation.mutate(breedingData);
   };
 
-  const femaleAnimals = animals.filter(animal => animal.gender === 'hembra');
-  const maleAnimals = animals.filter(animal => animal.gender === 'macho');
+  const femaleAnimals = Array.isArray(animals) ? animals.filter(animal => animal.gender === 'hembra') : [];
+  const maleAnimals = Array.isArray(animals) ? animals.filter(animal => animal.gender === 'macho') : [];
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Nuevo Registro de Cruza</CardTitle>
+        <CardTitle>Nuevo Registro de Breeding</CardTitle>
         <CardDescription>Registra una nueva actividad de reproducción</CardDescription>
       </CardHeader>
       <CardContent>
@@ -176,7 +188,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
                 name="breedingDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Fecha de Cruza</FormLabel>
+                    <FormLabel>Fecha de Breeding</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -218,7 +230,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
                 name="breedingMethod"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Método de Cruza</FormLabel>
+                    <FormLabel>Método de Breeding</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -321,7 +333,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
                   <FormLabel>Notas (Opcional)</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Notas adicionales sobre la cruza..."
+                      placeholder="Notas adicionales sobre el breeding..."
                       className="resize-none"
                       {...field}
                     />
@@ -331,13 +343,24 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
               )}
             />
 
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={createMutation.isPending}
-            >
-              {createMutation.isPending ? 'Guardando...' : 'Registrar Cruza'}
-            </Button>
+            <div className="flex gap-4">
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? 'Guardando...' : 'Registrar Breeding'}
+              </Button>
+              {onCancel && (
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={onCancel}
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </form>
         </Form>
       </CardContent>

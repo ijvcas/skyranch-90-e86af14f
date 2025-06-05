@@ -68,7 +68,7 @@ export const getBreedingRecords = async (): Promise<BreedingRecord[]> => {
   }));
 };
 
-export const addBreedingRecord = async (record: Omit<BreedingRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
+export const createBreedingRecord = async (record: Omit<BreedingRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
