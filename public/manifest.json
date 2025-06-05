@@ -8,7 +8,8 @@
   "display": "standalone",
   "start_url": "/",
   "scope": "/",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png",
@@ -28,5 +29,31 @@
     }
   ],
   "categories": ["productivity", "business"],
-  "lang": "es"
+  "lang": "es",
+  "shortcuts": [
+    {
+      "name": "Ver Animales",
+      "short_name": "Animales",
+      "description": "Ver lista de animales",
+      "url": "/animals",
+      "icons": [
+        {
+          "src": "/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Calendario",
+      "short_name": "Calendario",
+      "description": "Ver eventos del calendario",
+      "url": "/calendar",
+      "icons": [
+        {
+          "src": "/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
 }

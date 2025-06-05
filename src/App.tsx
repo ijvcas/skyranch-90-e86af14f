@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,77 +19,88 @@ import Breeding from "./pages/Breeding";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import Navigation from "./components/Navigation";
+import MobileNavigation from "./components/MobileNavigation";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import NotFound from "./pages/NotFound";
 import Reports from "./pages/Reports";
+import { useIsMobile } from "./hooks/use-mobile";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <div className="relative">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/animals" element={
-                <ProtectedRoute>
-                  <AnimalList />
-                </ProtectedRoute>
-              } />
-              <Route path="/animals/new" element={
-                <ProtectedRoute>
-                  <AnimalForm />
-                </ProtectedRoute>
-              } />
-              <Route path="/animals/:id" element={
-                <ProtectedRoute>
-                  <AnimalDetail />
-                </ProtectedRoute>
-              } />
-              <Route path="/animals/:id/edit" element={
-                <ProtectedRoute>
-                  <AnimalEdit />
-                </ProtectedRoute>
-              } />
-              <Route path="/breeding" element={
-                <ProtectedRoute>
-                  <Breeding />
-                </ProtectedRoute>
-              } />
-              <Route path="/calendar" element={
-                <ProtectedRoute>
-                  <Calendar />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } />
-              <Route path="/reports" element={
-                <ProtectedRoute>
-                  <Reports />
-                </ProtectedRoute>
-              } />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Navigation />
-          </div>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const isMobile = useIsMobile();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <div className="relative">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/animals" element={
+                  <ProtectedRoute>
+                    <AnimalList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/animals/new" element={
+                  <ProtectedRoute>
+                    <AnimalForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="/animals/:id" element={
+                  <ProtectedRoute>
+                    <AnimalDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/animals/:id/edit" element={
+                  <ProtectedRoute>
+                    <AnimalEdit />
+                  </ProtectedRoute>
+                } />
+                <Route path="/breeding" element={
+                  <ProtectedRoute>
+                    <Breeding />
+                  </ProtectedRoute>
+                } />
+                <Route path="/calendar" element={
+                  <ProtectedRoute>
+                    <Calendar />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/reports" element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              
+              {/* Use mobile navigation on mobile devices, regular navigation on desktop */}
+              {isMobile ? <MobileNavigation /> : <Navigation />}
+              
+              {/* PWA Install Prompt */}
+              <PWAInstallPrompt />
+            </div>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
