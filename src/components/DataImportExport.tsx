@@ -9,7 +9,7 @@ import { Download, Upload, QrCode, Database, FileText, AlertCircle } from 'lucid
 import { useToast } from '@/hooks/use-toast';
 import { getAllAnimals, addAnimal } from '@/stores/animalStore';
 import { Animal } from '@/stores/animalStore';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 
 const DataImportExport = () => {
   const { toast } = useToast();
