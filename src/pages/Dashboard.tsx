@@ -3,11 +3,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Users, Calendar, Settings } from 'lucide-react';
+import { Plus, Users, Calendar, Settings, LogOut } from 'lucide-react';
 import { getAllAnimals, getAnimalCountBySpecies } from '@/stores/animalStore';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
   
   // Get real data from the store
   const allAnimals = getAllAnimals();
@@ -16,6 +20,23 @@ const Dashboard = () => {
   
   // Count healthy animals
   const healthyAnimals = allAnimals.filter(animal => animal.healthStatus === 'healthy').length;
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      navigate('/login');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al cerrar sesión.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const stats = [
     { title: 'Total de Animales', value: totalAnimals.toString(), color: 'bg-green-100 text-green-800' },
@@ -58,19 +79,31 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            Panel de Control
-          </h1>
-          <p className="text-lg text-gray-600">SkyRanch - Gestiona tus animales, registros y más</p>
-          {totalAnimals === 0 && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800">
-                ¡Bienvenido! Comienza registrando tu primer animal para ver las estadísticas.
-              </p>
-            </div>
-          )}
+        {/* Header with user info and logout */}
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              Panel de Control
+            </h1>
+            <p className="text-lg text-gray-600">
+              Bienvenido, {user?.email} - SkyRanch
+            </p>
+            {totalAnimals === 0 && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800">
+                  ¡Bienvenido! Comienza registrando tu primer animal para ver las estadísticas.
+                </p>
+              </div>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Cerrar Sesión
+          </Button>
         </div>
 
         {/* Stats Cards */}

@@ -9,7 +9,105 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      animals: {
+        Row: {
+          birth_date: string | null
+          breed: string | null
+          color: string | null
+          created_at: string | null
+          father_id: string | null
+          gender: string | null
+          health_status: string | null
+          id: string
+          image_url: string | null
+          mother_id: string | null
+          name: string
+          notes: string | null
+          species: string
+          tag: string
+          updated_at: string | null
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          birth_date?: string | null
+          breed?: string | null
+          color?: string | null
+          created_at?: string | null
+          father_id?: string | null
+          gender?: string | null
+          health_status?: string | null
+          id?: string
+          image_url?: string | null
+          mother_id?: string | null
+          name: string
+          notes?: string | null
+          species: string
+          tag: string
+          updated_at?: string | null
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          birth_date?: string | null
+          breed?: string | null
+          color?: string | null
+          created_at?: string | null
+          father_id?: string | null
+          gender?: string | null
+          health_status?: string | null
+          id?: string
+          image_url?: string | null
+          mother_id?: string | null
+          name?: string
+          notes?: string | null
+          species?: string
+          tag?: string
+          updated_at?: string | null
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animals_father_id_fkey"
+            columns: ["father_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animals_mother_id_fkey"
+            columns: ["mother_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

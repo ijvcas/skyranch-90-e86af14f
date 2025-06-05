@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,29 +7,58 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
+    try {
+      const { error } = await signIn(formData.email, formData.password);
+      
+      if (error) {
+        console.error('Login error:', error);
+        toast({
+          title: "Error de inicio de sesión",
+          description: error.message === 'Invalid login credentials' 
+            ? "Credenciales inválidas. Verifica tu email y contraseña."
+            : error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Bienvenido",
+          description: "Sesión iniciada correctamente.",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
-        title: "Bienvenido",
-        description: "Sesión iniciada correctamente.",
+        title: "Error",
+        description: "Ocurrió un error inesperado. Intenta de nuevo.",
+        variant: "destructive"
       });
-      navigate('/dashboard');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,16 +7,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Users, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp, user } = useAuth();
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,15 +51,35 @@ const Register = () => {
 
     setIsLoading(true);
     
-    // Simulate registration process
-    setTimeout(() => {
+    try {
+      const { error } = await signUp(formData.email, formData.password, formData.fullName);
+      
+      if (error) {
+        console.error('Registration error:', error);
+        toast({
+          title: "Error de registro",
+          description: error.message === 'User already registered' 
+            ? "Este email ya está registrado. Intenta iniciar sesión."
+            : error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Registro exitoso",
+          description: "Cuenta creada correctamente. Puedes iniciar sesión ahora.",
+        });
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
-        title: "Registro exitoso",
-        description: "Cuenta creada correctamente.",
+        title: "Error",
+        description: "Ocurrió un error inesperado. Intenta de nuevo.",
+        variant: "destructive"
       });
-      navigate('/login');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -78,6 +109,20 @@ const Register = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="fullName" className="text-base font-medium">Nombre Completo</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                placeholder="Tu nombre completo"
+                required
+                className="mt-2 h-12 text-base"
+                disabled={isLoading}
+              />
+            </div>
+
             <div>
               <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
               <Input
