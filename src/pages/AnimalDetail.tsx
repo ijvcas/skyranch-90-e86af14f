@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -287,10 +288,8 @@ const AnimalDetail = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Última Actualización:</span>
-                  <span className="font-medium">
-                    {animal.updatedAt ? new Date(animal.updatedAt).toLocaleDateString() : 'No disponible'}
-                  </span>
+                  <span className="text-gray-600">Registro:</span>
+                  <span className="font-medium">Activo</span>
                 </div>
               </CardContent>
             </Card>
