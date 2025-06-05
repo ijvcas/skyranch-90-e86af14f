@@ -5,7 +5,6 @@ import {
   Home, 
   Users, 
   Calendar, 
-  Activity, 
   Settings, 
   PlusCircle,
   FileText,
@@ -32,7 +31,11 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-full">
           {/* Logo */}
           <div className="flex items-center">
-            <Activity className="h-8 w-8 text-green-600" />
+            <img 
+              src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
+              alt="SkyRanch" 
+              className="h-8 w-8"
+            />
             <span className="ml-2 text-xl font-bold text-gray-900">SkyRanch</span>
           </div>
 
