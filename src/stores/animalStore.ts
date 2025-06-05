@@ -1,5 +1,7 @@
 
-// Simple animal data store with reliable localStorage persistence
+import { Storage } from '@capacitor/storage';
+
+// Simple animal data store with reliable Capacitor native storage persistence
 export interface Animal {
   id: string;
   name: string;
@@ -28,47 +30,32 @@ const debugLog = (message: string, data?: any) => {
   const timestamp = new Date().toISOString();
   console.log(`🔍 [${timestamp}] [AnimalStore] ${message}`, data || '');
   
-  // Check localStorage availability
-  try {
-    const testKey = '__storage_test__';
-    localStorage.setItem(testKey, 'test');
-    localStorage.removeItem(testKey);
-    console.log('✅ localStorage is available');
-  } catch (e) {
-    console.error('❌ localStorage is NOT available:', e);
-  }
-  
-  // Log current storage state
-  try {
-    const currentStorage = localStorage.getItem(STORAGE_KEY);
-    console.log('📦 Current localStorage data:', currentStorage ? `${JSON.parse(currentStorage).length} animals` : 'empty');
-  } catch (e) {
-    console.log('📦 localStorage read error:', e);
-  }
+  // Check Capacitor Storage availability
+  console.log('✅ Using Capacitor native storage');
 };
 
-// Simple save function with backup
-const saveAnimals = (): boolean => {
+// Simple save function with backup using Capacitor Storage
+const saveAnimals = async (): Promise<boolean> => {
   try {
     debugLog('🔄 Attempting to save animals', `${animals.length} animals`);
     
     // Create backup before saving
-    const currentData = localStorage.getItem(STORAGE_KEY);
-    if (currentData) {
-      localStorage.setItem(BACKUP_KEY, currentData);
+    const currentData = await Storage.get({ key: STORAGE_KEY });
+    if (currentData.value) {
+      await Storage.set({ key: BACKUP_KEY, value: currentData.value });
       debugLog('💾 Created backup');
     }
     
     const dataToSave = JSON.stringify(animals);
     debugLog('📝 Data to save:', dataToSave.substring(0, 200) + '...');
     
-    localStorage.setItem(STORAGE_KEY, dataToSave);
-    debugLog('✅ Data saved successfully');
+    await Storage.set({ key: STORAGE_KEY, value: dataToSave });
+    debugLog('✅ Data saved successfully to native storage');
     
     // Immediate verification
-    const verification = localStorage.getItem(STORAGE_KEY);
-    if (verification) {
-      const verified = JSON.parse(verification);
+    const verification = await Storage.get({ key: STORAGE_KEY });
+    if (verification.value) {
+      const verified = JSON.parse(verification.value);
       debugLog('✅ Save verified', `${verified.length} animals recovered`);
       return true;
     } else {
@@ -81,9 +68,9 @@ const saveAnimals = (): boolean => {
     
     // Try to restore from backup
     try {
-      const backup = localStorage.getItem(BACKUP_KEY);
-      if (backup) {
-        localStorage.setItem(STORAGE_KEY, backup);
+      const backup = await Storage.get({ key: BACKUP_KEY });
+      if (backup.value) {
+        await Storage.set({ key: STORAGE_KEY, value: backup.value });
         debugLog('🔄 Restored from backup');
       }
     } catch (backupError) {
@@ -94,15 +81,15 @@ const saveAnimals = (): boolean => {
   }
 };
 
-// Simple load function
-const loadAnimals = (): void => {
+// Simple load function using Capacitor Storage
+const loadAnimals = async (): Promise<void> => {
   try {
-    debugLog('🔄 Loading animals from localStorage');
-    const stored = localStorage.getItem(STORAGE_KEY);
+    debugLog('🔄 Loading animals from native storage');
+    const stored = await Storage.get({ key: STORAGE_KEY });
     
-    if (stored) {
+    if (stored.value) {
       debugLog('📂 Found stored data');
-      const parsed = JSON.parse(stored);
+      const parsed = JSON.parse(stored.value);
       
       if (Array.isArray(parsed)) {
         animals = parsed;
@@ -127,7 +114,7 @@ const loadAnimals = (): void => {
 };
 
 // Initialize on module load
-debugLog('🚀 Initializing animal store...');
+debugLog('🚀 Initializing animal store with native storage...');
 loadAnimals();
 
 export const getAllAnimals = (): Animal[] => {
@@ -153,7 +140,7 @@ export const addAnimal = async (animal: Animal): Promise<boolean> => {
   
   debugLog('📊 Animals count', `${animals.length} (was ${initialLength})`);
   
-  const saved = saveAnimals();
+  const saved = await saveAnimals();
   debugLog('💾 Add result', saved ? 'success' : 'failed');
   
   return saved;
@@ -167,7 +154,7 @@ export const updateAnimal = async (id: string, updatedData: Omit<Animal, 'id'>):
     animals[index] = { id, ...updatedData };
     debugLog('✅ Animal updated in memory', animals[index].name);
     
-    const saved = saveAnimals();
+    const saved = await saveAnimals();
     debugLog('💾 Update result', saved ? 'success' : 'failed');
     return saved;
   }
@@ -183,7 +170,7 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
   
   if (deleted) {
     debugLog('🗑️ Animal deleted', id);
-    const saved = saveAnimals();
+    const saved = await saveAnimals();
     debugLog('💾 Delete result', saved ? 'success' : 'failed');
     return saved;
   }
@@ -215,7 +202,7 @@ export const getAnimalCountBySpecies = (): Record<string, number> => {
 export const clearAllAnimals = async (): Promise<boolean> => {
   debugLog('🗑️ Clearing all animals');
   animals = [];
-  const saved = saveAnimals();
+  const saved = await saveAnimals();
   debugLog('💾 Clear result', saved ? 'success' : 'failed');
   return saved;
 };
@@ -224,12 +211,12 @@ export const clearAllAnimals = async (): Promise<boolean> => {
 export const restoreAnimalsFromBackup = async (): Promise<boolean> => {
   try {
     debugLog('🔄 Restoring from backup');
-    const backup = localStorage.getItem(BACKUP_KEY);
-    if (backup) {
-      const parsed = JSON.parse(backup);
+    const backup = await Storage.get({ key: BACKUP_KEY });
+    if (backup.value) {
+      const parsed = JSON.parse(backup.value);
       if (Array.isArray(parsed)) {
         animals = parsed;
-        const saved = saveAnimals();
+        const saved = await saveAnimals();
         debugLog('✅ Restored from backup', `${animals.length} animals`);
         return saved;
       }
@@ -243,11 +230,11 @@ export const restoreAnimalsFromBackup = async (): Promise<boolean> => {
 };
 
 // Function to get backup info (for Settings)
-export const getBackupInfo = (): { hasBackup: boolean; backupCount: number; backupDate: string } => {
+export const getBackupInfo = async (): Promise<{ hasBackup: boolean; backupCount: number; backupDate: string }> => {
   try {
-    const backup = localStorage.getItem(BACKUP_KEY);
-    if (backup) {
-      const parsed = JSON.parse(backup);
+    const backup = await Storage.get({ key: BACKUP_KEY });
+    if (backup.value) {
+      const parsed = JSON.parse(backup.value);
       return {
         hasBackup: true,
         backupCount: Array.isArray(parsed) ? parsed.length : 0,
@@ -266,22 +253,22 @@ export const getBackupInfo = (): { hasBackup: boolean; backupCount: number; back
 };
 
 // Debug function to check storage manually
-export const debugStorage = (): void => {
+export const debugStorage = async (): Promise<void> => {
   debugLog('=== MANUAL STORAGE DEBUG ===');
   console.log('🔍 In-memory animals:', animals.length);
   console.log('🔍 Raw in-memory data:', animals);
   
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    console.log('🔍 Raw localStorage data:', stored);
+    const stored = await Storage.get({ key: STORAGE_KEY });
+    console.log('🔍 Raw native storage data:', stored.value);
     
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      console.log('🔍 Parsed localStorage data:', parsed);
+    if (stored.value) {
+      const parsed = JSON.parse(stored.value);
+      console.log('🔍 Parsed native storage data:', parsed);
       console.log('🔍 Parsed count:', Array.isArray(parsed) ? parsed.length : 'not array');
     }
   } catch (e) {
-    console.log('🔍 localStorage error:', e);
+    console.log('🔍 Native storage error:', e);
   }
   
   debugLog('=== END MANUAL DEBUG ===');
