@@ -19,22 +19,22 @@ const Navigation = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 md:hidden">
-      <div className="flex justify-around items-center">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
+      <div className="flex justify-around items-center max-w-md mx-auto md:max-w-2xl">
         {navItems.map((item) => (
           <Button
             key={item.path}
             variant={isActive(item.path) ? "default" : "ghost"}
             size="sm"
             onClick={() => navigate(item.path)}
-            className={`flex flex-col items-center space-y-1 min-w-0 ${
+            className={`flex flex-col items-center space-y-1 min-w-0 px-2 md:px-4 ${
               isActive(item.path) 
                 ? 'bg-green-600 text-white' 
                 : 'text-gray-600'
             }`}
           >
-            <item.icon className="w-4 h-4" />
-            <span className="text-xs">{item.label}</span>
+            <item.icon className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="text-xs md:text-sm">{item.label}</span>
           </Button>
         ))}
       </div>

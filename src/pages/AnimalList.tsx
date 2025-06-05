@@ -66,7 +66,7 @@ const AnimalList = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center pb-24">
         <div className="absolute inset-0 opacity-5">
           <img 
             src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
@@ -80,7 +80,7 @@ const AnimalList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4 pb-24">
       <div className="absolute inset-0 opacity-5">
         <img 
           src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
