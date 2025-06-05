@@ -1,426 +1,347 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { z } from 'zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
-import { getAllAnimals, Animal } from '@/services/animalService';
-import { addBreedingRecord, updateBreedingRecord, BreedingRecord } from '@/services/breedingService';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { createBreedingRecord } from '@/services/breedingService';
+import { getAnimals } from '@/services/animalService';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
-const breedingSchema = z.object({
-  motherId: z.string().min(1, 'Madre es requerida'),
-  fatherId: z.string().min(1, 'Padre es requerido'),
-  breedingDate: z.string().min(1, 'Fecha de cruza es requerida'),
+const breedingFormSchema = z.object({
+  motherId: z.string().min(1, "Madre es requerida"),
+  fatherId: z.string().min(1, "Padre es requerido"),
+  breedingDate: z.date({
+    required_error: "Fecha de cruza es requerida",
+  }),
   breedingMethod: z.enum(['natural', 'artificial_insemination', 'embryo_transfer']),
-  expectedDueDate: z.string().optional(),
-  actualBirthDate: z.string().optional(),
+  expectedDueDate: z.date().optional(),
   pregnancyConfirmed: z.boolean().default(false),
-  pregnancyConfirmationDate: z.string().optional(),
+  pregnancyConfirmationDate: z.date().optional(),
   pregnancyMethod: z.enum(['visual', 'ultrasound', 'blood_test', 'palpation']).optional(),
   gestationLength: z.number().optional(),
-  offspringCount: z.number().min(0).default(0),
   breedingNotes: z.string().optional(),
   veterinarian: z.string().optional(),
   cost: z.number().optional(),
-  status: z.enum(['planned', 'completed', 'confirmed_pregnant', 'not_pregnant', 'birth_completed', 'failed'])
+  status: z.enum(['planned', 'completed', 'confirmed_pregnant', 'not_pregnant', 'birth_completed', 'failed']).default('planned'),
 });
 
-type BreedingFormData = z.infer<typeof breedingSchema>;
+type BreedingFormData = z.infer<typeof breedingFormSchema>;
 
 interface BreedingFormProps {
-  record?: BreedingRecord;
-  onSuccess: () => void;
-  onCancel: () => void;
+  onSuccess?: () => void;
 }
 
-const BreedingForm: React.FC<BreedingFormProps> = ({ record, onSuccess, onCancel }) => {
-  const [animals, setAnimals] = useState<Animal[]>([]);
-  const [loading, setLoading] = useState(false);
+const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const form = useForm<BreedingFormData>({
-    resolver: zodResolver(breedingSchema),
+    resolver: zodResolver(breedingFormSchema),
     defaultValues: {
-      motherId: record?.motherId || '',
-      fatherId: record?.fatherId || '',
-      breedingDate: record?.breedingDate || '',
-      breedingMethod: record?.breedingMethod || 'natural',
-      expectedDueDate: record?.expectedDueDate || '',
-      actualBirthDate: record?.actualBirthDate || '',
-      pregnancyConfirmed: record?.pregnancyConfirmed || false,
-      pregnancyConfirmationDate: record?.pregnancyConfirmationDate || '',
-      pregnancyMethod: record?.pregnancyMethod || undefined,
-      gestationLength: record?.gestationLength || undefined,
-      offspringCount: record?.offspringCount || 0,
-      breedingNotes: record?.breedingNotes || '',
-      veterinarian: record?.veterinarian || '',
-      cost: record?.cost || undefined,
-      status: record?.status || 'planned'
-    }
+      breedingMethod: 'natural',
+      pregnancyConfirmed: false,
+      status: 'planned',
+    },
   });
 
-  useEffect(() => {
-    const fetchAnimals = async () => {
-      try {
-        const allAnimals = await getAllAnimals();
-        setAnimals(allAnimals);
-      } catch (error) {
-        console.error('Error fetching animals:', error);
-        toast.error('Error al cargar los animales');
-      }
+  const { data: animals = [] } = useQuery({
+    queryKey: ['animals'],
+    queryFn: getAnimals,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createBreedingRecord,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['breeding-records'] });
+      toast({
+        title: "Éxito",
+        description: "Registro de cruza creado exitosamente",
+      });
+      form.reset();
+      onSuccess?.();
+    },
+    onError: (error) => {
+      console.error('Error creating breeding record:', error);
+      toast({
+        title: "Error",
+        description: "Error al crear el registro de cruza",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: BreedingFormData) => {
+    console.log('Form data:', data);
+    
+    const breedingData = {
+      motherId: data.motherId,
+      fatherId: data.fatherId,
+      breedingDate: data.breedingDate.toISOString().split('T')[0],
+      breedingMethod: data.breedingMethod,
+      expectedDueDate: data.expectedDueDate?.toISOString().split('T')[0],
+      pregnancyConfirmed: data.pregnancyConfirmed,
+      pregnancyConfirmationDate: data.pregnancyConfirmationDate?.toISOString().split('T')[0],
+      pregnancyMethod: data.pregnancyMethod,
+      gestationLength: data.gestationLength || 0,
+      breedingNotes: data.breedingNotes || '',
+      veterinarian: data.veterinarian || '',
+      cost: data.cost || 0,
+      status: data.status,
     };
 
-    fetchAnimals();
-  }, []);
-
-  const onSubmit = async (data: BreedingFormData) => {
-    setLoading(true);
-    try {
-      const breedingData = {
-        ...data,
-        gestationLength: data.gestationLength || undefined,
-        cost: data.cost || undefined
-      };
-
-      let success;
-      if (record) {
-        success = await updateBreedingRecord(record.id, breedingData);
-      } else {
-        success = await addBreedingRecord(breedingData);
-      }
-
-      if (success) {
-        toast.success(record ? 'Registro de cruza actualizado' : 'Registro de cruza creado');
-        onSuccess();
-      } else {
-        toast.error('Error al guardar el registro de cruza');
-      }
-    } catch (error) {
-      console.error('Error saving breeding record:', error);
-      toast.error('Error al guardar el registro de cruza');
-    } finally {
-      setLoading(false);
-    }
+    createMutation.mutate(breedingData);
   };
 
   const femaleAnimals = animals.filter(animal => animal.gender === 'hembra');
   const maleAnimals = animals.filter(animal => animal.gender === 'macho');
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="motherId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Madre</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar madre" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {femaleAnimals.map((animal) => (
-                      <SelectItem key={animal.id} value={animal.id}>
-                        {animal.name} - {animal.tag}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Nuevo Registro de Cruza</CardTitle>
+        <CardDescription>Registra una nueva actividad de reproducción</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="motherId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Madre</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar madre" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {femaleAnimals.map((animal) => (
+                          <SelectItem key={animal.id} value={animal.id}>
+                            {animal.name} - {animal.tag}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="fatherId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Padre</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar padre" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {maleAnimals.map((animal) => (
-                      <SelectItem key={animal.id} value={animal.id}>
-                        {animal.name} - {animal.tag}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              <FormField
+                control={form.control}
+                name="fatherId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Padre</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar padre" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {maleAnimals.map((animal) => (
+                          <SelectItem key={animal.id} value={animal.id}>
+                            {animal.name} - {animal.tag}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="breedingDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fecha de Cruza</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="breedingDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha de Cruza</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: es })
+                            ) : (
+                              <span>Seleccionar fecha</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="breedingMethod"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Método de Cruza</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="natural">Natural</SelectItem>
-                    <SelectItem value="artificial_insemination">Inseminación Artificial</SelectItem>
-                    <SelectItem value="embryo_transfer">Transferencia de Embrión</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              <FormField
+                control={form.control}
+                name="breedingMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Método de Cruza</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar método" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="natural">Natural</SelectItem>
+                        <SelectItem value="artificial_insemination">Inseminación Artificial</SelectItem>
+                        <SelectItem value="embryo_transfer">Transferencia de Embriones</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="expectedDueDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fecha Esperada de Parto</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estado</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="planned">Planeado</SelectItem>
-                    <SelectItem value="completed">Completado</SelectItem>
-                    <SelectItem value="confirmed_pregnant">Preñez Confirmada</SelectItem>
-                    <SelectItem value="not_pregnant">No Preñada</SelectItem>
-                    <SelectItem value="birth_completed">Parto Completado</SelectItem>
-                    <SelectItem value="failed">Fallido</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="pregnancyConfirmed"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Preñez Confirmada</FormLabel>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        {form.watch('pregnancyConfirmed') && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="pregnancyConfirmationDate"
+              name="expectedDueDate"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fecha de Confirmación</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                <FormItem className="flex flex-col">
+                  <FormLabel>Fecha Estimada de Parto (Opcional)</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: es })
+                          ) : (
+                            <span>Seleccionar fecha</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="pregnancyMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Método de Confirmación</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="veterinarian"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Veterinario (Opcional)</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar método" />
-                      </SelectTrigger>
+                      <Input placeholder="Nombre del veterinario" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="visual">Visual</SelectItem>
-                      <SelectItem value="ultrasound">Ultrasonido</SelectItem>
-                      <SelectItem value="blood_test">Examen de Sangre</SelectItem>
-                      <SelectItem value="palpation">Palpación</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cost"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costo (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="breedingNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas (Opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Notas adicionales sobre la cruza..."
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="actualBirthDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fecha Real de Parto</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="gestationLength"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duración de Gestación (días)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    {...field} 
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="offspringCount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Número de Crías</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    {...field} 
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="veterinarian"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Veterinario</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Nombre del veterinario" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="cost"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Costo</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    {...field} 
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                    value={field.value || ''}
-                    placeholder="0.00"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="breedingNotes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notas</FormLabel>
-              <FormControl>
-                <Textarea {...field} placeholder="Notas adicionales sobre la cruza..." />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Guardando...' : record ? 'Actualizar' : 'Crear'}
-          </Button>
-        </div>
-      </form>
-    </Form>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? 'Guardando...' : 'Registrar Cruza'}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
 

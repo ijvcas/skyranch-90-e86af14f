@@ -11,7 +11,7 @@ const Navigation = () => {
   const navItems = [
     { path: '/dashboard', icon: Home, label: 'Inicio' },
     { path: '/animals', icon: Users, label: 'Animales' },
-    { path: '/breeding', icon: Heart, label: 'Cruza' },
+    { path: '/breeding', icon: Heart, label: 'Breeding' },
     { path: '/calendar', icon: Calendar, label: 'Calendario' },
     { path: '/settings', icon: Settings, label: 'Ajustes' },
   ];
