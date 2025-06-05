@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Save, Edit, X, Info, HelpCircle, Mail, Phone } from 'lucide-react';
+import { Save, X, Info, HelpCircle, Mail, Phone } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AppInfoFormProps {
@@ -14,6 +15,8 @@ interface AppInfoFormProps {
 
 const AppInfoForm = ({ isAdmin }: AppInfoFormProps) => {
   const { toast } = useToast();
+  
+  console.log('AppInfoForm - isAdmin:', isAdmin); // Debug log
   
   const [isEditingApp, setIsEditingApp] = useState(false);
   const [isEditingSupport, setIsEditingSupport] = useState(false);
@@ -76,9 +79,10 @@ const AppInfoForm = ({ isAdmin }: AppInfoFormProps) => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsEditingApp(!isEditingApp)}
-                className="ml-auto"
+                className="ml-auto bg-blue-50 hover:bg-blue-100"
+                title="Editar información de la aplicación"
               >
-                {isEditingApp ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+                {isEditingApp ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
               </Button>
             )}
           </CardTitle>
@@ -170,9 +174,10 @@ const AppInfoForm = ({ isAdmin }: AppInfoFormProps) => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsEditingSupport(!isEditingSupport)}
-                className="ml-auto"
+                className="ml-auto bg-orange-50 hover:bg-orange-100"
+                title="Editar información de soporte técnico"
               >
-                {isEditingSupport ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+                {isEditingSupport ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
               </Button>
             )}
           </CardTitle>

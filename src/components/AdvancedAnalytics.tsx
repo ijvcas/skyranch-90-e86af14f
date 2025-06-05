@@ -27,7 +27,7 @@ const AdvancedAnalytics = () => {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const recentAnimals = animals.filter(animal => {
-    const createdDate = animal.created_at ? new Date(animal.created_at) : null;
+    const createdDate = animal.createdAt ? new Date(animal.createdAt) : null;
     return createdDate && createdDate > thirtyDaysAgo;
   });
 
@@ -45,7 +45,7 @@ const AdvancedAnalytics = () => {
 
   // Health status distribution
   const healthStatusData = animals.reduce((acc, animal) => {
-    const status = animal.health_status || 'unknown';
+    const status = animal.healthStatus || 'unknown';
     acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -63,7 +63,7 @@ const AdvancedAnalytics = () => {
     const monthYear = date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
     
     const animalsInMonth = animals.filter(animal => {
-      const animalDate = animal.created_at ? new Date(animal.created_at) : null;
+      const animalDate = animal.createdAt ? new Date(animal.createdAt) : null;
       return animalDate && 
              animalDate.getMonth() === date.getMonth() && 
              animalDate.getFullYear() === date.getFullYear();

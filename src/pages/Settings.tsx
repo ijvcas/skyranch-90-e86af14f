@@ -19,7 +19,12 @@ const Settings = () => {
   const { toast } = useToast();
   
   // Check if current user is an administrator (Juan Casanova H or admin role)
-  const isAdmin = user?.email === 'juan.casanova@skyranch.com' || user?.email?.includes('admin');
+  const isAdmin = user?.email === 'juan.casanova@skyranch.com' || 
+                  user?.email === 'jvcas@mac.com' || 
+                  user?.email?.includes('admin');
+
+  console.log('Settings - user email:', user?.email); // Debug log
+  console.log('Settings - isAdmin:', isAdmin); // Debug log
 
   const handleSignOut = async () => {
     try {
@@ -66,6 +71,12 @@ const Settings = () => {
               <p className="text-gray-600">
                 Administra usuarios, permisos, análisis y configuraciones generales
               </p>
+              {/* Debug info for admin status */}
+              {isAdmin && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ Acceso de administrador activo
+                </p>
+              )}
             </div>
 
             {/* User Profile & Logout Section */}
