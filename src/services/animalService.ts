@@ -78,6 +78,13 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
 
 export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: boolean; id?: string }> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('No authenticated user');
+      return { success: false };
+    }
+
     const { data, error } = await supabase
       .from('animals')
       .insert({
@@ -94,6 +101,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
         health_status: animal.healthStatus,
         notes: animal.notes,
         image_url: animal.image,
+        user_id: user.id,
       })
       .select()
       .single();

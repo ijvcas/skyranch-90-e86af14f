@@ -82,6 +82,11 @@ const App = () => {
                     <AnimalEdit />
                   </ProtectedRoute>
                 } />
+                <Route path="/animals/:id/health" element={
+                  <ProtectedRoute>
+                    <HealthRecords />
+                  </ProtectedRoute>
+                } />
                 <Route path="/breeding" element={
                   <ProtectedRoute>
                     <Breeding />
