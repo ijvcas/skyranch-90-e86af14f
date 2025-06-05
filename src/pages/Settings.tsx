@@ -2,7 +2,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LogOut, Info, HelpCircle, Mail, Phone } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/UserManagement';
 import PermissionsManager from '@/components/PermissionsManager';
 import AdvancedAnalytics from '@/components/AdvancedAnalytics';
@@ -10,6 +14,25 @@ import DataImportExport from '@/components/DataImportExport';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      navigate('/login');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al cerrar sesión.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4 pb-24">
@@ -31,12 +54,95 @@ const Settings = () => {
             ← Volver al Panel
           </Button>
           
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Configuración del Sistema
-          </h1>
-          <p className="text-gray-600">
-            Administra usuarios, permisos, análisis y configuraciones generales
-          </p>
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Configuración del Sistema
+              </h1>
+              <p className="text-gray-600">
+                Administra usuarios, permisos, análisis y configuraciones generales
+              </p>
+            </div>
+
+            {/* User Profile & Logout Section */}
+            <Card className="min-w-72">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-green-600 font-semibold text-sm">
+                      {user?.email?.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  Sesión Activa
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-sm text-gray-600">
+                  <strong>Usuario:</strong> {user?.email}
+                </div>
+                <Button 
+                  onClick={handleSignOut}
+                  variant="outline" 
+                  className="w-full flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Cerrar Sesión
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* App Info Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {/* App Version Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Info className="w-5 h-5 text-blue-600" />
+                  Información de la Aplicación
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="text-sm">
+                  <strong>Versión:</strong> SkyRanch v1.2.0
+                </div>
+                <div className="text-sm">
+                  <strong>Última actualización:</strong> Enero 2025
+                </div>
+                <div className="text-sm">
+                  <strong>Build:</strong> 2025.01.05
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Support Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-orange-600" />
+                  Soporte Técnico
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="w-4 h-4 text-gray-500" />
+                  <span>soporte@skyranch.com</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="w-4 h-4 text-gray-500" />
+                  <span>+1 (555) 123-4567</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => window.open('mailto:soporte@skyranch.com', '_blank')}
+                >
+                  Contactar Soporte
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <Tabs defaultValue="analytics" className="w-full">

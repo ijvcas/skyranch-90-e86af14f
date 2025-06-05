@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react';
+
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Users, Heart, DollarSign, Calendar, Activity, Target, BarChart3 } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
-import { getAllHealthRecords } from '@/services/healthRecordService';
-import { getAllBreedingRecords } from '@/services/breedingService';
+import { getHealthRecords } from '@/services/healthRecordService';
+import { getBreedingRecords } from '@/services/breedingService';
+import { getAllUsers } from '@/services/userService';
+import { TrendingUp, Users, Activity, Heart } from 'lucide-react';
 
 const AdvancedAnalytics = () => {
   const { data: animals = [] } = useQuery({
@@ -16,190 +17,150 @@ const AdvancedAnalytics = () => {
 
   const { data: healthRecords = [] } = useQuery({
     queryKey: ['health-records'],
-    queryFn: getAllHealthRecords,
+    queryFn: () => getHealthRecords(''), // Get all health records
   });
 
   const { data: breedingRecords = [] } = useQuery({
     queryKey: ['breeding-records'],
-    queryFn: getAllBreedingRecords,
+    queryFn: () => getBreedingRecords(''), // Get all breeding records
   });
 
-  // Calculate analytics data from real data
-  const analyticsData = useMemo(() => {
-    // Generate monthly trend data based on actual animal creation dates
-    const monthlyData = [];
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthAnimals = animals.filter(animal => {
-        if (!animal.updated_at) return false;
-        const animalDate = new Date(animal.updated_at);
-        return animalDate.getMonth() === date.getMonth() && animalDate.getFullYear() === date.getFullYear();
-      });
-      
-      monthlyData.push({
-        month: date.toLocaleDateString('es-ES', { month: 'short' }),
-        animals: monthAnimals.length,
-        health: healthRecords.filter(record => {
-          const recordDate = new Date(record.date_administered);
-          return recordDate.getMonth() === date.getMonth() && recordDate.getFullYear() === date.getFullYear();
-        }).length,
-        breeding: breedingRecords.filter(record => {
-          const recordDate = new Date(record.breeding_date);
-          return recordDate.getMonth() === date.getMonth() && recordDate.getFullYear() === date.getFullYear();
-        }).length,
-      });
-    }
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: getAllUsers,
+  });
 
-    // Health status distribution
-    const healthDistribution = animals.reduce((acc, animal) => {
-      const status = animal.health_status || 'healthy';
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  // Calculate analytics data
+  const totalAnimals = animals.length;
+  const totalUsers = users.length;
+  const activeUsers = users.filter(user => user.is_active).length;
 
-    const healthData = Object.entries(healthDistribution).map(([status, count]) => ({
-      name: status === 'healthy' ? 'Saludable' : status === 'sick' ? 'Enfermo' : status,
-      value: count,
-      color: status === 'healthy' ? '#10b981' : status === 'sick' ? '#ef4444' : '#f59e0b'
-    }));
+  // Recent activity (animals added in last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const recentAnimals = animals.filter(animal => 
+    new Date(animal.createdAt || animal.created_at) > thirtyDaysAgo
+  );
 
-    // Species distribution
-    const speciesDistribution = animals.reduce((acc, animal) => {
-      acc[animal.species] = (acc[animal.species] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  // Species distribution for pie chart
+  const speciesData = animals.reduce((acc, animal) => {
+    const species = animal.species;
+    acc[species] = (acc[species] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-    const speciesData = Object.entries(speciesDistribution).map(([species, count], index) => ({
-      name: species,
-      value: count,
-      color: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]
-    }));
+  const pieData = Object.entries(speciesData).map(([species, count]) => ({
+    name: species.charAt(0).toUpperCase() + species.slice(1),
+    value: count
+  }));
 
-    // Calculate productivity metrics
-    const totalCost = healthRecords.reduce((sum, record) => sum + (record.cost || 0), 0) +
-                     breedingRecords.reduce((sum, record) => sum + (record.cost || 0), 0);
+  // Health status distribution
+  const healthStatusData = animals.reduce((acc, animal) => {
+    const status = animal.healthStatus || 'unknown';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-    return {
-      monthlyTrends: monthlyData,
-      healthDistribution: healthData,
-      speciesDistribution: speciesData,
-      totalAnimals: animals.length,
-      activeBreeding: breedingRecords.filter(r => r.status === 'active').length,
-      healthAlerts: animals.filter(a => a.health_status !== 'healthy').length,
-      totalCost: totalCost
-    };
-  }, [animals, healthRecords, breedingRecords]);
+  const healthBarData = Object.entries(healthStatusData).map(([status, count]) => ({
+    status: status.charAt(0).toUpperCase() + status.slice(1),
+    count
+  }));
 
-  const performanceMetrics = [
-    {
-      title: "Total de Animales",
-      value: analyticsData.totalAnimals,
-      change: "+12%",
-      trend: "up",
-      icon: Users,
-      color: "text-blue-600"
-    },
-    {
-      title: "Reproducción Activa",
-      value: analyticsData.activeBreeding,
-      change: "+8%",
-      trend: "up",
-      icon: Heart,
-      color: "text-pink-600"
-    },
-    {
-      title: "Alertas de Salud",
-      value: analyticsData.healthAlerts,
-      change: "-5%",
-      trend: "down",
-      icon: Activity,
-      color: "text-red-600"
-    },
-    {
-      title: "Inversión Total",
-      value: `$${analyticsData.totalCost.toLocaleString()}`,
-      change: "+15%",
-      trend: "up",
-      icon: DollarSign,
-      color: "text-green-600"
-    }
-  ];
+  // Monthly trends (last 6 months)
+  const monthlyData = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    const monthYear = date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
+    
+    const animalsInMonth = animals.filter(animal => {
+      const animalDate = new Date(animal.createdAt || animal.created_at);
+      return animalDate.getMonth() === date.getMonth() && 
+             animalDate.getFullYear() === date.getFullYear();
+    }).length;
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const healthRecordsInMonth = Array.isArray(healthRecords) 
+      ? healthRecords.filter(record => {
+          const recordDate = new Date(record.created_at);
+          return recordDate.getMonth() === date.getMonth() && 
+                 recordDate.getFullYear() === date.getFullYear();
+        }).length 
+      : 0;
+
+    monthlyData.push({
+      month: monthYear,
+      animals: animalsInMonth,
+      healthRecords: healthRecordsInMonth
+    });
+  }
+
+  const colors = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#F97316'];
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2" />
-            Análisis Avanzado
-          </h3>
-          <p className="text-sm text-gray-600">Métricas detalladas y tendencias de tu granja</p>
-        </div>
-        <Badge variant="outline" className="bg-green-50 text-green-700">
-          Datos en Tiempo Real
-        </Badge>
-      </div>
-
-      {/* Performance Metrics */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {performanceMetrics.map((metric, index) => {
-          const Icon = metric.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{metric.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
-                    <p className={`text-sm ${metric.trend === 'up' ? 'text-green-600' : 'text-red-600'} flex items-center`}>
-                      <TrendingUp className={`w-4 h-4 mr-1 ${metric.trend === 'down' ? 'rotate-180' : ''}`} />
-                      {metric.change}
-                    </p>
-                  </div>
-                  <Icon className={`w-8 h-8 ${metric.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Trends */}
         <Card>
-          <CardHeader>
-            <CardTitle>Tendencias Mensuales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={analyticsData.monthlyTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="animals" stroke="#3b82f6" name="Animales" />
-                <Line type="monotone" dataKey="health" stroke="#10b981" name="Salud" />
-                <Line type="monotone" dataKey="breeding" stroke="#f59e0b" name="Reproducción" />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-2xl font-bold">{totalAnimals}</p>
+                <p className="text-sm text-gray-500">Total Animales</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Health Distribution */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-2xl font-bold">{recentAnimals.length}</p>
+                <p className="text-sm text-gray-500">Nuevos (30 días)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Activity className="h-8 w-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-2xl font-bold">{Array.isArray(healthRecords) ? healthRecords.length : 0}</p>
+                <p className="text-sm text-gray-500">Registros Salud</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Heart className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-2xl font-bold">{Array.isArray(breedingRecords) ? breedingRecords.length : 0}</p>
+                <p className="text-sm text-gray-500">Reproducción</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Species Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>Estado de Salud</CardTitle>
+            <CardTitle>Distribución por Especies</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={analyticsData.healthDistribution}
+                  data={pieData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -208,8 +169,8 @@ const AdvancedAnalytics = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {analyticsData.healthDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -218,122 +179,79 @@ const AdvancedAnalytics = () => {
           </CardContent>
         </Card>
 
-        {/* Species Distribution */}
+        {/* Health Status */}
         <Card>
           <CardHeader>
-            <CardTitle>Distribución por Especies</CardTitle>
+            <CardTitle>Estado de Salud</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analyticsData.speciesDistribution}>
+              <BarChart data={healthBarData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="status" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="value" fill="#3b82f6" />
+                <Bar dataKey="count" fill="#10B981" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        {/* Activity Timeline */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Línea de Tiempo de Actividades</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={analyticsData.monthlyTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="animals" stackId="1" stroke="#3b82f6" fill="#3b82f6" />
-                <Area type="monotone" dataKey="health" stackId="1" stroke="#10b981" fill="#10b981" />
-                <Area type="monotone" dataKey="breeding" stackId="1" stroke="#f59e0b" fill="#f59e0b" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Detailed Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Target className="w-5 h-5 mr-2" />
-              Objetivos del Mes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Nuevos Animales</span>
-                <Badge variant="outline">15/20</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Chequeos de Salud</span>
-                <Badge variant="outline">28/30</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Registros de Reproducción</span>
-                <Badge variant="outline">8/10</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Monthly Trends */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tendencias Mensuales</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={monthlyData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="animals" 
+                stroke="#3B82F6" 
+                name="Animales Registrados"
+                strokeWidth={2}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="healthRecords" 
+                stroke="#10B981" 
+                name="Registros de Salud"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
-              Próximas Actividades
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Vacunaciones Pendientes</span>
-                <Badge variant="destructive">5</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Chequeos Programados</span>
-                <Badge variant="default">12</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Fechas de Parto</span>
-                <Badge variant="secondary">3</Badge>
-              </div>
+      {/* User Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Actividad de Usuarios</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">{totalUsers}</p>
+              <p className="text-sm text-gray-500">Total Usuarios</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2" />
-              Rendimiento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Eficiencia General</span>
-                <Badge variant="outline" className="bg-green-50 text-green-700">92%</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Tasa de Natalidad</span>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700">87%</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Costo por Animal</span>
-                <Badge variant="outline">$150</Badge>
-              </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">{activeUsers}</p>
+              <p className="text-sm text-gray-500">Usuarios Activos</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-orange-600">{totalUsers - activeUsers}</p>
+              <p className="text-sm text-gray-500">Usuarios Inactivos</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
