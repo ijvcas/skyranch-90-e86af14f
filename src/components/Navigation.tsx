@@ -30,13 +30,13 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex justify-between items-center h-full">
           {/* Logo */}
-          <div className="flex items-center flex-shrink-0 min-w-0">
+          <div className="flex items-center flex-shrink-0 min-w-0 mr-8">
             <img 
               src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
               alt="SkyRanch" 
               className="h-8 w-8 flex-shrink-0"
             />
-            <span className="ml-3 text-xl font-bold text-gray-900 whitespace-nowrap">SkyRanch</span>
+            <span className="ml-4 text-xl font-bold text-gray-900 whitespace-nowrap">SkyRanch</span>
           </div>
 
           {/* Navigation Links */}
