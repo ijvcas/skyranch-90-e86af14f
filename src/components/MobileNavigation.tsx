@@ -29,17 +29,17 @@ const MobileNavigation = () => {
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-14">
         <div className="flex justify-between items-center h-full px-4">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0 min-w-0">
             <img 
               src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
               alt="SkyRanch" 
-              className="h-6 w-6"
+              className="h-6 w-6 flex-shrink-0"
             />
-            <span className="ml-2 text-lg font-bold text-gray-900">SkyRanch</span>
+            <span className="ml-3 text-lg font-bold text-gray-900 whitespace-nowrap">SkyRanch</span>
           </div>
 
           {/* Right side buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <NotificationBell />
             <NavLink
               to="/animals/new"
