@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +8,6 @@ import { TrendingUp, BarChart as BarChartIcon, PieChart as PieChartIcon, Activit
 import { useQuery } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
 import { generateAnimalSummaryReport, generateHealthReport } from '@/services/reportsService';
-import { getHealthRecords } from '@/services/healthRecordService';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -43,8 +41,8 @@ const AdvancedAnalytics = () => {
       const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - (5 - index) + 1, 1);
       
       const animalsInMonth = animals.filter(animal => {
-        if (!animal.createdAt) return false;
-        const animalDate = new Date(animal.createdAt);
+        if (!animal.created_at) return false;
+        const animalDate = new Date(animal.created_at);
         return animalDate >= targetMonth && animalDate < nextMonth;
       }).length;
 

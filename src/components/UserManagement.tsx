@@ -9,41 +9,99 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Users, UserPlus, UserMinus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   getAllUsers, 
   addUser, 
   deleteUser, 
   toggleUserStatus, 
   getCurrentUser,
-  debugUserStore,
-  clearAllUsers 
-} from '@/stores/userStore';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'manager' | 'worker';
-  createdAt: string;
-  isActive: boolean;
-}
+  type AppUser
+} from '@/services/userService';
 
 const UserManagement = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>(getAllUsers());
+  const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    role: 'worker' as User['role'],
-    isActive: true
+    role: 'worker' as AppUser['role'],
+    is_active: true
   });
 
-  const currentUser = getCurrentUser();
+  // Fetch users from Supabase
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['app-users'],
+    queryFn: getAllUsers,
+  });
 
-  const refreshUsers = () => {
-    setUsers(getAllUsers());
-  };
+  const { data: currentUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: getCurrentUser,
+  });
+
+  // Mutations for user operations
+  const addUserMutation = useMutation({
+    mutationFn: addUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app-users'] });
+      setNewUser({ name: '', email: '', role: 'worker', is_active: true });
+      setShowAddForm(false);
+      toast({
+        title: "Usuario Agregado",
+        description: `${newUser.name} ha sido agregado exitosamente`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error adding user:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el usuario",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['app-users'] });
+      const deletedUser = users.find(u => u.id === id);
+      toast({
+        title: "Usuario Eliminado",
+        description: `${deletedUser?.name} ha sido eliminado`,
+        variant: "destructive"
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el usuario",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: toggleUserStatus,
+    onSuccess: (updatedUser) => {
+      queryClient.invalidateQueries({ queryKey: ['app-users'] });
+      toast({
+        title: "Estado Actualizado",
+        description: `${updatedUser.name} ${updatedUser.is_active ? 'activado' : 'desactivado'}`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error toggling user status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del usuario",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,22 +115,7 @@ const UserManagement = () => {
       return;
     }
 
-    try {
-      addUser(newUser);
-      refreshUsers();
-      setNewUser({ name: '', email: '', role: 'worker', isActive: true });
-      setShowAddForm(false);
-      toast({
-        title: "Usuario Agregado",
-        description: `${newUser.name} ha sido agregado exitosamente`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo agregar el usuario",
-        variant: "destructive"
-      });
-    }
+    addUserMutation.mutate(newUser);
   };
 
   const handleDeleteUser = (id: string, userName: string) => {
@@ -86,14 +129,7 @@ const UserManagement = () => {
     }
 
     if (window.confirm(`¿Estás seguro de eliminar a ${userName}?`)) {
-      if (deleteUser(id)) {
-        refreshUsers();
-        toast({
-          title: "Usuario Eliminado",
-          description: `${userName} ha sido eliminado`,
-          variant: "destructive"
-        });
-      }
+      deleteUserMutation.mutate(id);
     }
   };
 
@@ -107,34 +143,7 @@ const UserManagement = () => {
       return;
     }
 
-    const updatedUser = toggleUserStatus(id);
-    if (updatedUser) {
-      refreshUsers();
-      toast({
-        title: "Estado Actualizado",
-        description: `${userName} ${updatedUser.isActive ? 'activado' : 'desactivado'}`,
-      });
-    }
-  };
-
-  const handleDebugUsers = () => {
-    debugUserStore();
-    toast({
-      title: "Debug Info",
-      description: `Sistema tiene ${users.length} usuarios. Ver consola para detalles.`,
-    });
-  };
-
-  const handleClearUsers = () => {
-    if (window.confirm('¿Estás seguro de eliminar todos los usuarios excepto el admin? Esta acción no se puede deshacer.')) {
-      clearAllUsers();
-      refreshUsers();
-      toast({
-        title: "Usuarios Eliminados",
-        description: "Todos los usuarios han sido eliminados excepto el admin.",
-        variant: "destructive"
-      });
-    }
+    toggleStatusMutation.mutate(id);
   };
 
   const getRoleLabel = (role: string) => {
@@ -155,6 +164,17 @@ const UserManagement = () => {
     return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Cargando usuarios...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header with actions */}
@@ -174,13 +194,6 @@ const UserManagement = () => {
           >
             <UserPlus className="w-4 h-4" />
             Agregar Usuario
-          </Button>
-          <Button
-            onClick={handleDebugUsers}
-            variant="outline"
-            size="sm"
-          >
-            Debug
           </Button>
         </div>
       </div>
@@ -218,7 +231,7 @@ const UserManagement = () => {
               </div>
               <div>
                 <Label htmlFor="role">Rol</Label>
-                <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value as User['role']})}>
+                <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value as AppUser['role']})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -230,7 +243,9 @@ const UserManagement = () => {
                 </Select>
               </div>
               <div className="flex gap-3">
-                <Button type="submit">Agregar Usuario</Button>
+                <Button type="submit" disabled={addUserMutation.isPending}>
+                  {addUserMutation.isPending ? 'Agregando...' : 'Agregar Usuario'}
+                </Button>
                 <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
                   Cancelar
                 </Button>
@@ -273,24 +288,24 @@ const UserManagement = () => {
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <Switch
-                        checked={user.isActive}
+                        checked={user.is_active}
                         onCheckedChange={() => handleToggleStatus(user.id, user.name)}
-                        disabled={currentUser?.id === user.id}
+                        disabled={currentUser?.id === user.id || toggleStatusMutation.isPending}
                       />
                       <span className="text-sm">
-                        {user.isActive ? 'Activo' : 'Inactivo'}
+                        {user.is_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <Button
                       onClick={() => handleDeleteUser(user.id, user.name)}
                       variant="ghost"
                       size="sm"
-                      disabled={currentUser?.id === user.id}
+                      disabled={currentUser?.id === user.id || deleteUserMutation.isPending}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <UserMinus className="w-4 h-4" />
@@ -300,22 +315,6 @@ const UserManagement = () => {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card className="border-red-200">
-        <CardHeader>
-          <CardTitle className="text-red-600">Zona Peligrosa</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={handleClearUsers}
-            variant="destructive"
-            size="sm"
-          >
-            Eliminar Todos los Usuarios
-          </Button>
         </CardContent>
       </Card>
     </div>
