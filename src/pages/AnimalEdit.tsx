@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
-import { getAnimal, updateAnimal, type Animal } from '@/stores/animalStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getAnimal, updateAnimal } from '@/services/animalService';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -32,68 +35,75 @@ const AnimalEdit = () => {
     image: null as string | null
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  // Fetch animal data
+  const { data: animal, isLoading: isLoadingAnimal, error } = useQuery({
+    queryKey: ['animal', id],
+    queryFn: () => getAnimal(id!),
+    enabled: !!id
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: any }) => updateAnimal(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ['animal', id] });
+      toast({
+        title: "Animal Actualizado",
+        description: `${formData.name} ha sido actualizado exitosamente.`,
+      });
+      navigate('/animals');
+    },
+    onError: (error) => {
+      console.error('Error updating animal:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el animal.",
+        variant: "destructive"
+      });
+    }
+  });
 
   useEffect(() => {
-    // Load animal data from store
-    if (id) {
-      const animal = getAnimal(id);
-      if (animal) {
-        setFormData({
-          name: animal.name,
-          tag: animal.tag,
-          species: animal.species,
-          breed: animal.breed,
-          birthDate: animal.birthDate,
-          gender: animal.gender,
-          weight: animal.weight,
-          color: animal.color,
-          motherId: animal.motherId,
-          fatherId: animal.fatherId,
-          notes: animal.notes,
-          healthStatus: animal.healthStatus,
-          image: animal.image
-        });
-      } else {
-        toast({
-          title: "Animal no encontrado",
-          description: "El animal que intentas editar no existe.",
-          variant: "destructive"
-        });
-        navigate('/animals');
-      }
+    if (animal) {
+      setFormData({
+        name: animal.name,
+        tag: animal.tag,
+        species: animal.species,
+        breed: animal.breed,
+        birthDate: animal.birthDate,
+        gender: animal.gender,
+        weight: animal.weight,
+        color: animal.color,
+        motherId: animal.motherId,
+        fatherId: animal.fatherId,
+        notes: animal.notes,
+        healthStatus: animal.healthStatus,
+        image: animal.image
+      });
     }
-  }, [id, navigate, toast]);
+  }, [animal]);
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Animal no encontrado",
+        description: "El animal que intentas editar no existe.",
+        variant: "destructive"
+      });
+      navigate('/animals');
+    }
+  }, [error, navigate, toast]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Simulate API call and update the store
-    setTimeout(() => {
-      if (id) {
-        const success = updateAnimal(id, formData);
-        
-        if (success) {
-          console.log('Updated animal data:', formData);
-          
-          toast({
-            title: "Animal Actualizado",
-            description: `${formData.name} ha sido actualizado exitosamente.`,
-          });
-          
-          navigate('/animals');
-        } else {
-          toast({
-            title: "Error",
-            description: "No se pudo actualizar el animal.",
-            variant: "destructive"
-          });
-        }
-      }
-      
-      setIsLoading(false);
-    }, 1000);
+    if (!id) return;
+    
+    updateMutation.mutate({ 
+      id, 
+      data: formData 
+    });
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -106,6 +116,22 @@ const AnimalEdit = () => {
 
   if (!id) {
     return null;
+  }
+
+  if (isLoadingAnimal) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Cargando animal...</div>
+      </div>
+    );
+  }
+
+  if (!animal) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Animal no encontrado</div>
+      </div>
+    );
   }
 
   return (
@@ -144,7 +170,7 @@ const AnimalEdit = () => {
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     required
                     className="mt-1"
-                    disabled={isLoading}
+                    disabled={updateMutation.isPending}
                   />
                 </div>
                 <div>
@@ -156,7 +182,7 @@ const AnimalEdit = () => {
                     onChange={(e) => handleInputChange('tag', e.target.value)}
                     required
                     className="mt-1"
-                    disabled={isLoading}
+                    disabled={updateMutation.isPending}
                   />
                 </div>
               </div>
@@ -164,7 +190,7 @@ const AnimalEdit = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="species">Especie *</Label>
-                  <Select value={formData.species} onValueChange={(value) => handleInputChange('species', value)} disabled={isLoading}>
+                  <Select value={formData.species} onValueChange={(value) => handleInputChange('species', value)} disabled={updateMutation.isPending}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Seleccionar especie" />
                     </SelectTrigger>
@@ -186,7 +212,7 @@ const AnimalEdit = () => {
                     value={formData.breed}
                     onChange={(e) => handleInputChange('breed', e.target.value)}
                     className="mt-1"
-                    disabled={isLoading}
+                    disabled={updateMutation.isPending}
                   />
                 </div>
               </div>
@@ -200,12 +226,12 @@ const AnimalEdit = () => {
                     value={formData.birthDate}
                     onChange={(e) => handleInputChange('birthDate', e.target.value)}
                     className="mt-1"
-                    disabled={isLoading}
+                    disabled={updateMutation.isPending}
                   />
                 </div>
                 <div>
                   <Label htmlFor="gender">Sexo</Label>
-                  <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)} disabled={isLoading}>
+                  <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)} disabled={updateMutation.isPending}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Seleccionar sexo" />
                     </SelectTrigger>
@@ -223,7 +249,7 @@ const AnimalEdit = () => {
                     value={formData.weight}
                     onChange={(e) => handleInputChange('weight', e.target.value)}
                     className="mt-1"
-                    disabled={isLoading}
+                    disabled={updateMutation.isPending}
                   />
                 </div>
               </div>
@@ -236,7 +262,7 @@ const AnimalEdit = () => {
                   value={formData.color}
                   onChange={(e) => handleInputChange('color', e.target.value)}
                   className="mt-1"
-                  disabled={isLoading}
+                  disabled={updateMutation.isPending}
                 />
               </div>
             </CardContent>
@@ -257,7 +283,7 @@ const AnimalEdit = () => {
                     value={formData.motherId}
                     onChange={(e) => handleInputChange('motherId', e.target.value)}
                     className="mt-1"
-                    disabled={isLoading}
+                    disabled={updateMutation.isPending}
                   />
                 </div>
                 <div>
@@ -268,7 +294,7 @@ const AnimalEdit = () => {
                     value={formData.fatherId}
                     onChange={(e) => handleInputChange('fatherId', e.target.value)}
                     className="mt-1"
-                    disabled={isLoading}
+                    disabled={updateMutation.isPending}
                   />
                 </div>
               </div>
@@ -283,7 +309,7 @@ const AnimalEdit = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="healthStatus">Estado Actual</Label>
-                <Select value={formData.healthStatus} onValueChange={(value) => handleInputChange('healthStatus', value)} disabled={isLoading}>
+                <Select value={formData.healthStatus} onValueChange={(value) => handleInputChange('healthStatus', value)} disabled={updateMutation.isPending}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Seleccionar estado" />
                   </SelectTrigger>
@@ -307,7 +333,7 @@ const AnimalEdit = () => {
               <ImageUpload
                 currentImage={formData.image}
                 onImageChange={handleImageChange}
-                disabled={isLoading}
+                disabled={updateMutation.isPending}
               />
             </CardContent>
           </Card>
@@ -323,7 +349,7 @@ const AnimalEdit = () => {
                 onChange={(e) => handleInputChange('notes', e.target.value)}
                 placeholder="Cualquier información adicional sobre el animal..."
                 rows={4}
-                disabled={isLoading}
+                disabled={updateMutation.isPending}
               />
             </CardContent>
           </Card>
@@ -335,16 +361,16 @@ const AnimalEdit = () => {
               variant="outline"
               onClick={() => navigate('/animals')}
               className="flex-1"
-              disabled={isLoading}
+              disabled={updateMutation.isPending}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              disabled={isLoading}
+              disabled={updateMutation.isPending}
             >
-              {isLoading ? (
+              {updateMutation.isPending ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Guardando...
