@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Download, Upload, QrCode, Database, FileText, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getAllAnimals, addAnimal } from '@/stores/animalStore';
+import { getAllAnimals as getSupabaseAnimals, addAnimal as addSupabaseAnimal } from '@/services/animalService';
+import { addAnimal as addLocalAnimal } from '@/stores/animalStore';
 import { Animal } from '@/stores/animalStore';
 import * as QRCode from 'qrcode';
 
@@ -21,7 +22,8 @@ const DataImportExport = () => {
   const handleExportCSV = async () => {
     setIsExporting(true);
     try {
-      const animals = getAllAnimals();
+      // Get animals from Supabase
+      const animals = await getSupabaseAnimals();
       
       if (animals.length === 0) {
         toast({
@@ -85,7 +87,8 @@ const DataImportExport = () => {
   const handleExportJSON = async () => {
     setIsExporting(true);
     try {
-      const animals = getAllAnimals();
+      // Get animals from Supabase
+      const animals = await getSupabaseAnimals();
       
       if (animals.length === 0) {
         toast({
@@ -182,8 +185,7 @@ const DataImportExport = () => {
           
           if (values.length < 3) continue;
 
-          const animal: Animal = {
-            id: values[0] || `animal_${Date.now()}_${i}`,
+          const animal: Omit<Animal, 'id'> = {
             name: values[1]?.replace(/"/g, '') || `Animal ${i}`,
             tag: values[2] || `TAG${i}`,
             species: values[3] || 'bovino',
@@ -199,11 +201,22 @@ const DataImportExport = () => {
             image: null
           };
 
-          const success = await addAnimal(animal);
-          if (success) {
+          // Try to add to Supabase first, then fallback to local storage
+          const supabaseResult = await addSupabaseAnimal(animal);
+          if (supabaseResult.success) {
             imported++;
           } else {
-            errors++;
+            // Fallback to local storage
+            const localAnimal: Animal = {
+              id: `animal_${Date.now()}_${i}`,
+              ...animal
+            };
+            const localResult = await addLocalAnimal(localAnimal);
+            if (localResult) {
+              imported++;
+            } else {
+              errors++;
+            }
           }
         } catch (rowError) {
           console.error(`Error processing row ${i}:`, rowError);
@@ -234,7 +247,7 @@ const DataImportExport = () => {
       const text = await file.text();
       const data = JSON.parse(text);
       
-      let animals: Animal[];
+      let animals: any[];
       
       if (data.animals && Array.isArray(data.animals)) {
         animals = data.animals;
@@ -249,8 +262,7 @@ const DataImportExport = () => {
 
       for (const animalData of animals) {
         try {
-          const animal: Animal = {
-            id: animalData.id || `animal_${Date.now()}_${imported}`,
+          const animal: Omit<Animal, 'id'> = {
             name: animalData.name || `Animal ${imported}`,
             tag: animalData.tag || `TAG${imported}`,
             species: animalData.species || 'bovino',
@@ -266,11 +278,22 @@ const DataImportExport = () => {
             image: animalData.image || null
           };
 
-          const success = await addAnimal(animal);
-          if (success) {
+          // Try to add to Supabase first, then fallback to local storage
+          const supabaseResult = await addSupabaseAnimal(animal);
+          if (supabaseResult.success) {
             imported++;
           } else {
-            errors++;
+            // Fallback to local storage
+            const localAnimal: Animal = {
+              id: animalData.id || `animal_${Date.now()}_${imported}`,
+              ...animal
+            };
+            const localResult = await addLocalAnimal(localAnimal);
+            if (localResult) {
+              imported++;
+            } else {
+              errors++;
+            }
           }
         } catch (animalError) {
           console.error('Error processing animal:', animalError);
@@ -321,7 +344,9 @@ const DataImportExport = () => {
 
   const generateQRCode = async () => {
     try {
-      const animals = getAllAnimals();
+      // Get animals from Supabase
+      const animals = await getSupabaseAnimals();
+      
       if (animals.length === 0) {
         toast({
           title: "Sin datos",
