@@ -1,18 +1,17 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { LogOut, Info, HelpCircle, Mail, Phone, Edit, Save, X } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/UserManagement';
 import PermissionsManager from '@/components/PermissionsManager';
 import AdvancedAnalytics from '@/components/AdvancedAnalytics';
 import DataImportExport from '@/components/DataImportExport';
+import AppInfoForm from '@/components/AppInfoForm';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -21,13 +20,6 @@ const Settings = () => {
   
   // Check if current user is an administrator (Juan Casanova H or admin role)
   const isAdmin = user?.email === 'juan.casanova@skyranch.com' || user?.email?.includes('admin');
-  
-  const [isEditingSupport, setIsEditingSupport] = useState(false);
-  const [supportInfo, setSupportInfo] = useState({
-    email: 'soporte@skyranch.com',
-    phone: '+1 (555) 123-4567'
-  });
-  const [tempSupportInfo, setTempSupportInfo] = useState(supportInfo);
 
   const handleSignOut = async () => {
     try {
@@ -44,20 +36,6 @@ const Settings = () => {
         variant: "destructive"
       });
     }
-  };
-
-  const handleSaveSupport = () => {
-    setSupportInfo(tempSupportInfo);
-    setIsEditingSupport(false);
-    toast({
-      title: "Información actualizada",
-      description: "La información de soporte técnico ha sido actualizada.",
-    });
-  };
-
-  const handleCancelEdit = () => {
-    setTempSupportInfo(supportInfo);
-    setIsEditingSupport(false);
   };
 
   return (
@@ -124,100 +102,8 @@ const Settings = () => {
           </div>
 
           {/* App Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {/* App Version Card */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Info className="w-5 h-5 text-blue-600" />
-                  Información de la Aplicación
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="text-sm">
-                  <strong>Versión:</strong> SkyRanch v1.2.0
-                </div>
-                <div className="text-sm">
-                  <strong>Última actualización:</strong> Enero 2025
-                </div>
-                <div className="text-sm">
-                  <strong>Build:</strong> 2025.01.05
-                </div>
-                <div className="text-sm">
-                  <strong>Administrador Principal:</strong> Juan Casanova H
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Support Card */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-orange-600" />
-                  Soporte Técnico
-                  {isAdmin && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsEditingSupport(!isEditingSupport)}
-                      className="ml-auto"
-                    >
-                      {isEditingSupport ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isEditingSupport ? (
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="support-email">Email de Soporte</Label>
-                      <Input
-                        id="support-email"
-                        value={tempSupportInfo.email}
-                        onChange={(e) => setTempSupportInfo({...tempSupportInfo, email: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="support-phone">Teléfono de Soporte</Label>
-                      <Input
-                        id="support-phone"
-                        value={tempSupportInfo.phone}
-                        onChange={(e) => setTempSupportInfo({...tempSupportInfo, phone: e.target.value})}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleSaveSupport}>
-                        <Save className="w-4 h-4 mr-1" />
-                        Guardar
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="w-4 h-4 text-gray-500" />
-                      <span>{supportInfo.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      <span>{supportInfo.phone}</span>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => window.open(`mailto:${supportInfo.email}`, '_blank')}
-                    >
-                      Contactar Soporte
-                    </Button>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+          <div className="mb-8">
+            <AppInfoForm isAdmin={isAdmin} />
           </div>
         </div>
 
