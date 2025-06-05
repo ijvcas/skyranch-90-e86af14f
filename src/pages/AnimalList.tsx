@@ -41,7 +41,8 @@ const AnimalList = () => {
             animal.healthStatus === 'treatment' ? 'En Tratamiento' : 'Saludable',
     lastCheckup: '2024-05-15',
     weight: animal.weight ? `${animal.weight} kg` : 'N/A',
-    image: animal.image
+    image: animal.image,
+    tag: animal.tag
   }));
 
   const getStatusColor = (status: string) => {
@@ -59,7 +60,7 @@ const AnimalList = () => {
 
   const filteredAnimals = processedAnimals.filter(animal =>
     animal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    animal.id.includes(searchTerm) ||
+    animal.tag.includes(searchTerm) ||
     animal.species.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -153,7 +154,7 @@ const AnimalList = () => {
                     {animal.name}
                   </CardTitle>
                   <Badge variant="outline" className="text-xs">
-                    #{animal.id}
+                    #{animal.tag}
                   </Badge>
                 </div>
                 <Badge className={`w-fit ${getStatusColor(animal.status)}`}>
