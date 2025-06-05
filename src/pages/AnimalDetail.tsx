@@ -89,16 +89,30 @@ const AnimalDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Cargando animal...</div>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 opacity-5">
+          <img 
+            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
+            alt="" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="text-lg text-gray-600 relative z-10">Cargando animal...</div>
       </div>
     );
   }
 
   if (error || !animal) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 opacity-5">
+          <img 
+            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
+            alt="" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="text-center relative z-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Animal no encontrado</h2>
           <p className="text-gray-600 mb-6">El animal que buscas no existe o ha sido eliminado.</p>
           <Button onClick={() => navigate('/animals')}>
@@ -110,8 +124,15 @@ const AnimalDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4">
+      <div className="absolute inset-0 opacity-5">
+        <img 
+          src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
+          alt="" 
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-8">
           <Button 
@@ -267,9 +288,9 @@ const AnimalDetail = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Registrado:</span>
+                  <span className="text-gray-600">Última Actualización:</span>
                   <span className="font-medium">
-                    {new Date(animal.createdAt).toLocaleDateString()}
+                    {animal.updatedAt ? new Date(animal.updatedAt).toLocaleDateString() : 'No disponible'}
                   </span>
                 </div>
               </CardContent>

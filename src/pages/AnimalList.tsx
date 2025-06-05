@@ -65,15 +65,29 @@ const AnimalList = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Cargando animales...</div>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 opacity-5">
+          <img 
+            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
+            alt="" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="text-lg text-gray-600 relative z-10">Cargando animales...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4">
+      <div className="absolute inset-0 opacity-5">
+        <img 
+          src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
+          alt="" 
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-8">
           <Button 
