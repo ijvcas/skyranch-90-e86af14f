@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,6 @@ const Dashboard = () => {
   });
   
   const totalAnimals = allAnimals.length;
-  const healthyAnimals = allAnimals.filter(animal => animal.healthStatus === 'healthy').length;
 
   const handleSignOut = async () => {
     try {
@@ -49,7 +47,7 @@ const Dashboard = () => {
 
   const stats = [
     { title: 'Total de Animales', value: totalAnimals.toString(), color: 'bg-green-100 text-green-800' },
-    { title: 'Animales Saludables', value: healthyAnimals.toString(), color: 'bg-blue-100 text-blue-800' },
+    { title: 'Equinos', value: (speciesCounts['equino'] || 0).toString(), color: 'bg-blue-100 text-blue-800' },
     { title: 'Bovinos', value: (speciesCounts['bovino'] || 0).toString(), color: 'bg-yellow-100 text-yellow-800' },
     { title: 'Ovinos', value: (speciesCounts['ovino'] || 0).toString(), color: 'bg-purple-100 text-purple-800' },
   ];
