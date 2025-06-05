@@ -23,7 +23,7 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
       breed: animal.breed || '',
       birthDate: animal.birth_date || '',
       gender: animal.gender || '',
-      weight: animal.weight || '',
+      weight: animal.weight ? animal.weight.toString() : '',
       color: animal.color || '',
       motherId: animal.mother_id || '',
       fatherId: animal.father_id || '',
@@ -36,9 +36,6 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
     return [];
   }
 };
-
-// Removed getAnimalCountBySpecies as it's now calculated from getAllAnimals result
-// This eliminates duplicate network requests
 
 export const getAnimal = async (id: string): Promise<Animal | null> => {
   try {
@@ -65,7 +62,7 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
       breed: data.breed || '',
       birthDate: data.birth_date || '',
       gender: data.gender || '',
-      weight: data.weight || '',
+      weight: data.weight ? data.weight.toString() : '',
       color: data.color || '',
       motherId: data.mother_id || '',
       fatherId: data.father_id || '',
@@ -90,7 +87,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
         breed: animal.breed,
         birth_date: animal.birthDate || null,
         gender: animal.gender,
-        weight: animal.weight || null,
+        weight: animal.weight ? parseFloat(animal.weight) : null,
         color: animal.color,
         mother_id: animal.motherId || null,
         father_id: animal.fatherId || null,
@@ -124,7 +121,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
         breed: animal.breed,
         birth_date: animal.birthDate || null,
         gender: animal.gender,
-        weight: animal.weight || null,
+        weight: animal.weight ? parseFloat(animal.weight) : null,
         color: animal.color,
         mother_id: animal.motherId || null,
         father_id: animal.fatherId || null,
@@ -164,3 +161,6 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
     return false;
   }
 };
+
+// Export Animal interface for use in other files
+export type { Animal } from '@/stores/animalStore';
