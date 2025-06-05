@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +22,7 @@ import MobileNavigation from "./components/MobileNavigation";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import NotFound from "./pages/NotFound";
 import Reports from "./pages/Reports";
+import Notifications from "./pages/Notifications";
 import { useIsMobile } from "./hooks/use-mobile";
 
 const queryClient = new QueryClient();
@@ -75,6 +75,11 @@ const App = () => {
                 <Route path="/calendar" element={
                   <ProtectedRoute>
                     <Calendar />
+                  </ProtectedRoute>
+                } />
+                <Route path="/notifications" element={
+                  <ProtectedRoute>
+                    <Notifications />
                   </ProtectedRoute>
                 } />
                 <Route path="/settings" element={

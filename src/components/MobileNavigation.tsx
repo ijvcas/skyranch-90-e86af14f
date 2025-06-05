@@ -1,50 +1,84 @@
 
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Home, Users, Calendar, FileText, Heart } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { NavLink } from 'react-router-dom';
+import { 
+  Home, 
+  Users, 
+  Calendar, 
+  Activity, 
+  Settings, 
+  PlusCircle,
+  FileText,
+  Heart,
+  Bell
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import NotificationBell from './NotificationBell';
 
 const MobileNavigation = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isMobile = useIsMobile();
-
   const navItems = [
-    { path: '/dashboard', icon: Home, label: 'Inicio' },
-    { path: '/animals', icon: Users, label: 'Animales' },
-    { path: '/breeding', icon: Heart, label: 'Breeding' },
-    { path: '/calendar', icon: Calendar, label: 'Calendario' },
-    { path: '/reports', icon: FileText, label: 'Reportes' },
+    { to: '/dashboard', icon: Home, label: 'Panel' },
+    { to: '/animals', icon: Users, label: 'Animales' },
+    { to: '/breeding', icon: Heart, label: 'Reproducción' },
+    { to: '/calendar', icon: Calendar, label: 'Calendario' },
+    { to: '/reports', icon: FileText, label: 'Reportes' },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
-
-  if (!isMobile) {
-    return null;
-  }
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 z-50 safe-area-pb">
-      <div className="flex justify-around items-center max-w-md mx-auto">
-        {navItems.map((item) => (
-          <Button
-            key={item.path}
-            variant={isActive(item.path) ? "default" : "ghost"}
-            size="sm"
-            onClick={() => navigate(item.path)}
-            className={`flex flex-col items-center space-y-1 min-w-0 px-3 py-2 min-h-[60px] ${
-              isActive(item.path) 
-                ? 'bg-green-600 text-white' 
-                : 'text-gray-600'
-            }`}
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="text-xs leading-tight">{item.label}</span>
-          </Button>
-        ))}
+    <>
+      {/* Top Bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-14">
+        <div className="flex justify-between items-center h-full px-4">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Activity className="h-6 w-6 text-green-600" />
+            <span className="ml-2 text-lg font-bold text-gray-900">SkyRanch</span>
+          </div>
+
+          {/* Right side buttons */}
+          <div className="flex items-center space-x-2">
+            <NotificationBell />
+            <NavLink
+              to="/animals/new"
+              className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium"
+            >
+              <PlusCircle className="w-4 h-4" />
+            </NavLink>
+          </div>
+        </div>
       </div>
-    </nav>
+
+      {/* Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="grid grid-cols-5 h-16">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                cn(
+                  'flex flex-col items-center justify-center px-1 text-xs font-medium transition-colors',
+                  isActive
+                    ? 'text-green-600 bg-green-50'
+                    : 'text-gray-600'
+                )
+              }
+            >
+              <item.icon className="w-5 h-5 mb-1" />
+              <span className="truncate">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+
+      {/* Floating Action Button for Notifications on Mobile */}
+      <NavLink
+        to="/notifications"
+        className="md:hidden fixed bottom-20 right-4 bg-blue-600 text-white rounded-full p-3 shadow-lg z-40"
+      >
+        <Bell className="w-6 h-6" />
+      </NavLink>
+    </>
   );
 };
 
