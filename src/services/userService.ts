@@ -22,7 +22,10 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     throw error;
   }
 
-  return data || [];
+  return (data || []).map(user => ({
+    ...user,
+    role: user.role as 'admin' | 'manager' | 'worker'
+  }));
 };
 
 export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'created_by'>): Promise<AppUser> => {
@@ -42,7 +45,10 @@ export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'cre
     throw error;
   }
 
-  return data;
+  return {
+    ...data,
+    role: data.role as 'admin' | 'manager' | 'worker'
+  };
 };
 
 export const updateUser = async (id: string, updates: Partial<AppUser>): Promise<AppUser> => {
@@ -58,7 +64,10 @@ export const updateUser = async (id: string, updates: Partial<AppUser>): Promise
     throw error;
   }
 
-  return data;
+  return {
+    ...data,
+    role: data.role as 'admin' | 'manager' | 'worker'
+  };
 };
 
 export const deleteUser = async (id: string): Promise<boolean> => {
@@ -100,7 +109,10 @@ export const toggleUserStatus = async (id: string): Promise<AppUser> => {
     throw error;
   }
 
-  return data;
+  return {
+    ...data,
+    role: data.role as 'admin' | 'manager' | 'worker'
+  };
 };
 
 export const getCurrentUser = async (): Promise<AppUser | null> => {
@@ -120,5 +132,8 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     return null;
   }
 
-  return data;
+  return {
+    ...data,
+    role: data.role as 'admin' | 'manager' | 'worker'
+  };
 };

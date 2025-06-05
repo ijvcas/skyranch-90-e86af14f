@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Shield, User, Settings, Eye, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getAllUsers, updateUser, getCurrentUser } from '@/stores/userStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getAllUsers, updateUser, getCurrentUser, type AppUser } from '@/services/userService';
 
 interface Permission {
   id: string;
@@ -53,24 +54,43 @@ const defaultPermissions: RolePermissions = {
 
 const PermissionsManager = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState(getAllUsers());
+  const queryClient = useQueryClient();
   const [selectedRole, setSelectedRole] = useState<string>('worker');
   const [permissions, setPermissions] = useState(defaultPermissions);
-  const currentUser = getCurrentUser();
 
-  const refreshUsers = () => {
-    setUsers(getAllUsers());
-  };
+  // Use real Supabase data instead of mock data
+  const { data: users = [] } = useQuery({
+    queryKey: ['app-users'],
+    queryFn: getAllUsers,
+  });
 
-  const handleRoleChange = (userId: string, newRole: 'admin' | 'manager' | 'worker') => {
-    const updatedUser = updateUser(userId, { role: newRole });
-    if (updatedUser) {
-      refreshUsers();
+  const { data: currentUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: getCurrentUser,
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ userId, updates }: { userId: string; updates: Partial<AppUser> }) => 
+      updateUser(userId, updates),
+    onSuccess: (updatedUser) => {
+      queryClient.invalidateQueries({ queryKey: ['app-users'] });
       toast({
         title: "Rol Actualizado",
-        description: `El rol del usuario ha sido cambiado a ${getRoleLabel(newRole)}`,
+        description: `El rol del usuario ha sido cambiado a ${getRoleLabel(updatedUser.role)}`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating user role:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el rol del usuario",
+        variant: "destructive"
       });
     }
+  });
+
+  const handleRoleChange = (userId: string, newRole: 'admin' | 'manager' | 'worker') => {
+    updateUserMutation.mutate({ userId, updates: { role: newRole } });
   };
 
   const handlePermissionChange = (
@@ -181,7 +201,7 @@ const PermissionsManager = () => {
                       <Select
                         value={user.role}
                         onValueChange={(value) => handleRoleChange(user.id, value as any)}
-                        disabled={currentUser?.id === user.id}
+                        disabled={currentUser?.id === user.id || updateUserMutation.isPending}
                       >
                         <SelectTrigger className="w-[130px]">
                           <SelectValue />
