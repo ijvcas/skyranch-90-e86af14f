@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -5,11 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Users } from 'lucide-react';
-import { getAllAnimals } from '@/stores/animalStore';
+import { useQuery } from '@tanstack/react-query';
+import { getAllAnimals } from '@/services/animalService';
 
 const AnimalList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+
+  const { data: animals = [], isLoading } = useQuery({
+    queryKey: ['animals'],
+    queryFn: getAllAnimals
+  });
 
   const calculateAge = (birthDate: string): string => {
     if (!birthDate) return 'N/A';
@@ -19,13 +26,12 @@ const AnimalList = () => {
     return `${years} años`;
   };
 
-  // Get animals from the shared store
-  const animals = getAllAnimals().map(animal => ({
+  const processedAnimals = animals.map(animal => ({
     id: animal.id,
     name: animal.name,
     species: animal.species === 'ovino' ? 'Ovino' : 
              animal.species === 'bovino' ? 'Bovino' :
-             animal.species === 'equino' ? 'Asno' : 
+             animal.species === 'equino' ? 'Equino' : 
              animal.species.charAt(0).toUpperCase() + animal.species.slice(1),
     breed: animal.breed,
     age: calculateAge(animal.birthDate),
@@ -33,8 +39,8 @@ const AnimalList = () => {
             animal.healthStatus === 'sick' ? 'Enfermo' :
             animal.healthStatus === 'pregnant' ? 'Gestante' :
             animal.healthStatus === 'treatment' ? 'En Tratamiento' : 'Saludable',
-    lastCheckup: '2024-05-15', // This would come from health records in a real app
-    weight: `${animal.weight} kg`,
+    lastCheckup: '2024-05-15',
+    weight: animal.weight ? `${animal.weight} kg` : 'N/A',
     image: animal.image
   }));
 
@@ -51,11 +57,19 @@ const AnimalList = () => {
     }
   };
 
-  const filteredAnimals = animals.filter(animal =>
+  const filteredAnimals = processedAnimals.filter(animal =>
     animal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     animal.id.includes(searchTerm) ||
     animal.species.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Cargando animales...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">

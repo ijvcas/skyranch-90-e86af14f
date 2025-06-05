@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,12 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ImageUpload from '@/components/ImageUpload';
-import { addAnimal, getAllAnimals, getAnimal } from '@/stores/animalStore';
+import { addAnimal } from '@/services/animalService';
 
 const AnimalForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -30,18 +33,29 @@ const AnimalForm = () => {
     image: null as string | null
   });
 
-  const generateNextId = (): string => {
-    const existingAnimals = getAllAnimals();
-    const existingIds = existingAnimals.map(animal => parseInt(animal.id)).filter(id => !isNaN(id));
-    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
-    return String(maxId + 1).padStart(3, '0');
-  };
+  const addAnimalMutation = useMutation({
+    mutationFn: addAnimal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ['animalCounts'] });
+      toast({
+        title: "Animal Registrado",
+        description: `${formData.name} ha sido registrado exitosamente.`,
+      });
+      navigate('/animals');
+    },
+    onError: (error) => {
+      console.error('Error adding animal:', error);
+      toast({
+        title: "Error",
+        description: "Hubo un problema al guardar el animal. Intente nuevamente.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('Form submission started');
-    console.log('Form data:', formData);
     
     // Validate required fields
     if (!formData.name || !formData.tag || !formData.species) {
@@ -53,62 +67,7 @@ const AnimalForm = () => {
       return;
     }
 
-    // Use the tag as ID, or generate one if tag is empty
-    const animalId = formData.tag || generateNextId();
-    
-    // Check if animal with this ID already exists
-    const existingAnimal = getAnimal(animalId);
-    if (existingAnimal) {
-      toast({
-        title: "Error",
-        description: `Ya existe un animal con la etiqueta ${animalId}. Use una etiqueta diferente.`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Create the animal object
-    const newAnimal = {
-      id: animalId,
-      name: formData.name,
-      tag: formData.tag || animalId,
-      species: formData.species,
-      breed: formData.breed,
-      birthDate: formData.birthDate,
-      gender: formData.gender,
-      weight: formData.weight,
-      color: formData.color,
-      motherId: formData.motherId,
-      fatherId: formData.fatherId,
-      notes: formData.notes,
-      healthStatus: formData.healthStatus,
-      image: formData.image
-    };
-
-    console.log('About to save animal:', newAnimal);
-
-    // Save to store
-    addAnimal(newAnimal);
-    
-    // Verify it was saved
-    setTimeout(() => {
-      const savedAnimal = getAnimal(animalId);
-      console.log('Verification - animal retrieved after save:', savedAnimal);
-      
-      if (savedAnimal) {
-        toast({
-          title: "Animal Registrado",
-          description: `${formData.name} ha sido registrado exitosamente con ID ${animalId}.`,
-        });
-        navigate('/animals');
-      } else {
-        toast({
-          title: "Error",
-          description: "Hubo un problema al guardar el animal. Intente nuevamente.",
-          variant: "destructive"
-        });
-      }
-    }, 200);
+    addAnimalMutation.mutate(formData);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -164,7 +123,7 @@ const AnimalForm = () => {
                     type="text"
                     value={formData.tag}
                     onChange={(e) => handleInputChange('tag', e.target.value)}
-                    placeholder={`Ej: ${generateNextId()}`}
+                    placeholder="Ej: 001"
                     required
                     className="mt-1"
                   />
@@ -342,14 +301,16 @@ const AnimalForm = () => {
               variant="outline"
               onClick={() => navigate('/animals')}
               className="flex-1"
+              disabled={addAnimalMutation.isPending}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              disabled={addAnimalMutation.isPending}
             >
-              Registrar Animal
+              {addAnimalMutation.isPending ? 'Guardando...' : 'Registrar Animal'}
             </Button>
           </div>
         </form>

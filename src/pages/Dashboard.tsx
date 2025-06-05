@@ -4,21 +4,30 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Users, Calendar, Settings, LogOut } from 'lucide-react';
-import { getAllAnimals, getAnimalCountBySpecies } from '@/stores/animalStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { getAllAnimals, getAnimalCountBySpecies } from '@/services/animalService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   
-  // Get real data from the store
-  const allAnimals = getAllAnimals();
-  const totalAnimals = allAnimals.length;
-  const speciesCounts = getAnimalCountBySpecies();
+  // Fetch animals data using React Query
+  const { data: allAnimals = [], isLoading } = useQuery({
+    queryKey: ['animals'],
+    queryFn: getAllAnimals,
+    enabled: !!user
+  });
+
+  const { data: speciesCounts = {} } = useQuery({
+    queryKey: ['animalCounts'],
+    queryFn: getAnimalCountBySpecies,
+    enabled: !!user
+  });
   
-  // Count healthy animals
+  const totalAnimals = allAnimals.length;
   const healthyAnimals = allAnimals.filter(animal => animal.healthStatus === 'healthy').length;
 
   const handleSignOut = async () => {
@@ -75,6 +84,14 @@ const Dashboard = () => {
       color: 'bg-gray-600 hover:bg-gray-700'
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Cargando datos...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20">
