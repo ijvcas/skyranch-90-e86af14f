@@ -8,13 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
-import { useAnimalStore } from '@/stores/animalStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const AnimalList = () => {
   const navigate = useNavigate();
-  const { setAnimals } = useAnimalStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -30,14 +28,6 @@ const AnimalList = () => {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
-
-  // Sync animals with store
-  useEffect(() => {
-    if (animals.length >= 0) { // Include case where there are 0 animals
-      console.log(`🔄 Syncing ${animals.length} animals with store for user ${user?.email}`);
-      setAnimals(animals);
-    }
-  }, [animals, setAnimals, user?.email]);
 
   // Force refresh function
   const handleForceRefresh = () => {
