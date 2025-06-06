@@ -28,31 +28,36 @@ export const findAnimalByNameOrTag = async (searchTerm: string): Promise<string 
 };
 
 // Process parent IDs: try to find by UUID first, then by name/tag
-export const processParentId = async (parentInput: string): Promise<string | null> => {
-  if (!parentInput || parentInput.trim() === '') return null;
+export const processParentId = async (parentInput: string | undefined | null): Promise<string | null> => {
+  // Handle undefined, null, or empty string cases
+  if (!parentInput || typeof parentInput !== 'string' || parentInput.trim() === '') {
+    console.log('Empty or invalid parent input, returning null');
+    return null;
+  }
   
-  console.log(`Processing parent input: "${parentInput}"`);
+  const cleanInput = parentInput.trim();
+  console.log(`Processing parent input: "${cleanInput}"`);
   
   // If it's a valid UUID, verify it exists in database
-  if (isValidUUID(parentInput)) {
-    console.log(`Verifying UUID exists: ${parentInput}`);
+  if (isValidUUID(cleanInput)) {
+    console.log(`Verifying UUID exists: ${cleanInput}`);
     const { data, error } = await supabase
       .from('animals')
       .select('id')
-      .eq('id', parentInput)
+      .eq('id', cleanInput)
       .single();
     
     if (!error && data) {
-      console.log(`UUID verified: ${parentInput}`);
-      return parentInput;
+      console.log(`UUID verified: ${cleanInput}`);
+      return cleanInput;
     } else {
-      console.log(`UUID not found in database: ${parentInput}`);
+      console.log(`UUID not found in database: ${cleanInput}`);
     }
   }
   
   // Otherwise, search by name or tag
-  const foundId = await findAnimalByNameOrTag(parentInput);
-  console.log(`Searched for "${parentInput}", found ID: ${foundId}`);
+  const foundId = await findAnimalByNameOrTag(cleanInput);
+  console.log(`Searched for "${cleanInput}", found ID: ${foundId}`);
   return foundId;
 };
 

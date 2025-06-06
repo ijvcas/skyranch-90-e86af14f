@@ -147,6 +147,7 @@ const AnimalForm = () => {
                       <SelectItem value="porcino">Porcino</SelectItem>
                       <SelectItem value="equino">Equino</SelectItem>
                       <SelectItem value="aviar">Aviar</SelectItem>
+                      <SelectItem value="canino">Canino</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

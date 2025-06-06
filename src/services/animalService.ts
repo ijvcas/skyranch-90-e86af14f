@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Animal } from '@/stores/animalStore';
 import { transformAnimalData } from './utils/animalDataTransform';
@@ -95,6 +94,15 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
 
     // Process all parent IDs - convert names/tags to UUIDs
     console.log('Processing parent IDs for new animal...');
+    console.log('Raw parent inputs:', {
+      motherId: animal.motherId,
+      fatherId: animal.fatherId,
+      maternalGrandmotherId: animal.maternalGrandmotherId,
+      maternalGrandfatherId: animal.maternalGrandfatherId,
+      paternalGrandmotherId: animal.paternalGrandmotherId,
+      paternalGrandfatherId: animal.paternalGrandfatherId
+    });
+
     const [
       motherIdToSave,
       fatherIdToSave,
@@ -105,10 +113,10 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
     ] = await Promise.all([
       processParentId(animal.motherId),
       processParentId(animal.fatherId),
-      processParentId(animal.maternalGrandmotherId || ''),
-      processParentId(animal.maternalGrandfatherId || ''),
-      processParentId(animal.paternalGrandmotherId || ''),
-      processParentId(animal.paternalGrandfatherId || '')
+      processParentId(animal.maternalGrandmotherId),
+      processParentId(animal.maternalGrandfatherId),
+      processParentId(animal.paternalGrandmotherId),
+      processParentId(animal.paternalGrandfatherId)
     ]);
 
     console.log('Processed parent IDs for saving:', { 
@@ -157,6 +165,15 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     
     // Process all parent IDs - convert names/tags to UUIDs
     console.log('Processing parent IDs for update...');
+    console.log('Raw parent inputs for update:', {
+      motherId: animal.motherId,
+      fatherId: animal.fatherId,
+      maternalGrandmotherId: animal.maternalGrandmotherId,
+      maternalGrandfatherId: animal.maternalGrandfatherId,
+      paternalGrandmotherId: animal.paternalGrandmotherId,
+      paternalGrandfatherId: animal.paternalGrandfatherId
+    });
+
     const [
       motherIdToSave,
       fatherIdToSave,
@@ -167,10 +184,10 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     ] = await Promise.all([
       processParentId(animal.motherId),
       processParentId(animal.fatherId),
-      processParentId(animal.maternalGrandmotherId || ''),
-      processParentId(animal.maternalGrandfatherId || ''),
-      processParentId(animal.paternalGrandmotherId || ''),
-      processParentId(animal.paternalGrandfatherId || '')
+      processParentId(animal.maternalGrandmotherId),
+      processParentId(animal.maternalGrandfatherId),
+      processParentId(animal.paternalGrandmotherId),
+      processParentId(animal.paternalGrandfatherId)
     ]);
 
     console.log('Processed parent IDs for update:', { 
