@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,48 @@ const AnimalDetail = () => {
     queryKey: ['animal', id],
     queryFn: () => getAnimal(id!),
     enabled: !!id
+  });
+
+  // Query for mother's information
+  const { data: mother } = useQuery({
+    queryKey: ['animal', animal?.motherId],
+    queryFn: () => getAnimal(animal?.motherId!),
+    enabled: !!animal?.motherId
+  });
+
+  // Query for father's information
+  const { data: father } = useQuery({
+    queryKey: ['animal', animal?.fatherId],
+    queryFn: () => getAnimal(animal?.fatherId!),
+    enabled: !!animal?.fatherId
+  });
+
+  // Query for maternal grandmother
+  const { data: maternalGrandmother } = useQuery({
+    queryKey: ['animal', mother?.motherId],
+    queryFn: () => getAnimal(mother?.motherId!),
+    enabled: !!mother?.motherId
+  });
+
+  // Query for maternal grandfather
+  const { data: maternalGrandfather } = useQuery({
+    queryKey: ['animal', mother?.fatherId],
+    queryFn: () => getAnimal(mother?.fatherId!),
+    enabled: !!mother?.fatherId
+  });
+
+  // Query for paternal grandmother
+  const { data: paternalGrandmother } = useQuery({
+    queryKey: ['animal', father?.motherId],
+    queryFn: () => getAnimal(father?.motherId!),
+    enabled: !!father?.motherId
+  });
+
+  // Query for paternal grandfather
+  const { data: paternalGrandfather } = useQuery({
+    queryKey: ['animal', father?.fatherId],
+    queryFn: () => getAnimal(father?.fatherId!),
+    enabled: !!father?.fatherId
   });
 
   const calculateAge = (birthDate: string): string => {
@@ -77,9 +120,36 @@ const AnimalDetail = () => {
         return 'Equino';
       case 'aviar':
         return 'Aviar';
+      case 'canine':
+        return 'Canino';
       default:
         return species.charAt(0).toUpperCase() + species.slice(1);
     }
+  };
+
+  const PedigreeAnimalCard = ({ animal: pedigreeAnimal, label, level }: { animal: any; label: string; level: number }) => {
+    if (!pedigreeAnimal) {
+      return (
+        <div className={`border-2 border-dashed border-gray-200 rounded-lg p-3 text-center ${level === 1 ? 'h-32' : 'h-24'}`}>
+          <p className="text-xs text-gray-400 font-medium mb-1">{label}</p>
+          <p className="text-xs text-gray-500">No registrado</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`border border-gray-200 rounded-lg p-3 bg-white hover:shadow-md transition-shadow ${level === 1 ? 'h-32' : 'h-24'}`}>
+        <p className="text-xs text-gray-600 font-medium mb-1">{label}</p>
+        <div className="space-y-1">
+          <p className="font-semibold text-sm text-gray-900">{pedigreeAnimal.name}</p>
+          <p className="text-xs text-gray-600">#{pedigreeAnimal.tag}</p>
+          <p className="text-xs text-gray-500">{getSpeciesText(pedigreeAnimal.species)}</p>
+          {pedigreeAnimal.breed && (
+            <p className="text-xs text-gray-500">{pedigreeAnimal.breed}</p>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (!id) {
@@ -131,7 +201,7 @@ const AnimalDetail = () => {
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="max-w-4xl mx-auto relative z-10">
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-8">
           <Button 
@@ -234,21 +304,38 @@ const AnimalDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Pedigree Information */}
-            {(animal.motherId || animal.fatherId) && (
+            {/* Pedigree Chart - Two Generations */}
+            {(mother || father || maternalGrandmother || maternalGrandfather || paternalGrandmother || paternalGrandfather) && (
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-xl text-gray-900">Información de Pedigrí</CardTitle>
+                  <CardTitle className="text-xl text-gray-900">Árbol Genealógico (2 Generaciones)</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">ID de la Madre</p>
-                      <p className="font-medium">{animal.motherId || 'No registrada'}</p>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Current Animal */}
+                    <div className="text-center">
+                      <div className="inline-block border-2 border-blue-500 rounded-lg p-4 bg-blue-50">
+                        <p className="text-sm text-blue-600 font-medium mb-1">Animal Actual</p>
+                        <p className="font-bold text-lg text-blue-900">{animal.name}</p>
+                        <p className="text-sm text-blue-700">#{animal.tag}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">ID del Padre</p>
-                      <p className="font-medium">{animal.fatherId || 'No registrado'}</p>
+
+                    {/* First Generation - Parents */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <PedigreeAnimalCard animal={mother} label="Madre" level={1} />
+                      <PedigreeAnimalCard animal={father} label="Padre" level={1} />
+                    </div>
+
+                    {/* Second Generation - Grandparents */}
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-gray-800 text-center">Abuelos</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <PedigreeAnimalCard animal={maternalGrandmother} label="Abuela Materna" level={2} />
+                        <PedigreeAnimalCard animal={maternalGrandfather} label="Abuelo Materno" level={2} />
+                        <PedigreeAnimalCard animal={paternalGrandmother} label="Abuela Paterna" level={2} />
+                        <PedigreeAnimalCard animal={paternalGrandfather} label="Abuelo Paterno" level={2} />
+                      </div>
                     </div>
                   </div>
                 </CardContent>
