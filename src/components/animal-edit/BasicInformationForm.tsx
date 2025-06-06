@@ -23,15 +23,15 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="name">Nombre *</Label>
             <Input
               id="name"
-              name="animal-name"
+              name="name"
               type="text"
               value={formData.name}
               onChange={(e) => onInputChange('name', e.target.value)}
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
-              data-1p-ignore
+              autoComplete="off"
+              data-1p-ignore="true"
               data-lpignore="true"
             />
           </div>
@@ -39,15 +39,15 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="tag">Número de Etiqueta *</Label>
             <Input
               id="tag"
-              name="animal-tag"
+              name="tag"
               type="text"
               value={formData.tag}
               onChange={(e) => onInputChange('tag', e.target.value)}
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
-              data-1p-ignore
+              autoComplete="off"
+              data-1p-ignore="true"
               data-lpignore="true"
             />
           </div>
@@ -75,14 +75,14 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="breed">Raza</Label>
             <Input
               id="breed"
-              name="animal-breed"
+              name="breed"
               type="text"
               value={formData.breed}
               onChange={(e) => onInputChange('breed', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
-              data-1p-ignore
+              autoComplete="off"
+              data-1p-ignore="true"
               data-lpignore="true"
             />
           </div>
@@ -93,14 +93,14 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
             <Input
               id="birthDate"
-              name="animal-birth-date"
+              name="birthDate"
               type="date"
               value={formData.birthDate}
               onChange={(e) => onInputChange('birthDate', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
-              data-1p-ignore
+              autoComplete="off"
+              data-1p-ignore="true"
               data-lpignore="true"
             />
           </div>
@@ -120,14 +120,14 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="weight">Peso (kg)</Label>
             <Input
               id="weight"
-              name="animal-weight"
+              name="weight"
               type="number"
               value={formData.weight}
               onChange={(e) => onInputChange('weight', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
-              data-1p-ignore
+              autoComplete="off"
+              data-1p-ignore="true"
               data-lpignore="true"
             />
           </div>
@@ -137,14 +137,14 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
           <Label htmlFor="color">Color/Marcas</Label>
           <Input
             id="color"
-            name="animal-color"
+            name="color"
             type="text"
             value={formData.color}
             onChange={(e) => onInputChange('color', e.target.value)}
             className="mt-1"
             disabled={disabled}
-            autoComplete="new-password"
-            data-1p-ignore
+            autoComplete="off"
+            data-1p-ignore="true"
             data-lpignore="true"
           />
         </div>

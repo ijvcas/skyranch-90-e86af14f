@@ -64,14 +64,6 @@ export const useAnimalEdit = () => {
     const loadAnimalData = async () => {
       if (animal) {
         console.log('🔍 Loading animal data for editing:', animal);
-        console.log('🔍 Raw parent IDs from database:', {
-          motherId: animal.motherId,
-          fatherId: animal.fatherId,
-          maternalGrandmotherId: animal.maternalGrandmotherId,
-          maternalGrandfatherId: animal.maternalGrandfatherId,
-          paternalGrandmotherId: animal.paternalGrandmotherId,
-          paternalGrandfatherId: animal.paternalGrandfatherId
-        });
         
         // Load display names for all parent fields that have IDs
         const [
@@ -106,7 +98,7 @@ export const useAnimalEdit = () => {
           breed: animal.breed || '',
           birthDate: animal.birthDate || '',
           gender: animal.gender || '',
-          weight: animal.weight || '',
+          weight: animal.weight?.toString() || '',
           color: animal.color || '',
           motherId: motherDisplayName || '',
           fatherId: fatherDisplayName || '',

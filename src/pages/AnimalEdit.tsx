@@ -66,7 +66,11 @@ const AnimalEdit = () => {
           className="space-y-6" 
           autoComplete="off"
           data-form="animal-edit"
+          data-lpignore="true"
+          data-1p-ignore="true"
         >
+          <input type="password" style={{display: 'none'}} autoComplete="new-password" />
+          
           <BasicInformationForm
             formData={formData}
             onInputChange={handleInputChange}

@@ -22,8 +22,8 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
           placeholder="Cualquier información adicional sobre el animal..."
           rows={4}
           disabled={disabled}
-          autoComplete="new-password"
-          data-1p-ignore
+          autoComplete="off"
+          data-1p-ignore="true"
           data-lpignore="true"
         />
       </CardContent>
