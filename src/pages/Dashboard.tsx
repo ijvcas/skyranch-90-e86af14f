@@ -47,13 +47,6 @@ const Dashboard = () => {
     }
   };
 
-  const stats = [
-    { title: 'Total de Animales', value: totalAnimals.toString(), color: 'bg-green-100 text-green-800' },
-    { title: 'Equinos', value: (speciesCounts['equino'] || 0).toString(), color: 'bg-blue-100 text-blue-800' },
-    { title: 'Bovinos', value: (speciesCounts['bovino'] || 0).toString(), color: 'bg-yellow-100 text-yellow-800' },
-    { title: 'Ovinos', value: (speciesCounts['ovino'] || 0).toString(), color: 'bg-purple-100 text-purple-800' },
-  ];
-
   const quickActions = [
     { 
       title: 'Registrar Animal', 
@@ -133,43 +126,41 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardContent className="p-4 md:p-6">
+              <div className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mb-2">
+                Total de Animales
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-gray-900">{totalAnimals}</div>
+            </CardContent>
+          </Card>
+
+          {/* Only show species with 1 or more animals */}
+          {Object.entries(speciesCounts).map(([species, count]) => (
+            <Card key={species} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardContent className="p-4 md:p-6">
-                <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${stat.color} mb-2`}>
-                  {stat.title}
+                <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium mb-2 ${
+                  species === 'equino' ? 'bg-blue-100 text-blue-800' :
+                  species === 'bovino' ? 'bg-yellow-100 text-yellow-800' :
+                  species === 'ovino' ? 'bg-purple-100 text-purple-800' :
+                  species === 'caprino' ? 'bg-red-100 text-red-800' :
+                  species === 'porcino' ? 'bg-pink-100 text-pink-800' :
+                  species === 'aviar' ? 'bg-orange-100 text-orange-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {species === 'bovino' ? 'Bovinos' :
+                   species === 'ovino' ? 'Ovinos' :
+                   species === 'equino' ? 'Equinos' :
+                   species === 'caprino' ? 'Caprinos' :
+                   species === 'porcino' ? 'Porcinos' :
+                   species === 'aviar' ? 'Aves' : 
+                   species.charAt(0).toUpperCase() + species.slice(1)}
                 </div>
-                <div className="text-2xl md:text-3xl font-bold text-gray-900">{stat.value}</div>
+                <div className="text-2xl md:text-3xl font-bold text-gray-900">{count}</div>
               </CardContent>
             </Card>
           ))}
         </div>
-
-        {/* Additional Species Stats - Only show if we have animals */}
-        {totalAnimals > 0 && Object.keys(speciesCounts).length > 2 && (
-          <Card className="mb-8 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold">Distribución por Especies</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(speciesCounts).map(([species, count]) => (
-                  <div key={species} className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">{count}</div>
-                    <div className="text-sm text-gray-600 capitalize">
-                      {species === 'bovino' ? 'Bovinos' :
-                       species === 'ovino' ? 'Ovinos' :
-                       species === 'equino' ? 'Equinos' :
-                       species === 'caprino' ? 'Caprinos' :
-                       species === 'porcino' ? 'Porcinos' :
-                       species === 'aviar' ? 'Aves' : species}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
