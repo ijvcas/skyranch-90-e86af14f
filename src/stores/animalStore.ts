@@ -28,6 +28,7 @@ interface AnimalStore {
   updateAnimal: (id: string, animal: Animal) => void;
   deleteAnimal: (id: string) => void;
   getAnimal: (id: string) => Animal | undefined;
+  getAllAnimals: () => Animal[];
 }
 
 export const useAnimalStore = create<AnimalStore>((set, get) => ({
@@ -45,4 +46,9 @@ export const useAnimalStore = create<AnimalStore>((set, get) => ({
       animals: state.animals.filter((animal) => animal.id !== id),
     })),
   getAnimal: (id) => get().animals.find((animal) => animal.id === id),
+  getAllAnimals: () => get().animals,
 }));
+
+// Export individual functions for external use
+export const addAnimal = (animal: Animal) => useAnimalStore.getState().addAnimal(animal);
+export const getAllAnimals = () => useAnimalStore.getState().getAllAnimals();

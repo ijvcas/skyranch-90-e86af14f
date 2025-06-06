@@ -1,8 +1,7 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getAllAnimals } from '@/stores/animalStore';
-import { Animal } from '@/stores/animalStore';
+import { getAllAnimals } from '@/services/animalService';
 
 export interface Notification {
   id: string;
@@ -192,7 +191,7 @@ export const useNotifications = () => {
     const animals = getAllAnimals();
     const now = new Date();
 
-    animals.forEach((animal: Animal) => {
+    animals.forEach((animal: any) => {
       // Check for unhealthy animals
       if (animal.healthStatus === 'sick' || animal.healthStatus === 'injured') {
         const existingAlert = notifications.find(n => 
@@ -251,7 +250,7 @@ export const useNotifications = () => {
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    animals.forEach((animal: Animal) => {
+    animals.forEach((animal: any) => {
       // Example: Check if animal needs annual vaccination
       // This is a simplified example - in a real app, you'd track vaccination records
       const birthDate = animal.birthDate ? new Date(animal.birthDate) : null;
