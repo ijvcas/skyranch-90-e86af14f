@@ -19,24 +19,25 @@ const findAnimalByNameOrTag = async (searchTerm: string): Promise<string | null>
     .from('animals')
     .select('id, name, tag')
     .or(`name.ilike.%${searchTerm}%,tag.ilike.%${searchTerm}%`)
-    .maybeSingle();
+    .limit(1);
     
   if (error) {
     console.error(`Error searching for animal: ${error.message}`);
     return null;
   }
   
-  if (!data) {
+  if (!data || data.length === 0) {
     console.log(`No animal found for search term: ${searchTerm}`);
     return null;
   }
   
-  console.log(`Found animal:`, data);
-  return data.id;
+  console.log(`Found animal:`, data[0]);
+  return data[0].id;
 };
 
 export const getAllAnimals = async (): Promise<Animal[]> => {
   try {
+    console.log('Fetching all animals...');
     const { data, error } = await supabase
       .from('animals')
       .select('*')
@@ -47,8 +48,10 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
       throw error;
     }
 
+    console.log('Raw animals data:', data);
+
     // Transform Supabase data to match our Animal interface
-    return (data || []).map(animal => ({
+    const animals = (data || []).map(animal => ({
       id: animal.id,
       name: animal.name || '',
       tag: animal.tag || '',
@@ -64,6 +67,9 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
       notes: animal.notes || '',
       image: animal.image_url || null,
     }));
+
+    console.log('Transformed animals:', animals);
+    return animals;
   } catch (error) {
     console.error('Failed to fetch animals:', error);
     return [];
@@ -72,22 +78,36 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
 
 export const getAnimal = async (id: string): Promise<Animal | null> => {
   try {
+    console.log(`Fetching animal with ID: ${id}`);
+    
+    if (!id) {
+      console.error('No ID provided to getAnimal');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('animals')
       .select('*')
       .eq('id', id)
-      .maybeSingle();
+      .single();
 
     if (error) {
       console.error('Error fetching animal:', error);
-      return null;
+      if (error.code === 'PGRST116') {
+        console.log('Animal not found');
+        return null;
+      }
+      throw error;
     }
 
     if (!data) {
+      console.log('No data returned for animal');
       return null;
     }
 
-    return {
+    console.log('Raw animal data:', data);
+
+    const animal = {
       id: data.id,
       name: data.name || '',
       tag: data.tag || '',
@@ -103,6 +123,9 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
       notes: data.notes || '',
       image: data.image_url || null,
     };
+
+    console.log('Transformed animal:', animal);
+    return animal;
   } catch (error) {
     console.error('Failed to fetch animal:', error);
     return null;
@@ -111,6 +134,7 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
 
 export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: boolean; id?: string }> => {
   try {
+    console.log('Adding animal:', animal);
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -182,6 +206,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       return { success: false };
     }
 
+    console.log('Animal added successfully:', data);
     return { success: true, id: data.id };
   } catch (error) {
     console.error('Failed to add animal:', error);
@@ -191,6 +216,8 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
 
 export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Promise<boolean> => {
   try {
+    console.log('Updating animal:', { id, animal });
+    
     // Process parent IDs: try to find by UUID first, then by name/tag
     let motherIdToSave = null;
     let fatherIdToSave = null;
@@ -254,6 +281,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       return false;
     }
 
+    console.log('Animal updated successfully');
     return true;
   } catch (error) {
     console.error('Failed to update animal:', error);
@@ -263,6 +291,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
 
 export const deleteAnimal = async (id: string): Promise<boolean> => {
   try {
+    console.log('Deleting animal:', id);
     const { error } = await supabase
       .from('animals')
       .delete()
@@ -273,6 +302,7 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
       return false;
     }
 
+    console.log('Animal deleted successfully');
     return true;
   } catch (error) {
     console.error('Failed to delete animal:', error);
