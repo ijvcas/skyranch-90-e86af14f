@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, Calendar, Weight, Palette, Users, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getAnimal, getAnimalByNameOrTag } from '@/services/animalService';
+import { getAnimal } from '@/services/animalService';
 
 const AnimalDetail = () => {
   const navigate = useNavigate();
@@ -21,75 +21,47 @@ const AnimalDetail = () => {
 
   console.log('Animal data loaded:', animal);
 
-  // Query for parents using the stored parent IDs or names/tags
+  // Query for parents
   const { data: mother } = useQuery({
     queryKey: ['mother', animal?.motherId],
-    queryFn: () => {
-      if (!animal?.motherId || animal.motherId.trim() === '') return null;
-      // If it's a UUID, use getAnimal, otherwise use getAnimalByNameOrTag
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(animal.motherId);
-      return isUUID ? getAnimal(animal.motherId) : getAnimalByNameOrTag(animal.motherId);
-    },
+    queryFn: () => animal?.motherId ? getAnimal(animal.motherId) : null,
     enabled: !!animal?.motherId && animal.motherId.trim() !== '',
     retry: 1
   });
 
   const { data: father } = useQuery({
     queryKey: ['father', animal?.fatherId],
-    queryFn: () => {
-      if (!animal?.fatherId || animal.fatherId.trim() === '') return null;
-      // If it's a UUID, use getAnimal, otherwise use getAnimalByNameOrTag
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(animal.fatherId);
-      return isUUID ? getAnimal(animal.fatherId) : getAnimalByNameOrTag(animal.fatherId);
-    },
+    queryFn: () => animal?.fatherId ? getAnimal(animal.fatherId) : null,
     enabled: !!animal?.fatherId && animal.fatherId.trim() !== '',
     retry: 1
   });
 
-  console.log('Parent data:', { mother, father });
-
-  // Query grandparents based on parent data
+  // Query grandparents
   const { data: maternalGrandmother } = useQuery({
-    queryKey: ['maternalGrandmother', mother?.motherId],
-    queryFn: () => {
-      if (!mother?.motherId || mother.motherId.trim() === '') return null;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(mother.motherId);
-      return isUUID ? getAnimal(mother.motherId) : getAnimalByNameOrTag(mother.motherId);
-    },
-    enabled: !!mother?.motherId && mother.motherId.trim() !== '',
+    queryKey: ['maternalGrandmother', animal?.maternalGrandmotherId],
+    queryFn: () => animal?.maternalGrandmotherId ? getAnimal(animal.maternalGrandmotherId) : null,
+    enabled: !!animal?.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '',
     retry: 1
   });
 
   const { data: maternalGrandfather } = useQuery({
-    queryKey: ['maternalGrandfather', mother?.fatherId],
-    queryFn: () => {
-      if (!mother?.fatherId || mother.fatherId.trim() === '') return null;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(mother.fatherId);
-      return isUUID ? getAnimal(mother.fatherId) : getAnimalByNameOrTag(mother.fatherId);
-    },
-    enabled: !!mother?.fatherId && mother.fatherId.trim() !== '',
+    queryKey: ['maternalGrandfather', animal?.maternalGrandfatherId],
+    queryFn: () => animal?.maternalGrandfatherId ? getAnimal(animal.maternalGrandfatherId) : null,
+    enabled: !!animal?.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '',
     retry: 1
   });
 
   const { data: paternalGrandmother } = useQuery({
-    queryKey: ['paternalGrandmother', father?.motherId],
-    queryFn: () => {
-      if (!father?.motherId || father.motherId.trim() === '') return null;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(father.motherId);
-      return isUUID ? getAnimal(father.motherId) : getAnimalByNameOrTag(father.motherId);
-    },
-    enabled: !!father?.motherId && father.motherId.trim() !== '',
+    queryKey: ['paternalGrandmother', animal?.paternalGrandmotherId],
+    queryFn: () => animal?.paternalGrandmotherId ? getAnimal(animal.paternalGrandmotherId) : null,
+    enabled: !!animal?.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '',
     retry: 1
   });
 
   const { data: paternalGrandfather } = useQuery({
-    queryKey: ['paternalGrandfather', father?.fatherId],
-    queryFn: () => {
-      if (!father?.fatherId || father.fatherId.trim() === '') return null;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(father.fatherId);
-      return isUUID ? getAnimal(father.fatherId) : getAnimalByNameOrTag(father.fatherId);
-    },
-    enabled: !!father?.fatherId && father.fatherId.trim() !== '',
+    queryKey: ['paternalGrandfather', animal?.paternalGrandfatherId],
+    queryFn: () => animal?.paternalGrandfatherId ? getAnimal(animal.paternalGrandfatherId) : null,
+    enabled: !!animal?.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '',
     retry: 1
   });
 
@@ -230,16 +202,21 @@ const AnimalDetail = () => {
   }
 
   // Check if we should show pedigree
-  const hasValidParents = (animal.motherId && animal.motherId.trim() !== '') || (animal.fatherId && animal.fatherId.trim() !== '');
-  const hasParentData = mother || father;
-  const hasGrandparentData = maternalGrandmother || maternalGrandfather || paternalGrandmother || paternalGrandfather;
+  const hasParents = (animal.motherId && animal.motherId.trim() !== '') || (animal.fatherId && animal.fatherId.trim() !== '');
+  const hasGrandparents = (animal.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '') || 
+                         (animal.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '') ||
+                         (animal.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '') ||
+                         (animal.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '');
 
   console.log('Pedigree display logic:', { 
-    hasValidParents, 
-    hasParentData, 
-    hasGrandparentData,
+    hasParents, 
+    hasGrandparents,
     motherId: animal.motherId,
-    fatherId: animal.fatherId
+    fatherId: animal.fatherId,
+    maternalGrandmotherId: animal.maternalGrandmotherId,
+    maternalGrandfatherId: animal.maternalGrandfatherId,
+    paternalGrandmotherId: animal.paternalGrandmotherId,
+    paternalGrandfatherId: animal.paternalGrandfatherId
   });
 
   return (
@@ -354,8 +331,8 @@ const AnimalDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Pedigree Chart - Show when we have valid parent data or IDs */}
-            {hasValidParents && (
+            {/* Pedigree Chart - Show when we have parents or grandparents */}
+            {(hasParents || hasGrandparents) && (
               <Card className="shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-xl text-gray-900">Árbol Genealógico</CardTitle>
@@ -372,13 +349,15 @@ const AnimalDetail = () => {
                     </div>
 
                     {/* First Generation - Parents */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <PedigreeAnimalCard animal={mother} label="Madre" level={1} />
-                      <PedigreeAnimalCard animal={father} label="Padre" level={1} />
-                    </div>
+                    {hasParents && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <PedigreeAnimalCard animal={mother} label="Madre" level={1} />
+                        <PedigreeAnimalCard animal={father} label="Padre" level={1} />
+                      </div>
+                    )}
 
                     {/* Second Generation - Grandparents */}
-                    {hasGrandparentData && (
+                    {hasGrandparents && (
                       <div className="space-y-4">
                         <h4 className="text-lg font-semibold text-gray-800 text-center">Abuelos</h4>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

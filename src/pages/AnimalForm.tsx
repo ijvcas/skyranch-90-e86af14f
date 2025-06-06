@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ImageUpload from '@/components/ImageUpload';
-import { addAnimal, updateAnimal, getAnimalByNameOrTag } from '@/services/animalService';
+import { addAnimal } from '@/services/animalService';
 
 const AnimalForm = () => {
   const navigate = useNavigate();
@@ -39,31 +39,6 @@ const AnimalForm = () => {
   const addAnimalMutation = useMutation({
     mutationFn: addAnimal,
     onSuccess: async (result) => {
-      if (result.success) {
-        // Update parent animals with grandparent information if they exist
-        if (formData.motherId && (formData.maternalGrandmotherId || formData.maternalGrandfatherId)) {
-          const motherAnimal = await getAnimalByNameOrTag(formData.motherId);
-          if (motherAnimal) {
-            await updateAnimal(motherAnimal.id, {
-              ...motherAnimal,
-              motherId: formData.maternalGrandmotherId,
-              fatherId: formData.maternalGrandfatherId
-            });
-          }
-        }
-
-        if (formData.fatherId && (formData.paternalGrandmotherId || formData.paternalGrandfatherId)) {
-          const fatherAnimal = await getAnimalByNameOrTag(formData.fatherId);
-          if (fatherAnimal) {
-            await updateAnimal(fatherAnimal.id, {
-              ...fatherAnimal,
-              motherId: formData.paternalGrandmotherId,
-              fatherId: formData.paternalGrandfatherId
-            });
-          }
-        }
-      }
-
       queryClient.invalidateQueries({ queryKey: ['animals'] });
       queryClient.invalidateQueries({ queryKey: ['animalCounts'] });
       toast({
@@ -95,24 +70,7 @@ const AnimalForm = () => {
       return;
     }
 
-    // Prepare data for submission (excluding grandparent fields for main animal)
-    const dataToSubmit = {
-      name: formData.name,
-      tag: formData.tag,
-      species: formData.species,
-      breed: formData.breed,
-      birthDate: formData.birthDate,
-      gender: formData.gender,
-      weight: formData.weight,
-      color: formData.color,
-      motherId: formData.motherId,
-      fatherId: formData.fatherId,
-      notes: formData.notes,
-      healthStatus: formData.healthStatus,
-      image: formData.image
-    };
-
-    addAnimalMutation.mutate(dataToSubmit);
+    addAnimalMutation.mutate(formData);
   };
 
   const handleInputChange = (field: string, value: string) => {

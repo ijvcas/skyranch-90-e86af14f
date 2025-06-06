@@ -59,9 +59,13 @@ export type Database = {
           health_status: string | null
           id: string
           image_url: string | null
+          maternal_grandfather_id: string | null
+          maternal_grandmother_id: string | null
           mother_id: string | null
           name: string
           notes: string | null
+          paternal_grandfather_id: string | null
+          paternal_grandmother_id: string | null
           species: string
           tag: string
           updated_at: string | null
@@ -78,9 +82,13 @@ export type Database = {
           health_status?: string | null
           id?: string
           image_url?: string | null
+          maternal_grandfather_id?: string | null
+          maternal_grandmother_id?: string | null
           mother_id?: string | null
           name: string
           notes?: string | null
+          paternal_grandfather_id?: string | null
+          paternal_grandmother_id?: string | null
           species: string
           tag: string
           updated_at?: string | null
@@ -97,9 +105,13 @@ export type Database = {
           health_status?: string | null
           id?: string
           image_url?: string | null
+          maternal_grandfather_id?: string | null
+          maternal_grandmother_id?: string | null
           mother_id?: string | null
           name?: string
           notes?: string | null
+          paternal_grandfather_id?: string | null
+          paternal_grandmother_id?: string | null
           species?: string
           tag?: string
           updated_at?: string | null

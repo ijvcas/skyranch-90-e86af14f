@@ -182,7 +182,11 @@ const AnimalEdit = () => {
       fatherId: formData.fatherId.trim() || '',
       notes: formData.notes,
       healthStatus: formData.healthStatus,
-      image: formData.image
+      image: formData.image,
+      maternalGrandmotherId: formData.maternalGrandmotherId,
+      maternalGrandfatherId: formData.maternalGrandfatherId,
+      paternalGrandmotherId: formData.paternalGrandmotherId,
+      paternalGrandfatherId: formData.paternalGrandfatherId,
     };
     
     console.log('Data being submitted:', dataToSubmit);
@@ -275,7 +279,6 @@ const AnimalEdit = () => {
                 </div>
               </div>
 
-              {/* ... keep existing code (species, breed, birth date, gender, weight, color) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="species">Especie *</Label>
