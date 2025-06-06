@@ -198,7 +198,12 @@ const AnimalEdit = () => {
           <p className="text-gray-600">Modifica la información del animal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+        <form 
+          onSubmit={handleSubmit} 
+          className="space-y-6" 
+          autoComplete="new-password"
+          data-form="animal-edit"
+        >
           {/* Basic Information */}
           <Card className="shadow-lg">
             <CardHeader>
@@ -210,26 +215,32 @@ const AnimalEdit = () => {
                   <Label htmlFor="name">Nombre *</Label>
                   <Input
                     id="name"
+                    name="animal-name"
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     required
                     className="mt-1"
                     disabled={updateMutation.isPending}
-                    autoComplete="off"
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                   />
                 </div>
                 <div>
                   <Label htmlFor="tag">Número de Etiqueta *</Label>
                   <Input
                     id="tag"
+                    name="animal-tag"
                     type="text"
                     value={formData.tag}
                     onChange={(e) => handleInputChange('tag', e.target.value)}
                     required
                     className="mt-1"
                     disabled={updateMutation.isPending}
-                    autoComplete="off"
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                   />
                 </div>
               </div>
@@ -256,12 +267,15 @@ const AnimalEdit = () => {
                   <Label htmlFor="breed">Raza</Label>
                   <Input
                     id="breed"
+                    name="animal-breed"
                     type="text"
                     value={formData.breed}
                     onChange={(e) => handleInputChange('breed', e.target.value)}
                     className="mt-1"
                     disabled={updateMutation.isPending}
-                    autoComplete="off"
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                   />
                 </div>
               </div>
@@ -271,12 +285,15 @@ const AnimalEdit = () => {
                   <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
                   <Input
                     id="birthDate"
+                    name="animal-birth-date"
                     type="date"
                     value={formData.birthDate}
                     onChange={(e) => handleInputChange('birthDate', e.target.value)}
                     className="mt-1"
                     disabled={updateMutation.isPending}
-                    autoComplete="off"
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                   />
                 </div>
                 <div>
@@ -295,12 +312,15 @@ const AnimalEdit = () => {
                   <Label htmlFor="weight">Peso (kg)</Label>
                   <Input
                     id="weight"
+                    name="animal-weight"
                     type="number"
                     value={formData.weight}
                     onChange={(e) => handleInputChange('weight', e.target.value)}
                     className="mt-1"
                     disabled={updateMutation.isPending}
-                    autoComplete="off"
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                   />
                 </div>
               </div>
@@ -309,12 +329,15 @@ const AnimalEdit = () => {
                 <Label htmlFor="color">Color/Marcas</Label>
                 <Input
                   id="color"
+                  name="animal-color"
                   type="text"
                   value={formData.color}
                   onChange={(e) => handleInputChange('color', e.target.value)}
                   className="mt-1"
                   disabled={updateMutation.isPending}
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  data-1p-ignore
+                  data-lpignore="true"
                 />
               </div>
             </CardContent>
@@ -334,13 +357,16 @@ const AnimalEdit = () => {
                     <Label htmlFor="motherId">Madre</Label>
                     <Input
                       id="motherId"
+                      name="animal-mother"
                       type="text"
                       value={formData.motherId}
                       onChange={(e) => handleInputChange('motherId', e.target.value)}
                       placeholder="Nombre o etiqueta de la madre"
                       className="mt-1"
                       disabled={updateMutation.isPending}
-                      autoComplete="off"
+                      autoComplete="new-password"
+                      data-1p-ignore
+                      data-lpignore="true"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Escribe el nombre o número de etiqueta de la madre
@@ -350,13 +376,16 @@ const AnimalEdit = () => {
                     <Label htmlFor="fatherId">Padre</Label>
                     <Input
                       id="fatherId"
+                      name="animal-father"
                       type="text"
                       value={formData.fatherId}
                       onChange={(e) => handleInputChange('fatherId', e.target.value)}
                       placeholder="Nombre o etiqueta del padre"
                       className="mt-1"
                       disabled={updateMutation.isPending}
-                      autoComplete="off"
+                      autoComplete="new-password"
+                      data-1p-ignore
+                      data-lpignore="true"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Escribe el nombre o número de etiqueta del padre
@@ -376,26 +405,32 @@ const AnimalEdit = () => {
                         <Label htmlFor="maternalGrandmotherId">Abuela Materna</Label>
                         <Input
                           id="maternalGrandmotherId"
+                          name="animal-maternal-grandmother"
                           type="text"
                           value={formData.maternalGrandmotherId}
                           onChange={(e) => handleInputChange('maternalGrandmotherId', e.target.value)}
                           placeholder="Nombre o etiqueta de la abuela materna"
                           className="mt-1"
                           disabled={updateMutation.isPending}
-                          autoComplete="off"
+                          autoComplete="new-password"
+                          data-1p-ignore
+                          data-lpignore="true"
                         />
                       </div>
                       <div>
                         <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
                         <Input
                           id="maternalGrandfatherId"
+                          name="animal-maternal-grandfather"
                           type="text"
                           value={formData.maternalGrandfatherId}
                           onChange={(e) => handleInputChange('maternalGrandfatherId', e.target.value)}
                           placeholder="Nombre o etiqueta del abuelo materno"
                           className="mt-1"
                           disabled={updateMutation.isPending}
-                          autoComplete="off"
+                          autoComplete="new-password"
+                          data-1p-ignore
+                          data-lpignore="true"
                         />
                       </div>
                     </div>
@@ -408,26 +443,32 @@ const AnimalEdit = () => {
                         <Label htmlFor="paternalGrandmotherId">Abuela Paterna</Label>
                         <Input
                           id="paternalGrandmotherId"
+                          name="animal-paternal-grandmother"
                           type="text"
                           value={formData.paternalGrandmotherId}
                           onChange={(e) => handleInputChange('paternalGrandmotherId', e.target.value)}
                           placeholder="Nombre o etiqueta de la abuela paterna"
                           className="mt-1"
                           disabled={updateMutation.isPending}
-                          autoComplete="off"
+                          autoComplete="new-password"
+                          data-1p-ignore
+                          data-lpignore="true"
                         />
                       </div>
                       <div>
                         <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
                         <Input
                           id="paternalGrandfatherId"
+                          name="animal-paternal-grandfather"
                           type="text"
                           value={formData.paternalGrandfatherId}
                           onChange={(e) => handleInputChange('paternalGrandfatherId', e.target.value)}
                           placeholder="Nombre o etiqueta del abuelo paterno"
                           className="mt-1"
                           disabled={updateMutation.isPending}
-                          autoComplete="off"
+                          autoComplete="new-password"
+                          data-1p-ignore
+                          data-lpignore="true"
                         />
                       </div>
                     </div>
@@ -486,7 +527,9 @@ const AnimalEdit = () => {
                 placeholder="Cualquier información adicional sobre el animal..."
                 rows={4}
                 disabled={updateMutation.isPending}
-                autoComplete="off"
+                autoComplete="new-password"
+                data-1p-ignore
+                data-lpignore="true"
               />
             </CardContent>
           </Card>
