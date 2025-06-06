@@ -13,38 +13,67 @@ export interface AppUser {
 export const getAllUsers = async (): Promise<AppUser[]> => {
   console.log('🔍 Starting getAllUsers - fetching all users...');
   
-  // First get all auth users from profiles to ensure we don't miss any registered users
-  const { data: authUsers, error: authError } = await supabase
-    .from('profiles')
-    .select('*');
-
-  if (authError) {
-    console.error('❌ Error fetching profiles:', authError);
-  } else {
-    console.log('✅ Profile users found:', authUsers?.length || 0, authUsers?.map(u => u.email));
-  }
-
-  // Sync ALL users from profiles to app_users (this ensures no one is missing)
-  if (authUsers && authUsers.length > 0) {
-    console.log('🔄 Starting user sync process...');
-    for (const profile of authUsers) {
-      if (profile.email) {
-        console.log(`🔍 Processing user: ${profile.email}`);
-        await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
-      }
-    }
-    console.log('✅ User sync process completed');
-  }
-
-  // Also check if current authenticated user exists and sync them
+  // First, let's get the current authenticated user and ensure they are synced
   const { data: { user: currentUser } } = await supabase.auth.getUser();
+  console.log('🔍 Current authenticated user:', currentUser?.email);
+  
   if (currentUser && currentUser.email) {
     console.log(`🔄 Ensuring current user ${currentUser.email} is synced...`);
     const userName = currentUser.user_metadata?.full_name || currentUser.email;
     await syncUserToAppUsers(currentUser.id, currentUser.email, userName);
   }
 
-  // Now get all users from app_users table after syncing
+  // Get all profiles to see what we have there
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('*');
+
+  if (profilesError) {
+    console.error('❌ Error fetching profiles:', profilesError);
+  } else {
+    console.log('✅ Profile users found:', profiles?.length || 0, profiles?.map(p => p.email));
+    
+    // Sync all profiles to app_users
+    if (profiles && profiles.length > 0) {
+      console.log('🔄 Starting profile sync process...');
+      for (const profile of profiles) {
+        if (profile.email) {
+          console.log(`🔍 Processing profile: ${profile.email}`);
+          await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
+        }
+      }
+      console.log('✅ Profile sync process completed');
+    }
+  }
+
+  // If we have no profiles, let's try to get users directly from the auth system
+  // This might help in cases where the profiles trigger isn't working
+  if (!profiles || profiles.length === 0) {
+    console.log('⚠️ No profiles found, checking if current user needs to be added to profiles...');
+    if (currentUser && currentUser.email) {
+      // Create profile for current user if it doesn't exist
+      const { error: profileInsertError } = await supabase
+        .from('profiles')
+        .upsert([{
+          id: currentUser.id,
+          email: currentUser.email,
+          full_name: currentUser.user_metadata?.full_name || currentUser.email
+        }], {
+          onConflict: 'id',
+          ignoreDuplicates: false
+        });
+        
+      if (profileInsertError) {
+        console.error('❌ Error creating profile:', profileInsertError);
+      } else {
+        console.log('✅ Current user profile created/updated');
+        // Now sync to app_users
+        await syncUserToAppUsers(currentUser.id, currentUser.email, currentUser.user_metadata?.full_name || currentUser.email);
+      }
+    }
+  }
+
+  // Now get all users from app_users table
   const { data: appUsers, error: appUsersError } = await supabase
     .from('app_users')
     .select('*')
@@ -78,62 +107,51 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
 export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
   console.log(`🔄 Attempting to sync user: ${email} (ID: ${profileId})`);
   
-  // Check if user already exists in app_users by email
-  const { data: existingUser, error: checkError } = await supabase
+  // Determine role based on email - new users get 'worker' role by default
+  const role = (email === 'juan.casanova@skyranch.com' || email === 'jvcas@mac.com') 
+    ? 'admin' 
+    : 'worker';
+
+  console.log(`➕ Syncing user to app_users: ${email} with role: ${role}`);
+
+  // Use upsert to handle both inserts and updates
+  const { error } = await supabase
     .from('app_users')
-    .select('id, email')
-    .eq('email', email)
-    .maybeSingle();
+    .upsert([{
+      id: profileId,
+      name: fullName || email,
+      email: email,
+      role: role,
+      is_active: true
+    }], {
+      onConflict: 'id',
+      ignoreDuplicates: false
+    });
 
-  if (checkError) {
-    console.error('❌ Error checking existing user:', checkError);
-    return;
-  }
-
-  if (!existingUser) {
-    // Determine role based on email - new users get 'worker' role by default
-    const role = (email === 'juan.casanova@skyranch.com' || email === 'jvcas@mac.com') 
-      ? 'admin' 
-      : 'worker';
-
-    console.log(`➕ Syncing new user to app_users: ${email} with role: ${role}`);
-
-    // Try to add to app_users table using upsert to handle duplicates
-    const { error } = await supabase
-      .from('app_users')
-      .upsert([{
-        id: profileId,
-        name: fullName || email,
-        email: email,
-        role: role,
-        is_active: true
-      }], {
-        onConflict: 'email',
-        ignoreDuplicates: false
-      });
-
-    if (error) {
-      console.error('❌ Error syncing user to app_users:', error);
-    } else {
-      console.log(`✅ User ${email} successfully synced to app_users table`);
-    }
-  } else {
-    console.log(`✅ User ${email} already exists in app_users table`);
+  if (error) {
+    console.error('❌ Error syncing user to app_users:', error);
     
-    // Update the user record if the ID doesn't match (in case of profile ID changes)
-    if (existingUser.id !== profileId) {
-      console.log(`🔄 Updating user ID for ${email} from ${existingUser.id} to ${profileId}`);
+    // If there's a unique constraint error on email, try updating by email
+    if (error.code === '23505' && error.message.includes('email')) {
+      console.log(`🔄 Email conflict, trying to update existing record for ${email}`);
       const { error: updateError } = await supabase
         .from('app_users')
-        .update({ id: profileId, name: fullName || email })
+        .update({
+          id: profileId,
+          name: fullName || email,
+          role: role,
+          is_active: true
+        })
         .eq('email', email);
         
       if (updateError) {
-        console.error('❌ Error updating user ID:', updateError);
+        console.error('❌ Error updating user by email:', updateError);
       } else {
-        console.log(`✅ User ${email} ID successfully updated`);
+        console.log(`✅ User ${email} successfully updated by email`);
       }
     }
+  } else {
+    console.log(`✅ User ${email} successfully synced to app_users table`);
   }
 };
 
@@ -190,6 +208,13 @@ export const deleteUser = async (id: string): Promise<boolean> => {
     .single();
 
   const userEmail = userToDelete?.email || 'unknown';
+  
+  // Prevent deletion of admin users
+  if (userEmail === 'juan.casanova@skyranch.com' || userEmail === 'jvcas@mac.com') {
+    console.log(`🚫 Cannot delete admin user: ${userEmail}`);
+    throw new Error('Cannot delete admin users');
+  }
+  
   console.log(`🗑️ Deleting user: ${userEmail}`);
 
   // Step 1: Delete from app_users table
