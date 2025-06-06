@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { syncUserToAppUsers } from '@/services/userService';
 
 interface AuthContextType {
   user: User | null;
@@ -30,11 +31,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Sync user to app_users table when they sign in
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(async () => {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+              if (profile && profile.email) {
+                await syncUserToAppUsers(
+                  profile.id, 
+                  profile.email, 
+                  profile.full_name || profile.email
+                );
+              }
+            } catch (error) {
+              console.error('Error syncing user on sign in:', error);
+            }
+          }, 0);
+        }
       }
     );
 

@@ -12,31 +12,100 @@ export interface AppUser {
 }
 
 export const getAllUsers = async (): Promise<AppUser[]> => {
-  const { data, error } = await supabase
+  // First get all users from app_users table
+  const { data: appUsers, error: appUsersError } = await supabase
     .from('app_users')
     .select('*')
-    .neq('name', 'Admin Usuario') // Exclude the old admin user
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching users:', error);
-    throw error;
+  if (appUsersError) {
+    console.error('Error fetching app users:', appUsersError);
   }
 
-  return (data || []).map(user => ({
-    ...user,
-    // Automatically assign admin role to Juan Casanova H
-    role: user.email === 'juan.casanova@skyranch.com' ? 'admin' : user.role as 'admin' | 'manager' | 'worker'
-  }));
+  // Then get all auth users to ensure we don't miss any registered users
+  const { data: authUsers, error: authError } = await supabase
+    .from('profiles')
+    .select('*');
+
+  if (authError) {
+    console.error('Error fetching profiles:', authError);
+  }
+
+  // Combine and deduplicate users
+  const allUsers: AppUser[] = [];
+  const userEmails = new Set<string>();
+
+  // Add app_users first
+  if (appUsers) {
+    appUsers.forEach(user => {
+      allUsers.push({
+        ...user,
+        role: user.email === 'juan.casanova@skyranch.com' || user.email === 'jvcas@mac.com' 
+          ? 'admin' 
+          : user.role as 'admin' | 'manager' | 'worker'
+      });
+      userEmails.add(user.email);
+    });
+  }
+
+  // Add profiles that aren't already in app_users
+  if (authUsers) {
+    authUsers.forEach(profile => {
+      if (!userEmails.has(profile.email) && profile.email) {
+        // Determine role based on email
+        const role = (profile.email === 'juan.casanova@skyranch.com' || profile.email === 'jvcas@mac.com') 
+          ? 'admin' 
+          : 'worker';
+
+        allUsers.push({
+          id: profile.id,
+          name: profile.full_name || profile.email,
+          email: profile.email,
+          role: role,
+          created_at: profile.created_at,
+          is_active: true,
+          created_by: undefined
+        });
+      }
+    });
+  }
+
+  return allUsers;
+};
+
+export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
+  // Check if user already exists in app_users
+  const { data: existingUser } = await supabase
+    .from('app_users')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (!existingUser) {
+    // Determine role based on email
+    const role = (email === 'juan.casanova@skyranch.com' || email === 'jvcas@mac.com') 
+      ? 'admin' 
+      : 'worker';
+
+    // Add to app_users table
+    const { error } = await supabase
+      .from('app_users')
+      .insert([{
+        id: profileId,
+        name: fullName || email,
+        email: email,
+        role: role,
+        is_active: true
+      }]);
+
+    if (error) {
+      console.error('Error syncing user to app_users:', error);
+    }
+  }
 };
 
 export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'created_by'>): Promise<AppUser> => {
   const { data: { user } } = await supabase.auth.getUser();
-  
-  // Prevent adding users with the old admin name
-  if (userData.name === 'Admin Usuario') {
-    throw new Error('No se puede crear un usuario con ese nombre');
-  }
   
   const { data, error } = await supabase
     .from('app_users')
@@ -63,7 +132,6 @@ export const updateUser = async (id: string, updates: Partial<AppUser>): Promise
     .from('app_users')
     .update(updates)
     .eq('id', id)
-    .neq('name', 'Admin Usuario') // Prevent updating the old admin user
     .select()
     .single();
 
@@ -79,13 +147,6 @@ export const updateUser = async (id: string, updates: Partial<AppUser>): Promise
 };
 
 export const deleteUser = async (id: string): Promise<boolean> => {
-  // First check if this is the old admin user and delete it
-  const { data: userToDelete } = await supabase
-    .from('app_users')
-    .select('name')
-    .eq('id', id)
-    .single();
-
   const { error } = await supabase
     .from('app_users')
     .delete()
@@ -103,18 +164,13 @@ export const toggleUserStatus = async (id: string): Promise<AppUser> => {
   // First get the current user to toggle their status
   const { data: currentUser, error: fetchError } = await supabase
     .from('app_users')
-    .select('is_active, name')
+    .select('is_active')
     .eq('id', id)
     .single();
 
   if (fetchError) {
     console.error('Error fetching user:', fetchError);
     throw fetchError;
-  }
-
-  // Prevent toggling the old admin user
-  if (currentUser.name === 'Admin Usuario') {
-    throw new Error('No se puede modificar el estado de este usuario');
   }
 
   const { data, error } = await supabase
@@ -140,34 +196,45 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
   
   if (!user) return null;
 
-  const { data, error } = await supabase
+  // First try to find in app_users
+  const { data: appUser, error } = await supabase
     .from('app_users')
     .select('*')
-    .eq('created_by', user.id)
-    .neq('name', 'Admin Usuario') // Exclude old admin
-    .limit(1)
+    .eq('id', user.id)
     .single();
 
-  if (error) {
-    console.error('Error fetching current user:', error);
-    return null;
+  if (appUser) {
+    return {
+      ...appUser,
+      role: appUser.role as 'admin' | 'manager' | 'worker'
+    };
   }
 
-  return {
-    ...data,
-    role: data.role as 'admin' | 'manager' | 'worker'
-  };
-};
+  // If not found in app_users, check profiles and sync
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
 
-// Function to clean up old admin user
-export const removeOldAdminUser = async (): Promise<void> => {
-  const { error } = await supabase
-    .from('app_users')
-    .delete()
-    .eq('name', 'Admin Usuario');
+  if (profile && profile.email) {
+    // Sync to app_users
+    await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
+    
+    // Return user data
+    const role = (profile.email === 'juan.casanova@skyranch.com' || profile.email === 'jvcas@mac.com') 
+      ? 'admin' 
+      : 'worker';
 
-  if (error) {
-    console.error('Error removing old admin user:', error);
-    throw error;
+    return {
+      id: profile.id,
+      name: profile.full_name || profile.email,
+      email: profile.email,
+      role: role,
+      created_at: profile.created_at,
+      is_active: true
+    };
   }
+
+  return null;
 };
