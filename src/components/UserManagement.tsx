@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Users, UserPlus, UserMinus, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, UserMinus, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -76,18 +76,31 @@ const UserManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['app-users'] });
       const deletedUser = users.find(u => u.id === id);
       toast({
-        title: "Usuario Eliminado",
-        description: `${deletedUser?.name} ha sido eliminado`,
+        title: "Usuario Eliminado de la Aplicación",
+        description: `${deletedUser?.name} ha sido eliminado de la aplicación`,
         variant: "destructive"
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error deleting user:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el usuario",
-        variant: "destructive"
-      });
+      
+      // Check if this is a partial deletion error
+      if (error.message.includes('remains in the authentication system')) {
+        toast({
+          title: "Eliminación Parcial",
+          description: error.message,
+          variant: "destructive",
+          duration: 8000 // Longer duration for important message
+        });
+        // Still refresh the list since the user was removed from app
+        queryClient.invalidateQueries({ queryKey: ['app-users'] });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el usuario",
+          variant: "destructive"
+        });
+      }
     }
   });
 
@@ -135,7 +148,7 @@ const UserManagement = () => {
       return;
     }
 
-    if (window.confirm(`¿Estás seguro de eliminar a ${userName}?`)) {
+    if (window.confirm(`¿Estás seguro de eliminar a ${userName}? Nota: El usuario será eliminado de la aplicación, pero podría permanecer en el sistema de autenticación.`)) {
       deleteUserMutation.mutate(id);
     }
   };

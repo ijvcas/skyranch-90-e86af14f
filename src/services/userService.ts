@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppUser {
@@ -244,23 +245,25 @@ export const deleteUser = async (id: string): Promise<boolean> => {
 
   if (profileError) {
     console.error('❌ Error deleting from profiles:', profileError);
-    // Don't throw, continue with auth deletion
+    // Don't throw, continue with auth deletion attempt
   } else {
     console.log(`✅ Deleted ${userEmail} from profiles table`);
   }
 
-  // Step 3: Try to delete from auth system (this requires admin privileges)
+  // Step 3: Try to delete from auth system (this requires admin privileges and will likely fail)
   try {
     const { error: authError } = await supabase.auth.admin.deleteUser(id);
     if (authError) {
-      console.error('❌ Error deleting from auth system (admin required):', authError);
-      console.log('ℹ️ User removed from app tables but may still exist in auth system');
+      console.error('❌ Auth deletion failed (admin privileges required):', authError);
+      // This is expected to fail for non-admin clients
+      throw new Error(`User ${userEmail} was removed from the application but remains in the authentication system. An administrator with service role privileges is required to fully delete the user from authentication.`);
     } else {
       console.log(`✅ User ${userEmail} successfully deleted from auth system`);
     }
   } catch (error) {
-    console.error('❌ Error calling auth admin delete:', error);
-    console.log('ℹ️ User removed from app tables but may still exist in auth system');
+    console.error('❌ Auth deletion failed:', error);
+    // Re-throw with a more descriptive error
+    throw new Error(`User ${userEmail} was removed from the application but remains in the authentication system. An administrator with service role privileges is required to fully delete the user from authentication.`);
   }
 
   console.log(`✅ User ${userEmail} deletion process completed`);
