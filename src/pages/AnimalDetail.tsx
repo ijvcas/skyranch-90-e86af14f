@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,46 +22,46 @@ const AnimalDetail = () => {
 
   console.log('Animal data loaded:', animal);
 
-  // Query for parents
+  // Query for parents using actual IDs from the animal record
   const { data: mother } = useQuery({
     queryKey: ['mother', animal?.motherId],
-    queryFn: () => animal?.motherId ? getAnimal(animal.motherId) : null,
+    queryFn: () => animal?.motherId && animal.motherId.trim() !== '' ? getAnimal(animal.motherId) : null,
     enabled: !!animal?.motherId && animal.motherId.trim() !== '',
     retry: 1
   });
 
   const { data: father } = useQuery({
     queryKey: ['father', animal?.fatherId],
-    queryFn: () => animal?.fatherId ? getAnimal(animal.fatherId) : null,
+    queryFn: () => animal?.fatherId && animal.fatherId.trim() !== '' ? getAnimal(animal.fatherId) : null,
     enabled: !!animal?.fatherId && animal.fatherId.trim() !== '',
     retry: 1
   });
 
-  // Query grandparents
+  // Query grandparents using actual IDs from the animal record
   const { data: maternalGrandmother } = useQuery({
     queryKey: ['maternalGrandmother', animal?.maternalGrandmotherId],
-    queryFn: () => animal?.maternalGrandmotherId ? getAnimal(animal.maternalGrandmotherId) : null,
+    queryFn: () => animal?.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '' ? getAnimal(animal.maternalGrandmotherId) : null,
     enabled: !!animal?.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '',
     retry: 1
   });
 
   const { data: maternalGrandfather } = useQuery({
     queryKey: ['maternalGrandfather', animal?.maternalGrandfatherId],
-    queryFn: () => animal?.maternalGrandfatherId ? getAnimal(animal.maternalGrandfatherId) : null,
+    queryFn: () => animal?.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '' ? getAnimal(animal.maternalGrandfatherId) : null,
     enabled: !!animal?.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '',
     retry: 1
   });
 
   const { data: paternalGrandmother } = useQuery({
     queryKey: ['paternalGrandmother', animal?.paternalGrandmotherId],
-    queryFn: () => animal?.paternalGrandmotherId ? getAnimal(animal.paternalGrandmotherId) : null,
+    queryFn: () => animal?.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '' ? getAnimal(animal.paternalGrandmotherId) : null,
     enabled: !!animal?.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '',
     retry: 1
   });
 
   const { data: paternalGrandfather } = useQuery({
     queryKey: ['paternalGrandfather', animal?.paternalGrandfatherId],
-    queryFn: () => animal?.paternalGrandfatherId ? getAnimal(animal.paternalGrandfatherId) : null,
+    queryFn: () => animal?.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '' ? getAnimal(animal.paternalGrandfatherId) : null,
     enabled: !!animal?.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '',
     retry: 1
   });
@@ -201,7 +202,7 @@ const AnimalDetail = () => {
     );
   }
 
-  // Check if we should show pedigree
+  // Check if we should show pedigree - look for actual ID values
   const hasParents = (animal.motherId && animal.motherId.trim() !== '') || (animal.fatherId && animal.fatherId.trim() !== '');
   const hasGrandparents = (animal.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '') || 
                          (animal.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '') ||

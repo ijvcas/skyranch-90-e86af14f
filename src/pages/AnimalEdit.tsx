@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAnimal, updateAnimal, getAnimalByNameOrTag } from '@/services/animalService';
+import { getAnimal, updateAnimal } from '@/services/animalService';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -43,19 +43,6 @@ const AnimalEdit = () => {
     queryKey: ['animal', id],
     queryFn: () => getAnimal(id!),
     enabled: !!id
-  });
-
-  // Fetch parent data to get grandparent IDs
-  const { data: mother } = useQuery({
-    queryKey: ['mother', formData.motherId],
-    queryFn: () => formData.motherId ? getAnimalByNameOrTag(formData.motherId) : null,
-    enabled: !!formData.motherId && formData.motherId.trim() !== ''
-  });
-
-  const { data: father } = useQuery({
-    queryKey: ['father', formData.fatherId],
-    queryFn: () => formData.fatherId ? getAnimalByNameOrTag(formData.fatherId) : null,
-    enabled: !!formData.fatherId && formData.fatherId.trim() !== ''
   });
 
   // Update mutation
@@ -95,37 +82,16 @@ const AnimalEdit = () => {
         color: animal.color,
         motherId: animal.motherId || '',
         fatherId: animal.fatherId || '',
-        maternalGrandmotherId: '',
-        maternalGrandfatherId: '',
-        paternalGrandmotherId: '',
-        paternalGrandfatherId: '',
+        maternalGrandmotherId: animal.maternalGrandmotherId || '',
+        maternalGrandfatherId: animal.maternalGrandfatherId || '',
+        paternalGrandmotherId: animal.paternalGrandmotherId || '',
+        paternalGrandfatherId: animal.paternalGrandfatherId || '',
         notes: animal.notes,
         healthStatus: animal.healthStatus,
         image: animal.image
       });
     }
   }, [animal]);
-
-  // Update grandparent fields when parent data is loaded
-  useEffect(() => {
-    if (mother) {
-      setFormData(prev => ({
-        ...prev,
-        maternalGrandmotherId: mother.motherId || '',
-        maternalGrandfatherId: mother.fatherId || ''
-      }));
-    }
-  }, [mother]);
-
-  useEffect(() => {
-    if (father) {
-      setFormData(prev => ({
-        ...prev,
-        paternalGrandmotherId: father.motherId || '',
-        paternalGrandfatherId: father.fatherId || ''
-      }));
-    }
-  }, [father]);
 
   useEffect(() => {
     if (error) {
@@ -145,30 +111,7 @@ const AnimalEdit = () => {
     
     console.log('Form data before submission:', formData);
     
-    // Update parent animals with grandparent information if they exist
-    if (formData.motherId && (formData.maternalGrandmotherId || formData.maternalGrandfatherId)) {
-      const motherAnimal = await getAnimalByNameOrTag(formData.motherId);
-      if (motherAnimal) {
-        await updateAnimal(motherAnimal.id, {
-          ...motherAnimal,
-          motherId: formData.maternalGrandmotherId,
-          fatherId: formData.maternalGrandfatherId
-        });
-      }
-    }
-
-    if (formData.fatherId && (formData.paternalGrandmotherId || formData.paternalGrandfatherId)) {
-      const fatherAnimal = await getAnimalByNameOrTag(formData.fatherId);
-      if (fatherAnimal) {
-        await updateAnimal(fatherAnimal.id, {
-          ...fatherAnimal,
-          motherId: formData.paternalGrandmotherId,
-          fatherId: formData.paternalGrandfatherId
-        });
-      }
-    }
-    
-    // Prepare data for the main animal (excluding grandparent fields)
+    // Prepare data for submission
     const dataToSubmit = {
       name: formData.name,
       tag: formData.tag,
@@ -183,10 +126,10 @@ const AnimalEdit = () => {
       notes: formData.notes,
       healthStatus: formData.healthStatus,
       image: formData.image,
-      maternalGrandmotherId: formData.maternalGrandmotherId,
-      maternalGrandfatherId: formData.maternalGrandfatherId,
-      paternalGrandmotherId: formData.paternalGrandmotherId,
-      paternalGrandfatherId: formData.paternalGrandfatherId,
+      maternalGrandmotherId: formData.maternalGrandmotherId.trim() || '',
+      maternalGrandfatherId: formData.maternalGrandfatherId.trim() || '',
+      paternalGrandmotherId: formData.paternalGrandmotherId.trim() || '',
+      paternalGrandfatherId: formData.paternalGrandfatherId.trim() || '',
     };
     
     console.log('Data being submitted:', dataToSubmit);
