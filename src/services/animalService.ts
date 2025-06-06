@@ -35,6 +35,35 @@ const findAnimalByNameOrTag = async (searchTerm: string): Promise<string | null>
   return data[0].id;
 };
 
+// Helper function to transform database row to Animal interface
+const transformAnimalData = (data: any): Animal => {
+  console.log('Transforming animal data:', data);
+  
+  const animal = {
+    id: data.id,
+    name: data.name || '',
+    tag: data.tag || '',
+    species: data.species || 'bovino',
+    breed: data.breed || '',
+    birthDate: data.birth_date || '',
+    gender: data.gender || '',
+    weight: data.weight ? data.weight.toString() : '',
+    color: data.color || '',
+    motherId: data.mother_id || '',
+    fatherId: data.father_id || '',
+    healthStatus: data.health_status || 'healthy',
+    notes: data.notes || '',
+    image: data.image_url || null,
+    maternalGrandmotherId: data.maternal_grandmother_id || '',
+    maternalGrandfatherId: data.maternal_grandfather_id || '',
+    paternalGrandmotherId: data.paternal_grandmother_id || '',
+    paternalGrandfatherId: data.paternal_grandfather_id || '',
+  };
+
+  console.log('Transformed animal:', animal);
+  return animal;
+};
+
 export const getAllAnimals = async (): Promise<Animal[]> => {
   try {
     console.log('Fetching all animals...');
@@ -51,26 +80,7 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
     console.log('Raw animals data:', data);
 
     // Transform Supabase data to match our Animal interface
-    const animals = (data || []).map(animal => ({
-      id: animal.id,
-      name: animal.name || '',
-      tag: animal.tag || '',
-      species: animal.species || 'bovino',
-      breed: animal.breed || '',
-      birthDate: animal.birth_date || '',
-      gender: animal.gender || '',
-      weight: animal.weight ? animal.weight.toString() : '',
-      color: animal.color || '',
-      motherId: animal.mother_id || '',
-      fatherId: animal.father_id || '',
-      healthStatus: animal.health_status || 'healthy',
-      notes: animal.notes || '',
-      image: animal.image_url || null,
-      maternalGrandmotherId: animal.maternal_grandmother_id || '',
-      maternalGrandfatherId: animal.maternal_grandfather_id || '',
-      paternalGrandmotherId: animal.paternal_grandmother_id || '',
-      paternalGrandfatherId: animal.paternal_grandfather_id || '',
-    }));
+    const animals = (data || []).map(transformAnimalData);
 
     console.log('Transformed animals:', animals);
     return animals;
@@ -110,30 +120,7 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
     }
 
     console.log('Raw animal data:', data);
-
-    const animal = {
-      id: data.id,
-      name: data.name || '',
-      tag: data.tag || '',
-      species: data.species || 'bovino',
-      breed: data.breed || '',
-      birthDate: data.birth_date || '',
-      gender: data.gender || '',
-      weight: data.weight ? data.weight.toString() : '',
-      color: data.color || '',
-      motherId: data.mother_id || '',
-      fatherId: data.father_id || '',
-      healthStatus: data.health_status || 'healthy',
-      notes: data.notes || '',
-      image: data.image_url || null,
-      maternalGrandmotherId: data.maternal_grandmother_id || '',
-      maternalGrandfatherId: data.maternal_grandfather_id || '',
-      paternalGrandmotherId: data.paternal_grandmother_id || '',
-      paternalGrandfatherId: data.paternal_grandfather_id || '',
-    };
-
-    console.log('Transformed animal:', animal);
-    return animal;
+    return transformAnimalData(data);
   } catch (error) {
     console.error('Failed to fetch animal:', error);
     return null;
@@ -154,27 +141,7 @@ export const getAnimalByNameOrTag = async (searchTerm: string): Promise<Animal |
     return null;
   }
   
-  const animal = data[0];
-  return {
-    id: animal.id,
-    name: animal.name || '',
-    tag: animal.tag || '',
-    species: animal.species || 'bovino',
-    breed: animal.breed || '',
-    birthDate: animal.birth_date || '',
-    gender: animal.gender || '',
-    weight: animal.weight ? animal.weight.toString() : '',
-    color: animal.color || '',
-    motherId: animal.mother_id || '',
-    fatherId: animal.father_id || '',
-    healthStatus: animal.health_status || 'healthy',
-    notes: animal.notes || '',
-    image: animal.image_url || null,
-    maternalGrandmotherId: animal.maternal_grandmother_id || '',
-    maternalGrandfatherId: animal.maternal_grandfather_id || '',
-    paternalGrandmotherId: animal.paternal_grandmother_id || '',
-    paternalGrandfatherId: animal.paternal_grandfather_id || '',
-  };
+  return transformAnimalData(data[0]);
 };
 
 export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: boolean; id?: string }> => {
