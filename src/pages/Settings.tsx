@@ -12,6 +12,7 @@ import PermissionsManager from '@/components/PermissionsManager';
 import AdvancedAnalytics from '@/components/AdvancedAnalytics';
 import DataImportExport from '@/components/DataImportExport';
 import AppInfoForm from '@/components/AppInfoForm';
+import TimezoneSettings from '@/components/TimezoneSettings';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -115,6 +116,11 @@ const Settings = () => {
           {/* App Info Cards */}
           <div className="mb-8">
             <AppInfoForm isAdmin={isAdmin} />
+          </div>
+
+          {/* Timezone Settings */}
+          <div className="mb-8">
+            <TimezoneSettings />
           </div>
         </div>
 

@@ -92,7 +92,8 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       return { success: false };
     }
 
-    // Process parent IDs - only use valid UUIDs, otherwise set to null
+    // For parent IDs: if they're valid UUIDs, use them; otherwise save as null for database foreign key
+    // But we'll store the original text in a different approach - for now just log them
     const motherIdToSave = animal.motherId && isValidUUID(animal.motherId) ? animal.motherId : null;
     const fatherIdToSave = animal.fatherId && isValidUUID(animal.fatherId) ? animal.fatherId : null;
 
@@ -138,7 +139,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
 
 export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Promise<boolean> => {
   try {
-    // Process parent IDs - only use valid UUIDs, otherwise set to null
+    // For parent IDs: if they're valid UUIDs, use them; otherwise save as null for database foreign key
     const motherIdToSave = animal.motherId && isValidUUID(animal.motherId) ? animal.motherId : null;
     const fatherIdToSave = animal.fatherId && isValidUUID(animal.fatherId) ? animal.fatherId : null;
 
@@ -149,6 +150,15 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       originalMotherId: animal.motherId,
       originalFatherId: animal.fatherId
     });
+
+    // For now, we'll store the parent names in the notes field if they're not UUIDs
+    let updatedNotes = animal.notes;
+    if (animal.motherId && !isValidUUID(animal.motherId)) {
+      updatedNotes += `\n[Madre: ${animal.motherId}]`;
+    }
+    if (animal.fatherId && !isValidUUID(animal.fatherId)) {
+      updatedNotes += `\n[Padre: ${animal.fatherId}]`;
+    }
 
     const { error } = await supabase
       .from('animals')
@@ -164,7 +174,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
         mother_id: motherIdToSave,
         father_id: fatherIdToSave,
         health_status: animal.healthStatus,
-        notes: animal.notes,
+        notes: updatedNotes,
         image_url: animal.image,
       })
       .eq('id', id);
