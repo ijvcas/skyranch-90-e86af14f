@@ -81,8 +81,8 @@ const AnimalEdit = () => {
         gender: animal.gender,
         weight: animal.weight,
         color: animal.color,
-        motherId: animal.motherId,
-        fatherId: animal.fatherId,
+        motherId: animal.motherId || '',
+        fatherId: animal.fatherId || '',
         notes: animal.notes,
         healthStatus: animal.healthStatus,
         image: animal.image
@@ -106,9 +106,16 @@ const AnimalEdit = () => {
     
     if (!id) return;
     
+    // Clean up form data before submitting
+    const cleanFormData = {
+      ...formData,
+      motherId: formData.motherId || null,
+      fatherId: formData.fatherId || null
+    };
+    
     updateMutation.mutate({ 
       id, 
-      data: formData 
+      data: cleanFormData 
     });
   };
 
@@ -301,12 +308,12 @@ const AnimalEdit = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="motherId">Madre</Label>
-                  <Select value={formData.motherId} onValueChange={(value) => handleInputChange('motherId', value)} disabled={updateMutation.isPending}>
+                  <Select value={formData.motherId || "none"} onValueChange={(value) => handleInputChange('motherId', value === "none" ? "" : value)} disabled={updateMutation.isPending}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Seleccionar madre" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin madre registrada</SelectItem>
+                      <SelectItem value="none">Sin madre registrada</SelectItem>
                       {getPotentialMothers().map(mother => (
                         <SelectItem key={mother.id} value={mother.id}>
                           {mother.name} (#{mother.tag})
@@ -317,12 +324,12 @@ const AnimalEdit = () => {
                 </div>
                 <div>
                   <Label htmlFor="fatherId">Padre</Label>
-                  <Select value={formData.fatherId} onValueChange={(value) => handleInputChange('fatherId', value)} disabled={updateMutation.isPending}>
+                  <Select value={formData.fatherId || "none"} onValueChange={(value) => handleInputChange('fatherId', value === "none" ? "" : value)} disabled={updateMutation.isPending}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Seleccionar padre" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin padre registrado</SelectItem>
+                      <SelectItem value="none">Sin padre registrado</SelectItem>
                       {getPotentialFathers().map(father => (
                         <SelectItem key={father.id} value={father.id}>
                           {father.name} (#{father.tag})
