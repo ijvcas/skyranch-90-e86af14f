@@ -52,7 +52,7 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
   if (authUsers) {
     authUsers.forEach(profile => {
       if (!userEmails.has(profile.email) && profile.email) {
-        // Determine role based on email
+        // Determine role based on email - new users get 'worker' role by default
         const role = (profile.email === 'juan.casanova@skyranch.com' || profile.email === 'jvcas@mac.com') 
           ? 'admin' 
           : 'worker';
@@ -82,10 +82,12 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
     .single();
 
   if (!existingUser) {
-    // Determine role based on email
+    // Determine role based on email - new users get 'worker' role by default
     const role = (email === 'juan.casanova@skyranch.com' || email === 'jvcas@mac.com') 
       ? 'admin' 
       : 'worker';
+
+    console.log(`Syncing new user to app_users: ${email} with role: ${role}`);
 
     // Add to app_users table
     const { error } = await supabase
@@ -100,7 +102,11 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
 
     if (error) {
       console.error('Error syncing user to app_users:', error);
+    } else {
+      console.log(`User ${email} successfully synced to app_users table`);
     }
+  } else {
+    console.log(`User ${email} already exists in app_users table`);
   }
 };
 

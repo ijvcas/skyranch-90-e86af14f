@@ -1,237 +1,236 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { TrendingUp, Users, Heart, Baby } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllAnimals } from '@/services/animalService';
-import { getAllUsers } from '@/services/userService';
-import { TrendingUp, Users, Activity, Heart } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-const AdvancedAnalytics = () => {
-  const { data: animals = [] } = useQuery({
-    queryKey: ['animals'],
-    queryFn: getAllAnimals,
-  });
+interface Animal {
+  id: string;
+  name: string;
+  species: string;
+  breed: string;
+  birth_date: string;
+  weight: number;
+  height: number;
+  color: string;
+  gender: string;
+  created_at: string;
+  notes: string;
+  image_url: string;
+  owner_id: string;
+}
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: getAllUsers,
-  });
+interface HealthRecord {
+  id: string;
+  animal_id: string;
+  date: string;
+  type: string;
+  description: string;
+  created_at: string;
+}
 
-  // Calculate analytics data
-  const totalAnimals = animals.length;
-  const totalUsers = users.length;
-  const activeUsers = users.filter(user => user.is_active).length;
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#9cafff'];
 
-  // Recent activity (animals added in last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const recentAnimals = animals.filter(animal => {
-    const createdDate = animal.createdAt ? new Date(animal.createdAt) : null;
-    return createdDate && createdDate > thirtyDaysAgo;
-  });
-
-  // Species distribution for pie chart
-  const speciesData = animals.reduce((acc, animal) => {
-    const species = animal.species;
-    acc[species] = (acc[species] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const pieData = Object.entries(speciesData).map(([species, count]) => ({
-    name: species.charAt(0).toUpperCase() + species.slice(1),
-    value: count
-  }));
-
-  // Health status distribution
-  const healthStatusData = animals.reduce((acc, animal) => {
-    const status = animal.healthStatus || 'unknown';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const healthBarData = Object.entries(healthStatusData).map(([status, count]) => ({
-    status: status.charAt(0).toUpperCase() + status.slice(1),
-    count
-  }));
-
-  // Monthly trends (last 6 months)
-  const monthlyData = [];
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date();
-    date.setMonth(date.getMonth() - i);
-    const monthYear = date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
-    
-    const animalsInMonth = animals.filter(animal => {
-      const animalDate = animal.createdAt ? new Date(animal.createdAt) : null;
-      return animalDate && 
-             animalDate.getMonth() === date.getMonth() && 
-             animalDate.getFullYear() === date.getFullYear();
-    }).length;
-
-    monthlyData.push({
-      month: monthYear,
-      animals: animalsInMonth,
-      healthRecords: 0 // Simplified for now
-    });
-  }
-
-  const colors = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#F97316'];
+const RADIAN = Math.PI / 180;
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">{totalAnimals}</p>
-                <p className="text-sm text-gray-500">Total Animales</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">{recentAnimals.length}</p>
-                <p className="text-sm text-gray-500">Nuevos (30 días)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+const AdvancedAnalytics = () => {
+  const { data: animals, isLoading: isLoadingAnimals, error: errorAnimals } = useQuery({
+    queryKey: ['animals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('animals')
+        .select('*');
+      if (error) {
+        console.error("Error fetching animals:", error);
+        throw error;
+      }
+      return data;
+    },
+  });
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Activity className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">0</p>
-                <p className="text-sm text-gray-500">Registros Salud</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+  const { data: healthRecords, isLoading: isLoadingHealth, error: errorHealth } = useQuery({
+    queryKey: ['healthRecords'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('health_records')
+        .select('*');
+      if (error) {
+        console.error("Error fetching health records:", error);
+        throw error;
+      }
+      return data;
+    },
+  });
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Heart className="h-8 w-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">0</p>
-                <p className="text-sm text-gray-500">Reproducción</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+  const getMonthlyRegistrations = () => {
+    if (!animals) return [];
+    
+    const monthCounts = animals.reduce((acc, animal) => {
+      const month = new Date(animal.created_at || '').toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'short' 
+      });
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(monthCounts).map(([month, count]) => ({
+      month,
+      count
+    }));
+  };
+
+  const getSpeciesDistribution = () => {
+    if (!animals) return [];
+    
+    const speciesCounts = animals.reduce((acc, animal) => {
+      acc[animal.species] = (acc[animal.species] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(speciesCounts).map(([species, count]) => ({
+      name: species,
+      value: count
+    }));
+  };
+
+  const getHealthTrends = () => {
+    if (!healthRecords) return [];
+    
+    const monthCounts = healthRecords.reduce((acc, record) => {
+      const month = new Date(record.created_at || '').toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'short' 
+      });
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(monthCounts).map(([month, count]) => ({
+      month,
+      count
+    }));
+  };
+
+  if (isLoadingAnimals || isLoadingHealth) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Cargando datos...</p>
+        </div>
       </div>
+    );
+  }
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Species Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribución por Especies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Health Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Estado de Salud</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={healthBarData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="status" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#10B981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+  if (errorAnimals || errorHealth) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-red-600">Error al cargar los datos. Por favor, inténtalo de nuevo.</p>
+        </div>
       </div>
+    );
+  }
 
-      {/* Monthly Trends */}
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Total Animals Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Tendencias Mensuales</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-gray-500" />
+            Total Animales
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={monthlyData}>
+          <div className="text-3xl font-bold">{animals?.length || 0}</div>
+          <p className="text-sm text-gray-500">Animales registrados en el sistema</p>
+        </CardContent>
+      </Card>
+
+      {/* Monthly Registrations Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-gray-500" />
+            Registros Mensuales
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={getMonthlyRegistrations()}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="animals" 
-                stroke="#3B82F6" 
-                name="Animales Registrados"
-                strokeWidth={2}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="healthRecords" 
-                stroke="#10B981" 
-                name="Registros de Salud"
-                strokeWidth={2}
-              />
-            </LineChart>
+              <Bar dataKey="count" fill="#82ca9d" />
+            </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* User Activity */}
+      {/* Species Distribution Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Actividad de Usuarios</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="w-4 h-4 text-gray-500" />
+            Distribución de Especies
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{totalUsers}</p>
-              <p className="text-sm text-gray-500">Total Usuarios</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{activeUsers}</p>
-              <p className="text-sm text-gray-500">Usuarios Activos</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600">{totalUsers - activeUsers}</p>
-              <p className="text-sm text-gray-500">Usuarios Inactivos</p>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={getSpeciesDistribution()}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={renderCustomizedLabel}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {getSpeciesDistribution().map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Health Trends Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Baby className="w-4 h-4 text-gray-500" />
+            Tendencias de Salud
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={getHealthTrends()}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="count" stroke="#8884d8" activeDot={{ r: 8 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
     </div>

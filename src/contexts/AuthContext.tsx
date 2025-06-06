@@ -48,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
               if (profile && profile.email) {
+                console.log('Syncing user after sign in:', profile.email);
                 await syncUserToAppUsers(
                   profile.id, 
                   profile.email, 
