@@ -128,35 +128,48 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     return [];
   }
 
-  console.log('📊 App users found:', appUsers?.length || 0, appUsers?.map(u => ({ email: u.email, name: u.name })));
+  console.log('📊 App users found:', appUsers?.length || 0, appUsers?.map(u => ({ email: u.email, name: u.name, role: u.role })));
 
   const allUsers: AppUser[] = [];
 
-  // Process all app_users
+  // Process all app_users - use the actual role from database, don't override it
   if (appUsers) {
     appUsers.forEach(user => {
       allUsers.push({
         ...user,
-        role: user.email === 'juan.casanova@skyranch.com' || user.email === 'jvcas@mac.com' 
-          ? 'admin' 
-          : user.role as 'admin' | 'manager' | 'worker'
+        role: user.role as 'admin' | 'manager' | 'worker' // Use the actual role from database
       });
     });
   }
 
-  console.log('📋 Total users returned:', allUsers.length, allUsers.map(u => ({ email: u.email, name: u.name })));
+  console.log('📋 Total users returned:', allUsers.length, allUsers.map(u => ({ email: u.email, name: u.name, role: u.role })));
   return allUsers;
 };
 
 export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
   console.log(`🔄 Attempting to sync user: ${email} (ID: ${profileId})`);
   
-  // Determine role based on email - new users get 'worker' role by default
-  const role = (email === 'juan.casanova@skyranch.com' || email === 'jvcas@mac.com') 
-    ? 'admin' 
-    : 'worker';
+  // Check if user already exists in app_users
+  const { data: existingUser } = await supabase
+    .from('app_users')
+    .select('role')
+    .eq('id', profileId)
+    .single();
 
-  console.log(`➕ Syncing user to app_users: ${email} with role: ${role}`);
+  // Determine role - only set to admin for new users if they have admin emails
+  let role: 'admin' | 'manager' | 'worker';
+  
+  if (existingUser) {
+    // User exists, keep their current role
+    role = existingUser.role as 'admin' | 'manager' | 'worker';
+    console.log(`✅ User ${email} already exists with role: ${role}, keeping existing role`);
+  } else {
+    // New user - set default role based on email
+    role = (email === 'juan.casanova@skyranch.com' || email === 'jvcas@mac.com') 
+      ? 'admin' 
+      : 'worker';
+    console.log(`➕ New user ${email}, setting default role: ${role}`);
+  }
 
   // Use upsert to handle both insert and update cases
   const { error } = await supabase
@@ -174,7 +187,7 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
   if (error) {
     console.error('❌ Error upserting user:', error);
   } else {
-    console.log(`✅ User ${email} successfully synced to app_users table`);
+    console.log(`✅ User ${email} successfully synced to app_users table with role: ${role}`);
   }
 };
 
@@ -202,6 +215,8 @@ export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'cre
 };
 
 export const updateUser = async (id: string, updates: Partial<AppUser>): Promise<AppUser> => {
+  console.log(`🔄 Updating user ${id} with:`, updates);
+  
   const { data, error } = await supabase
     .from('app_users')
     .update(updates)
@@ -210,10 +225,11 @@ export const updateUser = async (id: string, updates: Partial<AppUser>): Promise
     .single();
 
   if (error) {
-    console.error('Error updating user:', error);
+    console.error('❌ Error updating user:', error);
     throw error;
   }
 
+  console.log(`✅ User updated successfully:`, data);
   return {
     ...data,
     role: data.role as 'admin' | 'manager' | 'worker'
@@ -374,7 +390,7 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
   }
 
   if (appUser) {
-    console.log(`✅ Found current user in app_users: ${appUser.email}`);
+    console.log(`✅ Found current user in app_users: ${appUser.email} with role: ${appUser.role}`);
     return {
       ...appUser,
       role: appUser.role as 'admin' | 'manager' | 'worker'

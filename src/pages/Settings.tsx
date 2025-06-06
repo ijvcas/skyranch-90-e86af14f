@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { getCurrentUser } from '@/services/userService';
 import UserManagement from '@/components/UserManagement';
 import PermissionsManager from '@/components/PermissionsManager';
 import AdvancedAnalytics from '@/components/AdvancedAnalytics';
@@ -19,12 +21,18 @@ const Settings = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   
-  // Check if current user is an administrator (Juan Casanova H or admin role)
-  const isAdmin = user?.email === 'juan.casanova@skyranch.com' || 
-                  user?.email === 'jvcas@mac.com' || 
-                  user?.email?.includes('admin');
+  // Get current user data including role from database
+  const { data: currentAppUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: getCurrentUser,
+    enabled: !!user,
+  });
+  
+  // Check if current user is an administrator based on database role
+  const isAdmin = currentAppUser?.role === 'admin';
 
   console.log('Settings - user email:', user?.email); // Debug log
+  console.log('Settings - currentAppUser:', currentAppUser); // Debug log
   console.log('Settings - isAdmin:', isAdmin); // Debug log
 
   const handleSignOut = async () => {
@@ -75,7 +83,12 @@ const Settings = () => {
               {/* Debug info for admin status */}
               {isAdmin && (
                 <p className="text-xs text-green-600 mt-1">
-                  ✓ Acceso de administrador activo
+                  ✓ Acceso de administrador activo (Rol: {currentAppUser?.role})
+                </p>
+              )}
+              {currentAppUser && !isAdmin && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Rol actual: {currentAppUser.role}
                 </p>
               )}
             </div>
@@ -95,9 +108,14 @@ const Settings = () => {
               <CardContent className="space-y-3">
                 <div className="text-sm text-gray-600">
                   <strong>Usuario:</strong> {user?.email}
-                  {isAdmin && (
-                    <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                      Administrador
+                  {currentAppUser && (
+                    <span className={`ml-2 text-xs px-2 py-1 rounded ${
+                      currentAppUser.role === 'admin' ? 'bg-red-100 text-red-800' :
+                      currentAppUser.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {currentAppUser.role === 'admin' ? 'Administrador' :
+                       currentAppUser.role === 'manager' ? 'Gerente' : 'Trabajador'}
                     </span>
                   )}
                 </div>
