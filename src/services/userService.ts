@@ -5,7 +5,13 @@ import { createClient } from '@supabase/supabase-js';
 // Create admin client for service_role operations
 const supabaseAdmin = createClient(
   "https://ahwhtxygyzoadsmdrwwg.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFod2h0eHlneXpvYWRzbWRyd3dnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTEyMjE3MywiZXhwIjoyMDY0Njk4MTczfQ.gWkm7l9n_vONc1MYr0x7Q6sJBL0aI3rRBF8QjGYjkqU"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFod2h0eHlneXpvYWRzbWRyd3dnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTEyMjE3MywiZXhwIjoyMDY0Njk4MTczfQ.gWkm7l9n_vONc1MYr0x7Q6sJBL0aI3rRBF8QjGYjkqU",
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 export interface AppUser {
@@ -260,11 +266,23 @@ export const deleteUser = async (id: string): Promise<boolean> => {
 
   // Step 3: Delete from auth system using admin client
   try {
+    console.log(`🔐 Attempting auth deletion for ${userEmail} with service role...`);
+    
+    // Test if admin client is working first
+    const { data: testData, error: testError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
+    
+    if (testError) {
+      console.error('❌ Service role test failed:', testError);
+      throw new Error(`Service role authentication failed: ${testError.message}`);
+    }
+    
+    console.log('✅ Service role is working, proceeding with user deletion...');
+    
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
     
     if (authError) {
       console.error('❌ Error deleting from auth system:', authError);
-      throw new Error(`User removed from app but auth deletion failed: ${authError.message}`);
+      throw new Error(`Auth deletion failed: ${authError.message}`);
     } else {
       console.log(`✅ Successfully deleted ${userEmail} from auth system`);
     }
