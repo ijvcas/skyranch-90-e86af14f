@@ -100,20 +100,35 @@ const AnimalEdit = () => {
     
     if (!id) return;
     
-    // Clean up form data before submitting
-    const cleanFormData = {
-      ...formData,
-      motherId: formData.motherId || null,
-      fatherId: formData.fatherId || null
+    console.log('Form data before submission:', formData);
+    
+    // Ensure all form data is properly formatted
+    const dataToSubmit = {
+      name: formData.name,
+      tag: formData.tag,
+      species: formData.species,
+      breed: formData.breed,
+      birthDate: formData.birthDate,
+      gender: formData.gender,
+      weight: formData.weight,
+      color: formData.color,
+      motherId: formData.motherId.trim() || '',
+      fatherId: formData.fatherId.trim() || '',
+      notes: formData.notes,
+      healthStatus: formData.healthStatus,
+      image: formData.image
     };
+    
+    console.log('Data being submitted:', dataToSubmit);
     
     updateMutation.mutate({ 
       id, 
-      data: cleanFormData 
+      data: dataToSubmit 
     });
   };
 
   const handleInputChange = (field: string, value: string) => {
+    console.log(`Updating field ${field} with value:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -294,6 +309,9 @@ const AnimalEdit = () => {
                     className="mt-1"
                     disabled={updateMutation.isPending}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Puedes ingresar el nombre o ID del animal madre
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="fatherId">Padre</Label>
@@ -306,6 +324,9 @@ const AnimalEdit = () => {
                     className="mt-1"
                     disabled={updateMutation.isPending}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Puedes ingresar el nombre o ID del animal padre
+                  </p>
                 </div>
               </div>
             </CardContent>
