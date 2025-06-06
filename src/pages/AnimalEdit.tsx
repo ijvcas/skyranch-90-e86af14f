@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,12 +40,6 @@ const AnimalEdit = () => {
     queryKey: ['animal', id],
     queryFn: () => getAnimal(id!),
     enabled: !!id
-  });
-
-  // Fetch all animals for parent selection
-  const { data: allAnimals = [] } = useQuery({
-    queryKey: ['animals'],
-    queryFn: getAllAnimals
   });
 
   // Update mutation
@@ -145,12 +140,6 @@ const AnimalEdit = () => {
 
   const handleInputChange = (field: string, value: string) => {
     console.log(`Updating field ${field} with value:`, value);
-    
-    // Handle parent selection: convert "none" to empty string
-    if ((field === 'motherId' || field === 'fatherId') && value === 'none') {
-      value = '';
-    }
-    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -322,44 +311,32 @@ const AnimalEdit = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="motherId">Madre</Label>
-                  <Select value={formData.motherId} onValueChange={(value) => handleInputChange('motherId', value)} disabled={updateMutation.isPending}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Seleccionar madre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin madre registrada</SelectItem>
-                      {allAnimals
-                        .filter(a => a.gender === 'hembra' && a.id !== id)
-                        .map(animal => (
-                          <SelectItem key={animal.id} value={animal.id}>
-                            {animal.name} (#{animal.tag})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="motherId"
+                    type="text"
+                    value={formData.motherId}
+                    onChange={(e) => handleInputChange('motherId', e.target.value)}
+                    placeholder="Nombre o etiqueta de la madre"
+                    className="mt-1"
+                    disabled={updateMutation.isPending}
+                  />
                   <p className="text-xs text-gray-500 mt-1">
-                    Selecciona la madre de la lista de animales registrados
+                    Puedes escribir el nombre o número de etiqueta de la madre
                   </p>
                 </div>
                 <div>
                   <Label htmlFor="fatherId">Padre</Label>
-                  <Select value={formData.fatherId} onValueChange={(value) => handleInputChange('fatherId', value)} disabled={updateMutation.isPending}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Seleccionar padre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin padre registrado</SelectItem>
-                      {allAnimals
-                        .filter(a => a.gender === 'macho' && a.id !== id)
-                        .map(animal => (
-                          <SelectItem key={animal.id} value={animal.id}>
-                            {animal.name} (#{animal.tag})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="fatherId"
+                    type="text"
+                    value={formData.fatherId}
+                    onChange={(e) => handleInputChange('fatherId', e.target.value)}
+                    placeholder="Nombre o etiqueta del padre"
+                    className="mt-1"
+                    disabled={updateMutation.isPending}
+                  />
                   <p className="text-xs text-gray-500 mt-1">
-                    Selecciona el padre de la lista de animales registrados
+                    Puedes escribir el nombre o número de etiqueta del padre
                   </p>
                 </div>
               </div>
