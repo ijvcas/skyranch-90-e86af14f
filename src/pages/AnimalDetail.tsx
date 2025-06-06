@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, Calendar, Weight, Palette, Users, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getAnimal } from '@/services/animalService';
+import { getAnimal, getAnimalByNameOrTag } from '@/services/animalService';
 
 const AnimalDetail = () => {
   const navigate = useNavigate();
@@ -21,48 +21,74 @@ const AnimalDetail = () => {
 
   console.log('Animal data loaded:', animal);
 
-  // Only query for parents if the animal has valid parent IDs
+  // Query for parents using the stored parent IDs or names/tags
   const { data: mother } = useQuery({
-    queryKey: ['animal', animal?.motherId],
-    queryFn: () => getAnimal(animal?.motherId!),
+    queryKey: ['mother', animal?.motherId],
+    queryFn: () => {
+      if (!animal?.motherId || animal.motherId.trim() === '') return null;
+      // If it's a UUID, use getAnimal, otherwise use getAnimalByNameOrTag
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(animal.motherId);
+      return isUUID ? getAnimal(animal.motherId) : getAnimalByNameOrTag(animal.motherId);
+    },
     enabled: !!animal?.motherId && animal.motherId.trim() !== '',
     retry: 1
   });
 
   const { data: father } = useQuery({
-    queryKey: ['animal', animal?.fatherId],
-    queryFn: () => getAnimal(animal?.fatherId!),
+    queryKey: ['father', animal?.fatherId],
+    queryFn: () => {
+      if (!animal?.fatherId || animal.fatherId.trim() === '') return null;
+      // If it's a UUID, use getAnimal, otherwise use getAnimalByNameOrTag
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(animal.fatherId);
+      return isUUID ? getAnimal(animal.fatherId) : getAnimalByNameOrTag(animal.fatherId);
+    },
     enabled: !!animal?.fatherId && animal.fatherId.trim() !== '',
     retry: 1
   });
 
   console.log('Parent data:', { mother, father });
 
-  // Only query grandparents if we have parent data with valid IDs
+  // Query grandparents based on parent data
   const { data: maternalGrandmother } = useQuery({
-    queryKey: ['animal', mother?.motherId],
-    queryFn: () => getAnimal(mother?.motherId!),
+    queryKey: ['maternalGrandmother', mother?.motherId],
+    queryFn: () => {
+      if (!mother?.motherId || mother.motherId.trim() === '') return null;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(mother.motherId);
+      return isUUID ? getAnimal(mother.motherId) : getAnimalByNameOrTag(mother.motherId);
+    },
     enabled: !!mother?.motherId && mother.motherId.trim() !== '',
     retry: 1
   });
 
   const { data: maternalGrandfather } = useQuery({
-    queryKey: ['animal', mother?.fatherId],
-    queryFn: () => getAnimal(mother?.fatherId!),
+    queryKey: ['maternalGrandfather', mother?.fatherId],
+    queryFn: () => {
+      if (!mother?.fatherId || mother.fatherId.trim() === '') return null;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(mother.fatherId);
+      return isUUID ? getAnimal(mother.fatherId) : getAnimalByNameOrTag(mother.fatherId);
+    },
     enabled: !!mother?.fatherId && mother.fatherId.trim() !== '',
     retry: 1
   });
 
   const { data: paternalGrandmother } = useQuery({
-    queryKey: ['animal', father?.motherId],
-    queryFn: () => getAnimal(father?.motherId!),
+    queryKey: ['paternalGrandmother', father?.motherId],
+    queryFn: () => {
+      if (!father?.motherId || father.motherId.trim() === '') return null;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(father.motherId);
+      return isUUID ? getAnimal(father.motherId) : getAnimalByNameOrTag(father.motherId);
+    },
     enabled: !!father?.motherId && father.motherId.trim() !== '',
     retry: 1
   });
 
   const { data: paternalGrandfather } = useQuery({
-    queryKey: ['animal', father?.fatherId],
-    queryFn: () => getAnimal(father?.fatherId!),
+    queryKey: ['paternalGrandfather', father?.fatherId],
+    queryFn: () => {
+      if (!father?.fatherId || father.fatherId.trim() === '') return null;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(father.fatherId);
+      return isUUID ? getAnimal(father.fatherId) : getAnimalByNameOrTag(father.fatherId);
+    },
     enabled: !!father?.fatherId && father.fatherId.trim() !== '',
     retry: 1
   });
@@ -203,16 +229,7 @@ const AnimalDetail = () => {
     );
   }
 
-  // Clean up notes to remove parent info if it was mistakenly saved there
-  let cleanNotes = animal.notes || '';
-  if (cleanNotes.includes('[Madre:') || cleanNotes.includes('[Padre:')) {
-    cleanNotes = cleanNotes
-      .replace(/\[Madre:.*?\]/g, '')
-      .replace(/\[Padre:.*?\]/g, '')
-      .trim();
-  }
-
-  // Check if we should show pedigree (when we have valid parent IDs)
+  // Check if we should show pedigree
   const hasValidParents = (animal.motherId && animal.motherId.trim() !== '') || (animal.fatherId && animal.fatherId.trim() !== '');
   const hasParentData = mother || father;
   const hasGrandparentData = maternalGrandmother || maternalGrandfather || paternalGrandmother || paternalGrandfather;
@@ -292,7 +309,6 @@ const AnimalDetail = () => {
                 <CardTitle className="text-xl text-gray-900">Información Básica</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* ... keep existing code (basic information grid) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-3">
                     <Users className="w-5 h-5 text-gray-500" />
@@ -338,7 +354,7 @@ const AnimalDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Pedigree Chart - Show when we have valid parent data */}
+            {/* Pedigree Chart - Show when we have valid parent data or IDs */}
             {hasValidParents && (
               <Card className="shadow-lg">
                 <CardHeader>
@@ -378,14 +394,14 @@ const AnimalDetail = () => {
               </Card>
             )}
 
-            {/* Notes - only show if there are actual notes (not parent info) */}
-            {cleanNotes && cleanNotes.trim() !== '' && (
+            {/* Notes */}
+            {animal.notes && animal.notes.trim() !== '' && (
               <Card className="shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-xl text-gray-900">Notas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 whitespace-pre-wrap">{cleanNotes}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{animal.notes}</p>
                 </CardContent>
               </Card>
             )}

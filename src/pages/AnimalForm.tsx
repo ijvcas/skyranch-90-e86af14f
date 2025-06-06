@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ImageUpload from '@/components/ImageUpload';
-import { addAnimal } from '@/services/animalService';
+import { addAnimal, updateAnimal, getAnimalByNameOrTag } from '@/services/animalService';
 
 const AnimalForm = () => {
   const navigate = useNavigate();
@@ -28,6 +27,10 @@ const AnimalForm = () => {
     color: '',
     motherId: '',
     fatherId: '',
+    maternalGrandmotherId: '',
+    maternalGrandfatherId: '',
+    paternalGrandmotherId: '',
+    paternalGrandfatherId: '',
     notes: '',
     healthStatus: 'healthy',
     image: null as string | null
@@ -35,7 +38,32 @@ const AnimalForm = () => {
 
   const addAnimalMutation = useMutation({
     mutationFn: addAnimal,
-    onSuccess: () => {
+    onSuccess: async (result) => {
+      if (result.success) {
+        // Update parent animals with grandparent information if they exist
+        if (formData.motherId && (formData.maternalGrandmotherId || formData.maternalGrandfatherId)) {
+          const motherAnimal = await getAnimalByNameOrTag(formData.motherId);
+          if (motherAnimal) {
+            await updateAnimal(motherAnimal.id, {
+              ...motherAnimal,
+              motherId: formData.maternalGrandmotherId,
+              fatherId: formData.maternalGrandfatherId
+            });
+          }
+        }
+
+        if (formData.fatherId && (formData.paternalGrandmotherId || formData.paternalGrandfatherId)) {
+          const fatherAnimal = await getAnimalByNameOrTag(formData.fatherId);
+          if (fatherAnimal) {
+            await updateAnimal(fatherAnimal.id, {
+              ...fatherAnimal,
+              motherId: formData.paternalGrandmotherId,
+              fatherId: formData.paternalGrandfatherId
+            });
+          }
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['animals'] });
       queryClient.invalidateQueries({ queryKey: ['animalCounts'] });
       toast({
@@ -67,7 +95,24 @@ const AnimalForm = () => {
       return;
     }
 
-    addAnimalMutation.mutate(formData);
+    // Prepare data for submission (excluding grandparent fields for main animal)
+    const dataToSubmit = {
+      name: formData.name,
+      tag: formData.tag,
+      species: formData.species,
+      breed: formData.breed,
+      birthDate: formData.birthDate,
+      gender: formData.gender,
+      weight: formData.weight,
+      color: formData.color,
+      motherId: formData.motherId,
+      fatherId: formData.fatherId,
+      notes: formData.notes,
+      healthStatus: formData.healthStatus,
+      image: formData.image
+    };
+
+    addAnimalMutation.mutate(dataToSubmit);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -215,29 +260,101 @@ const AnimalForm = () => {
             <CardHeader>
               <CardTitle className="text-xl text-gray-900">Información de Pedigrí</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="motherId">ID de la Madre</Label>
-                  <Input
-                    id="motherId"
-                    type="text"
-                    value={formData.motherId}
-                    onChange={(e) => handleInputChange('motherId', e.target.value)}
-                    placeholder="Ej: 001"
-                    className="mt-1"
-                  />
+            <CardContent className="space-y-6">
+              {/* Parents */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Padres</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="motherId">Madre</Label>
+                    <Input
+                      id="motherId"
+                      type="text"
+                      value={formData.motherId}
+                      onChange={(e) => handleInputChange('motherId', e.target.value)}
+                      placeholder="Nombre o etiqueta de la madre"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Escribe el nombre o número de etiqueta de la madre
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="fatherId">Padre</Label>
+                    <Input
+                      id="fatherId"
+                      type="text"
+                      value={formData.fatherId}
+                      onChange={(e) => handleInputChange('fatherId', e.target.value)}
+                      placeholder="Nombre o etiqueta del padre"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Escribe el nombre o número de etiqueta del padre
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="fatherId">ID del Padre</Label>
-                  <Input
-                    id="fatherId"
-                    type="text"
-                    value={formData.fatherId}
-                    onChange={(e) => handleInputChange('fatherId', e.target.value)}
-                    placeholder="Ej: 002"
-                    className="mt-1"
-                  />
+              </div>
+
+              {/* Grandparents */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Abuelos</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-md font-medium text-gray-700 mb-2">Línea Materna</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="maternalGrandmotherId">Abuela Materna</Label>
+                        <Input
+                          id="maternalGrandmotherId"
+                          type="text"
+                          value={formData.maternalGrandmotherId}
+                          onChange={(e) => handleInputChange('maternalGrandmotherId', e.target.value)}
+                          placeholder="Nombre o etiqueta de la abuela materna"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
+                        <Input
+                          id="maternalGrandfatherId"
+                          type="text"
+                          value={formData.maternalGrandfatherId}
+                          onChange={(e) => handleInputChange('maternalGrandfatherId', e.target.value)}
+                          placeholder="Nombre o etiqueta del abuelo materno"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-md font-medium text-gray-700 mb-2">Línea Paterna</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="paternalGrandmotherId">Abuela Paterna</Label>
+                        <Input
+                          id="paternalGrandmotherId"
+                          type="text"
+                          value={formData.paternalGrandmotherId}
+                          onChange={(e) => handleInputChange('paternalGrandmotherId', e.target.value)}
+                          placeholder="Nombre o etiqueta de la abuela paterna"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
+                        <Input
+                          id="paternalGrandfatherId"
+                          type="text"
+                          value={formData.paternalGrandfatherId}
+                          onChange={(e) => handleInputChange('paternalGrandfatherId', e.target.value)}
+                          placeholder="Nombre o etiqueta del abuelo paterno"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
