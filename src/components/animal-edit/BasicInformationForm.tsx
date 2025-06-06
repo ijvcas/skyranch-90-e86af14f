@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,32 +22,38 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="name">Nombre *</Label>
             <Input
               id="name"
-              name="name"
+              name="fake-animal-name"
               type="text"
               value={formData.name}
               onChange={(e) => onInputChange('name', e.target.value)}
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-1p-ignore="true"
               data-lpignore="true"
+              data-bitwarden-ignore="true"
+              data-form-type="other"
+              spellCheck="false"
             />
           </div>
           <div>
             <Label htmlFor="tag">Número de Etiqueta *</Label>
             <Input
               id="tag"
-              name="tag"
+              name="fake-animal-tag"
               type="text"
               value={formData.tag}
               onChange={(e) => onInputChange('tag', e.target.value)}
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-1p-ignore="true"
               data-lpignore="true"
+              data-bitwarden-ignore="true"
+              data-form-type="other"
+              spellCheck="false"
             />
           </div>
         </div>
@@ -75,15 +80,18 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="breed">Raza</Label>
             <Input
               id="breed"
-              name="breed"
+              name="fake-animal-breed"
               type="text"
               value={formData.breed}
               onChange={(e) => onInputChange('breed', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-1p-ignore="true"
               data-lpignore="true"
+              data-bitwarden-ignore="true"
+              data-form-type="other"
+              spellCheck="false"
             />
           </div>
         </div>
@@ -93,15 +101,17 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
             <Input
               id="birthDate"
-              name="birthDate"
+              name="fake-animal-birth"
               type="date"
               value={formData.birthDate}
               onChange={(e) => onInputChange('birthDate', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-1p-ignore="true"
               data-lpignore="true"
+              data-bitwarden-ignore="true"
+              data-form-type="other"
             />
           </div>
           <div>
@@ -120,15 +130,18 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="weight">Peso (kg)</Label>
             <Input
               id="weight"
-              name="weight"
+              name="fake-animal-weight"
               type="number"
               value={formData.weight}
               onChange={(e) => onInputChange('weight', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-1p-ignore="true"
               data-lpignore="true"
+              data-bitwarden-ignore="true"
+              data-form-type="other"
+              inputMode="numeric"
             />
           </div>
         </div>
@@ -137,15 +150,18 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
           <Label htmlFor="color">Color/Marcas</Label>
           <Input
             id="color"
-            name="color"
+            name="fake-animal-color"
             type="text"
             value={formData.color}
             onChange={(e) => onInputChange('color', e.target.value)}
             className="mt-1"
             disabled={disabled}
-            autoComplete="off"
+            autoComplete="new-password"
             data-1p-ignore="true"
             data-lpignore="true"
+            data-bitwarden-ignore="true"
+            data-form-type="other"
+            spellCheck="false"
           />
         </div>
       </CardContent>

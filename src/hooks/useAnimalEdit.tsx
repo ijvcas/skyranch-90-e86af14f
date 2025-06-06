@@ -65,7 +65,18 @@ export const useAnimalEdit = () => {
       if (animal) {
         console.log('🔍 Loading animal data for editing:', animal);
         
-        // Load display names for all parent fields that have IDs
+        // Load display names for all parent fields that have IDs - handle null values properly
+        const parentIds = {
+          motherId: animal.motherId,
+          fatherId: animal.fatherId,
+          maternalGrandmotherId: animal.maternalGrandmotherId,
+          maternalGrandfatherId: animal.maternalGrandfatherId,
+          paternalGrandmotherId: animal.paternalGrandmotherId,
+          paternalGrandfatherId: animal.paternalGrandfatherId
+        };
+
+        console.log('🔍 Parent IDs from database:', parentIds);
+
         const [
           motherDisplayName,
           fatherDisplayName,
@@ -74,12 +85,12 @@ export const useAnimalEdit = () => {
           paternalGrandmotherDisplayName,
           paternalGrandfatherDisplayName
         ] = await Promise.all([
-          animal.motherId ? getAnimalDisplayName(animal.motherId) : Promise.resolve(''),
-          animal.fatherId ? getAnimalDisplayName(animal.fatherId) : Promise.resolve(''),
-          animal.maternalGrandmotherId ? getAnimalDisplayName(animal.maternalGrandmotherId) : Promise.resolve(''),
-          animal.maternalGrandfatherId ? getAnimalDisplayName(animal.maternalGrandfatherId) : Promise.resolve(''),
-          animal.paternalGrandmotherId ? getAnimalDisplayName(animal.paternalGrandmotherId) : Promise.resolve(''),
-          animal.paternalGrandfatherId ? getAnimalDisplayName(animal.paternalGrandfatherId) : Promise.resolve('')
+          parentIds.motherId ? getAnimalDisplayName(parentIds.motherId) : Promise.resolve(''),
+          parentIds.fatherId ? getAnimalDisplayName(parentIds.fatherId) : Promise.resolve(''),
+          parentIds.maternalGrandmotherId ? getAnimalDisplayName(parentIds.maternalGrandmotherId) : Promise.resolve(''),
+          parentIds.maternalGrandfatherId ? getAnimalDisplayName(parentIds.maternalGrandfatherId) : Promise.resolve(''),
+          parentIds.paternalGrandmotherId ? getAnimalDisplayName(parentIds.paternalGrandmotherId) : Promise.resolve(''),
+          parentIds.paternalGrandfatherId ? getAnimalDisplayName(parentIds.paternalGrandfatherId) : Promise.resolve('')
         ]);
 
         console.log('🔍 Loaded display names:', {

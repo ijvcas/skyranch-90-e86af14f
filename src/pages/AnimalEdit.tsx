@@ -64,12 +64,24 @@ const AnimalEdit = () => {
         <form 
           onSubmit={handleSubmit} 
           className="space-y-6" 
-          autoComplete="off"
-          data-form="animal-edit"
+          autoComplete="new-password"
+          data-form="animal-edit-form"
           data-lpignore="true"
           data-1p-ignore="true"
+          data-bitwarden-ignore="true"
+          data-dashlane-ignore="true"
+          data-keeper-ignore="true"
+          data-lastpass-ignore="true"
+          role="form"
         >
-          <input type="password" style={{display: 'none'}} autoComplete="new-password" />
+          <input 
+            type="password" 
+            name="fake-password"
+            autoComplete="new-password"
+            style={{position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none'}} 
+            tabIndex={-1}
+            aria-hidden="true"
+          />
           
           <BasicInformationForm
             formData={formData}
