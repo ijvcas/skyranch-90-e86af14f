@@ -61,18 +61,38 @@ const AnimalEdit = () => {
           <p className="text-gray-600">Modifica la información del animal</p>
         </div>
 
-        {/* Hidden password fields to completely prevent autofill detection */}
-        <div style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
-          <input type="text" name="prevent-autofill-username" autoComplete="username" tabIndex={-1} />
-          <input type="password" name="prevent-autofill-password" autoComplete="current-password" tabIndex={-1} />
-          <input type="password" name="prevent-autofill-new-password" autoComplete="new-password" tabIndex={-1} />
+        {/* Invisible password fields for complete autofill prevention */}
+        <div style={{ 
+          position: 'absolute', 
+          left: '-9999px', 
+          top: '-9999px',
+          width: '1px',
+          height: '1px',
+          opacity: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          visibility: 'hidden'
+        }}>
+          <input 
+            type="text" 
+            name="fake_username_remembered" 
+            autoComplete="username" 
+            tabIndex={-1}
+            readOnly
+          />
+          <input 
+            type="password" 
+            name="fake_password_remembered" 
+            autoComplete="current-password" 
+            tabIndex={-1}
+            readOnly
+          />
         </div>
 
         <form 
           onSubmit={handleSubmit} 
           className="space-y-6" 
-          autoComplete="off"
-          data-form="animal-edit"
+          autoComplete="new-password"
           data-lpignore="true"
           data-1p-ignore="true"
           data-bitwarden-ignore="true"
@@ -80,6 +100,8 @@ const AnimalEdit = () => {
           data-keeper-ignore="true"
           data-lastpass-ignore="true"
           data-roboform-ignore="true"
+          data-form="animal-edit-form"
+          role="form"
           noValidate
         >
           

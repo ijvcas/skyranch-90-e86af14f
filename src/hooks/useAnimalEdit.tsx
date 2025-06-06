@@ -65,30 +65,21 @@ export const useAnimalEdit = () => {
       if (animal) {
         console.log('🔍 Loading animal data for editing:', animal);
         
-        // Load display names for all parent fields that have IDs - handle null values properly
-        const parentIds = {
-          motherId: animal.motherId || null,
-          fatherId: animal.fatherId || null,
-          maternalGrandmotherId: animal.maternalGrandmotherId || null,
-          maternalGrandfatherId: animal.maternalGrandfatherId || null,
-          paternalGrandmotherId: animal.paternalGrandmotherId || null,
-          paternalGrandfatherId: animal.paternalGrandfatherId || null
-        };
-
-        console.log('🔍 Parent IDs from database:', parentIds);
-
-        // Load display names only for IDs that exist and are not empty
-        const loadDisplayName = async (id: string | null) => {
-          if (!id || id.trim() === '') return '';
+        // Helper function to safely load display names
+        const loadDisplayName = async (parentId: string | null | undefined): Promise<string> => {
+          if (!parentId || parentId.trim() === '') {
+            return '';
+          }
           try {
-            const displayName = await getAnimalDisplayName(id);
+            const displayName = await getAnimalDisplayName(parentId);
             return displayName || '';
           } catch (error) {
-            console.error('Error loading display name for', id, error);
+            console.error('Error loading display name for', parentId, error);
             return '';
           }
         };
 
+        // Load all parent display names
         const [
           motherDisplayName,
           fatherDisplayName,
@@ -97,12 +88,12 @@ export const useAnimalEdit = () => {
           paternalGrandmotherDisplayName,
           paternalGrandfatherDisplayName
         ] = await Promise.all([
-          loadDisplayName(parentIds.motherId),
-          loadDisplayName(parentIds.fatherId),
-          loadDisplayName(parentIds.maternalGrandmotherId),
-          loadDisplayName(parentIds.maternalGrandfatherId),
-          loadDisplayName(parentIds.paternalGrandmotherId),
-          loadDisplayName(parentIds.paternalGrandfatherId)
+          loadDisplayName(animal.motherId),
+          loadDisplayName(animal.fatherId),
+          loadDisplayName(animal.maternalGrandmotherId),
+          loadDisplayName(animal.maternalGrandfatherId),
+          loadDisplayName(animal.paternalGrandmotherId),
+          loadDisplayName(animal.paternalGrandfatherId)
         ]);
 
         console.log('🔍 Loaded display names:', {

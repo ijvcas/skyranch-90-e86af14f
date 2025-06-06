@@ -41,7 +41,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 placeholder="Nombre o etiqueta de la madre"
                 className="mt-1"
                 disabled={disabled}
-                autoComplete="off"
+                autoComplete="new-password"
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-bitwarden-ignore="true"
@@ -63,7 +63,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 placeholder="Nombre o etiqueta del padre"
                 className="mt-1"
                 disabled={disabled}
-                autoComplete="off"
+                autoComplete="new-password"
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-bitwarden-ignore="true"
@@ -95,7 +95,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     placeholder="Nombre o etiqueta de la abuela materna"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="off"
+                    autoComplete="new-password"
                     data-lpignore="true"
                     data-1p-ignore="true"
                     data-bitwarden-ignore="true"
@@ -114,7 +114,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     placeholder="Nombre o etiqueta del abuelo materno"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="off"
+                    autoComplete="new-password"
                     data-lpignore="true"
                     data-1p-ignore="true"
                     data-bitwarden-ignore="true"
@@ -139,7 +139,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     placeholder="Nombre o etiqueta de la abuela paterna"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="off"
+                    autoComplete="new-password"
                     data-lpignore="true"
                     data-1p-ignore="true"
                     data-bitwarden-ignore="true"
@@ -158,7 +158,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     placeholder="Nombre o etiqueta del abuelo paterno"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="off"
+                    autoComplete="new-password"
                     data-lpignore="true"
                     data-1p-ignore="true"
                     data-bitwarden-ignore="true"

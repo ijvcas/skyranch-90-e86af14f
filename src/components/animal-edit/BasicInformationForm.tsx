@@ -30,7 +30,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -49,7 +49,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -87,7 +87,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               onChange={(e) => onInputChange('breed', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -108,7 +108,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               onChange={(e) => onInputChange('birthDate', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -137,7 +137,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               onChange={(e) => onInputChange('weight', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="off"
+              autoComplete="new-password"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -157,7 +157,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             onChange={(e) => onInputChange('color', e.target.value)}
             className="mt-1"
             disabled={disabled}
-            autoComplete="off"
+            autoComplete="new-password"
             data-lpignore="true"
             data-1p-ignore="true"
             data-bitwarden-ignore="true"
