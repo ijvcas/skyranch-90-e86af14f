@@ -23,7 +23,11 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     await syncUserToAppUsers(currentUser.id, currentUser.email, userName);
   }
 
-  // Get all profiles to see what we have there
+  // Try to get users from auth.users table using admin functions
+  // This will help us find users that might not have profiles
+  console.log('🔍 Attempting to fetch all auth users...');
+  
+  // Get all profiles first
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
     .select('*');
@@ -31,14 +35,14 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
   if (profilesError) {
     console.error('❌ Error fetching profiles:', profilesError);
   } else {
-    console.log('✅ Profile users found:', profiles?.length || 0, profiles?.map(p => p.email));
+    console.log('✅ Profile users found:', profiles?.length || 0, profiles?.map(p => ({ email: p.email, id: p.id })));
     
     // Sync all profiles to app_users
     if (profiles && profiles.length > 0) {
       console.log('🔄 Starting profile sync process...');
       for (const profile of profiles) {
-        if (profile.email) {
-          console.log(`🔍 Processing profile: ${profile.email}`);
+        if (profile.email && profile.id) {
+          console.log(`🔍 Processing profile: ${profile.email} (ID: ${profile.id})`);
           await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
         }
       }
@@ -46,31 +50,54 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     }
   }
 
-  // If we have no profiles, let's try to get users directly from the auth system
-  // This might help in cases where the profiles trigger isn't working
-  if (!profiles || profiles.length === 0) {
-    console.log('⚠️ No profiles found, checking if current user needs to be added to profiles...');
-    if (currentUser && currentUser.email) {
-      // Create profile for current user if it doesn't exist
-      const { error: profileInsertError } = await supabase
-        .from('profiles')
-        .upsert([{
-          id: currentUser.id,
-          email: currentUser.email,
-          full_name: currentUser.user_metadata?.full_name || currentUser.email
-        }], {
-          onConflict: 'id',
-          ignoreDuplicates: false
-        });
-        
-      if (profileInsertError) {
-        console.error('❌ Error creating profile:', profileInsertError);
-      } else {
-        console.log('✅ Current user profile created/updated');
-        // Now sync to app_users
-        await syncUserToAppUsers(currentUser.id, currentUser.email, currentUser.user_metadata?.full_name || currentUser.email);
+  // Also try to sync any auth users that might not have profiles
+  // This is a fallback for users who signed up but didn't get a profile created
+  try {
+    console.log('🔍 Checking for auth users without profiles...');
+    
+    // Try to get users through the RPC endpoint if available
+    const { data: authUsers, error: authError } = await supabase.rpc('get_auth_users');
+    
+    if (!authError && authUsers) {
+      console.log('✅ Found auth users via RPC:', authUsers.length);
+      for (const authUser of authUsers) {
+        if (authUser.email && authUser.id) {
+          console.log(`🔍 Processing auth user: ${authUser.email}`);
+          
+          // Check if profile exists, if not create it
+          const existingProfile = profiles?.find(p => p.id === authUser.id);
+          if (!existingProfile) {
+            console.log(`➕ Creating missing profile for ${authUser.email}`);
+            const { error: profileCreateError } = await supabase
+              .from('profiles')
+              .upsert([{
+                id: authUser.id,
+                email: authUser.email,
+                full_name: authUser.raw_user_meta_data?.full_name || authUser.email
+              }], {
+                onConflict: 'id'
+              });
+              
+            if (profileCreateError) {
+              console.error('❌ Error creating profile:', profileCreateError);
+            } else {
+              console.log(`✅ Profile created for ${authUser.email}`);
+            }
+          }
+          
+          // Sync to app_users
+          await syncUserToAppUsers(
+            authUser.id, 
+            authUser.email, 
+            authUser.raw_user_meta_data?.full_name || authUser.email
+          );
+        }
       }
+    } else {
+      console.log('ℹ️ Could not fetch auth users via RPC (this is normal if RPC function is not available)');
     }
+  } catch (error) {
+    console.log('ℹ️ Auth users RPC not available, continuing with profiles only');
   }
 
   // Now get all users from app_users table
@@ -84,7 +111,7 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     return [];
   }
 
-  console.log('📊 App users found:', appUsers?.length || 0, appUsers?.map(u => u.email));
+  console.log('📊 App users found:', appUsers?.length || 0, appUsers?.map(u => ({ email: u.email, name: u.name })));
 
   const allUsers: AppUser[] = [];
 
@@ -100,7 +127,7 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     });
   }
 
-  console.log('📋 Total users returned:', allUsers.length, allUsers.map(u => u.email));
+  console.log('📋 Total users returned:', allUsers.length, allUsers.map(u => ({ email: u.email, name: u.name })));
   return allUsers;
 };
 
@@ -114,44 +141,47 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
 
   console.log(`➕ Syncing user to app_users: ${email} with role: ${role}`);
 
-  // Use upsert to handle both inserts and updates
-  const { error } = await supabase
+  // First, check if user already exists
+  const { data: existingUser } = await supabase
     .from('app_users')
-    .upsert([{
-      id: profileId,
-      name: fullName || email,
-      email: email,
-      role: role,
-      is_active: true
-    }], {
-      onConflict: 'id',
-      ignoreDuplicates: false
-    });
+    .select('*')
+    .eq('id', profileId)
+    .single();
 
-  if (error) {
-    console.error('❌ Error syncing user to app_users:', error);
-    
-    // If there's a unique constraint error on email, try updating by email
-    if (error.code === '23505' && error.message.includes('email')) {
-      console.log(`🔄 Email conflict, trying to update existing record for ${email}`);
-      const { error: updateError } = await supabase
-        .from('app_users')
-        .update({
-          id: profileId,
-          name: fullName || email,
-          role: role,
-          is_active: true
-        })
-        .eq('email', email);
-        
-      if (updateError) {
-        console.error('❌ Error updating user by email:', updateError);
-      } else {
-        console.log(`✅ User ${email} successfully updated by email`);
-      }
+  if (existingUser) {
+    console.log(`✅ User ${email} already exists in app_users, updating...`);
+    const { error: updateError } = await supabase
+      .from('app_users')
+      .update({
+        name: fullName || email,
+        email: email,
+        role: existingUser.role || role, // Keep existing role if it exists
+        is_active: true
+      })
+      .eq('id', profileId);
+      
+    if (updateError) {
+      console.error('❌ Error updating existing user:', updateError);
+    } else {
+      console.log(`✅ User ${email} successfully updated in app_users table`);
     }
   } else {
-    console.log(`✅ User ${email} successfully synced to app_users table`);
+    // User doesn't exist, insert new record
+    const { error: insertError } = await supabase
+      .from('app_users')
+      .insert([{
+        id: profileId,
+        name: fullName || email,
+        email: email,
+        role: role,
+        is_active: true
+      }]);
+
+    if (insertError) {
+      console.error('❌ Error inserting new user:', insertError);
+    } else {
+      console.log(`✅ User ${email} successfully inserted into app_users table`);
+    }
   }
 };
 
