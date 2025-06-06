@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppUser {
@@ -35,6 +34,14 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
       }
     }
     console.log('✅ User sync process completed');
+  }
+
+  // Also check if current authenticated user exists and sync them
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+  if (currentUser && currentUser.email) {
+    console.log(`🔄 Ensuring current user ${currentUser.email} is synced...`);
+    const userName = currentUser.user_metadata?.full_name || currentUser.email;
+    await syncUserToAppUsers(currentUser.id, currentUser.email, userName);
   }
 
   // Now get all users from app_users table after syncing
@@ -76,9 +83,9 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
     .from('app_users')
     .select('id, email')
     .eq('id', profileId)
-    .single();
+    .maybeSingle();
 
-  if (checkError && checkError.code !== 'PGRST116') {
+  if (checkError) {
     console.error('❌ Error checking existing user:', checkError);
     return;
   }
@@ -253,12 +260,18 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
 
   console.log(`🔍 Getting current user data for: ${user.email}`);
 
-  // First try to find in app_users
+  // Ensure current user is synced first
+  if (user.email) {
+    const userName = user.user_metadata?.full_name || user.email;
+    await syncUserToAppUsers(user.id, user.email, userName);
+  }
+
+  // Now try to find in app_users
   const { data: appUser, error } = await supabase
     .from('app_users')
     .select('*')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (appUser) {
     console.log(`✅ Found current user in app_users: ${appUser.email}`);
@@ -268,35 +281,6 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     };
   }
 
-  console.log(`❌ Current user not found in app_users, checking profiles...`);
-
-  // If not found in app_users, check profiles and sync
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (profile && profile.email) {
-    console.log(`✅ Found current user in profiles: ${profile.email}, syncing...`);
-    // Sync to app_users
-    await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
-    
-    // Return user data
-    const role = (profile.email === 'juan.casanova@skyranch.com' || profile.email === 'jvcas@mac.com') 
-      ? 'admin' 
-      : 'worker';
-
-    return {
-      id: profile.id,
-      name: profile.full_name || profile.email,
-      email: profile.email,
-      role: role,
-      created_at: profile.created_at,
-      is_active: true
-    };
-  }
-
-  console.log(`❌ Current user not found in profiles either`);
+  console.log(`❌ Current user not found in app_users after sync attempt`);
   return null;
 };

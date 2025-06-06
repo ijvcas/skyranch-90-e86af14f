@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Users, UserPlus, UserMinus } from 'lucide-react';
+import { Users, UserPlus, UserMinus, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -30,16 +29,24 @@ const UserManagement = () => {
     is_active: true
   });
 
-  // Fetch users from Supabase
-  const { data: users = [], isLoading } = useQuery({
+  // Fetch users from Supabase with automatic refetching
+  const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ['app-users'],
     queryFn: getAllUsers,
+    refetchInterval: 5000, // Refetch every 5 seconds to catch new users
   });
 
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
     queryFn: getCurrentUser,
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
+
+  // Force refresh on component mount
+  useEffect(() => {
+    console.log('UserManagement component mounted, forcing refresh...');
+    refetch();
+  }, [refetch]);
 
   // Mutations for user operations
   const addUserMutation = useMutation({
@@ -146,6 +153,15 @@ const UserManagement = () => {
     toggleStatusMutation.mutate(id);
   };
 
+  const handleRefresh = () => {
+    console.log('Manual refresh triggered');
+    refetch();
+    toast({
+      title: "Actualizando",
+      description: "Sincronizando usuarios...",
+    });
+  };
+
   const getRoleLabel = (role: string) => {
     const labels = {
       admin: 'Administrador',
@@ -187,6 +203,15 @@ const UserManagement = () => {
           <p className="text-sm text-gray-600">Administra usuarios y sus permisos</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Actualizar
+          </Button>
           <Button
             onClick={() => setShowAddForm(!showAddForm)}
             className="flex items-center gap-2"
