@@ -157,6 +157,8 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
     const processParentId = async (parentInput: string): Promise<string | null> => {
       if (!parentInput || parentInput.trim() === '') return null;
       
+      console.log(`Processing parent input: "${parentInput}"`);
+      
       // If it's a valid UUID, use it directly
       if (isValidUUID(parentInput)) {
         console.log(`Using UUID directly: ${parentInput}`);
@@ -176,7 +178,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
     const paternalGrandmotherIdToSave = await processParentId(animal.paternalGrandmotherId || '');
     const paternalGrandfatherIdToSave = await processParentId(animal.paternalGrandfatherId || '');
 
-    console.log('Adding animal with processed IDs:', { 
+    console.log('Final IDs to save:', { 
       motherId: motherIdToSave, 
       fatherId: fatherIdToSave,
       maternalGrandmotherId: maternalGrandmotherIdToSave,
@@ -231,6 +233,8 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     const processParentId = async (parentInput: string): Promise<string | null> => {
       if (!parentInput || parentInput.trim() === '') return null;
       
+      console.log(`Processing parent input: "${parentInput}"`);
+      
       // If it's a valid UUID, use it directly
       if (isValidUUID(parentInput)) {
         console.log(`Using UUID directly: ${parentInput}`);
@@ -250,7 +254,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     const paternalGrandmotherIdToSave = await processParentId(animal.paternalGrandmotherId || '');
     const paternalGrandfatherIdToSave = await processParentId(animal.paternalGrandfatherId || '');
 
-    console.log('Updating animal with processed IDs:', { 
+    console.log('Final IDs to save:', { 
       animalId: id,
       motherId: motherIdToSave, 
       fatherId: fatherIdToSave,

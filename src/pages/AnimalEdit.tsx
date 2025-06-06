@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAnimal, updateAnimal, getAnimalByNameOrTag } from '@/services/animalService';
+import { getAnimal, updateAnimal } from '@/services/animalService';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -46,21 +45,6 @@ const AnimalEdit = () => {
     enabled: !!id
   });
 
-  // Function to get animal name/tag by ID
-  const getAnimalDisplayName = async (animalId: string): Promise<string> => {
-    if (!animalId || animalId.trim() === '') return '';
-    
-    try {
-      const animalData = await getAnimal(animalId);
-      if (animalData) {
-        return animalData.name || animalData.tag || '';
-      }
-    } catch (error) {
-      console.error('Error fetching animal for display:', error);
-    }
-    return animalId; // fallback to the ID itself
-  };
-
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: any }) => updateAnimal(id, data),
@@ -87,47 +71,27 @@ const AnimalEdit = () => {
     if (animal) {
       console.log('Loading animal data for editing:', animal);
       
-      // Load the form with the basic data first
-      const loadFormData = async () => {
-        // Get display names for parents and grandparents
-        const motherName = animal.motherId ? await getAnimalDisplayName(animal.motherId) : '';
-        const fatherName = animal.fatherId ? await getAnimalDisplayName(animal.fatherId) : '';
-        const maternalGrandmotherName = animal.maternalGrandmotherId ? await getAnimalDisplayName(animal.maternalGrandmotherId) : '';
-        const maternalGrandfatherName = animal.maternalGrandfatherId ? await getAnimalDisplayName(animal.maternalGrandfatherId) : '';
-        const paternalGrandmotherName = animal.paternalGrandmotherId ? await getAnimalDisplayName(animal.paternalGrandmotherId) : '';
-        const paternalGrandfatherName = animal.paternalGrandfatherId ? await getAnimalDisplayName(animal.paternalGrandfatherId) : '';
-
-        console.log('Loaded parent/grandparent names:', {
-          mother: motherName,
-          father: fatherName,
-          maternalGrandmother: maternalGrandmotherName,
-          maternalGrandfather: maternalGrandfatherName,
-          paternalGrandmother: paternalGrandmotherName,
-          paternalGrandfather: paternalGrandfatherName
-        });
-
-        setFormData({
-          name: animal.name,
-          tag: animal.tag,
-          species: animal.species,
-          breed: animal.breed,
-          birthDate: animal.birthDate,
-          gender: animal.gender,
-          weight: animal.weight,
-          color: animal.color,
-          motherId: motherName,
-          fatherId: fatherName,
-          maternalGrandmotherId: maternalGrandmotherName,
-          maternalGrandfatherId: maternalGrandfatherName,
-          paternalGrandmotherId: paternalGrandmotherName,
-          paternalGrandfatherId: paternalGrandfatherName,
-          notes: animal.notes,
-          healthStatus: animal.healthStatus,
-          image: animal.image
-        });
-      };
-
-      loadFormData();
+      // Load the form with the actual stored IDs/names from the database
+      setFormData({
+        name: animal.name,
+        tag: animal.tag,
+        species: animal.species,
+        breed: animal.breed,
+        birthDate: animal.birthDate,
+        gender: animal.gender,
+        weight: animal.weight,
+        color: animal.color,
+        // Use the actual stored values from the database
+        motherId: animal.motherId || '',
+        fatherId: animal.fatherId || '',
+        maternalGrandmotherId: animal.maternalGrandmotherId || '',
+        maternalGrandfatherId: animal.maternalGrandfatherId || '',
+        paternalGrandmotherId: animal.paternalGrandmotherId || '',
+        paternalGrandfatherId: animal.paternalGrandfatherId || '',
+        notes: animal.notes,
+        healthStatus: animal.healthStatus,
+        image: animal.image
+      });
     }
   }, [animal]);
 
@@ -147,34 +111,12 @@ const AnimalEdit = () => {
     
     if (!id) return;
     
-    console.log('Form data before submission:', formData);
+    console.log('Form data being submitted:', formData);
     
-    // Prepare data for submission
-    const dataToSubmit = {
-      name: formData.name,
-      tag: formData.tag,
-      species: formData.species,
-      breed: formData.breed,
-      birthDate: formData.birthDate,
-      gender: formData.gender,
-      weight: formData.weight,
-      color: formData.color,
-      motherId: formData.motherId.trim() || '',
-      fatherId: formData.fatherId.trim() || '',
-      notes: formData.notes,
-      healthStatus: formData.healthStatus,
-      image: formData.image,
-      maternalGrandmotherId: formData.maternalGrandmotherId.trim() || '',
-      maternalGrandfatherId: formData.maternalGrandfatherId.trim() || '',
-      paternalGrandmotherId: formData.paternalGrandmotherId.trim() || '',
-      paternalGrandfatherId: formData.paternalGrandfatherId.trim() || '',
-    };
-    
-    console.log('Data being submitted:', dataToSubmit);
-    
+    // Submit the form data exactly as entered - the service will handle UUID/name conversion
     updateMutation.mutate({ 
       id, 
-      data: dataToSubmit 
+      data: formData 
     });
   };
 
