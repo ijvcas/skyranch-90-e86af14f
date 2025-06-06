@@ -13,17 +13,25 @@ const isValidUUID = (str: string): boolean => {
 const findAnimalByNameOrTag = async (searchTerm: string): Promise<string | null> => {
   if (!searchTerm || searchTerm.trim() === '') return null;
   
+  console.log(`Searching for animal with term: "${searchTerm}"`);
+  
   const { data, error } = await supabase
     .from('animals')
-    .select('id')
+    .select('id, name, tag')
     .or(`name.ilike.%${searchTerm}%,tag.ilike.%${searchTerm}%`)
     .maybeSingle();
     
-  if (error || !data) {
+  if (error) {
+    console.error(`Error searching for animal: ${error.message}`);
+    return null;
+  }
+  
+  if (!data) {
     console.log(`No animal found for search term: ${searchTerm}`);
     return null;
   }
   
+  console.log(`Found animal:`, data);
   return data.id;
 };
 

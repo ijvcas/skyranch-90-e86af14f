@@ -19,47 +19,51 @@ const AnimalDetail = () => {
     retryDelay: 1000
   });
 
+  console.log('Animal data loaded:', animal);
+
   // Only query for parents if the animal has parent IDs and they are valid UUIDs
   const { data: mother } = useQuery({
     queryKey: ['animal', animal?.motherId],
     queryFn: () => getAnimal(animal?.motherId!),
-    enabled: !!animal?.motherId && animal.motherId.length === 36, // UUID length check
+    enabled: !!animal?.motherId && animal.motherId.length === 36 && animal.motherId.includes('-'),
     retry: 1
   });
 
   const { data: father } = useQuery({
     queryKey: ['animal', animal?.fatherId],
     queryFn: () => getAnimal(animal?.fatherId!),
-    enabled: !!animal?.fatherId && animal.fatherId.length === 36, // UUID length check
+    enabled: !!animal?.fatherId && animal.fatherId.length === 36 && animal.fatherId.includes('-'),
     retry: 1
   });
+
+  console.log('Parent data:', { mother, father });
 
   // Only query grandparents if we have parent data with valid UUIDs
   const { data: maternalGrandmother } = useQuery({
     queryKey: ['animal', mother?.motherId],
     queryFn: () => getAnimal(mother?.motherId!),
-    enabled: !!mother?.motherId && mother.motherId.length === 36,
+    enabled: !!mother?.motherId && mother.motherId.length === 36 && mother.motherId.includes('-'),
     retry: 1
   });
 
   const { data: maternalGrandfather } = useQuery({
     queryKey: ['animal', mother?.fatherId],
     queryFn: () => getAnimal(mother?.fatherId!),
-    enabled: !!mother?.fatherId && mother.fatherId.length === 36,
+    enabled: !!mother?.fatherId && mother.fatherId.length === 36 && mother.fatherId.includes('-'),
     retry: 1
   });
 
   const { data: paternalGrandmother } = useQuery({
     queryKey: ['animal', father?.motherId],
     queryFn: () => getAnimal(father?.motherId!),
-    enabled: !!father?.motherId && father.motherId.length === 36,
+    enabled: !!father?.motherId && father.motherId.length === 36 && father.motherId.includes('-'),
     retry: 1
   });
 
   const { data: paternalGrandfather } = useQuery({
     queryKey: ['animal', father?.fatherId],
     queryFn: () => getAnimal(father?.fatherId!),
-    enabled: !!father?.fatherId && father.fatherId.length === 36,
+    enabled: !!father?.fatherId && father.fatherId.length === 36 && father.fatherId.includes('-'),
     retry: 1
   });
 
@@ -196,9 +200,18 @@ const AnimalDetail = () => {
     );
   }
 
-  console.log('Animal data:', animal);
-  console.log('Mother data:', mother);
-  console.log('Father data:', father);
+  // Check if we should show pedigree (when we have valid parent IDs)
+  const hasValidParents = (animal.motherId && animal.motherId.includes('-')) || (animal.fatherId && animal.fatherId.includes('-'));
+  const hasParentData = mother || father;
+  const hasGrandparentData = maternalGrandmother || maternalGrandfather || paternalGrandmother || paternalGrandfather;
+
+  console.log('Pedigree display logic:', { 
+    hasValidParents, 
+    hasParentData, 
+    hasGrandparentData,
+    motherId: animal.motherId,
+    fatherId: animal.fatherId
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4">
@@ -312,16 +325,11 @@ const AnimalDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Pedigree Chart - Show even if we only have partial data */}
-            {(mother || father || maternalGrandmother || maternalGrandfather || paternalGrandmother || paternalGrandfather || animal.motherId || animal.fatherId) && (
+            {/* Pedigree Chart - Show when we have valid parent data */}
+            {hasValidParents && (
               <Card className="shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-xl text-gray-900">Árbol Genealógico</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    {animal.motherId && !mother && 'Madre: ' + animal.motherId}
-                    {animal.motherId && !mother && animal.fatherId && !father && ' | '}
-                    {animal.fatherId && !father && 'Padre: ' + animal.fatherId}
-                  </p>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
@@ -341,7 +349,7 @@ const AnimalDetail = () => {
                     </div>
 
                     {/* Second Generation - Grandparents */}
-                    {(maternalGrandmother || maternalGrandfather || paternalGrandmother || paternalGrandfather) && (
+                    {hasGrandparentData && (
                       <div className="space-y-4">
                         <h4 className="text-lg font-semibold text-gray-800 text-center">Abuelos</h4>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
