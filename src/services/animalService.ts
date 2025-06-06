@@ -9,6 +9,24 @@ const isValidUUID = (str: string): boolean => {
   return uuidRegex.test(str);
 };
 
+// Helper function to find animal by name or tag
+const findAnimalByNameOrTag = async (searchTerm: string): Promise<string | null> => {
+  if (!searchTerm || searchTerm.trim() === '') return null;
+  
+  const { data, error } = await supabase
+    .from('animals')
+    .select('id')
+    .or(`name.ilike.%${searchTerm}%,tag.ilike.%${searchTerm}%`)
+    .maybeSingle();
+    
+  if (error || !data) {
+    console.log(`No animal found for search term: ${searchTerm}`);
+    return null;
+  }
+  
+  return data.id;
+};
+
 export const getAllAnimals = async (): Promise<Animal[]> => {
   try {
     const { data, error } = await supabase
@@ -92,10 +110,27 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       return { success: false };
     }
 
-    // For parent IDs: if they're valid UUIDs, use them; otherwise save as null for database foreign key
-    // But we'll store the original text in a different approach - for now just log them
-    const motherIdToSave = animal.motherId && isValidUUID(animal.motherId) ? animal.motherId : null;
-    const fatherIdToSave = animal.fatherId && isValidUUID(animal.fatherId) ? animal.fatherId : null;
+    // Process parent IDs: try to find by UUID first, then by name/tag
+    let motherIdToSave = null;
+    let fatherIdToSave = null;
+
+    if (animal.motherId && animal.motherId.trim() !== '') {
+      if (isValidUUID(animal.motherId)) {
+        motherIdToSave = animal.motherId;
+      } else {
+        // Try to find by name or tag
+        motherIdToSave = await findAnimalByNameOrTag(animal.motherId);
+      }
+    }
+
+    if (animal.fatherId && animal.fatherId.trim() !== '') {
+      if (isValidUUID(animal.fatherId)) {
+        fatherIdToSave = animal.fatherId;
+      } else {
+        // Try to find by name or tag
+        fatherIdToSave = await findAnimalByNameOrTag(animal.fatherId);
+      }
+    }
 
     console.log('Adding animal with processed parent IDs:', { 
       motherId: motherIdToSave, 
@@ -139,9 +174,27 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
 
 export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Promise<boolean> => {
   try {
-    // For parent IDs: if they're valid UUIDs, use them; otherwise save as null for database foreign key
-    const motherIdToSave = animal.motherId && isValidUUID(animal.motherId) ? animal.motherId : null;
-    const fatherIdToSave = animal.fatherId && isValidUUID(animal.fatherId) ? animal.fatherId : null;
+    // Process parent IDs: try to find by UUID first, then by name/tag
+    let motherIdToSave = null;
+    let fatherIdToSave = null;
+
+    if (animal.motherId && animal.motherId.trim() !== '') {
+      if (isValidUUID(animal.motherId)) {
+        motherIdToSave = animal.motherId;
+      } else {
+        // Try to find by name or tag
+        motherIdToSave = await findAnimalByNameOrTag(animal.motherId);
+      }
+    }
+
+    if (animal.fatherId && animal.fatherId.trim() !== '') {
+      if (isValidUUID(animal.fatherId)) {
+        fatherIdToSave = animal.fatherId;
+      } else {
+        // Try to find by name or tag
+        fatherIdToSave = await findAnimalByNameOrTag(animal.fatherId);
+      }
+    }
 
     console.log('Updating animal with processed parent IDs:', { 
       animalId: id,
@@ -150,15 +203,6 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       originalMotherId: animal.motherId,
       originalFatherId: animal.fatherId
     });
-
-    // For now, we'll store the parent names in the notes field if they're not UUIDs
-    let updatedNotes = animal.notes;
-    if (animal.motherId && !isValidUUID(animal.motherId)) {
-      updatedNotes += `\n[Madre: ${animal.motherId}]`;
-    }
-    if (animal.fatherId && !isValidUUID(animal.fatherId)) {
-      updatedNotes += `\n[Padre: ${animal.fatherId}]`;
-    }
 
     const { error } = await supabase
       .from('animals')
@@ -174,7 +218,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
         mother_id: motherIdToSave,
         father_id: fatherIdToSave,
         health_status: animal.healthStatus,
-        notes: updatedNotes,
+        notes: animal.notes,
         image_url: animal.image,
       })
       .eq('id', id);
