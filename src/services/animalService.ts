@@ -57,8 +57,10 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
       return null;
     }
 
-    console.log('Raw animal data:', data);
-    return transformAnimalData(data);
+    console.log('Raw animal data from database:', data);
+    const transformedAnimal = transformAnimalData(data);
+    console.log('Transformed animal data:', transformedAnimal);
+    return transformedAnimal;
   } catch (error) {
     console.error('Failed to fetch animal:', error);
     return null;
@@ -92,7 +94,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
     }
 
     // Process all parent IDs - convert names/tags to UUIDs
-    console.log('Processing parent IDs...');
+    console.log('Processing parent IDs for new animal...');
     const [
       motherIdToSave,
       fatherIdToSave,
@@ -109,7 +111,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       processParentId(animal.paternalGrandfatherId || '')
     ]);
 
-    console.log('Processed parent IDs:', { 
+    console.log('Processed parent IDs for saving:', { 
       motherId: motherIdToSave, 
       fatherId: fatherIdToSave,
       maternalGrandmotherId: maternalGrandmotherIdToSave,
@@ -191,7 +193,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       paternal_grandfather_id: paternalGrandfatherIdToSave,
     };
 
-    console.log('Final update data:', updateData);
+    console.log('Final update data to save:', updateData);
 
     const { error } = await supabase
       .from('animals')

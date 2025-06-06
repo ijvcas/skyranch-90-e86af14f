@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { isValidUUID } from './animalValidation';
 
@@ -34,10 +33,21 @@ export const processParentId = async (parentInput: string): Promise<string | nul
   
   console.log(`Processing parent input: "${parentInput}"`);
   
-  // If it's a valid UUID, use it directly
+  // If it's a valid UUID, verify it exists in database
   if (isValidUUID(parentInput)) {
-    console.log(`Using UUID directly: ${parentInput}`);
-    return parentInput;
+    console.log(`Verifying UUID exists: ${parentInput}`);
+    const { data, error } = await supabase
+      .from('animals')
+      .select('id')
+      .eq('id', parentInput)
+      .single();
+    
+    if (!error && data) {
+      console.log(`UUID verified: ${parentInput}`);
+      return parentInput;
+    } else {
+      console.log(`UUID not found in database: ${parentInput}`);
+    }
   }
   
   // Otherwise, search by name or tag
@@ -48,7 +58,13 @@ export const processParentId = async (parentInput: string): Promise<string | nul
 
 // Helper function to get animal name by ID for display purposes
 export const getAnimalNameById = async (animalId: string): Promise<string> => {
-  if (!animalId || animalId.trim() === '' || !isValidUUID(animalId)) {
+  if (!animalId || animalId.trim() === '') {
+    console.log('Empty animal ID provided');
+    return '';
+  }
+
+  if (!isValidUUID(animalId)) {
+    console.log(`Invalid UUID format: ${animalId}`);
     return '';
   }
 
@@ -61,10 +77,11 @@ export const getAnimalNameById = async (animalId: string): Promise<string> => {
     .single();
     
   if (error || !data) {
-    console.log(`No animal found for ID: ${animalId}`);
+    console.log(`No animal found for ID: ${animalId}`, error?.message);
     return '';
   }
   
-  console.log(`Found animal name: ${data.name} (${data.tag})`);
-  return `${data.name} (${data.tag})`;
+  const displayName = `${data.name} (${data.tag})`;
+  console.log(`Found animal name: ${displayName}`);
+  return displayName;
 };
