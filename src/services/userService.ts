@@ -78,11 +78,11 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
 export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
   console.log(`🔄 Attempting to sync user: ${email} (ID: ${profileId})`);
   
-  // Check if user already exists in app_users
+  // Check if user already exists in app_users by email (not just ID)
   const { data: existingUser, error: checkError } = await supabase
     .from('app_users')
     .select('id, email')
-    .eq('id', profileId)
+    .eq('email', email)
     .maybeSingle();
 
   if (checkError) {
@@ -111,6 +111,25 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
 
     if (error) {
       console.error('❌ Error syncing user to app_users:', error);
+      
+      // If it's a duplicate ID error, try to update the existing record
+      if (error.code === '23505' && error.message.includes('app_users_pkey')) {
+        console.log(`🔄 User ID exists, trying to update record for ${email}`);
+        const { error: updateError } = await supabase
+          .from('app_users')
+          .update({
+            name: fullName || email,
+            email: email,
+            role: role
+          })
+          .eq('id', profileId);
+          
+        if (updateError) {
+          console.error('❌ Error updating existing user:', updateError);
+        } else {
+          console.log(`✅ User ${email} successfully updated in app_users table`);
+        }
+      }
     } else {
       console.log(`✅ User ${email} successfully synced to app_users table`);
     }
@@ -200,12 +219,10 @@ export const deleteUser = async (id: string): Promise<boolean> => {
   }
 
   // Step 3: Try to delete from auth system (this requires admin privileges)
-  // Note: This will only work if the current user has admin privileges in Supabase
   try {
     const { error: authError } = await supabase.auth.admin.deleteUser(id);
     if (authError) {
       console.error('❌ Error deleting from auth system (admin required):', authError);
-      // This is expected if the user doesn't have admin privileges
       console.log('ℹ️ User removed from app tables but may still exist in auth system');
     } else {
       console.log(`✅ User ${userEmail} successfully deleted from auth system`);
@@ -266,12 +283,24 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     await syncUserToAppUsers(user.id, user.email, userName);
   }
 
-  // Now try to find in app_users
-  const { data: appUser, error } = await supabase
+  // Now try to find in app_users by email first, then by ID
+  let { data: appUser, error } = await supabase
     .from('app_users')
     .select('*')
-    .eq('id', user.id)
+    .eq('email', user.email)
     .maybeSingle();
+
+  // If not found by email, try by ID
+  if (!appUser && !error) {
+    const result = await supabase
+      .from('app_users')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    appUser = result.data;
+    error = result.error;
+  }
 
   if (appUser) {
     console.log(`✅ Found current user in app_users: ${appUser.email}`);
