@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAnimalStore } from '@/stores/animalStore';
+import { getAllAnimals } from '@/services/animalService';
 
 export interface Notification {
   id: string;
@@ -42,7 +42,6 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
-  const { getAllAnimals } = useAnimalStore();
 
   // Load notifications and settings from localStorage
   useEffect(() => {
@@ -186,143 +185,154 @@ export const useNotifications = () => {
   }, [saveNotifications]);
 
   // Check for health alerts
-  const checkHealthAlerts = useCallback(() => {
+  const checkHealthAlerts = useCallback(async () => {
     if (!settings.healthAlerts) return;
 
-    const animals = getAllAnimals();
-    const now = new Date();
+    try {
+      const animals = await getAllAnimals();
+      const now = new Date();
 
-    animals.forEach((animal: any) => {
-      // Check for unhealthy animals
-      if (animal.healthStatus === 'sick' || animal.healthStatus === 'injured') {
-        const existingAlert = notifications.find(n => 
-          n.type === 'health' && 
-          n.animalId === animal.id && 
-          !n.isRead &&
-          n.createdAt > new Date(now.getTime() - 24 * 60 * 60 * 1000) // Within last 24 hours
-        );
-
-        if (!existingAlert) {
-          addNotification(
-            'health',
-            'Alerta de Salud',
-            `${animal.name} (${animal.tag}) requiere atención médica - Estado: ${animal.healthStatus}`,
-            {
-              animalId: animal.id,
-              animalName: animal.name,
-              priority: 'high',
-              actionRequired: true,
-            }
-          );
-        }
-      }
-
-      // Check for overweight animals (if weight is tracked)
-      if (animal.weight && parseFloat(animal.weight) > 800) { // Example threshold
-        const existingAlert = notifications.find(n => 
-          n.type === 'health' && 
-          n.animalId === animal.id && 
-          n.message.includes('sobrepeso') &&
-          !n.isRead &&
-          n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // Within last week
-        );
-
-        if (!existingAlert) {
-          addNotification(
-            'health',
-            'Alerta de Peso',
-            `${animal.name} (${animal.tag}) puede tener sobrepeso - Peso: ${animal.weight}kg`,
-            {
-              animalId: animal.id,
-              animalName: animal.name,
-              priority: 'medium',
-            }
-          );
-        }
-      }
-    });
-  }, [settings.healthAlerts, notifications, addNotification, getAllAnimals]);
-
-  // Check for vaccine reminders
-  const checkVaccineReminders = useCallback(() => {
-    if (!settings.vaccineReminders) return;
-
-    const animals = getAllAnimals();
-    const now = new Date();
-    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-    animals.forEach((animal: any) => {
-      // Example: Check if animal needs annual vaccination
-      // This is a simplified example - in a real app, you'd track vaccination records
-      const birthDate = animal.birthDate ? new Date(animal.birthDate) : null;
-      if (birthDate) {
-        const nextVaccineDate = new Date(birthDate);
-        nextVaccineDate.setFullYear(nextVaccineDate.getFullYear() + 1);
-
-        if (nextVaccineDate <= thirtyDaysFromNow && nextVaccineDate > now) {
-          const existingReminder = notifications.find(n => 
-            n.type === 'vaccine' && 
+      animals.forEach((animal: any) => {
+        // Check for unhealthy animals
+        if (animal.healthStatus === 'sick' || animal.healthStatus === 'injured') {
+          const existingAlert = notifications.find(n => 
+            n.type === 'health' && 
             n.animalId === animal.id && 
             !n.isRead &&
-            n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // Within last week
+            n.createdAt > new Date(now.getTime() - 24 * 60 * 60 * 1000) // Within last 24 hours
           );
 
-          if (!existingReminder) {
+          if (!existingAlert) {
             addNotification(
-              'vaccine',
-              'Recordatorio de Vacuna',
-              `${animal.name} (${animal.tag}) necesita vacunación anual - Fecha: ${nextVaccineDate.toLocaleDateString('es-ES')}`,
+              'health',
+              'Alerta de Salud',
+              `${animal.name} (${animal.tag}) requiere atención médica - Estado: ${animal.healthStatus}`,
               {
                 animalId: animal.id,
                 animalName: animal.name,
-                priority: 'medium',
-                scheduledFor: nextVaccineDate,
+                priority: 'high',
                 actionRequired: true,
               }
             );
           }
         }
-      }
-    });
-  }, [settings.vaccineReminders, notifications, addNotification, getAllAnimals]);
+
+        // Check for overweight animals (if weight is tracked)
+        if (animal.weight && parseFloat(animal.weight) > 800) { // Example threshold
+          const existingAlert = notifications.find(n => 
+            n.type === 'health' && 
+            n.animalId === animal.id && 
+            n.message.includes('sobrepeso') &&
+            !n.isRead &&
+            n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // Within last week
+          );
+
+          if (!existingAlert) {
+            addNotification(
+              'health',
+              'Alerta de Peso',
+              `${animal.name} (${animal.tag}) puede tener sobrepeso - Peso: ${animal.weight}kg`,
+              {
+                animalId: animal.id,
+                animalName: animal.name,
+                priority: 'medium',
+              }
+            );
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error checking health alerts:', error);
+    }
+  }, [settings.healthAlerts, notifications, addNotification]);
+
+  // Check for vaccine reminders
+  const checkVaccineReminders = useCallback(async () => {
+    if (!settings.vaccineReminders) return;
+
+    try {
+      const animals = await getAllAnimals();
+      const now = new Date();
+      const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      animals.forEach((animal: any) => {
+        // Example: Check if animal needs annual vaccination
+        const birthDate = animal.birthDate ? new Date(animal.birthDate) : null;
+        if (birthDate) {
+          const nextVaccineDate = new Date(birthDate);
+          nextVaccineDate.setFullYear(nextVaccineDate.getFullYear() + 1);
+
+          if (nextVaccineDate <= thirtyDaysFromNow && nextVaccineDate > now) {
+            const existingReminder = notifications.find(n => 
+              n.type === 'vaccine' && 
+              n.animalId === animal.id && 
+              !n.isRead &&
+              n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // Within last week
+            );
+
+            if (!existingReminder) {
+              addNotification(
+                'vaccine',
+                'Recordatorio de Vacuna',
+                `${animal.name} (${animal.tag}) necesita vacunación anual - Fecha: ${nextVaccineDate.toLocaleDateString('es-ES')}`,
+                {
+                  animalId: animal.id,
+                  animalName: animal.name,
+                  priority: 'medium',
+                  scheduledFor: nextVaccineDate,
+                  actionRequired: true,
+                }
+              );
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error checking vaccine reminders:', error);
+    }
+  }, [settings.vaccineReminders, notifications, addNotification]);
 
   // Generate weekly report
-  const generateWeeklyReport = useCallback(() => {
+  const generateWeeklyReport = useCallback(async () => {
     if (!settings.weeklyReports) return;
 
-    const animals = getAllAnimals();
-    const now = new Date();
-    const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    try {
+      const animals = await getAllAnimals();
+      const now = new Date();
+      const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Check if we already sent a report this week
-    const existingReport = notifications.find(n => 
-      n.type === 'weekly_report' && 
-      n.createdAt > lastWeek
-    );
-
-    if (!existingReport) {
-      const healthyCount = animals.filter(a => a.healthStatus === 'healthy').length;
-      const sickCount = animals.filter(a => a.healthStatus === 'sick' || a.healthStatus === 'injured').length;
-      const totalCount = animals.length;
-
-      const report = `
-        Total de animales: ${totalCount}
-        Animales sanos: ${healthyCount}
-        Animales que requieren atención: ${sickCount}
-        
-        Estado general de la granja: ${sickCount === 0 ? 'Excelente' : sickCount < totalCount * 0.1 ? 'Bueno' : 'Requiere atención'}
-      `;
-
-      addNotification(
-        'weekly_report',
-        'Reporte Semanal',
-        report.trim(),
-        {
-          priority: 'low',
-        }
+      // Check if we already sent a report this week
+      const existingReport = notifications.find(n => 
+        n.type === 'weekly_report' && 
+        n.createdAt > lastWeek
       );
+
+      if (!existingReport) {
+        const healthyCount = animals.filter(a => a.healthStatus === 'healthy').length;
+        const sickCount = animals.filter(a => a.healthStatus === 'sick' || a.healthStatus === 'injured').length;
+        const totalCount = animals.length;
+
+        const report = `
+          Total de animales: ${totalCount}
+          Animales sanos: ${healthyCount}
+          Animales que requieren atención: ${sickCount}
+          
+          Estado general de la granja: ${sickCount === 0 ? 'Excelente' : sickCount < totalCount * 0.1 ? 'Bueno' : 'Requiere atención'}
+        `;
+
+        addNotification(
+          'weekly_report',
+          'Reporte Semanal',
+          report.trim(),
+          {
+            priority: 'low',
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error generating weekly report:', error);
     }
-  }, [settings.weeklyReports, notifications, addNotification, getAllAnimals]);
+  }, [settings.weeklyReports, notifications, addNotification]);
 
   // Run periodic checks
   useEffect(() => {

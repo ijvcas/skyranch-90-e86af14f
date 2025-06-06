@@ -1,5 +1,6 @@
 
 import { create } from 'zustand';
+import { getAllAnimals as fetchAllAnimals, getAnimal as fetchAnimal } from '@/services/animalService';
 
 export interface Animal {
   id: string;
@@ -24,15 +25,19 @@ export interface Animal {
 
 interface AnimalStore {
   animals: Animal[];
+  isLoading: boolean;
   addAnimal: (animal: Animal) => void;
   updateAnimal: (id: string, animal: Animal) => void;
   deleteAnimal: (id: string) => void;
   getAnimal: (id: string) => Animal | undefined;
   getAllAnimals: () => Animal[];
+  loadAnimals: () => Promise<void>;
+  setAnimals: (animals: Animal[]) => void;
 }
 
 export const useAnimalStore = create<AnimalStore>((set, get) => ({
   animals: [],
+  isLoading: false,
   addAnimal: (animal) =>
     set((state) => ({ animals: [...state.animals, animal] })),
   updateAnimal: (id, updatedAnimal) =>
@@ -47,8 +52,15 @@ export const useAnimalStore = create<AnimalStore>((set, get) => ({
     })),
   getAnimal: (id) => get().animals.find((animal) => animal.id === id),
   getAllAnimals: () => get().animals,
+  loadAnimals: async () => {
+    set({ isLoading: true });
+    try {
+      const animals = await fetchAllAnimals();
+      set({ animals, isLoading: false });
+    } catch (error) {
+      console.error('Error loading animals:', error);
+      set({ isLoading: false });
+    }
+  },
+  setAnimals: (animals) => set({ animals }),
 }));
-
-// Export individual functions for external use
-export const addAnimal = (animal: Animal) => useAnimalStore.getState().addAnimal(animal);
-export const getAllAnimals = () => useAnimalStore.getState().getAllAnimals();
