@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAnimal, updateAnimal } from '@/services/animalService';
+import { getAnimal, updateAnimal, getAllAnimals } from '@/services/animalService';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -40,6 +40,12 @@ const AnimalEdit = () => {
     queryKey: ['animal', id],
     queryFn: () => getAnimal(id!),
     enabled: !!id
+  });
+
+  // Fetch all animals for parent selection
+  const { data: allAnimals = [] } = useQuery({
+    queryKey: ['animals'],
+    queryFn: getAllAnimals
   });
 
   // Update mutation
@@ -112,6 +118,23 @@ const AnimalEdit = () => {
 
   const handleImageChange = (imageUrl: string | null) => {
     setFormData(prev => ({ ...prev, image: imageUrl }));
+  };
+
+  // Filter animals that could be parents (exclude current animal and same gender for appropriate parent type)
+  const getPotentialMothers = () => {
+    return allAnimals.filter(a => 
+      a.id !== id && 
+      a.gender === 'hembra' && 
+      a.species === formData.species
+    );
+  };
+
+  const getPotentialFathers = () => {
+    return allAnimals.filter(a => 
+      a.id !== id && 
+      a.gender === 'macho' && 
+      a.species === formData.species
+    );
   };
 
   if (!id) {
@@ -201,6 +224,7 @@ const AnimalEdit = () => {
                       <SelectItem value="porcino">Porcino</SelectItem>
                       <SelectItem value="equino">Equino</SelectItem>
                       <SelectItem value="aviar">Aviar</SelectItem>
+                      <SelectItem value="canine">Canino</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -276,26 +300,36 @@ const AnimalEdit = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="motherId">ID de la Madre</Label>
-                  <Input
-                    id="motherId"
-                    type="text"
-                    value={formData.motherId}
-                    onChange={(e) => handleInputChange('motherId', e.target.value)}
-                    className="mt-1"
-                    disabled={updateMutation.isPending}
-                  />
+                  <Label htmlFor="motherId">Madre</Label>
+                  <Select value={formData.motherId} onValueChange={(value) => handleInputChange('motherId', value)} disabled={updateMutation.isPending}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar madre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin madre registrada</SelectItem>
+                      {getPotentialMothers().map(mother => (
+                        <SelectItem key={mother.id} value={mother.id}>
+                          {mother.name} (#{mother.tag})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="fatherId">ID del Padre</Label>
-                  <Input
-                    id="fatherId"
-                    type="text"
-                    value={formData.fatherId}
-                    onChange={(e) => handleInputChange('fatherId', e.target.value)}
-                    className="mt-1"
-                    disabled={updateMutation.isPending}
-                  />
+                  <Label htmlFor="fatherId">Padre</Label>
+                  <Select value={formData.fatherId} onValueChange={(value) => handleInputChange('fatherId', value)} disabled={updateMutation.isPending}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar padre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin padre registrado</SelectItem>
+                      {getPotentialFathers().map(father => (
+                        <SelectItem key={father.id} value={father.id}>
+                          {father.name} (#{father.tag})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
