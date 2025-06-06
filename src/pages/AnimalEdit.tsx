@@ -305,12 +305,12 @@ const AnimalEdit = () => {
                     type="text"
                     value={formData.motherId}
                     onChange={(e) => handleInputChange('motherId', e.target.value)}
-                    placeholder="Nombre o ID de la madre"
+                    placeholder="Nombre o etiqueta de la madre"
                     className="mt-1"
                     disabled={updateMutation.isPending}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Puedes ingresar el nombre o ID del animal madre
+                    Ingresa el nombre o número de etiqueta de la madre
                   </p>
                 </div>
                 <div>
@@ -320,12 +320,12 @@ const AnimalEdit = () => {
                     type="text"
                     value={formData.fatherId}
                     onChange={(e) => handleInputChange('fatherId', e.target.value)}
-                    placeholder="Nombre o ID del padre"
+                    placeholder="Nombre o etiqueta del padre"
                     className="mt-1"
                     disabled={updateMutation.isPending}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Puedes ingresar el nombre o ID del animal padre
+                    Ingresa el nombre o número de etiqueta del padre
                   </p>
                 </div>
               </div>
