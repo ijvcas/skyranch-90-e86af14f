@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppUser {
@@ -12,6 +11,8 @@ export interface AppUser {
 }
 
 export const getAllUsers = async (): Promise<AppUser[]> => {
+  console.log('Fetching all users...');
+  
   // First get all users from app_users table
   const { data: appUsers, error: appUsersError } = await supabase
     .from('app_users')
@@ -31,6 +32,9 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     console.error('Error fetching profiles:', authError);
   }
 
+  console.log('App users found:', appUsers?.length || 0);
+  console.log('Profile users found:', authUsers?.length || 0);
+
   // Combine and deduplicate users
   const allUsers: AppUser[] = [];
   const userEmails = new Set<string>();
@@ -48,10 +52,15 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     });
   }
 
-  // Add profiles that aren't already in app_users
+  // Add profiles that aren't already in app_users and auto-sync them
   if (authUsers) {
-    authUsers.forEach(profile => {
+    for (const profile of authUsers) {
       if (!userEmails.has(profile.email) && profile.email) {
+        console.log(`Found profile not in app_users: ${profile.email}, syncing...`);
+        
+        // Auto-sync this user to app_users
+        await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
+        
         // Determine role based on email - new users get 'worker' role by default
         const role = (profile.email === 'juan.casanova@skyranch.com' || profile.email === 'jvcas@mac.com') 
           ? 'admin' 
@@ -66,20 +75,30 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
           is_active: true,
           created_by: undefined
         });
+        
+        userEmails.add(profile.email);
       }
-    });
+    }
   }
 
+  console.log('Total users returned:', allUsers.length);
   return allUsers;
 };
 
 export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
+  console.log(`Attempting to sync user: ${email}`);
+  
   // Check if user already exists in app_users
-  const { data: existingUser } = await supabase
+  const { data: existingUser, error: checkError } = await supabase
     .from('app_users')
     .select('id')
     .eq('email', email)
     .single();
+
+  if (checkError && checkError.code !== 'PGRST116') {
+    console.error('Error checking existing user:', checkError);
+    return;
+  }
 
   if (!existingUser) {
     // Determine role based on email - new users get 'worker' role by default
