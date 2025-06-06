@@ -147,6 +147,15 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       originalFatherId: animal.fatherId
     });
 
+    // Remove parent info from notes if it was accidentally included
+    let cleanNotes = animal.notes || '';
+    if (cleanNotes.includes('[Madre:') || cleanNotes.includes('[Padre:')) {
+      cleanNotes = cleanNotes
+        .replace(/\[Madre:.*?\]/g, '')
+        .replace(/\[Padre:.*?\]/g, '')
+        .trim();
+    }
+
     const { data, error } = await supabase
       .from('animals')
       .insert({
@@ -161,7 +170,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
         mother_id: motherIdToSave,
         father_id: fatherIdToSave,
         health_status: animal.healthStatus,
-        notes: animal.notes,
+        notes: cleanNotes,
         image_url: animal.image,
         user_id: user.id,
       })
@@ -212,6 +221,15 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       originalFatherId: animal.fatherId
     });
 
+    // Remove parent info from notes if it was accidentally included
+    let cleanNotes = animal.notes || '';
+    if (cleanNotes.includes('[Madre:') || cleanNotes.includes('[Padre:')) {
+      cleanNotes = cleanNotes
+        .replace(/\[Madre:.*?\]/g, '')
+        .replace(/\[Padre:.*?\]/g, '')
+        .trim();
+    }
+
     const { error } = await supabase
       .from('animals')
       .update({
@@ -226,7 +244,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
         mother_id: motherIdToSave,
         father_id: fatherIdToSave,
         health_status: animal.healthStatus,
-        notes: animal.notes,
+        notes: cleanNotes,
         image_url: animal.image,
       })
       .eq('id', id);

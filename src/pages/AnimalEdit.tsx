@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAnimal, updateAnimal } from '@/services/animalService';
+import { getAnimal, updateAnimal, getAllAnimals } from '@/services/animalService';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -42,6 +41,12 @@ const AnimalEdit = () => {
     enabled: !!id
   });
 
+  // Fetch all animals for parent selection
+  const { data: allAnimals = [] } = useQuery({
+    queryKey: ['animals'],
+    queryFn: getAllAnimals
+  });
+
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: any }) => updateAnimal(id, data),
@@ -66,6 +71,17 @@ const AnimalEdit = () => {
 
   useEffect(() => {
     if (animal) {
+      console.log('Loading animal data:', animal);
+      
+      // Clean up parent IDs if they appear in notes
+      let cleanNotes = animal.notes || '';
+      if (cleanNotes.includes('[Madre:') || cleanNotes.includes('[Padre:')) {
+        cleanNotes = cleanNotes
+          .replace(/\[Madre:.*?\]/g, '')
+          .replace(/\[Padre:.*?\]/g, '')
+          .trim();
+      }
+      
       setFormData({
         name: animal.name,
         tag: animal.tag,
@@ -77,7 +93,7 @@ const AnimalEdit = () => {
         color: animal.color,
         motherId: animal.motherId || '',
         fatherId: animal.fatherId || '',
-        notes: animal.notes,
+        notes: cleanNotes,
         healthStatus: animal.healthStatus,
         image: animal.image
       });
@@ -300,32 +316,44 @@ const AnimalEdit = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="motherId">Madre</Label>
-                  <Input
-                    id="motherId"
-                    type="text"
-                    value={formData.motherId}
-                    onChange={(e) => handleInputChange('motherId', e.target.value)}
-                    placeholder="Nombre o etiqueta de la madre"
-                    className="mt-1"
-                    disabled={updateMutation.isPending}
-                  />
+                  <Select value={formData.motherId} onValueChange={(value) => handleInputChange('motherId', value)} disabled={updateMutation.isPending}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar madre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin madre registrada</SelectItem>
+                      {allAnimals
+                        .filter(a => a.gender === 'hembra' && a.id !== id)
+                        .map(animal => (
+                          <SelectItem key={animal.id} value={animal.id}>
+                            {animal.name} (#{animal.tag})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Ingresa el nombre o número de etiqueta de la madre
+                    Selecciona la madre de la lista de animales registrados
                   </p>
                 </div>
                 <div>
                   <Label htmlFor="fatherId">Padre</Label>
-                  <Input
-                    id="fatherId"
-                    type="text"
-                    value={formData.fatherId}
-                    onChange={(e) => handleInputChange('fatherId', e.target.value)}
-                    placeholder="Nombre o etiqueta del padre"
-                    className="mt-1"
-                    disabled={updateMutation.isPending}
-                  />
+                  <Select value={formData.fatherId} onValueChange={(value) => handleInputChange('fatherId', value)} disabled={updateMutation.isPending}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar padre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin padre registrado</SelectItem>
+                      {allAnimals
+                        .filter(a => a.gender === 'macho' && a.id !== id)
+                        .map(animal => (
+                          <SelectItem key={animal.id} value={animal.id}>
+                            {animal.name} (#{animal.tag})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Ingresa el nombre o número de etiqueta del padre
+                    Selecciona el padre de la lista de animales registrados
                   </p>
                 </div>
               </div>
