@@ -198,7 +198,7 @@ const AnimalEdit = () => {
           <p className="text-gray-600">Modifica la información del animal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           {/* Basic Information */}
           <Card className="shadow-lg">
             <CardHeader>
@@ -216,6 +216,7 @@ const AnimalEdit = () => {
                     required
                     className="mt-1"
                     disabled={updateMutation.isPending}
+                    autoComplete="off"
                   />
                 </div>
                 <div>
@@ -228,6 +229,7 @@ const AnimalEdit = () => {
                     required
                     className="mt-1"
                     disabled={updateMutation.isPending}
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -259,6 +261,7 @@ const AnimalEdit = () => {
                     onChange={(e) => handleInputChange('breed', e.target.value)}
                     className="mt-1"
                     disabled={updateMutation.isPending}
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -273,6 +276,7 @@ const AnimalEdit = () => {
                     onChange={(e) => handleInputChange('birthDate', e.target.value)}
                     className="mt-1"
                     disabled={updateMutation.isPending}
+                    autoComplete="off"
                   />
                 </div>
                 <div>
@@ -296,6 +300,7 @@ const AnimalEdit = () => {
                     onChange={(e) => handleInputChange('weight', e.target.value)}
                     className="mt-1"
                     disabled={updateMutation.isPending}
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -309,6 +314,7 @@ const AnimalEdit = () => {
                   onChange={(e) => handleInputChange('color', e.target.value)}
                   className="mt-1"
                   disabled={updateMutation.isPending}
+                  autoComplete="off"
                 />
               </div>
             </CardContent>
@@ -334,6 +340,7 @@ const AnimalEdit = () => {
                       placeholder="Nombre o etiqueta de la madre"
                       className="mt-1"
                       disabled={updateMutation.isPending}
+                      autoComplete="off"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Escribe el nombre o número de etiqueta de la madre
@@ -349,6 +356,7 @@ const AnimalEdit = () => {
                       placeholder="Nombre o etiqueta del padre"
                       className="mt-1"
                       disabled={updateMutation.isPending}
+                      autoComplete="off"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Escribe el nombre o número de etiqueta del padre
@@ -374,6 +382,7 @@ const AnimalEdit = () => {
                           placeholder="Nombre o etiqueta de la abuela materna"
                           className="mt-1"
                           disabled={updateMutation.isPending}
+                          autoComplete="off"
                         />
                       </div>
                       <div>
@@ -386,6 +395,7 @@ const AnimalEdit = () => {
                           placeholder="Nombre o etiqueta del abuelo materno"
                           className="mt-1"
                           disabled={updateMutation.isPending}
+                          autoComplete="off"
                         />
                       </div>
                     </div>
@@ -404,6 +414,7 @@ const AnimalEdit = () => {
                           placeholder="Nombre o etiqueta de la abuela paterna"
                           className="mt-1"
                           disabled={updateMutation.isPending}
+                          autoComplete="off"
                         />
                       </div>
                       <div>
@@ -416,6 +427,7 @@ const AnimalEdit = () => {
                           placeholder="Nombre o etiqueta del abuelo paterno"
                           className="mt-1"
                           disabled={updateMutation.isPending}
+                          autoComplete="off"
                         />
                       </div>
                     </div>
@@ -474,6 +486,7 @@ const AnimalEdit = () => {
                 placeholder="Cualquier información adicional sobre el animal..."
                 rows={4}
                 disabled={updateMutation.isPending}
+                autoComplete="off"
               />
             </CardContent>
           </Card>
