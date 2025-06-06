@@ -10,6 +10,13 @@ export interface AppUser {
   created_by?: string;
 }
 
+interface AuthUser {
+  id: string;
+  email: string;
+  raw_user_meta_data?: any;
+  created_at: string;
+}
+
 export const getAllUsers = async (): Promise<AppUser[]> => {
   console.log('🔍 Starting getAllUsers - fetching all users...');
   
@@ -23,10 +30,6 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     await syncUserToAppUsers(currentUser.id, currentUser.email, userName);
   }
 
-  // Try to get users from auth.users table using admin functions
-  // This will help us find users that might not have profiles
-  console.log('🔍 Attempting to fetch all auth users...');
-  
   // Get all profiles first
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
@@ -50,15 +53,13 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     }
   }
 
-  // Also try to sync any auth users that might not have profiles
-  // This is a fallback for users who signed up but didn't get a profile created
+  // Try to get auth users and sync any missing ones
   try {
     console.log('🔍 Checking for auth users without profiles...');
     
-    // Try to get users through the RPC endpoint if available
-    const { data: authUsers, error: authError } = await supabase.rpc('get_auth_users');
+    const { data: authUsers, error: authError } = await supabase.rpc('get_auth_users') as { data: AuthUser[] | null, error: any };
     
-    if (!authError && authUsers) {
+    if (!authError && authUsers && Array.isArray(authUsers)) {
       console.log('✅ Found auth users via RPC:', authUsers.length);
       for (const authUser of authUsers) {
         if (authUser.email && authUser.id) {
@@ -94,10 +95,10 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
         }
       }
     } else {
-      console.log('ℹ️ Could not fetch auth users via RPC (this is normal if RPC function is not available)');
+      console.log('ℹ️ Could not fetch auth users via RPC:', authError);
     }
   } catch (error) {
-    console.log('ℹ️ Auth users RPC not available, continuing with profiles only');
+    console.log('ℹ️ Auth users RPC not available, continuing with profiles only:', error);
   }
 
   // Now get all users from app_users table
@@ -141,47 +142,23 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
 
   console.log(`➕ Syncing user to app_users: ${email} with role: ${role}`);
 
-  // First, check if user already exists
-  const { data: existingUser } = await supabase
+  // Use upsert to handle both insert and update cases
+  const { error } = await supabase
     .from('app_users')
-    .select('*')
-    .eq('id', profileId)
-    .single();
+    .upsert([{
+      id: profileId,
+      name: fullName || email,
+      email: email,
+      role: role,
+      is_active: true
+    }], {
+      onConflict: 'id'
+    });
 
-  if (existingUser) {
-    console.log(`✅ User ${email} already exists in app_users, updating...`);
-    const { error: updateError } = await supabase
-      .from('app_users')
-      .update({
-        name: fullName || email,
-        email: email,
-        role: existingUser.role || role, // Keep existing role if it exists
-        is_active: true
-      })
-      .eq('id', profileId);
-      
-    if (updateError) {
-      console.error('❌ Error updating existing user:', updateError);
-    } else {
-      console.log(`✅ User ${email} successfully updated in app_users table`);
-    }
+  if (error) {
+    console.error('❌ Error upserting user:', error);
   } else {
-    // User doesn't exist, insert new record
-    const { error: insertError } = await supabase
-      .from('app_users')
-      .insert([{
-        id: profileId,
-        name: fullName || email,
-        email: email,
-        role: role,
-        is_active: true
-      }]);
-
-    if (insertError) {
-      console.error('❌ Error inserting new user:', insertError);
-    } else {
-      console.log(`✅ User ${email} successfully inserted into app_users table`);
-    }
+    console.log(`✅ User ${email} successfully synced to app_users table`);
   }
 };
 
