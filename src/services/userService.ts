@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppUser {
@@ -13,17 +14,7 @@ export interface AppUser {
 export const getAllUsers = async (): Promise<AppUser[]> => {
   console.log('Fetching all users...');
   
-  // First get all users from app_users table
-  const { data: appUsers, error: appUsersError } = await supabase
-    .from('app_users')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (appUsersError) {
-    console.error('Error fetching app users:', appUsersError);
-  }
-
-  // Then get all auth users to ensure we don't miss any registered users
+  // First get all auth users to ensure we don't miss any registered users
   const { data: authUsers, error: authError } = await supabase
     .from('profiles')
     .select('*');
@@ -32,37 +23,34 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     console.error('Error fetching profiles:', authError);
   }
 
-  console.log('App users found:', appUsers?.length || 0);
   console.log('Profile users found:', authUsers?.length || 0);
 
-  // First, sync any missing users from profiles to app_users
+  // Sync any missing users from profiles to app_users
   if (authUsers) {
-    const appUserEmails = new Set(appUsers?.map(u => u.email) || []);
-    
     for (const profile of authUsers) {
-      if (!appUserEmails.has(profile.email) && profile.email) {
-        console.log(`Syncing missing user: ${profile.email}`);
+      if (profile.email) {
+        console.log(`Checking user: ${profile.email}`);
         await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
       }
     }
   }
 
-  // Now fetch the updated app_users list
-  const { data: updatedAppUsers, error: updatedError } = await supabase
+  // Now get all users from app_users table after syncing
+  const { data: appUsers, error: appUsersError } = await supabase
     .from('app_users')
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (updatedError) {
-    console.error('Error fetching updated app users:', updatedError);
+  if (appUsersError) {
+    console.error('Error fetching app users:', appUsersError);
     return [];
   }
 
   const allUsers: AppUser[] = [];
 
   // Process all app_users
-  if (updatedAppUsers) {
-    updatedAppUsers.forEach(user => {
+  if (appUsers) {
+    appUsers.forEach(user => {
       allUsers.push({
         ...user,
         role: user.email === 'juan.casanova@skyranch.com' || user.email === 'jvcas@mac.com' 
@@ -163,16 +151,45 @@ export const updateUser = async (id: string, updates: Partial<AppUser>): Promise
 };
 
 export const deleteUser = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
+  console.log(`Attempting to delete user with ID: ${id}`);
+  
+  // First delete from app_users table
+  const { error: appUserError } = await supabase
     .from('app_users')
     .delete()
     .eq('id', id);
 
-  if (error) {
-    console.error('Error deleting user:', error);
-    throw error;
+  if (appUserError) {
+    console.error('Error deleting from app_users:', appUserError);
+    throw appUserError;
   }
 
+  // Then delete from profiles table
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', id);
+
+  if (profileError) {
+    console.error('Error deleting from profiles:', profileError);
+  }
+
+  // Finally, delete from auth system using the admin API
+  try {
+    const { error: authError } = await supabase.auth.admin.deleteUser(id);
+    if (authError) {
+      console.error('Error deleting from auth system:', authError);
+      // Don't throw here as the user might not have admin privileges
+      // The important part (removing from app_users) was successful
+    } else {
+      console.log(`User ${id} successfully deleted from auth system`);
+    }
+  } catch (error) {
+    console.error('Error calling auth admin delete:', error);
+    // Continue as the user removal from app_users was successful
+  }
+
+  console.log(`User ${id} deletion completed`);
   return true;
 };
 
