@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Animal } from '@/stores/animalStore';
 
@@ -155,61 +154,27 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
     }
 
     // Process parent IDs: try to find by UUID first, then by name/tag
-    let motherIdToSave = null;
-    let fatherIdToSave = null;
-    let maternalGrandmotherIdToSave = null;
-    let maternalGrandfatherIdToSave = null;
-    let paternalGrandmotherIdToSave = null;
-    let paternalGrandfatherIdToSave = null;
-
-    if (animal.motherId && animal.motherId.trim() !== '') {
-      if (isValidUUID(animal.motherId)) {
-        motherIdToSave = animal.motherId;
-      } else {
-        motherIdToSave = await findAnimalByNameOrTag(animal.motherId);
+    const processParentId = async (parentInput: string): Promise<string | null> => {
+      if (!parentInput || parentInput.trim() === '') return null;
+      
+      // If it's a valid UUID, use it directly
+      if (isValidUUID(parentInput)) {
+        console.log(`Using UUID directly: ${parentInput}`);
+        return parentInput;
       }
-    }
+      
+      // Otherwise, search by name or tag
+      const foundId = await findAnimalByNameOrTag(parentInput);
+      console.log(`Searched for "${parentInput}", found ID: ${foundId}`);
+      return foundId;
+    };
 
-    if (animal.fatherId && animal.fatherId.trim() !== '') {
-      if (isValidUUID(animal.fatherId)) {
-        fatherIdToSave = animal.fatherId;
-      } else {
-        fatherIdToSave = await findAnimalByNameOrTag(animal.fatherId);
-      }
-    }
-
-    // Process grandparent IDs
-    if (animal.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '') {
-      if (isValidUUID(animal.maternalGrandmotherId)) {
-        maternalGrandmotherIdToSave = animal.maternalGrandmotherId;
-      } else {
-        maternalGrandmotherIdToSave = await findAnimalByNameOrTag(animal.maternalGrandmotherId);
-      }
-    }
-
-    if (animal.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '') {
-      if (isValidUUID(animal.maternalGrandfatherId)) {
-        maternalGrandfatherIdToSave = animal.maternalGrandfatherId;
-      } else {
-        maternalGrandfatherIdToSave = await findAnimalByNameOrTag(animal.maternalGrandfatherId);
-      }
-    }
-
-    if (animal.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '') {
-      if (isValidUUID(animal.paternalGrandmotherId)) {
-        paternalGrandmotherIdToSave = animal.paternalGrandmotherId;
-      } else {
-        paternalGrandmotherIdToSave = await findAnimalByNameOrTag(animal.paternalGrandmotherId);
-      }
-    }
-
-    if (animal.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '') {
-      if (isValidUUID(animal.paternalGrandfatherId)) {
-        paternalGrandfatherIdToSave = animal.paternalGrandfatherId;
-      } else {
-        paternalGrandfatherIdToSave = await findAnimalByNameOrTag(animal.paternalGrandfatherId);
-      }
-    }
+    const motherIdToSave = await processParentId(animal.motherId);
+    const fatherIdToSave = await processParentId(animal.fatherId);
+    const maternalGrandmotherIdToSave = await processParentId(animal.maternalGrandmotherId || '');
+    const maternalGrandfatherIdToSave = await processParentId(animal.maternalGrandfatherId || '');
+    const paternalGrandmotherIdToSave = await processParentId(animal.paternalGrandmotherId || '');
+    const paternalGrandfatherIdToSave = await processParentId(animal.paternalGrandfatherId || '');
 
     console.log('Adding animal with processed IDs:', { 
       motherId: motherIdToSave, 
@@ -263,61 +228,27 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     console.log('Updating animal:', { id, animal });
     
     // Process parent IDs: try to find by UUID first, then by name/tag
-    let motherIdToSave = null;
-    let fatherIdToSave = null;
-    let maternalGrandmotherIdToSave = null;
-    let maternalGrandfatherIdToSave = null;
-    let paternalGrandmotherIdToSave = null;
-    let paternalGrandfatherIdToSave = null;
-
-    if (animal.motherId && animal.motherId.trim() !== '') {
-      if (isValidUUID(animal.motherId)) {
-        motherIdToSave = animal.motherId;
-      } else {
-        motherIdToSave = await findAnimalByNameOrTag(animal.motherId);
+    const processParentId = async (parentInput: string): Promise<string | null> => {
+      if (!parentInput || parentInput.trim() === '') return null;
+      
+      // If it's a valid UUID, use it directly
+      if (isValidUUID(parentInput)) {
+        console.log(`Using UUID directly: ${parentInput}`);
+        return parentInput;
       }
-    }
+      
+      // Otherwise, search by name or tag
+      const foundId = await findAnimalByNameOrTag(parentInput);
+      console.log(`Searched for "${parentInput}", found ID: ${foundId}`);
+      return foundId;
+    };
 
-    if (animal.fatherId && animal.fatherId.trim() !== '') {
-      if (isValidUUID(animal.fatherId)) {
-        fatherIdToSave = animal.fatherId;
-      } else {
-        fatherIdToSave = await findAnimalByNameOrTag(animal.fatherId);
-      }
-    }
-
-    // Process grandparent IDs
-    if (animal.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '') {
-      if (isValidUUID(animal.maternalGrandmotherId)) {
-        maternalGrandmotherIdToSave = animal.maternalGrandmotherId;
-      } else {
-        maternalGrandmotherIdToSave = await findAnimalByNameOrTag(animal.maternalGrandmotherId);
-      }
-    }
-
-    if (animal.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '') {
-      if (isValidUUID(animal.maternalGrandfatherId)) {
-        maternalGrandfatherIdToSave = animal.maternalGrandfatherId;
-      } else {
-        maternalGrandfatherIdToSave = await findAnimalByNameOrTag(animal.maternalGrandfatherId);
-      }
-    }
-
-    if (animal.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '') {
-      if (isValidUUID(animal.paternalGrandmotherId)) {
-        paternalGrandmotherIdToSave = animal.paternalGrandmotherId;
-      } else {
-        paternalGrandmotherIdToSave = await findAnimalByNameOrTag(animal.paternalGrandmotherId);
-      }
-    }
-
-    if (animal.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '') {
-      if (isValidUUID(animal.paternalGrandfatherId)) {
-        paternalGrandfatherIdToSave = animal.paternalGrandfatherId;
-      } else {
-        paternalGrandfatherIdToSave = await findAnimalByNameOrTag(animal.paternalGrandfatherId);
-      }
-    }
+    const motherIdToSave = await processParentId(animal.motherId);
+    const fatherIdToSave = await processParentId(animal.fatherId);
+    const maternalGrandmotherIdToSave = await processParentId(animal.maternalGrandmotherId || '');
+    const maternalGrandfatherIdToSave = await processParentId(animal.maternalGrandfatherId || '');
+    const paternalGrandmotherIdToSave = await processParentId(animal.paternalGrandmotherId || '');
+    const paternalGrandfatherIdToSave = await processParentId(animal.paternalGrandfatherId || '');
 
     console.log('Updating animal with processed IDs:', { 
       animalId: id,
