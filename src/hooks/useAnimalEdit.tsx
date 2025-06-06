@@ -63,8 +63,17 @@ export const useAnimalEdit = () => {
   useEffect(() => {
     const loadAnimalData = async () => {
       if (animal) {
-        console.log('Loading animal data for editing:', animal);
+        console.log('🔍 Loading animal data for editing:', animal);
+        console.log('🔍 Raw parent IDs from database:', {
+          motherId: animal.motherId,
+          fatherId: animal.fatherId,
+          maternalGrandmotherId: animal.maternalGrandmotherId,
+          maternalGrandfatherId: animal.maternalGrandfatherId,
+          paternalGrandmotherId: animal.paternalGrandmotherId,
+          paternalGrandfatherId: animal.paternalGrandfatherId
+        });
         
+        // Load display names for all parent fields that have IDs
         const [
           motherDisplayName,
           fatherDisplayName,
@@ -73,15 +82,15 @@ export const useAnimalEdit = () => {
           paternalGrandmotherDisplayName,
           paternalGrandfatherDisplayName
         ] = await Promise.all([
-          getAnimalDisplayName(animal.motherId || ''),
-          getAnimalDisplayName(animal.fatherId || ''),
-          getAnimalDisplayName(animal.maternalGrandmotherId || ''),
-          getAnimalDisplayName(animal.maternalGrandfatherId || ''),
-          getAnimalDisplayName(animal.paternalGrandmotherId || ''),
-          getAnimalDisplayName(animal.paternalGrandfatherId || '')
+          animal.motherId ? getAnimalDisplayName(animal.motherId) : Promise.resolve(''),
+          animal.fatherId ? getAnimalDisplayName(animal.fatherId) : Promise.resolve(''),
+          animal.maternalGrandmotherId ? getAnimalDisplayName(animal.maternalGrandmotherId) : Promise.resolve(''),
+          animal.maternalGrandfatherId ? getAnimalDisplayName(animal.maternalGrandfatherId) : Promise.resolve(''),
+          animal.paternalGrandmotherId ? getAnimalDisplayName(animal.paternalGrandmotherId) : Promise.resolve(''),
+          animal.paternalGrandfatherId ? getAnimalDisplayName(animal.paternalGrandfatherId) : Promise.resolve('')
         ]);
 
-        console.log('Loaded display names:', {
+        console.log('🔍 Loaded display names:', {
           mother: motherDisplayName,
           father: fatherDisplayName,
           maternalGrandmother: maternalGrandmotherDisplayName,
@@ -90,25 +99,28 @@ export const useAnimalEdit = () => {
           paternalGrandfather: paternalGrandfatherDisplayName
         });
         
-        setFormData({
-          name: animal.name,
-          tag: animal.tag,
-          species: animal.species,
-          breed: animal.breed,
-          birthDate: animal.birthDate,
-          gender: animal.gender,
-          weight: animal.weight,
-          color: animal.color,
-          motherId: motherDisplayName,
-          fatherId: fatherDisplayName,
-          maternalGrandmotherId: maternalGrandmotherDisplayName,
-          maternalGrandfatherId: maternalGrandfatherDisplayName,
-          paternalGrandmotherId: paternalGrandmotherDisplayName,
-          paternalGrandfatherId: paternalGrandfatherDisplayName,
-          notes: animal.notes,
-          healthStatus: animal.healthStatus,
+        const newFormData = {
+          name: animal.name || '',
+          tag: animal.tag || '',
+          species: animal.species || '',
+          breed: animal.breed || '',
+          birthDate: animal.birthDate || '',
+          gender: animal.gender || '',
+          weight: animal.weight || '',
+          color: animal.color || '',
+          motherId: motherDisplayName || '',
+          fatherId: fatherDisplayName || '',
+          maternalGrandmotherId: maternalGrandmotherDisplayName || '',
+          maternalGrandfatherId: maternalGrandfatherDisplayName || '',
+          paternalGrandmotherId: paternalGrandmotherDisplayName || '',
+          paternalGrandfatherId: paternalGrandfatherDisplayName || '',
+          notes: animal.notes || '',
+          healthStatus: animal.healthStatus || 'healthy',
           image: animal.image
-        });
+        };
+
+        console.log('🔍 Setting form data:', newFormData);
+        setFormData(newFormData);
       }
     };
 
@@ -131,7 +143,7 @@ export const useAnimalEdit = () => {
     
     if (!id) return;
     
-    console.log('Form data being submitted:', formData);
+    console.log('🔄 Form data being submitted:', formData);
     
     updateMutation.mutate({ 
       id, 
@@ -140,8 +152,12 @@ export const useAnimalEdit = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    console.log(`Updating field ${field} with value:`, value);
-    setFormData(prev => ({ ...prev, [field]: value }));
+    console.log(`🔄 Updating field ${field} with value:`, value);
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      console.log('🔄 Updated form data:', updated);
+      return updated;
+    });
   };
 
   const handleImageChange = (imageUrl: string | null) => {

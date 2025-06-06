@@ -17,7 +17,7 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
       </CardHeader>
       <CardContent>
         <Textarea
-          value={formData.notes}
+          value={formData.notes || ''}
           onChange={(e) => onInputChange('notes', e.target.value)}
           placeholder="Cualquier información adicional sobre el animal..."
           rows={4}

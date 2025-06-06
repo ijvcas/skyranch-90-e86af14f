@@ -11,6 +11,15 @@ interface PedigreeFormProps {
 }
 
 const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFormProps) => {
+  console.log('PedigreeForm - Current formData:', {
+    motherId: formData.motherId,
+    fatherId: formData.fatherId,
+    maternalGrandmotherId: formData.maternalGrandmotherId,
+    maternalGrandfatherId: formData.maternalGrandfatherId,
+    paternalGrandmotherId: formData.paternalGrandmotherId,
+    paternalGrandfatherId: formData.paternalGrandfatherId
+  });
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -27,7 +36,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 id="motherId"
                 name="animal-mother"
                 type="text"
-                value={formData.motherId}
+                value={formData.motherId || ''}
                 onChange={(e) => onInputChange('motherId', e.target.value)}
                 placeholder="Nombre o etiqueta de la madre"
                 className="mt-1"
@@ -46,7 +55,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 id="fatherId"
                 name="animal-father"
                 type="text"
-                value={formData.fatherId}
+                value={formData.fatherId || ''}
                 onChange={(e) => onInputChange('fatherId', e.target.value)}
                 placeholder="Nombre o etiqueta del padre"
                 className="mt-1"
@@ -75,7 +84,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     id="maternalGrandmotherId"
                     name="animal-maternal-grandmother"
                     type="text"
-                    value={formData.maternalGrandmotherId}
+                    value={formData.maternalGrandmotherId || ''}
                     onChange={(e) => onInputChange('maternalGrandmotherId', e.target.value)}
                     placeholder="Nombre o etiqueta de la abuela materna"
                     className="mt-1"
@@ -91,7 +100,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     id="maternalGrandfatherId"
                     name="animal-maternal-grandfather"
                     type="text"
-                    value={formData.maternalGrandfatherId}
+                    value={formData.maternalGrandfatherId || ''}
                     onChange={(e) => onInputChange('maternalGrandfatherId', e.target.value)}
                     placeholder="Nombre o etiqueta del abuelo materno"
                     className="mt-1"
@@ -113,7 +122,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     id="paternalGrandmotherId"
                     name="animal-paternal-grandmother"
                     type="text"
-                    value={formData.paternalGrandmotherId}
+                    value={formData.paternalGrandmotherId || ''}
                     onChange={(e) => onInputChange('paternalGrandmotherId', e.target.value)}
                     placeholder="Nombre o etiqueta de la abuela paterna"
                     className="mt-1"
@@ -129,7 +138,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     id="paternalGrandfatherId"
                     name="animal-paternal-grandfather"
                     type="text"
-                    value={formData.paternalGrandfatherId}
+                    value={formData.paternalGrandfatherId || ''}
                     onChange={(e) => onInputChange('paternalGrandfatherId', e.target.value)}
                     placeholder="Nombre o etiqueta del abuelo paterno"
                     className="mt-1"
