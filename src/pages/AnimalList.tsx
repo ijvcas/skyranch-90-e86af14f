@@ -1,33 +1,54 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, Edit, Eye } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Eye, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
 import { useAnimalStore } from '@/stores/animalStore';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const AnimalList = () => {
   const navigate = useNavigate();
   const { setAnimals } = useAnimalStore();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  const { data: animals = [], isLoading, error } = useQuery({
-    queryKey: ['animals'],
+  const { data: animals = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['animals', 'all-users'], // Same key as Dashboard
     queryFn: getAllAnimals,
+    enabled: !!user,
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache
     retry: 3,
-    retryDelay: 1000
+    retryDelay: 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Sync animals with store
   useEffect(() => {
-    if (animals.length > 0) {
+    if (animals.length >= 0) { // Include case where there are 0 animals
+      console.log(`🔄 Syncing ${animals.length} animals with store for user ${user?.email}`);
       setAnimals(animals);
     }
-  }, [animals, setAnimals]);
+  }, [animals, setAnimals, user?.email]);
+
+  // Force refresh function
+  const handleForceRefresh = () => {
+    console.log('🔄 Force refreshing animal list...');
+    queryClient.clear();
+    refetch();
+    toast({
+      title: "Actualizando lista",
+      description: "Recargando todos los animales...",
+    });
+  };
 
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedSpecies, setSelectedSpecies] = React.useState('all');
@@ -105,7 +126,11 @@ const AnimalList = () => {
             className="w-full h-full object-cover"
           />
         </div>
-        <div className="text-lg text-gray-600 relative z-10">Cargando animales...</div>
+        <div className="text-center relative z-10">
+          <RefreshCw className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
+          <div className="text-lg text-gray-600">Cargando animales...</div>
+          <div className="text-sm text-gray-500 mt-2">Usuario: {user?.email}</div>
+        </div>
       </div>
     );
   }
@@ -121,9 +146,19 @@ const AnimalList = () => {
             className="w-full h-full object-cover"
           />
         </div>
-        <div className="text-center relative z-10">
+        <div className="text-center relative z-10 max-w-md mx-auto p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Error al cargar animales</h2>
-          <p className="text-gray-600">Ocurrió un error al cargar la lista de animales.</p>
+          <p className="text-gray-600 mb-4">Usuario: {user?.email}</p>
+          <p className="text-gray-600 mb-6">Ocurrió un error al cargar la lista de animales.</p>
+          <div className="space-y-2">
+            <Button onClick={handleForceRefresh} className="bg-blue-600 hover:bg-blue-700 w-full">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reintentar
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+              Recargar Página
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -143,16 +178,31 @@ const AnimalList = () => {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Animales</h1>
-              <p className="text-gray-600">Gestiona y visualiza todos tus animales</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Todos los Animales</h1>
+              <p className="text-gray-600">
+                Gestiona y visualiza todos los animales del sistema
+              </p>
+              <div className="text-sm text-gray-500 mt-1">
+                Usuario: {user?.email} | Total: {animals.length} animales
+              </div>
             </div>
-            <Button 
-              onClick={() => navigate('/animals/new')}
-              className="bg-green-600 hover:bg-green-700 text-white mt-4 md:mt-0"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar Animal
-            </Button>
+            <div className="flex gap-2 mt-4 md:mt-0">
+              <Button
+                variant="outline"
+                onClick={handleForceRefresh}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Actualizar
+              </Button>
+              <Button 
+                onClick={() => navigate('/animals/new')}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Agregar Animal
+              </Button>
+            </div>
           </div>
 
           {/* Filters */}
@@ -210,19 +260,27 @@ const AnimalList = () => {
             <h3 className="text-xl font-semibold text-gray-700 mb-2">No se encontraron animales</h3>
             <p className="text-gray-500 mb-6">
               {animals.length === 0 
-                ? "Aún no has registrado ningún animal. ¡Comienza agregando tu primer animal!"
+                ? `No hay animales registrados en el sistema para mostrar a ${user?.email}.`
                 : "No hay animales que coincidan con los filtros seleccionados."
               }
             </p>
-            {animals.length === 0 && (
-              <Button 
-                onClick={() => navigate('/animals/new')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Agregar Primer Animal
-              </Button>
-            )}
+            <div className="space-y-2">
+              {animals.length === 0 && (
+                <div>
+                  <Button onClick={handleForceRefresh} className="bg-blue-600 hover:bg-blue-700 mr-2">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Forzar Actualización
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/animals/new')}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Primer Animal
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

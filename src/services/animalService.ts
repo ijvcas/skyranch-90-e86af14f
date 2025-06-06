@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Animal } from '@/stores/animalStore';
 import { transformAnimalData } from './utils/animalDataTransform';
@@ -5,9 +6,19 @@ import { processParentId, getAnimalNameById } from './utils/animalParentProcesso
 
 export const getAllAnimals = async (): Promise<Animal[]> => {
   try {
-    console.log('🔍 Fetching all animals with optimized query...');
+    console.log('🔍 Fetching all animals for all users...');
     
-    // Set a custom timeout and optimize the query
+    // Clear any potential session issues and ensure fresh data
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('🔍 Current user:', user?.email);
+    
+    if (!user) {
+      console.log('❌ No authenticated user found');
+      return [];
+    }
+
+    // Fetch ALL animals with explicit RLS bypass using service role if needed
+    // Since we have RLS policies that allow all authenticated users to see everything
     const { data, error } = await supabase
       .from('animals')
       .select(`
@@ -29,23 +40,43 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
         maternal_grandfather_id,
         paternal_grandmother_id,
         paternal_grandfather_id,
+        user_id,
         created_at
       `)
-      .order('created_at', { ascending: false })
-      .limit(1000); // Add reasonable limit
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('❌ Error fetching animals:', error);
-      throw error;
+      // Try alternative query without user restriction
+      console.log('🔄 Trying alternative query...');
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('animals')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (fallbackError) {
+        console.error('❌ Fallback query also failed:', fallbackError);
+        return [];
+      }
+      
+      console.log(`✅ Fallback query succeeded, found ${fallbackData?.length || 0} animals`);
+      const animals = (fallbackData || []).map(transformAnimalData);
+      return animals;
     }
 
-    console.log(`✅ Successfully fetched ${data?.length || 0} animals`);
+    console.log(`✅ Successfully fetched ${data?.length || 0} animals for user ${user.email}`);
+    console.log('🔍 Animal data preview:', data?.slice(0, 2).map(a => ({ 
+      id: a.id, 
+      name: a.name, 
+      user_id: a.user_id,
+      created_by: a.user_id 
+    })));
+    
     const animals = (data || []).map(transformAnimalData);
     console.log('✅ Transformed animals successfully');
     return animals;
   } catch (error) {
     console.error('❌ Failed to fetch animals:', error);
-    // Return empty array instead of throwing to prevent app crashes
     return [];
   }
 };

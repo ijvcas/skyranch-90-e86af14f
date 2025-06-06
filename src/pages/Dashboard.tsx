@@ -5,24 +5,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Users, Calendar, Settings, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  // Single optimized query for all animal data with better error handling
+  // Enhanced query with aggressive refetching to ensure data is always fresh
   const { data: allAnimals = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['animals'],
+    queryKey: ['animals', 'all-users'], // Changed key to be more specific
     queryFn: getAllAnimals,
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    retry: 3, // Retry 3 times on failure
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
+
+  // Force a complete refresh of all data
+  const handleForceRefresh = () => {
+    console.log('🔄 Force refreshing all data...');
+    queryClient.clear(); // Clear all cached data
+    refetch();
+    toast({
+      title: "Actualizando datos",
+      description: "Recargando todos los animales del sistema...",
+    });
+  };
 
   // Calculate all stats from the single query result
   const totalAnimals = allAnimals.length;
@@ -92,7 +106,8 @@ const Dashboard = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
-          <div className="text-lg text-gray-600">Cargando datos...</div>
+          <div className="text-lg text-gray-600">Cargando datos de todos los usuarios...</div>
+          <div className="text-sm text-gray-500 mt-2">Usuario actual: {user?.email}</div>
         </div>
       </div>
     );
@@ -103,13 +118,21 @@ const Dashboard = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-lg text-red-600 mb-4">Error al cargar datos</div>
-          <div className="text-sm text-gray-600 mb-6">
-            Hubo un problema al conectar con la base de datos. Esto puede deberse a problemas de conectividad o tiempo de espera.
+          <div className="text-sm text-gray-600 mb-4">
+            Usuario: {user?.email}
           </div>
-          <Button onClick={handleRetry} className="bg-blue-600 hover:bg-blue-700">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Reintentar
-          </Button>
+          <div className="text-sm text-gray-600 mb-6">
+            Hubo un problema al conectar con la base de datos. Esto puede deberse a problemas de permisos o configuración RLS.
+          </div>
+          <div className="space-y-2">
+            <Button onClick={handleForceRefresh} className="bg-blue-600 hover:bg-blue-700 w-full">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Forzar Actualización
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+              Recargar Página
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -127,22 +150,43 @@ const Dashboard = () => {
             <p className="text-lg text-gray-600">
               Bienvenido, {user?.email} - SkyRanch
             </p>
+            <div className="text-sm text-gray-500 mt-1">
+              Total de animales en el sistema: {totalAnimals}
+            </div>
             {totalAnimals === 0 && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-blue-800">
-                  ¡Bienvenido! Comienza registrando tu primer animal para ver las estadísticas.
+                  No se encontraron animales. Si deberías ver animales, usa el botón "Forzar Actualización".
                 </p>
+                <Button 
+                  onClick={handleForceRefresh} 
+                  className="mt-2 bg-blue-600 hover:bg-blue-700"
+                  size="sm"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Forzar Actualización
+                </Button>
               </div>
             )}
           </div>
-          <Button
-            variant="outline"
-            onClick={handleSignOut}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Cerrar Sesión
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleForceRefresh}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Actualizar
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
