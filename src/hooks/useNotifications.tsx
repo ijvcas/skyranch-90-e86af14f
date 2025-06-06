@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getAllAnimals } from '@/services/animalService';
+import { useAnimalStore } from '@/stores/animalStore';
 
 export interface Notification {
   id: string;
@@ -42,6 +42,7 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
+  const { getAllAnimals } = useAnimalStore();
 
   // Load notifications and settings from localStorage
   useEffect(() => {
@@ -240,7 +241,7 @@ export const useNotifications = () => {
         }
       }
     });
-  }, [settings.healthAlerts, notifications, addNotification]);
+  }, [settings.healthAlerts, notifications, addNotification, getAllAnimals]);
 
   // Check for vaccine reminders
   const checkVaccineReminders = useCallback(() => {
@@ -283,7 +284,7 @@ export const useNotifications = () => {
         }
       }
     });
-  }, [settings.vaccineReminders, notifications, addNotification]);
+  }, [settings.vaccineReminders, notifications, addNotification, getAllAnimals]);
 
   // Generate weekly report
   const generateWeeklyReport = useCallback(() => {
@@ -321,7 +322,7 @@ export const useNotifications = () => {
         }
       );
     }
-  }, [settings.weeklyReports, notifications, addNotification]);
+  }, [settings.weeklyReports, notifications, addNotification, getAllAnimals]);
 
   // Run periodic checks
   useEffect(() => {
