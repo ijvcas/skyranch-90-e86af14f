@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { isValidUUID } from './animalValidation';
 
@@ -43,4 +44,27 @@ export const processParentId = async (parentInput: string): Promise<string | nul
   const foundId = await findAnimalByNameOrTag(parentInput);
   console.log(`Searched for "${parentInput}", found ID: ${foundId}`);
   return foundId;
+};
+
+// Helper function to get animal name by ID for display purposes
+export const getAnimalNameById = async (animalId: string): Promise<string> => {
+  if (!animalId || animalId.trim() === '' || !isValidUUID(animalId)) {
+    return '';
+  }
+
+  console.log(`Getting animal name for ID: ${animalId}`);
+  
+  const { data, error } = await supabase
+    .from('animals')
+    .select('name, tag')
+    .eq('id', animalId)
+    .single();
+    
+  if (error || !data) {
+    console.log(`No animal found for ID: ${animalId}`);
+    return '';
+  }
+  
+  console.log(`Found animal name: ${data.name} (${data.tag})`);
+  return `${data.name} (${data.tag})`;
 };

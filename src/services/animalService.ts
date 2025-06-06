@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Animal } from '@/stores/animalStore';
 import { transformAnimalData } from './utils/animalDataTransform';
-import { processParentId } from './utils/animalParentProcessor';
+import { processParentId, getAnimalNameById } from './utils/animalParentProcessor';
 import { mapAnimalToDatabase, createUpdateObject } from './utils/animalDatabaseMapper';
 
 export const getAllAnimals = async (): Promise<Animal[]> => {
@@ -91,7 +91,8 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       return { success: false };
     }
 
-    // Process all parent IDs
+    // Process all parent IDs - convert names/tags to UUIDs
+    console.log('Processing parent IDs...');
     const [
       motherIdToSave,
       fatherIdToSave,
@@ -108,7 +109,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       processParentId(animal.paternalGrandfatherId || '')
     ]);
 
-    console.log('Final IDs to save:', { 
+    console.log('Processed parent IDs:', { 
       motherId: motherIdToSave, 
       fatherId: fatherIdToSave,
       maternalGrandmotherId: maternalGrandmotherIdToSave,
@@ -126,6 +127,8 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       paternal_grandmother_id: paternalGrandmotherIdToSave,
       paternal_grandfather_id: paternalGrandfatherIdToSave,
     };
+
+    console.log('Final animal data to save:', animalData);
 
     const { data, error } = await supabase
       .from('animals')
@@ -150,7 +153,8 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
   try {
     console.log('Updating animal:', { id, animal });
     
-    // Process all parent IDs
+    // Process all parent IDs - convert names/tags to UUIDs
+    console.log('Processing parent IDs for update...');
     const [
       motherIdToSave,
       fatherIdToSave,
@@ -167,7 +171,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       processParentId(animal.paternalGrandfatherId || '')
     ]);
 
-    console.log('Final IDs to save:', { 
+    console.log('Processed parent IDs for update:', { 
       animalId: id,
       motherId: motherIdToSave, 
       fatherId: fatherIdToSave,
@@ -186,6 +190,8 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       paternal_grandmother_id: paternalGrandmotherIdToSave,
       paternal_grandfather_id: paternalGrandfatherIdToSave,
     };
+
+    console.log('Final update data:', updateData);
 
     const { error } = await supabase
       .from('animals')
@@ -224,6 +230,11 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
     console.error('Failed to delete animal:', error);
     return false;
   }
+};
+
+// Helper function to get animal names for form display
+export const getAnimalDisplayName = async (animalId: string): Promise<string> => {
+  return await getAnimalNameById(animalId);
 };
 
 // Export Animal interface for use in other files

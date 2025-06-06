@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAnimal, updateAnimal } from '@/services/animalService';
+import { getAnimal, updateAnimal, getAnimalDisplayName } from '@/services/animalService';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -68,31 +68,61 @@ const AnimalEdit = () => {
   });
 
   useEffect(() => {
-    if (animal) {
-      console.log('Loading animal data for editing:', animal);
-      
-      // Load the form with the actual stored IDs/names from the database
-      setFormData({
-        name: animal.name,
-        tag: animal.tag,
-        species: animal.species,
-        breed: animal.breed,
-        birthDate: animal.birthDate,
-        gender: animal.gender,
-        weight: animal.weight,
-        color: animal.color,
-        // Use the actual stored values from the database
-        motherId: animal.motherId || '',
-        fatherId: animal.fatherId || '',
-        maternalGrandmotherId: animal.maternalGrandmotherId || '',
-        maternalGrandfatherId: animal.maternalGrandfatherId || '',
-        paternalGrandmotherId: animal.paternalGrandmotherId || '',
-        paternalGrandfatherId: animal.paternalGrandfatherId || '',
-        notes: animal.notes,
-        healthStatus: animal.healthStatus,
-        image: animal.image
-      });
-    }
+    const loadAnimalData = async () => {
+      if (animal) {
+        console.log('Loading animal data for editing:', animal);
+        
+        // For editing, we need to show the names/tags in the form, not the UUIDs
+        // So we convert the stored UUIDs back to display names for the form
+        const [
+          motherDisplayName,
+          fatherDisplayName,
+          maternalGrandmotherDisplayName,
+          maternalGrandfatherDisplayName,
+          paternalGrandmotherDisplayName,
+          paternalGrandfatherDisplayName
+        ] = await Promise.all([
+          getAnimalDisplayName(animal.motherId || ''),
+          getAnimalDisplayName(animal.fatherId || ''),
+          getAnimalDisplayName(animal.maternalGrandmotherId || ''),
+          getAnimalDisplayName(animal.maternalGrandfatherId || ''),
+          getAnimalDisplayName(animal.paternalGrandmotherId || ''),
+          getAnimalDisplayName(animal.paternalGrandfatherId || '')
+        ]);
+
+        console.log('Loaded display names:', {
+          mother: motherDisplayName,
+          father: fatherDisplayName,
+          maternalGrandmother: maternalGrandmotherDisplayName,
+          maternalGrandfather: maternalGrandfatherDisplayName,
+          paternalGrandmother: paternalGrandmotherDisplayName,
+          paternalGrandfather: paternalGrandfatherDisplayName
+        });
+        
+        setFormData({
+          name: animal.name,
+          tag: animal.tag,
+          species: animal.species,
+          breed: animal.breed,
+          birthDate: animal.birthDate,
+          gender: animal.gender,
+          weight: animal.weight,
+          color: animal.color,
+          // Use display names for the form inputs
+          motherId: motherDisplayName,
+          fatherId: fatherDisplayName,
+          maternalGrandmotherId: maternalGrandmotherDisplayName,
+          maternalGrandfatherId: maternalGrandfatherDisplayName,
+          paternalGrandmotherId: paternalGrandmotherDisplayName,
+          paternalGrandfatherId: paternalGrandfatherDisplayName,
+          notes: animal.notes,
+          healthStatus: animal.healthStatus,
+          image: animal.image
+        });
+      }
+    };
+
+    loadAnimalData();
   }, [animal]);
 
   useEffect(() => {
@@ -113,7 +143,7 @@ const AnimalEdit = () => {
     
     console.log('Form data being submitted:', formData);
     
-    // Submit the form data exactly as entered - the service will handle UUID/name conversion
+    // Submit the form data exactly as entered - the service will handle name/tag to UUID conversion
     updateMutation.mutate({ 
       id, 
       data: formData 
