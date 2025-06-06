@@ -108,11 +108,12 @@ const Register = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
             <div>
               <Label htmlFor="fullName" className="text-base font-medium">Nombre Completo</Label>
               <Input
                 id="fullName"
+                name="register-fullname"
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => handleInputChange('fullName', e.target.value)}
@@ -120,6 +121,9 @@ const Register = () => {
                 required
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
+                autoComplete="name"
+                data-1p-ignore
+                data-lpignore="true"
               />
             </div>
 
@@ -127,6 +131,7 @@ const Register = () => {
               <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
               <Input
                 id="email"
+                name="register-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
@@ -134,6 +139,9 @@ const Register = () => {
                 required
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
+                autoComplete="username"
+                data-1p-ignore
+                data-lpignore="true"
               />
             </div>
             
@@ -141,6 +149,7 @@ const Register = () => {
               <Label htmlFor="password" className="text-base font-medium">Contraseña</Label>
               <Input
                 id="password"
+                name="register-password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
@@ -149,6 +158,9 @@ const Register = () => {
                 minLength={6}
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
+                autoComplete="new-password"
+                data-1p-ignore
+                data-lpignore="true"
               />
             </div>
 
@@ -156,6 +168,7 @@ const Register = () => {
               <Label htmlFor="confirmPassword" className="text-base font-medium">Confirmar Contraseña</Label>
               <Input
                 id="confirmPassword"
+                name="register-confirm-password"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
@@ -163,6 +176,9 @@ const Register = () => {
                 required
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
+                autoComplete="new-password"
+                data-1p-ignore
+                data-lpignore="true"
               />
             </div>
 

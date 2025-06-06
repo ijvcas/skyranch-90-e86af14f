@@ -80,11 +80,12 @@ const Login = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
             <div>
               <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
               <Input
                 id="email"
+                name="login-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
@@ -92,6 +93,9 @@ const Login = () => {
                 required
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
+                autoComplete="username"
+                data-1p-ignore
+                data-lpignore="true"
               />
             </div>
             
@@ -99,6 +103,7 @@ const Login = () => {
               <Label htmlFor="password" className="text-base font-medium">Contraseña</Label>
               <Input
                 id="password"
+                name="login-password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
@@ -106,6 +111,9 @@ const Login = () => {
                 required
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
+                autoComplete="current-password"
+                data-1p-ignore
+                data-lpignore="true"
               />
             </div>
 
