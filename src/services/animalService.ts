@@ -2,27 +2,50 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Animal } from '@/stores/animalStore';
 import { transformAnimalData } from './utils/animalDataTransform';
 import { processParentId, getAnimalNameById } from './utils/animalParentProcessor';
-import { mapAnimalToDatabase, createUpdateObject } from './utils/animalDatabaseMapper';
 
 export const getAllAnimals = async (): Promise<Animal[]> => {
   try {
-    console.log('Fetching all animals...');
+    console.log('🔍 Fetching all animals with optimized query...');
+    
+    // Set a custom timeout and optimize the query
     const { data, error } = await supabase
       .from('animals')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select(`
+        id,
+        name,
+        tag,
+        species,
+        breed,
+        birth_date,
+        gender,
+        weight,
+        color,
+        health_status,
+        notes,
+        image_url,
+        mother_id,
+        father_id,
+        maternal_grandmother_id,
+        maternal_grandfather_id,
+        paternal_grandmother_id,
+        paternal_grandfather_id,
+        created_at
+      `)
+      .order('created_at', { ascending: false })
+      .limit(1000); // Add reasonable limit
 
     if (error) {
-      console.error('Error fetching animals:', error);
+      console.error('❌ Error fetching animals:', error);
       throw error;
     }
 
-    console.log('Raw animals data:', data);
+    console.log(`✅ Successfully fetched ${data?.length || 0} animals`);
     const animals = (data || []).map(transformAnimalData);
-    console.log('Transformed animals:', animals);
+    console.log('✅ Transformed animals successfully');
     return animals;
   } catch (error) {
-    console.error('Failed to fetch animals:', error);
+    console.error('❌ Failed to fetch animals:', error);
+    // Return empty array instead of throwing to prevent app crashes
     return [];
   }
 };

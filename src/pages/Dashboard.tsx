@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Users, Calendar, Settings, LogOut } from 'lucide-react';
+import { Plus, Users, Calendar, Settings, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
@@ -14,13 +13,15 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   
-  // Single optimized query for all animal data
-  const { data: allAnimals = [], isLoading, error } = useQuery({
+  // Single optimized query for all animal data with better error handling
+  const { data: allAnimals = [], isLoading, error, refetch } = useQuery({
     queryKey: ['animals'],
     queryFn: getAllAnimals,
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: 3, // Retry 3 times on failure
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Calculate all stats from the single query result
@@ -45,6 +46,14 @@ const Dashboard = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleRetry = () => {
+    refetch();
+    toast({
+      title: "Recargando datos",
+      description: "Intentando cargar los animales nuevamente...",
+    });
   };
 
   const quickActions = [
@@ -81,7 +90,10 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Cargando datos...</div>
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
+          <div className="text-lg text-gray-600">Cargando datos...</div>
+        </div>
       </div>
     );
   }
@@ -89,7 +101,16 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-lg text-red-600">Error al cargar datos. Intenta recargar la página.</div>
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-lg text-red-600 mb-4">Error al cargar datos</div>
+          <div className="text-sm text-gray-600 mb-6">
+            Hubo un problema al conectar con la base de datos. Esto puede deberse a problemas de conectividad o tiempo de espera.
+          </div>
+          <Button onClick={handleRetry} className="bg-blue-600 hover:bg-blue-700">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Reintentar
+          </Button>
+        </div>
       </div>
     );
   }
