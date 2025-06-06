@@ -23,14 +23,14 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="name">Nombre *</Label>
             <Input
               id="name"
-              name="animal-name-field"
+              name={`animal-name-${Math.random()}`}
               type="text"
               value={formData.name}
               onChange={(e) => onInputChange('name', e.target.value)}
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
+              autoComplete="off"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -42,14 +42,14 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="tag">Número de Etiqueta *</Label>
             <Input
               id="tag"
-              name="animal-tag-field"
+              name={`animal-tag-${Math.random()}`}
               type="text"
               value={formData.tag}
               onChange={(e) => onInputChange('tag', e.target.value)}
               required
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
+              autoComplete="off"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -81,13 +81,13 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="breed">Raza</Label>
             <Input
               id="breed"
-              name="animal-breed-field"
+              name={`animal-breed-${Math.random()}`}
               type="text"
               value={formData.breed}
               onChange={(e) => onInputChange('breed', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
+              autoComplete="off"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -102,13 +102,13 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
             <Input
               id="birthDate"
-              name="animal-birth-field"
+              name={`animal-birth-${Math.random()}`}
               type="date"
               value={formData.birthDate}
               onChange={(e) => onInputChange('birthDate', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
+              autoComplete="off"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -131,13 +131,13 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="weight">Peso (kg)</Label>
             <Input
               id="weight"
-              name="animal-weight-field"
+              name={`animal-weight-${Math.random()}`}
               type="number"
               value={formData.weight}
               onChange={(e) => onInputChange('weight', e.target.value)}
               className="mt-1"
               disabled={disabled}
-              autoComplete="new-password"
+              autoComplete="off"
               data-lpignore="true"
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
@@ -151,13 +151,13 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
           <Label htmlFor="color">Color/Marcas</Label>
           <Input
             id="color"
-            name="animal-color-field"
+            name={`animal-color-${Math.random()}`}
             type="text"
             value={formData.color}
             onChange={(e) => onInputChange('color', e.target.value)}
             className="mt-1"
             disabled={disabled}
-            autoComplete="new-password"
+            autoComplete="off"
             data-lpignore="true"
             data-1p-ignore="true"
             data-bitwarden-ignore="true"

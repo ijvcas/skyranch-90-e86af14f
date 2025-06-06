@@ -79,22 +79,34 @@ export const useAnimalEdit = () => {
           }
         };
 
-        // Load all parent display names
-        const [
-          motherDisplayName,
-          fatherDisplayName,
-          maternalGrandmotherDisplayName,
-          maternalGrandfatherDisplayName,
-          paternalGrandmotherDisplayName,
-          paternalGrandfatherDisplayName
-        ] = await Promise.all([
-          loadDisplayName(animal.motherId),
-          loadDisplayName(animal.fatherId),
-          loadDisplayName(animal.maternalGrandmotherId),
-          loadDisplayName(animal.maternalGrandfatherId),
-          loadDisplayName(animal.paternalGrandmotherId),
-          loadDisplayName(animal.paternalGrandfatherId)
-        ]);
+        // Load all parent display names - with better error handling
+        let motherDisplayName = '';
+        let fatherDisplayName = '';
+        let maternalGrandmotherDisplayName = '';
+        let maternalGrandfatherDisplayName = '';
+        let paternalGrandmotherDisplayName = '';
+        let paternalGrandfatherDisplayName = '';
+
+        try {
+          [
+            motherDisplayName,
+            fatherDisplayName,
+            maternalGrandmotherDisplayName,
+            maternalGrandfatherDisplayName,
+            paternalGrandmotherDisplayName,
+            paternalGrandfatherDisplayName
+          ] = await Promise.all([
+            loadDisplayName(animal.motherId),
+            loadDisplayName(animal.fatherId),
+            loadDisplayName(animal.maternalGrandmotherId),
+            loadDisplayName(animal.maternalGrandfatherId),
+            loadDisplayName(animal.paternalGrandmotherId),
+            loadDisplayName(animal.paternalGrandfatherId)
+          ]);
+        } catch (error) {
+          console.error('Error loading parent display names:', error);
+          // Continue with empty strings if there are errors
+        }
 
         console.log('🔍 Loaded display names:', {
           mother: motherDisplayName,
@@ -151,9 +163,23 @@ export const useAnimalEdit = () => {
     
     console.log('🔄 Form data being submitted:', formData);
     
+    // Ensure we're sending the parent data correctly
+    const submitData = {
+      ...formData,
+      // Make sure parent fields are properly included
+      motherId: formData.motherId || '',
+      fatherId: formData.fatherId || '',
+      maternalGrandmotherId: formData.maternalGrandmotherId || '',
+      maternalGrandfatherId: formData.maternalGrandfatherId || '',
+      paternalGrandmotherId: formData.paternalGrandmotherId || '',
+      paternalGrandfatherId: formData.paternalGrandfatherId || ''
+    };
+    
+    console.log('🔄 Final submit data:', submitData);
+    
     updateMutation.mutate({ 
       id, 
-      data: formData 
+      data: submitData 
     });
   };
 
