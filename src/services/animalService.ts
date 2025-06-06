@@ -86,14 +86,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
   try {
     console.log('🐄 === ADDING NEW ANIMAL ===');
     console.log('Animal name:', animal.name);
-    console.log('Raw parent inputs:', {
-      motherId: animal.motherId,
-      fatherId: animal.fatherId,
-      maternalGrandmotherId: animal.maternalGrandmotherId,
-      maternalGrandfatherId: animal.maternalGrandfatherId,
-      paternalGrandmotherId: animal.paternalGrandmotherId,
-      paternalGrandfatherId: animal.paternalGrandfatherId
-    });
+    console.log('Raw form data received:', animal);
 
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -102,34 +95,43 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       return { success: false };
     }
 
-    // Process all parent IDs
-    const [
-      motherId,
-      fatherId,
-      maternalGrandmotherId,
-      maternalGrandfatherId,
-      paternalGrandmotherId,
-      paternalGrandfatherId
-    ] = await Promise.all([
-      processParentId(animal.motherId),
-      processParentId(animal.fatherId),
-      processParentId(animal.maternalGrandmotherId),
-      processParentId(animal.maternalGrandfatherId),
-      processParentId(animal.paternalGrandmotherId),
-      processParentId(animal.paternalGrandfatherId)
-    ]);
+    // Process all parent IDs with detailed logging
+    console.log('🔄 Starting parent ID processing...');
+    
+    const motherId = await processParentId(animal.motherId);
+    console.log('✅ Mother processed:', { input: animal.motherId, result: motherId });
+    
+    const fatherId = await processParentId(animal.fatherId);
+    console.log('✅ Father processed:', { input: animal.fatherId, result: fatherId });
+    
+    const maternalGrandmotherId = await processParentId(animal.maternalGrandmotherId);
+    console.log('✅ Maternal grandmother processed:', { input: animal.maternalGrandmotherId, result: maternalGrandmotherId });
+    
+    const maternalGrandfatherId = await processParentId(animal.maternalGrandfatherId);
+    console.log('✅ Maternal grandfather processed:', { input: animal.maternalGrandfatherId, result: maternalGrandfatherId });
+    
+    const paternalGrandmotherId = await processParentId(animal.paternalGrandmotherId);
+    console.log('✅ Paternal grandmother processed:', { input: animal.paternalGrandmotherId, result: paternalGrandmotherId });
+    
+    const paternalGrandfatherId = await processParentId(animal.paternalGrandfatherId);
+    console.log('✅ Paternal grandfather processed:', { input: animal.paternalGrandfatherId, result: paternalGrandfatherId });
 
-    console.log('✅ Processed parent IDs:', {
-      motherId,
-      fatherId,
-      maternalGrandmotherId,
-      maternalGrandfatherId,
-      paternalGrandmotherId,
-      paternalGrandfatherId
-    });
-
+    // Create the database object with ALL fields including parent IDs
     const animalData = {
-      ...mapAnimalToDatabase(animal, user.id),
+      // Basic animal data
+      name: animal.name,
+      tag: animal.tag,
+      species: animal.species,
+      breed: animal.breed,
+      birth_date: animal.birthDate || null,
+      gender: animal.gender,
+      weight: animal.weight ? parseFloat(animal.weight) : null,
+      color: animal.color,
+      health_status: animal.healthStatus,
+      notes: animal.notes,
+      image_url: animal.image,
+      user_id: user.id,
+      // Parent IDs - CRITICAL: These must be included!
       mother_id: motherId,
       father_id: fatherId,
       maternal_grandmother_id: maternalGrandmotherId,
@@ -138,7 +140,7 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       paternal_grandfather_id: paternalGrandfatherId,
     };
 
-    console.log('💾 Final data to save:', animalData);
+    console.log('💾 Final data being saved to database:', animalData);
 
     const { data, error } = await supabase
       .from('animals')
@@ -147,11 +149,24 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       .single();
 
     if (error) {
-      console.error('❌ Database error:', error);
+      console.error('❌ Database insert error:', error);
       return { success: false };
     }
 
-    console.log('✅ Animal saved successfully:', data);
+    console.log('✅ Animal saved successfully with data:', data);
+    
+    // Verify the saved data includes parent IDs
+    if (data) {
+      console.log('🔍 Verification - Saved parent IDs:', {
+        mother_id: data.mother_id,
+        father_id: data.father_id,
+        maternal_grandmother_id: data.maternal_grandmother_id,
+        maternal_grandfather_id: data.maternal_grandfather_id,
+        paternal_grandmother_id: data.paternal_grandmother_id,
+        paternal_grandfather_id: data.paternal_grandfather_id
+      });
+    }
+    
     return { success: true, id: data.id };
   } catch (error) {
     console.error('❌ Failed to add animal:', error);
@@ -163,43 +178,44 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
   try {
     console.log('🔄 === UPDATING ANIMAL ===');
     console.log('Animal ID:', id, 'Name:', animal.name);
-    console.log('Raw parent inputs:', {
-      motherId: animal.motherId,
-      fatherId: animal.fatherId,
-      maternalGrandmotherId: animal.maternalGrandmotherId,
-      maternalGrandfatherId: animal.maternalGrandfatherId,
-      paternalGrandmotherId: animal.paternalGrandmotherId,
-      paternalGrandfatherId: animal.paternalGrandfatherId
-    });
+    console.log('Raw form data received for update:', animal);
 
-    // Process all parent IDs
-    const [
-      motherId,
-      fatherId,
-      maternalGrandmotherId,
-      maternalGrandfatherId,
-      paternalGrandmotherId,
-      paternalGrandfatherId
-    ] = await Promise.all([
-      processParentId(animal.motherId),
-      processParentId(animal.fatherId),
-      processParentId(animal.maternalGrandmotherId),
-      processParentId(animal.maternalGrandfatherId),
-      processParentId(animal.paternalGrandmotherId),
-      processParentId(animal.paternalGrandfatherId)
-    ]);
+    // Process all parent IDs with detailed logging
+    console.log('🔄 Starting parent ID processing for update...');
+    
+    const motherId = await processParentId(animal.motherId);
+    console.log('✅ Mother processed for update:', { input: animal.motherId, result: motherId });
+    
+    const fatherId = await processParentId(animal.fatherId);
+    console.log('✅ Father processed for update:', { input: animal.fatherId, result: fatherId });
+    
+    const maternalGrandmotherId = await processParentId(animal.maternalGrandmotherId);
+    console.log('✅ Maternal grandmother processed for update:', { input: animal.maternalGrandmotherId, result: maternalGrandmotherId });
+    
+    const maternalGrandfatherId = await processParentId(animal.maternalGrandfatherId);
+    console.log('✅ Maternal grandfather processed for update:', { input: animal.maternalGrandfatherId, result: maternalGrandfatherId });
+    
+    const paternalGrandmotherId = await processParentId(animal.paternalGrandmotherId);
+    console.log('✅ Paternal grandmother processed for update:', { input: animal.paternalGrandmotherId, result: paternalGrandmotherId });
+    
+    const paternalGrandfatherId = await processParentId(animal.paternalGrandfatherId);
+    console.log('✅ Paternal grandfather processed for update:', { input: animal.paternalGrandfatherId, result: paternalGrandfatherId });
 
-    console.log('✅ Processed parent IDs for update:', {
-      motherId,
-      fatherId,
-      maternalGrandmotherId,
-      maternalGrandfatherId,
-      paternalGrandmotherId,
-      paternalGrandfatherId
-    });
-
+    // Create the update object with ALL fields including parent IDs
     const updateData = {
-      ...createUpdateObject(animal),
+      // Basic animal data
+      name: animal.name,
+      tag: animal.tag,
+      species: animal.species,
+      breed: animal.breed,
+      birth_date: animal.birthDate || null,
+      gender: animal.gender,
+      weight: animal.weight ? parseFloat(animal.weight) : null,
+      color: animal.color,
+      health_status: animal.healthStatus,
+      notes: animal.notes,
+      image_url: animal.image,
+      // Parent IDs - CRITICAL: These must be included!
       mother_id: motherId,
       father_id: fatherId,
       maternal_grandmother_id: maternalGrandmotherId,
@@ -208,19 +224,34 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
       paternal_grandfather_id: paternalGrandfatherId,
     };
 
-    console.log('💾 Final update data:', updateData);
+    console.log('💾 Final update data being saved to database:', updateData);
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('animals')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       console.error('❌ Update error:', error);
       return false;
     }
 
-    console.log('✅ Animal updated successfully');
+    console.log('✅ Animal updated successfully with data:', data);
+    
+    // Verify the updated data includes parent IDs
+    if (data) {
+      console.log('🔍 Verification - Updated parent IDs:', {
+        mother_id: data.mother_id,
+        father_id: data.father_id,
+        maternal_grandmother_id: data.maternal_grandmother_id,
+        maternal_grandfather_id: data.maternal_grandfather_id,
+        paternal_grandmother_id: data.paternal_grandmother_id,
+        paternal_grandfather_id: data.paternal_grandfather_id
+      });
+    }
+
     return true;
   } catch (error) {
     console.error('❌ Failed to update animal:', error);
