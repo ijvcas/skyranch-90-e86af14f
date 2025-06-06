@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 
@@ -6,8 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 // NOTE: This service role key may need to be updated with the correct one from Supabase dashboard
 const supabaseAdmin = createClient(
   "https://ahwhtxygyzoadsmdrwwg.supabase.co",
-  // This might not be the correct service_role key - check Supabase dashboard > Settings > API
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFod2h0eHlneXpvYWRzbWRyd3dnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTEyMjE3MywiZXhwIjoyMDY0Njk4MTczfQ.gWkm7l9n_vONc1MYr0x7Q6sJBL0aI3rRBF8QjGYjkqU",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFod2h0eHlneXpvYWRzbWRyd3dnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTEyMjE3MywiZXhwIjoyMDY0Njk4MTczfQ.-2GT6YJ6M4JHuTaBUm_aauPGDVapjjUdwgVKyGUfcag",
   {
     auth: {
       autoRefreshToken: false,
@@ -266,9 +264,9 @@ export const deleteUser = async (id: string): Promise<boolean> => {
     console.log(`✅ Deleted ${userEmail} from profiles table`);
   }
 
-  // Step 3: Try to delete from auth system - this will likely fail due to service_role key issues
+  // Step 3: Delete from auth system using updated service role key
   try {
-    console.log(`🔐 Testing service role permissions...`);
+    console.log(`🔐 Testing service role permissions with updated key...`);
     
     // First test if we can list users (requires service_role privileges)
     const { data: testData, error: testError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
@@ -276,16 +274,13 @@ export const deleteUser = async (id: string): Promise<boolean> => {
     if (testError) {
       console.error('❌ Service role test failed:', testError);
       console.log(`⚠️ User ${userEmail} removed from app but remains in authentication system.`);
-      console.log(`🔑 To fix this, you need to:`);
-      console.log(`1. Go to Supabase Dashboard > Settings > API`);
-      console.log(`2. Copy the correct service_role key (not anon key)`);
-      console.log(`3. Replace the key in userService.ts`);
+      console.log(`❌ Service role error: ${testError.message}`);
       
       // Don't throw error, just warn user
       return true;
     }
     
-    console.log('✅ Service role is working, attempting user deletion...');
+    console.log('✅ Service role is working with updated key, attempting user deletion...');
     
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
     
@@ -302,7 +297,7 @@ export const deleteUser = async (id: string): Promise<boolean> => {
   } catch (error) {
     console.error('❌ Auth deletion failed with exception:', error);
     console.log(`⚠️ User ${userEmail} removed from app but remains in authentication system.`);
-    console.log(`🔑 Service role key may be incorrect or missing proper permissions.`);
+    console.log(`🔑 Service role key may still be incorrect or missing proper permissions.`);
     
     // Don't throw error, just warn user
     return true;
