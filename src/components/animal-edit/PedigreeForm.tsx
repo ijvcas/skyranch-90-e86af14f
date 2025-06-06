@@ -34,16 +34,16 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
               <Label htmlFor="motherId">Madre</Label>
               <Input
                 id="motherId"
-                name="fake-mother-name"
+                name="mother-name-field"
                 type="text"
                 value={formData.motherId || ''}
                 onChange={(e) => onInputChange('motherId', e.target.value)}
                 placeholder="Nombre o etiqueta de la madre"
                 className="mt-1"
                 disabled={disabled}
-                autoComplete="new-password"
-                data-1p-ignore="true"
+                autoComplete="off"
                 data-lpignore="true"
+                data-1p-ignore="true"
                 data-bitwarden-ignore="true"
                 data-form-type="other"
                 spellCheck="false"
@@ -56,16 +56,16 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
               <Label htmlFor="fatherId">Padre</Label>
               <Input
                 id="fatherId"
-                name="fake-father-name"
+                name="father-name-field"
                 type="text"
                 value={formData.fatherId || ''}
                 onChange={(e) => onInputChange('fatherId', e.target.value)}
                 placeholder="Nombre o etiqueta del padre"
                 className="mt-1"
                 disabled={disabled}
-                autoComplete="new-password"
-                data-1p-ignore="true"
+                autoComplete="off"
                 data-lpignore="true"
+                data-1p-ignore="true"
                 data-bitwarden-ignore="true"
                 data-form-type="other"
                 spellCheck="false"
@@ -88,16 +88,16 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                   <Label htmlFor="maternalGrandmotherId">Abuela Materna</Label>
                   <Input
                     id="maternalGrandmotherId"
-                    name="fake-maternal-grandmother"
+                    name="maternal-grandmother-field"
                     type="text"
                     value={formData.maternalGrandmotherId || ''}
                     onChange={(e) => onInputChange('maternalGrandmotherId', e.target.value)}
                     placeholder="Nombre o etiqueta de la abuela materna"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="new-password"
-                    data-1p-ignore="true"
+                    autoComplete="off"
                     data-lpignore="true"
+                    data-1p-ignore="true"
                     data-bitwarden-ignore="true"
                     data-form-type="other"
                     spellCheck="false"
@@ -107,16 +107,16 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                   <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
                   <Input
                     id="maternalGrandfatherId"
-                    name="fake-maternal-grandfather"
+                    name="maternal-grandfather-field"
                     type="text"
                     value={formData.maternalGrandfatherId || ''}
                     onChange={(e) => onInputChange('maternalGrandfatherId', e.target.value)}
                     placeholder="Nombre o etiqueta del abuelo materno"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="new-password"
-                    data-1p-ignore="true"
+                    autoComplete="off"
                     data-lpignore="true"
+                    data-1p-ignore="true"
                     data-bitwarden-ignore="true"
                     data-form-type="other"
                     spellCheck="false"
@@ -132,16 +132,16 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                   <Label htmlFor="paternalGrandmotherId">Abuela Paterna</Label>
                   <Input
                     id="paternalGrandmotherId"
-                    name="fake-paternal-grandmother"
+                    name="paternal-grandmother-field"
                     type="text"
                     value={formData.paternalGrandmotherId || ''}
                     onChange={(e) => onInputChange('paternalGrandmotherId', e.target.value)}
                     placeholder="Nombre o etiqueta de la abuela paterna"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="new-password"
-                    data-1p-ignore="true"
+                    autoComplete="off"
                     data-lpignore="true"
+                    data-1p-ignore="true"
                     data-bitwarden-ignore="true"
                     data-form-type="other"
                     spellCheck="false"
@@ -151,16 +151,16 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                   <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
                   <Input
                     id="paternalGrandfatherId"
-                    name="fake-paternal-grandfather"
+                    name="paternal-grandfather-field"
                     type="text"
                     value={formData.paternalGrandfatherId || ''}
                     onChange={(e) => onInputChange('paternalGrandfatherId', e.target.value)}
                     placeholder="Nombre o etiqueta del abuelo paterno"
                     className="mt-1"
                     disabled={disabled}
-                    autoComplete="new-password"
-                    data-1p-ignore="true"
+                    autoComplete="off"
                     data-lpignore="true"
+                    data-1p-ignore="true"
                     data-bitwarden-ignore="true"
                     data-form-type="other"
                     spellCheck="false"

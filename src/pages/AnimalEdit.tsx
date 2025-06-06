@@ -61,27 +61,27 @@ const AnimalEdit = () => {
           <p className="text-gray-600">Modifica la información del animal</p>
         </div>
 
+        {/* Hidden password fields to completely prevent autofill detection */}
+        <div style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+          <input type="text" name="prevent-autofill-username" autoComplete="username" tabIndex={-1} />
+          <input type="password" name="prevent-autofill-password" autoComplete="current-password" tabIndex={-1} />
+          <input type="password" name="prevent-autofill-new-password" autoComplete="new-password" tabIndex={-1} />
+        </div>
+
         <form 
           onSubmit={handleSubmit} 
           className="space-y-6" 
-          autoComplete="new-password"
-          data-form="animal-edit-form"
+          autoComplete="off"
+          data-form="animal-edit"
           data-lpignore="true"
           data-1p-ignore="true"
           data-bitwarden-ignore="true"
           data-dashlane-ignore="true"
           data-keeper-ignore="true"
           data-lastpass-ignore="true"
-          role="form"
+          data-roboform-ignore="true"
+          noValidate
         >
-          <input 
-            type="password" 
-            name="fake-password"
-            autoComplete="new-password"
-            style={{position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none'}} 
-            tabIndex={-1}
-            aria-hidden="true"
-          />
           
           <BasicInformationForm
             formData={formData}

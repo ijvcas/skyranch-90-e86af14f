@@ -22,13 +22,13 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
           placeholder="Cualquier información adicional sobre el animal..."
           rows={4}
           disabled={disabled}
-          autoComplete="new-password"
-          data-1p-ignore="true"
+          autoComplete="off"
           data-lpignore="true"
+          data-1p-ignore="true"
           data-bitwarden-ignore="true"
           data-form-type="other"
           spellCheck="false"
-          name="fake-animal-notes"
+          name="animal-notes-field"
         />
       </CardContent>
     </Card>

@@ -67,15 +67,27 @@ export const useAnimalEdit = () => {
         
         // Load display names for all parent fields that have IDs - handle null values properly
         const parentIds = {
-          motherId: animal.motherId,
-          fatherId: animal.fatherId,
-          maternalGrandmotherId: animal.maternalGrandmotherId,
-          maternalGrandfatherId: animal.maternalGrandfatherId,
-          paternalGrandmotherId: animal.paternalGrandmotherId,
-          paternalGrandfatherId: animal.paternalGrandfatherId
+          motherId: animal.motherId || null,
+          fatherId: animal.fatherId || null,
+          maternalGrandmotherId: animal.maternalGrandmotherId || null,
+          maternalGrandfatherId: animal.maternalGrandfatherId || null,
+          paternalGrandmotherId: animal.paternalGrandmotherId || null,
+          paternalGrandfatherId: animal.paternalGrandfatherId || null
         };
 
         console.log('🔍 Parent IDs from database:', parentIds);
+
+        // Load display names only for IDs that exist and are not empty
+        const loadDisplayName = async (id: string | null) => {
+          if (!id || id.trim() === '') return '';
+          try {
+            const displayName = await getAnimalDisplayName(id);
+            return displayName || '';
+          } catch (error) {
+            console.error('Error loading display name for', id, error);
+            return '';
+          }
+        };
 
         const [
           motherDisplayName,
@@ -85,12 +97,12 @@ export const useAnimalEdit = () => {
           paternalGrandmotherDisplayName,
           paternalGrandfatherDisplayName
         ] = await Promise.all([
-          parentIds.motherId ? getAnimalDisplayName(parentIds.motherId) : Promise.resolve(''),
-          parentIds.fatherId ? getAnimalDisplayName(parentIds.fatherId) : Promise.resolve(''),
-          parentIds.maternalGrandmotherId ? getAnimalDisplayName(parentIds.maternalGrandmotherId) : Promise.resolve(''),
-          parentIds.maternalGrandfatherId ? getAnimalDisplayName(parentIds.maternalGrandfatherId) : Promise.resolve(''),
-          parentIds.paternalGrandmotherId ? getAnimalDisplayName(parentIds.paternalGrandmotherId) : Promise.resolve(''),
-          parentIds.paternalGrandfatherId ? getAnimalDisplayName(parentIds.paternalGrandfatherId) : Promise.resolve('')
+          loadDisplayName(parentIds.motherId),
+          loadDisplayName(parentIds.fatherId),
+          loadDisplayName(parentIds.maternalGrandmotherId),
+          loadDisplayName(parentIds.maternalGrandfatherId),
+          loadDisplayName(parentIds.paternalGrandmotherId),
+          loadDisplayName(parentIds.paternalGrandfatherId)
         ]);
 
         console.log('🔍 Loaded display names:', {
@@ -111,12 +123,12 @@ export const useAnimalEdit = () => {
           gender: animal.gender || '',
           weight: animal.weight?.toString() || '',
           color: animal.color || '',
-          motherId: motherDisplayName || '',
-          fatherId: fatherDisplayName || '',
-          maternalGrandmotherId: maternalGrandmotherDisplayName || '',
-          maternalGrandfatherId: maternalGrandfatherDisplayName || '',
-          paternalGrandmotherId: paternalGrandmotherDisplayName || '',
-          paternalGrandfatherId: paternalGrandfatherDisplayName || '',
+          motherId: motherDisplayName,
+          fatherId: fatherDisplayName,
+          maternalGrandmotherId: maternalGrandmotherDisplayName,
+          maternalGrandfatherId: maternalGrandfatherDisplayName,
+          paternalGrandmotherId: paternalGrandmotherDisplayName,
+          paternalGrandfatherId: paternalGrandfatherDisplayName,
           notes: animal.notes || '',
           healthStatus: animal.healthStatus || 'healthy',
           image: animal.image
