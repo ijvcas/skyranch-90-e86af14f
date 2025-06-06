@@ -145,6 +145,12 @@ const AnimalEdit = () => {
 
   const handleInputChange = (field: string, value: string) => {
     console.log(`Updating field ${field} with value:`, value);
+    
+    // Handle parent selection: convert "none" to empty string
+    if ((field === 'motherId' || field === 'fatherId') && value === 'none') {
+      value = '';
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -321,7 +327,7 @@ const AnimalEdit = () => {
                       <SelectValue placeholder="Seleccionar madre" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin madre registrada</SelectItem>
+                      <SelectItem value="none">Sin madre registrada</SelectItem>
                       {allAnimals
                         .filter(a => a.gender === 'hembra' && a.id !== id)
                         .map(animal => (
@@ -342,7 +348,7 @@ const AnimalEdit = () => {
                       <SelectValue placeholder="Seleccionar padre" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin padre registrado</SelectItem>
+                      <SelectItem value="none">Sin padre registrado</SelectItem>
                       {allAnimals
                         .filter(a => a.gender === 'macho' && a.id !== id)
                         .map(animal => (
