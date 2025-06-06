@@ -1,4 +1,12 @@
+
 import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
+
+// Create admin client for service_role operations
+const supabaseAdmin = createClient(
+  "https://ahwhtxygyzoadsmdrwwg.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFod2h0eHlneXpvYWRzbWRyd3dnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTEyMjE3MywiZXhwIjoyMDY0Njk4MTczfQ.gWkm7l9n_vONc1MYr0x7Q6sJBL0aI3rRBF8QjGYjkqU"
+);
 
 export interface AppUser {
   id: string;
@@ -30,8 +38,8 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     await syncUserToAppUsers(currentUser.id, currentUser.email, userName);
   }
 
-  // Get all profiles first
-  const { data: profiles, error: profilesError } = await supabase
+  // Get all profiles first using admin client for better access
+  const { data: profiles, error: profilesError } = await supabaseAdmin
     .from('profiles')
     .select('*');
 
@@ -53,17 +61,17 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     }
   }
 
-  // Try to get auth users and sync any missing ones
+  // Try to get auth users using admin client
   try {
-    console.log('🔍 Checking for auth users without profiles...');
+    console.log('🔍 Checking for auth users using admin client...');
     
-    const { data: authUsers, error: authError } = await supabase.rpc('get_auth_users') as { data: AuthUser[] | null, error: any };
+    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
     
-    if (!authError && authUsers && Array.isArray(authUsers)) {
-      console.log('✅ Found auth users via RPC:', authUsers.length);
-      console.log('🔍 Auth users details:', authUsers.map(u => ({ email: u.email, id: u.id })));
+    if (!authError && authUsers && authUsers.users) {
+      console.log('✅ Found auth users via admin client:', authUsers.users.length);
+      console.log('🔍 Auth users details:', authUsers.users.map(u => ({ email: u.email, id: u.id })));
       
-      for (const authUser of authUsers) {
+      for (const authUser of authUsers.users) {
         if (authUser.email && authUser.id) {
           console.log(`🔍 Processing auth user: ${authUser.email}`);
           
@@ -71,12 +79,12 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
           const existingProfile = profiles?.find(p => p.id === authUser.id);
           if (!existingProfile) {
             console.log(`➕ Creating missing profile for ${authUser.email}`);
-            const { error: profileCreateError } = await supabase
+            const { error: profileCreateError } = await supabaseAdmin
               .from('profiles')
               .upsert([{
                 id: authUser.id,
                 email: authUser.email,
-                full_name: authUser.raw_user_meta_data?.full_name || authUser.email
+                full_name: authUser.user_metadata?.full_name || authUser.email
               }], {
                 onConflict: 'id'
               });
@@ -92,15 +100,15 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
           await syncUserToAppUsers(
             authUser.id, 
             authUser.email, 
-            authUser.raw_user_meta_data?.full_name || authUser.email
+            authUser.user_metadata?.full_name || authUser.email
           );
         }
       }
     } else {
-      console.log('ℹ️ Could not fetch auth users via RPC:', authError);
+      console.log('ℹ️ Could not fetch auth users via admin client:', authError);
     }
   } catch (error) {
-    console.log('ℹ️ Auth users RPC not available, continuing with profiles only:', error);
+    console.log('ℹ️ Auth users admin access not available, continuing with profiles only:', error);
   }
 
   // Now get all users from app_users table
@@ -239,23 +247,33 @@ export const deleteUser = async (id: string): Promise<boolean> => {
   console.log(`✅ Deleted ${userEmail} from app_users table`);
 
   // Step 2: Delete from profiles table
-  const { error: profileError } = await supabase
+  const { error: profileError } = await supabaseAdmin
     .from('profiles')
     .delete()
     .eq('id', id);
 
   if (profileError) {
     console.error('❌ Error deleting from profiles:', profileError);
-    // Don't throw, this is not critical
   } else {
     console.log(`✅ Deleted ${userEmail} from profiles table`);
   }
 
-  // Note: Cannot delete from auth system with client-side connection
-  // This requires service_role privileges which are not available on the client
-  console.log(`⚠️ User ${userEmail} has been removed from the application but remains in the authentication system`);
-  console.log(`ℹ️ Complete removal from authentication requires server-side admin privileges`);
+  // Step 3: Delete from auth system using admin client
+  try {
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+    
+    if (authError) {
+      console.error('❌ Error deleting from auth system:', authError);
+      throw new Error(`User removed from app but auth deletion failed: ${authError.message}`);
+    } else {
+      console.log(`✅ Successfully deleted ${userEmail} from auth system`);
+    }
+  } catch (error) {
+    console.error('❌ Auth deletion failed:', error);
+    throw new Error(`User removed from app but auth deletion failed: ${error}`);
+  }
 
+  console.log(`✅ User ${userEmail} completely removed from all systems`);
   return true;
 };
 

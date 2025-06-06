@@ -76,20 +76,30 @@ const UserManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['app-users'] });
       const deletedUser = users.find(u => u.id === id);
       toast({
-        title: "Usuario Eliminado de la Aplicación",
-        description: `${deletedUser?.name} ha sido eliminado de la aplicación. Nota: El usuario permanece en el sistema de autenticación y requiere privilegios de administrador del servidor para eliminación completa.`,
-        variant: "destructive",
-        duration: 10000 // Longer duration for important message
+        title: "Usuario Completamente Eliminado",
+        description: `${deletedUser?.name} ha sido eliminado completamente del sistema (aplicación y autenticación).`,
+        duration: 5000
       });
     },
     onError: (error: Error) => {
       console.error('Error deleting user:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar el usuario",
-        variant: "destructive",
-        duration: 8000
-      });
+      queryClient.invalidateQueries({ queryKey: ['app-users'] }); // Refresh to show partial deletion
+      
+      if (error.message.includes('auth deletion failed')) {
+        toast({
+          title: "Eliminación Parcial",
+          description: error.message,
+          variant: "destructive",
+          duration: 8000
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "No se pudo eliminar el usuario",
+          variant: "destructive",
+          duration: 8000
+        });
+      }
     }
   });
 
@@ -159,8 +169,9 @@ const UserManagement = () => {
     console.log('Manual refresh triggered');
     toast({
       title: "Sincronizando",
-      description: "Actualizando lista de usuarios...",
+      description: "Actualizando lista de usuarios desde todos los sistemas...",
     });
+    queryClient.invalidateQueries({ queryKey: ['app-users'] });
     refetch();
   };
 
