@@ -78,7 +78,7 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
 export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
   console.log(`🔄 Attempting to sync user: ${email} (ID: ${profileId})`);
   
-  // Check if user already exists in app_users by email (not just ID)
+  // Check if user already exists in app_users by email
   const { data: existingUser, error: checkError } = await supabase
     .from('app_users')
     .select('id, email')
@@ -98,43 +98,42 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
 
     console.log(`➕ Syncing new user to app_users: ${email} with role: ${role}`);
 
-    // Add to app_users table
+    // Try to add to app_users table using upsert to handle duplicates
     const { error } = await supabase
       .from('app_users')
-      .insert([{
+      .upsert([{
         id: profileId,
         name: fullName || email,
         email: email,
         role: role,
         is_active: true
-      }]);
+      }], {
+        onConflict: 'email',
+        ignoreDuplicates: false
+      });
 
     if (error) {
       console.error('❌ Error syncing user to app_users:', error);
-      
-      // If it's a duplicate ID error, try to update the existing record
-      if (error.code === '23505' && error.message.includes('app_users_pkey')) {
-        console.log(`🔄 User ID exists, trying to update record for ${email}`);
-        const { error: updateError } = await supabase
-          .from('app_users')
-          .update({
-            name: fullName || email,
-            email: email,
-            role: role
-          })
-          .eq('id', profileId);
-          
-        if (updateError) {
-          console.error('❌ Error updating existing user:', updateError);
-        } else {
-          console.log(`✅ User ${email} successfully updated in app_users table`);
-        }
-      }
     } else {
       console.log(`✅ User ${email} successfully synced to app_users table`);
     }
   } else {
     console.log(`✅ User ${email} already exists in app_users table`);
+    
+    // Update the user record if the ID doesn't match (in case of profile ID changes)
+    if (existingUser.id !== profileId) {
+      console.log(`🔄 Updating user ID for ${email} from ${existingUser.id} to ${profileId}`);
+      const { error: updateError } = await supabase
+        .from('app_users')
+        .update({ id: profileId, name: fullName || email })
+        .eq('email', email);
+        
+      if (updateError) {
+        console.error('❌ Error updating user ID:', updateError);
+      } else {
+        console.log(`✅ User ${email} ID successfully updated`);
+      }
+    }
   }
 };
 
