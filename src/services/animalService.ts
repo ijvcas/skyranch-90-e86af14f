@@ -2,6 +2,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Animal } from '@/stores/animalStore';
 
+// Helper function to validate if a string is a valid UUID
+const isValidUUID = (str: string): boolean => {
+  if (!str || str.trim() === '') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export const getAllAnimals = async (): Promise<Animal[]> => {
   try {
     const { data, error } = await supabase
@@ -85,6 +92,17 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
       return { success: false };
     }
 
+    // Process parent IDs - only use valid UUIDs, otherwise set to null
+    const motherIdToSave = animal.motherId && isValidUUID(animal.motherId) ? animal.motherId : null;
+    const fatherIdToSave = animal.fatherId && isValidUUID(animal.fatherId) ? animal.fatherId : null;
+
+    console.log('Adding animal with processed parent IDs:', { 
+      motherId: motherIdToSave, 
+      fatherId: fatherIdToSave,
+      originalMotherId: animal.motherId,
+      originalFatherId: animal.fatherId
+    });
+
     const { data, error } = await supabase
       .from('animals')
       .insert({
@@ -96,8 +114,8 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
         gender: animal.gender,
         weight: animal.weight ? parseFloat(animal.weight) : null,
         color: animal.color,
-        mother_id: animal.motherId || null,
-        father_id: animal.fatherId || null,
+        mother_id: motherIdToSave,
+        father_id: fatherIdToSave,
         health_status: animal.healthStatus,
         notes: animal.notes,
         image_url: animal.image,
@@ -120,6 +138,18 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<{ success: 
 
 export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Promise<boolean> => {
   try {
+    // Process parent IDs - only use valid UUIDs, otherwise set to null
+    const motherIdToSave = animal.motherId && isValidUUID(animal.motherId) ? animal.motherId : null;
+    const fatherIdToSave = animal.fatherId && isValidUUID(animal.fatherId) ? animal.fatherId : null;
+
+    console.log('Updating animal with processed parent IDs:', { 
+      animalId: id,
+      motherId: motherIdToSave, 
+      fatherId: fatherIdToSave,
+      originalMotherId: animal.motherId,
+      originalFatherId: animal.fatherId
+    });
+
     const { error } = await supabase
       .from('animals')
       .update({
@@ -131,8 +161,8 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
         gender: animal.gender,
         weight: animal.weight ? parseFloat(animal.weight) : null,
         color: animal.color,
-        mother_id: animal.motherId || null,
-        father_id: animal.fatherId || null,
+        mother_id: motherIdToSave,
+        father_id: fatherIdToSave,
         health_status: animal.healthStatus,
         notes: animal.notes,
         image_url: animal.image,
