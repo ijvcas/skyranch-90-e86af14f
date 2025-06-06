@@ -12,27 +12,29 @@ export interface AppUser {
 }
 
 export const getAllUsers = async (): Promise<AppUser[]> => {
-  console.log('Fetching all users...');
+  console.log('🔍 Starting getAllUsers - fetching all users...');
   
-  // First get all auth users to ensure we don't miss any registered users
+  // First get all auth users from profiles to ensure we don't miss any registered users
   const { data: authUsers, error: authError } = await supabase
     .from('profiles')
     .select('*');
 
   if (authError) {
-    console.error('Error fetching profiles:', authError);
+    console.error('❌ Error fetching profiles:', authError);
+  } else {
+    console.log('✅ Profile users found:', authUsers?.length || 0, authUsers?.map(u => u.email));
   }
 
-  console.log('Profile users found:', authUsers?.length || 0);
-
-  // Sync any missing users from profiles to app_users
-  if (authUsers) {
+  // Sync ALL users from profiles to app_users (this ensures no one is missing)
+  if (authUsers && authUsers.length > 0) {
+    console.log('🔄 Starting user sync process...');
     for (const profile of authUsers) {
       if (profile.email) {
-        console.log(`Checking user: ${profile.email}`);
+        console.log(`🔍 Processing user: ${profile.email}`);
         await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
       }
     }
+    console.log('✅ User sync process completed');
   }
 
   // Now get all users from app_users table after syncing
@@ -42,9 +44,11 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     .order('created_at', { ascending: false });
 
   if (appUsersError) {
-    console.error('Error fetching app users:', appUsersError);
+    console.error('❌ Error fetching app users:', appUsersError);
     return [];
   }
+
+  console.log('📊 App users found:', appUsers?.length || 0, appUsers?.map(u => u.email));
 
   const allUsers: AppUser[] = [];
 
@@ -60,22 +64,22 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     });
   }
 
-  console.log('Total users returned:', allUsers.length);
+  console.log('📋 Total users returned:', allUsers.length, allUsers.map(u => u.email));
   return allUsers;
 };
 
 export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
-  console.log(`Attempting to sync user: ${email}`);
+  console.log(`🔄 Attempting to sync user: ${email} (ID: ${profileId})`);
   
   // Check if user already exists in app_users
   const { data: existingUser, error: checkError } = await supabase
     .from('app_users')
-    .select('id')
-    .eq('email', email)
+    .select('id, email')
+    .eq('id', profileId)
     .single();
 
   if (checkError && checkError.code !== 'PGRST116') {
-    console.error('Error checking existing user:', checkError);
+    console.error('❌ Error checking existing user:', checkError);
     return;
   }
 
@@ -85,7 +89,7 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
       ? 'admin' 
       : 'worker';
 
-    console.log(`Syncing new user to app_users: ${email} with role: ${role}`);
+    console.log(`➕ Syncing new user to app_users: ${email} with role: ${role}`);
 
     // Add to app_users table
     const { error } = await supabase
@@ -99,12 +103,12 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
       }]);
 
     if (error) {
-      console.error('Error syncing user to app_users:', error);
+      console.error('❌ Error syncing user to app_users:', error);
     } else {
-      console.log(`User ${email} successfully synced to app_users table`);
+      console.log(`✅ User ${email} successfully synced to app_users table`);
     }
   } else {
-    console.log(`User ${email} already exists in app_users table`);
+    console.log(`✅ User ${email} already exists in app_users table`);
   }
 };
 
@@ -151,45 +155,60 @@ export const updateUser = async (id: string, updates: Partial<AppUser>): Promise
 };
 
 export const deleteUser = async (id: string): Promise<boolean> => {
-  console.log(`Attempting to delete user with ID: ${id}`);
+  console.log(`🗑️ Attempting to delete user with ID: ${id}`);
   
-  // First delete from app_users table
+  // Get user info first for logging
+  const { data: userToDelete } = await supabase
+    .from('app_users')
+    .select('email')
+    .eq('id', id)
+    .single();
+
+  const userEmail = userToDelete?.email || 'unknown';
+  console.log(`🗑️ Deleting user: ${userEmail}`);
+
+  // Step 1: Delete from app_users table
   const { error: appUserError } = await supabase
     .from('app_users')
     .delete()
     .eq('id', id);
 
   if (appUserError) {
-    console.error('Error deleting from app_users:', appUserError);
+    console.error('❌ Error deleting from app_users:', appUserError);
     throw appUserError;
   }
+  console.log(`✅ Deleted ${userEmail} from app_users table`);
 
-  // Then delete from profiles table
+  // Step 2: Delete from profiles table
   const { error: profileError } = await supabase
     .from('profiles')
     .delete()
     .eq('id', id);
 
   if (profileError) {
-    console.error('Error deleting from profiles:', profileError);
+    console.error('❌ Error deleting from profiles:', profileError);
+    // Don't throw, continue with auth deletion
+  } else {
+    console.log(`✅ Deleted ${userEmail} from profiles table`);
   }
 
-  // Finally, delete from auth system using the admin API
+  // Step 3: Try to delete from auth system (this requires admin privileges)
+  // Note: This will only work if the current user has admin privileges in Supabase
   try {
     const { error: authError } = await supabase.auth.admin.deleteUser(id);
     if (authError) {
-      console.error('Error deleting from auth system:', authError);
-      // Don't throw here as the user might not have admin privileges
-      // The important part (removing from app_users) was successful
+      console.error('❌ Error deleting from auth system (admin required):', authError);
+      // This is expected if the user doesn't have admin privileges
+      console.log('ℹ️ User removed from app tables but may still exist in auth system');
     } else {
-      console.log(`User ${id} successfully deleted from auth system`);
+      console.log(`✅ User ${userEmail} successfully deleted from auth system`);
     }
   } catch (error) {
-    console.error('Error calling auth admin delete:', error);
-    // Continue as the user removal from app_users was successful
+    console.error('❌ Error calling auth admin delete:', error);
+    console.log('ℹ️ User removed from app tables but may still exist in auth system');
   }
 
-  console.log(`User ${id} deletion completed`);
+  console.log(`✅ User ${userEmail} deletion process completed`);
   return true;
 };
 
@@ -227,7 +246,12 @@ export const toggleUserStatus = async (id: string): Promise<AppUser> => {
 export const getCurrentUser = async (): Promise<AppUser | null> => {
   const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) return null;
+  if (!user) {
+    console.log('🚫 No authenticated user found');
+    return null;
+  }
+
+  console.log(`🔍 Getting current user data for: ${user.email}`);
 
   // First try to find in app_users
   const { data: appUser, error } = await supabase
@@ -237,11 +261,14 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     .single();
 
   if (appUser) {
+    console.log(`✅ Found current user in app_users: ${appUser.email}`);
     return {
       ...appUser,
       role: appUser.role as 'admin' | 'manager' | 'worker'
     };
   }
+
+  console.log(`❌ Current user not found in app_users, checking profiles...`);
 
   // If not found in app_users, check profiles and sync
   const { data: profile } = await supabase
@@ -251,6 +278,7 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     .single();
 
   if (profile && profile.email) {
+    console.log(`✅ Found current user in profiles: ${profile.email}, syncing...`);
     // Sync to app_users
     await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
     
@@ -269,5 +297,6 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     };
   }
 
+  console.log(`❌ Current user not found in profiles either`);
   return null;
 };
