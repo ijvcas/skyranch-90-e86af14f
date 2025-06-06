@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAnimal, updateAnimal, getAllAnimals } from '@/services/animalService';
+import { getAnimal, updateAnimal } from '@/services/animalService';
 
 const AnimalEdit = () => {
   const navigate = useNavigate();
@@ -40,12 +40,6 @@ const AnimalEdit = () => {
     queryKey: ['animal', id],
     queryFn: () => getAnimal(id!),
     enabled: !!id
-  });
-
-  // Fetch all animals for parent selection
-  const { data: allAnimals = [] } = useQuery({
-    queryKey: ['animals'],
-    queryFn: getAllAnimals
   });
 
   // Update mutation
@@ -125,23 +119,6 @@ const AnimalEdit = () => {
 
   const handleImageChange = (imageUrl: string | null) => {
     setFormData(prev => ({ ...prev, image: imageUrl }));
-  };
-
-  // Filter animals that could be parents (exclude current animal and same gender for appropriate parent type)
-  const getPotentialMothers = () => {
-    return allAnimals.filter(a => 
-      a.id !== id && 
-      a.gender === 'hembra' && 
-      a.species === formData.species
-    );
-  };
-
-  const getPotentialFathers = () => {
-    return allAnimals.filter(a => 
-      a.id !== id && 
-      a.gender === 'macho' && 
-      a.species === formData.species
-    );
   };
 
   if (!id) {
@@ -308,35 +285,27 @@ const AnimalEdit = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="motherId">Madre</Label>
-                  <Select value={formData.motherId || "none"} onValueChange={(value) => handleInputChange('motherId', value === "none" ? "" : value)} disabled={updateMutation.isPending}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Seleccionar madre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin madre registrada</SelectItem>
-                      {getPotentialMothers().map(mother => (
-                        <SelectItem key={mother.id} value={mother.id}>
-                          {mother.name} (#{mother.tag})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="motherId"
+                    type="text"
+                    value={formData.motherId}
+                    onChange={(e) => handleInputChange('motherId', e.target.value)}
+                    placeholder="Nombre o ID de la madre"
+                    className="mt-1"
+                    disabled={updateMutation.isPending}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="fatherId">Padre</Label>
-                  <Select value={formData.fatherId || "none"} onValueChange={(value) => handleInputChange('fatherId', value === "none" ? "" : value)} disabled={updateMutation.isPending}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Seleccionar padre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin padre registrado</SelectItem>
-                      {getPotentialFathers().map(father => (
-                        <SelectItem key={father.id} value={father.id}>
-                          {father.name} (#{father.tag})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="fatherId"
+                    type="text"
+                    value={formData.fatherId}
+                    onChange={(e) => handleInputChange('fatherId', e.target.value)}
+                    placeholder="Nombre o ID del padre"
+                    className="mt-1"
+                    disabled={updateMutation.isPending}
+                  />
                 </div>
               </div>
             </CardContent>
