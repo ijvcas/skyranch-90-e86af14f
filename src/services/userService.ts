@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppUser {
@@ -62,6 +61,8 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     
     if (!authError && authUsers && Array.isArray(authUsers)) {
       console.log('✅ Found auth users via RPC:', authUsers.length);
+      console.log('🔍 Auth users details:', authUsers.map(u => ({ email: u.email, id: u.id })));
+      
       for (const authUser of authUsers) {
         if (authUser.email && authUser.id) {
           console.log(`🔍 Processing auth user: ${authUser.email}`);
@@ -245,28 +246,16 @@ export const deleteUser = async (id: string): Promise<boolean> => {
 
   if (profileError) {
     console.error('❌ Error deleting from profiles:', profileError);
-    // Don't throw, continue with auth deletion attempt
+    // Don't throw, this is not critical
   } else {
     console.log(`✅ Deleted ${userEmail} from profiles table`);
   }
 
-  // Step 3: Try to delete from auth system (this requires admin privileges and will likely fail)
-  try {
-    const { error: authError } = await supabase.auth.admin.deleteUser(id);
-    if (authError) {
-      console.error('❌ Auth deletion failed (admin privileges required):', authError);
-      // This is expected to fail for non-admin clients
-      throw new Error(`User ${userEmail} was removed from the application but remains in the authentication system. An administrator with service role privileges is required to fully delete the user from authentication.`);
-    } else {
-      console.log(`✅ User ${userEmail} successfully deleted from auth system`);
-    }
-  } catch (error) {
-    console.error('❌ Auth deletion failed:', error);
-    // Re-throw with a more descriptive error
-    throw new Error(`User ${userEmail} was removed from the application but remains in the authentication system. An administrator with service role privileges is required to fully delete the user from authentication.`);
-  }
+  // Note: Cannot delete from auth system with client-side connection
+  // This requires service_role privileges which are not available on the client
+  console.log(`⚠️ User ${userEmail} has been removed from the application but remains in the authentication system`);
+  console.log(`ℹ️ Complete removal from authentication requires server-side admin privileges`);
 
-  console.log(`✅ User ${userEmail} deletion process completed`);
   return true;
 };
 

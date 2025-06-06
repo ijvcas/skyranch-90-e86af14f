@@ -30,16 +30,16 @@ const UserManagement = () => {
   });
 
   // Fetch users from Supabase with automatic refetching
-  const { data: users = [], isLoading, refetch } = useQuery({
+  const { data: users = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['app-users'],
     queryFn: getAllUsers,
-    refetchInterval: 5000, // Refetch every 5 seconds to catch new users
+    refetchInterval: 30000, // Refetch every 30 seconds to catch new users
   });
 
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
     queryFn: getCurrentUser,
-    refetchInterval: 5000, // Refetch every 5 seconds
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Force refresh on component mount
@@ -77,30 +77,19 @@ const UserManagement = () => {
       const deletedUser = users.find(u => u.id === id);
       toast({
         title: "Usuario Eliminado de la Aplicación",
-        description: `${deletedUser?.name} ha sido eliminado de la aplicación`,
-        variant: "destructive"
+        description: `${deletedUser?.name} ha sido eliminado de la aplicación. Nota: El usuario permanece en el sistema de autenticación y requiere privilegios de administrador del servidor para eliminación completa.`,
+        variant: "destructive",
+        duration: 10000 // Longer duration for important message
       });
     },
     onError: (error: Error) => {
       console.error('Error deleting user:', error);
-      
-      // Check if this is a partial deletion error
-      if (error.message.includes('remains in the authentication system')) {
-        toast({
-          title: "Eliminación Parcial",
-          description: error.message,
-          variant: "destructive",
-          duration: 8000 // Longer duration for important message
-        });
-        // Still refresh the list since the user was removed from app
-        queryClient.invalidateQueries({ queryKey: ['app-users'] });
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo eliminar el usuario",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar el usuario",
+        variant: "destructive",
+        duration: 8000
+      });
     }
   });
 
@@ -148,7 +137,7 @@ const UserManagement = () => {
       return;
     }
 
-    if (window.confirm(`¿Estás seguro de eliminar a ${userName}? Nota: El usuario será eliminado de la aplicación, pero podría permanecer en el sistema de autenticación.`)) {
+    if (window.confirm(`¿Estás seguro de eliminar a ${userName}?\n\nNota: El usuario será eliminado de la aplicación, pero permanecerá en el sistema de autenticación. La eliminación completa requiere privilegios de administrador del servidor.`)) {
       deleteUserMutation.mutate(id);
     }
   };
@@ -168,11 +157,11 @@ const UserManagement = () => {
 
   const handleRefresh = () => {
     console.log('Manual refresh triggered');
-    refetch();
     toast({
-      title: "Actualizando",
-      description: "Sincronizando usuarios...",
+      title: "Sincronizando",
+      description: "Actualizando lista de usuarios...",
     });
+    refetch();
   };
 
   const getRoleLabel = (role: string) => {
@@ -221,9 +210,10 @@ const UserManagement = () => {
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
+            disabled={isFetching}
           >
-            <RefreshCw className="w-4 h-4" />
-            Actualizar
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Sincronizando...' : 'Actualizar'}
           </Button>
           <Button
             onClick={() => setShowAddForm(!showAddForm)}
