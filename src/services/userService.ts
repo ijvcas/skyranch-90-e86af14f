@@ -35,50 +35,41 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
   console.log('App users found:', appUsers?.length || 0);
   console.log('Profile users found:', authUsers?.length || 0);
 
-  // Combine and deduplicate users
-  const allUsers: AppUser[] = [];
-  const userEmails = new Set<string>();
+  // First, sync any missing users from profiles to app_users
+  if (authUsers) {
+    const appUserEmails = new Set(appUsers?.map(u => u.email) || []);
+    
+    for (const profile of authUsers) {
+      if (!appUserEmails.has(profile.email) && profile.email) {
+        console.log(`Syncing missing user: ${profile.email}`);
+        await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
+      }
+    }
+  }
 
-  // Add app_users first
-  if (appUsers) {
-    appUsers.forEach(user => {
+  // Now fetch the updated app_users list
+  const { data: updatedAppUsers, error: updatedError } = await supabase
+    .from('app_users')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (updatedError) {
+    console.error('Error fetching updated app users:', updatedError);
+    return [];
+  }
+
+  const allUsers: AppUser[] = [];
+
+  // Process all app_users
+  if (updatedAppUsers) {
+    updatedAppUsers.forEach(user => {
       allUsers.push({
         ...user,
         role: user.email === 'juan.casanova@skyranch.com' || user.email === 'jvcas@mac.com' 
           ? 'admin' 
           : user.role as 'admin' | 'manager' | 'worker'
       });
-      userEmails.add(user.email);
     });
-  }
-
-  // Add profiles that aren't already in app_users and auto-sync them
-  if (authUsers) {
-    for (const profile of authUsers) {
-      if (!userEmails.has(profile.email) && profile.email) {
-        console.log(`Found profile not in app_users: ${profile.email}, syncing...`);
-        
-        // Auto-sync this user to app_users
-        await syncUserToAppUsers(profile.id, profile.email, profile.full_name || profile.email);
-        
-        // Determine role based on email - new users get 'worker' role by default
-        const role = (profile.email === 'juan.casanova@skyranch.com' || profile.email === 'jvcas@mac.com') 
-          ? 'admin' 
-          : 'worker';
-
-        allUsers.push({
-          id: profile.id,
-          name: profile.full_name || profile.email,
-          email: profile.email,
-          role: role,
-          created_at: profile.created_at,
-          is_active: true,
-          created_by: undefined
-        });
-        
-        userEmails.add(profile.email);
-      }
-    }
   }
 
   console.log('Total users returned:', allUsers.length);
