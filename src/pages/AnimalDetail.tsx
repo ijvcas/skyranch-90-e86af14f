@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, Trash2, Heart, Calendar, Scale, Palette } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getAnimal, getAllAnimals } from '@/services/animalService';
+import { getAnimal, getAllAnimals, getAnimalDisplayName } from '@/services/animalService';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import AnimalDeleteDialog from '@/components/AnimalDeleteDialog';
@@ -28,14 +27,57 @@ const AnimalDetail = () => {
     queryFn: getAllAnimals,
   });
 
-  // Create a map of animal IDs to names for the pedigree chart
-  const animalNames = React.useMemo(() => {
-    const nameMap: Record<string, string> = {};
-    allAnimals.forEach(a => {
-      nameMap[a.id] = `${a.name} (${a.tag})`;
-    });
-    return nameMap;
-  }, [allAnimals]);
+  // Create a comprehensive map that includes both registered animals and handles text names
+  const { data: animalNames = {} } = useQuery({
+    queryKey: ['animalNames', animal?.id],
+    queryFn: async () => {
+      if (!animal) return {};
+      
+      console.log('🔍 Building animal names map for pedigree...');
+      const nameMap: Record<string, string> = {};
+      
+      // Add all registered animals to the map
+      allAnimals.forEach(a => {
+        nameMap[a.id] = `${a.name} (${a.tag})`;
+      });
+      
+      // Process parent and grandparent names (both registered and text names)
+      const parentIds = [
+        animal.motherId,
+        animal.fatherId,
+        animal.maternalGrandmotherId,
+        animal.maternalGrandfatherId,
+        animal.paternalGrandmotherId,
+        animal.paternalGrandfatherId
+      ].filter(Boolean);
+      
+      console.log('🔍 Processing parent IDs:', parentIds);
+      
+      // Get display names for all parents/grandparents
+      const namePromises = parentIds.map(async (parentId) => {
+        if (!parentId) return null;
+        try {
+          const displayName = await getAnimalDisplayName(parentId);
+          console.log(`🔍 Display name for ${parentId}:`, displayName);
+          return { id: parentId, name: displayName };
+        } catch (error) {
+          console.error(`Error getting display name for ${parentId}:`, error);
+          return { id: parentId, name: parentId }; // Fallback to the ID/text itself
+        }
+      });
+      
+      const resolvedNames = await Promise.all(namePromises);
+      resolvedNames.forEach(item => {
+        if (item) {
+          nameMap[item.id] = item.name;
+        }
+      });
+      
+      console.log('🔍 Final animal names map:', nameMap);
+      return nameMap;
+    },
+    enabled: !!animal,
+  });
 
   if (!id) {
     return (
