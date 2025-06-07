@@ -147,7 +147,7 @@ const AnimalForm = () => {
                       <SelectItem value="porcino">Porcino</SelectItem>
                       <SelectItem value="equino">Equino</SelectItem>
                       <SelectItem value="aviar">Aviar</SelectItem>
-                      <SelectItem value="canino">Canino</SelectItem>
+                      <SelectItem value="caninos">Caninos</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -235,7 +235,7 @@ const AnimalForm = () => {
                       className="mt-1"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Escribe el nombre o número de etiqueta de la madre
+                      Escribe cualquier nombre, no necesita estar registrado
                     </p>
                   </div>
                   <div>
@@ -249,7 +249,7 @@ const AnimalForm = () => {
                       className="mt-1"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Escribe el nombre o número de etiqueta del padre
+                      Escribe cualquier nombre, no necesita estar registrado
                     </p>
                   </div>
                 </div>
@@ -272,6 +272,7 @@ const AnimalForm = () => {
                           placeholder="Nombre o etiqueta de la abuela materna"
                           className="mt-1"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Opcional</p>
                       </div>
                       <div>
                         <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
@@ -283,6 +284,7 @@ const AnimalForm = () => {
                           placeholder="Nombre o etiqueta del abuelo materno"
                           className="mt-1"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Opcional</p>
                       </div>
                     </div>
                   </div>
@@ -300,6 +302,7 @@ const AnimalForm = () => {
                           placeholder="Nombre o etiqueta de la abuela paterna"
                           className="mt-1"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Opcional</p>
                       </div>
                       <div>
                         <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
@@ -311,6 +314,7 @@ const AnimalForm = () => {
                           placeholder="Nombre o etiqueta del abuelo paterno"
                           className="mt-1"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Opcional</p>
                       </div>
                     </div>
                   </div>

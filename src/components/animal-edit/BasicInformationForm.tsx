@@ -25,9 +25,9 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               id="name"
               name={`animal-name-${Math.random()}`}
               type="text"
-              value={formData.name}
+              value={formData.name || ''}
               onChange={(e) => onInputChange('name', e.target.value)}
-              required
+              placeholder="Ej: Bella"
               className="mt-1"
               disabled={disabled}
               autoComplete="off"
@@ -44,9 +44,9 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               id="tag"
               name={`animal-tag-${Math.random()}`}
               type="text"
-              value={formData.tag}
+              value={formData.tag || ''}
               onChange={(e) => onInputChange('tag', e.target.value)}
-              required
+              placeholder="Ej: 001"
               className="mt-1"
               disabled={disabled}
               autoComplete="off"
@@ -62,7 +62,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="species">Especie *</Label>
-            <Select value={formData.species} onValueChange={(value) => onInputChange('species', value)} disabled={disabled}>
+            <Select value={formData.species || ''} onValueChange={(value) => onInputChange('species', value)} disabled={disabled}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Seleccionar especie" />
               </SelectTrigger>
@@ -73,7 +73,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
                 <SelectItem value="porcino">Porcino</SelectItem>
                 <SelectItem value="equino">Equino</SelectItem>
                 <SelectItem value="aviar">Aviar</SelectItem>
-                <SelectItem value="canino">Canino</SelectItem>
+                <SelectItem value="caninos">Caninos</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -83,8 +83,9 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               id="breed"
               name={`animal-breed-${Math.random()}`}
               type="text"
-              value={formData.breed}
+              value={formData.breed || ''}
               onChange={(e) => onInputChange('breed', e.target.value)}
+              placeholder="Ej: Holstein"
               className="mt-1"
               disabled={disabled}
               autoComplete="off"
@@ -102,9 +103,9 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
             <Input
               id="birthDate"
-              name={`animal-birth-${Math.random()}`}
+              name={`animal-birthdate-${Math.random()}`}
               type="date"
-              value={formData.birthDate}
+              value={formData.birthDate || ''}
               onChange={(e) => onInputChange('birthDate', e.target.value)}
               className="mt-1"
               disabled={disabled}
@@ -117,7 +118,7 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
           </div>
           <div>
             <Label htmlFor="gender">Sexo</Label>
-            <Select value={formData.gender} onValueChange={(value) => onInputChange('gender', value)} disabled={disabled}>
+            <Select value={formData.gender || ''} onValueChange={(value) => onInputChange('gender', value)} disabled={disabled}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Seleccionar sexo" />
               </SelectTrigger>
@@ -133,8 +134,9 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               id="weight"
               name={`animal-weight-${Math.random()}`}
               type="number"
-              value={formData.weight}
+              value={formData.weight || ''}
               onChange={(e) => onInputChange('weight', e.target.value)}
+              placeholder="Ej: 450"
               className="mt-1"
               disabled={disabled}
               autoComplete="off"
@@ -142,7 +144,6 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
               data-1p-ignore="true"
               data-bitwarden-ignore="true"
               data-form-type="other"
-              inputMode="numeric"
             />
           </div>
         </div>
@@ -153,8 +154,9 @@ const BasicInformationForm = ({ formData, onInputChange, disabled = false }: Bas
             id="color"
             name={`animal-color-${Math.random()}`}
             type="text"
-            value={formData.color}
+            value={formData.color || ''}
             onChange={(e) => onInputChange('color', e.target.value)}
+            placeholder="Ej: Negro con manchas blancas"
             className="mt-1"
             disabled={disabled}
             autoComplete="off"

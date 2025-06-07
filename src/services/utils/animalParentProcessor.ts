@@ -40,7 +40,7 @@ export const processParentId = async (parentInput: string | undefined | null): P
     }
   }
   
-  // Search by name or tag
+  // Search by name or tag for registered animals
   console.log(`🔍 Searching by name/tag: "${cleanInput}"`);
   try {
     const { data, error } = await supabase
@@ -51,25 +51,33 @@ export const processParentId = async (parentInput: string | undefined | null): P
       
     if (error) {
       console.error(`❌ Search error:`, error);
-      return null;
+      // Don't return null here - we'll store the name as-is
     }
     
-    if (!data || data.length === 0) {
-      console.log(`❌ No animal found for: "${cleanInput}"`);
-      return null;
+    if (data && data.length > 0) {
+      console.log(`✅ Found registered animal: ${data[0].name} (${data[0].tag}) -> ${data[0].id}`);
+      return data[0].id;
     }
     
-    console.log(`✅ Found animal: ${data[0].name} (${data[0].tag}) -> ${data[0].id}`);
-    return data[0].id;
+    // If no registered animal found, we'll store the name as-is
+    // This allows for unregistered parent names
+    console.log(`ℹ️ No registered animal found for "${cleanInput}", storing as name`);
+    return cleanInput;
   } catch (error) {
     console.error('❌ Search exception:', error);
-    return null;
+    // Still return the original input so the name is preserved
+    return cleanInput;
   }
 };
 
 export const getAnimalNameById = async (animalId: string): Promise<string> => {
-  if (!animalId || !isValidUUID(animalId)) {
+  if (!animalId) {
     return '';
+  }
+
+  // If it's not a UUID, it's probably already a name, so return it
+  if (!isValidUUID(animalId)) {
+    return animalId;
   }
 
   try {
@@ -80,12 +88,13 @@ export const getAnimalNameById = async (animalId: string): Promise<string> => {
       .single();
       
     if (error || !data) {
-      return '';
+      // If we can't find the animal by ID, it might be stored as a name
+      return animalId;
     }
     
-    return data.name && data.tag ? `${data.name} (${data.tag})` : data.name || data.tag || '';
+    return data.name && data.tag ? `${data.name} (${data.tag})` : data.name || data.tag || animalId;
   } catch (error) {
     console.error('❌ Error getting animal name:', error);
-    return '';
+    return animalId;
   }
 };

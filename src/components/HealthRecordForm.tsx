@@ -1,145 +1,124 @@
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { addHealthRecord, HealthRecord } from '@/services/healthRecordService';
-import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
-
-const healthRecordSchema = z.object({
-  animalId: z.string().min(1, 'Selecciona un animal'),
-  recordType: z.enum(['vaccination', 'treatment', 'checkup', 'illness', 'injury', 'medication', 'surgery']),
-  title: z.string().min(1, 'El título es requerido'),
-  description: z.string().optional(),
-  veterinarian: z.string().optional(),
-  medication: z.string().optional(),
-  dosage: z.string().optional(),
-  cost: z.number().min(0).optional(),
-  dateAdministered: z.date({ required_error: 'Selecciona la fecha' }),
-  nextDueDate: z.date().optional(),
-  notes: z.string().optional()
-});
-
-type HealthRecordFormData = z.infer<typeof healthRecordSchema>;
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { addHealthRecord } from '@/services/healthRecordService';
+import { getAllAnimals } from '@/services/animalService';
 
 interface HealthRecordFormProps {
-  onSuccess?: () => void;
-  animalId?: string;
-  initialData?: Partial<HealthRecord>;
+  onSuccess: () => void;
 }
 
-const HealthRecordForm: React.FC<HealthRecordFormProps> = ({ onSuccess, animalId, initialData }) => {
+const HealthRecordForm: React.FC<HealthRecordFormProps> = ({ onSuccess }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [dateAdministeredOpen, setDateAdministeredOpen] = useState(false);
-  const [nextDueDateOpen, setNextDueDateOpen] = useState(false);
+
+  const [formData, setFormData] = useState({
+    animalId: '',
+    recordType: 'vaccination' as const,
+    title: '',
+    description: '',
+    veterinarian: '',
+    medication: '',
+    dosage: '',
+    cost: '',
+    dateAdministered: '',
+    nextDueDate: '',
+    notes: ''
+  });
 
   const { data: animals = [] } = useQuery({
     queryKey: ['animals'],
     queryFn: getAllAnimals
   });
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors }
-  } = useForm<HealthRecordFormData>({
-    resolver: zodResolver(healthRecordSchema),
-    defaultValues: {
-      animalId: animalId || initialData?.animalId,
-      recordType: initialData?.recordType,
-      title: initialData?.title,
-      description: initialData?.description,
-      veterinarian: initialData?.veterinarian,
-      medication: initialData?.medication,
-      dosage: initialData?.dosage,
-      cost: initialData?.cost,
-      dateAdministered: initialData?.dateAdministered ? new Date(initialData.dateAdministered) : undefined,
-      nextDueDate: initialData?.nextDueDate ? new Date(initialData.nextDueDate) : undefined,
-      notes: initialData?.notes
-    }
-  });
-
-  const dateAdministered = watch('dateAdministered');
-  const nextDueDate = watch('nextDueDate');
-
   const createMutation = useMutation({
     mutationFn: addHealthRecord,
-    onSuccess: (success) => {
-      if (success) {
-        toast({
-          title: "Registro de salud creado",
-          description: "El registro se ha guardado exitosamente.",
-        });
-        queryClient.invalidateQueries({ queryKey: ['health-records'] });
-        onSuccess?.();
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo crear el registro de salud.",
-          variant: "destructive",
-        });
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-health-records'] });
+      toast({
+        title: "Registro Creado",
+        description: "El registro de salud ha sido creado exitosamente.",
+      });
+      onSuccess();
+    },
+    onError: (error) => {
+      console.error('Error creating health record:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el registro de salud.",
+        variant: "destructive"
+      });
     }
   });
 
-  const onSubmit = (data: HealthRecordFormData) => {
-    const recordData = {
-      ...data,
-      dateAdministered: data.dateAdministered.toISOString().split('T')[0],
-      nextDueDate: data.nextDueDate?.toISOString().split('T')[0]
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.animalId || !formData.title || !formData.dateAdministered) {
+      toast({
+        title: "Error",
+        description: "Por favor complete los campos requeridos (Animal, Título, Fecha).",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const submitData = {
+      animalId: formData.animalId,
+      recordType: formData.recordType,
+      title: formData.title,
+      description: formData.description || undefined,
+      veterinarian: formData.veterinarian || undefined,
+      medication: formData.medication || undefined,
+      dosage: formData.dosage || undefined,
+      cost: formData.cost ? parseFloat(formData.cost) : undefined,
+      dateAdministered: formData.dateAdministered,
+      nextDueDate: formData.nextDueDate || undefined,
+      notes: formData.notes || undefined
     };
-    createMutation.mutate(recordData);
+
+    createMutation.mutate(submitData);
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Nuevo Registro de Salud</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {!animalId && (
-            <div className="space-y-2">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Información Básica</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="animalId">Animal *</Label>
-              <Select onValueChange={(value) => setValue('animalId', value)}>
+              <Select value={formData.animalId} onValueChange={(value) => handleInputChange('animalId', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un animal" />
+                  <SelectValue placeholder="Seleccionar animal" />
                 </SelectTrigger>
                 <SelectContent>
-                  {animals.map((animal) => (
+                  {animals.map(animal => (
                     <SelectItem key={animal.id} value={animal.id}>
-                      {animal.name} - #{animal.tag}
+                      {animal.name} (#{animal.tag})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.animalId && <p className="text-sm text-red-600">{errors.animalId.message}</p>}
             </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="recordType">Tipo de Registro *</Label>
-              <Select onValueChange={(value) => setValue('recordType', value as any)}>
+            <div>
+              <Label htmlFor="recordType">Tipo de Registro</Label>
+              <Select value={formData.recordType} onValueChange={(value) => handleInputChange('recordType', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona el tipo" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vaccination">Vacunación</SelectItem>
@@ -151,154 +130,135 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({ onSuccess, animalId
                   <SelectItem value="surgery">Cirugía</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.recordType && <p className="text-sm text-red-600">{errors.recordType.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="title">Título *</Label>
-              <Input
-                id="title"
-                {...register('title')}
-                placeholder="Ej: Vacuna antirrábica"
-              />
-              {errors.title && <p className="text-sm text-red-600">{errors.title.message}</p>}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              {...register('description')}
-              placeholder="Descripción detallada del procedimiento..."
-              className="min-h-[80px]"
+          <div>
+            <Label htmlFor="title">Título *</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              placeholder="Ej: Vacuna contra rabia"
+              required
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Fecha de Administración *</Label>
-              <Popover open={dateAdministeredOpen} onOpenChange={setDateAdministeredOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dateAdministered && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateAdministered ? format(dateAdministered, "dd/MM/yyyy", { locale: es }) : "Selecciona fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateAdministered}
-                    onSelect={(date) => {
-                      setValue('dateAdministered', date!);
-                      setDateAdministeredOpen(false);
-                    }}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {errors.dateAdministered && <p className="text-sm text-red-600">{errors.dateAdministered.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Próximo Vencimiento</Label>
-              <Popover open={nextDueDateOpen} onOpenChange={setNextDueDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !nextDueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {nextDueDate ? format(nextDueDate, "dd/MM/yyyy", { locale: es }) : "Selecciona fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={nextDueDate}
-                    onSelect={(date) => {
-                      setValue('nextDueDate', date);
-                      setNextDueDateOpen(false);
-                    }}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div>
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              placeholder="Descripción detallada del procedimiento..."
+              rows={3}
+            />
           </div>
+        </CardContent>
+      </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalles del Tratamiento</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="medication">Medicamento</Label>
               <Input
                 id="medication"
-                {...register('medication')}
+                value={formData.medication}
+                onChange={(e) => handleInputChange('medication', e.target.value)}
                 placeholder="Nombre del medicamento"
               />
             </div>
-
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="dosage">Dosis</Label>
               <Input
                 id="dosage"
-                {...register('dosage')}
-                placeholder="Ej: 5ml cada 12 horas"
+                value={formData.dosage}
+                onChange={(e) => handleInputChange('dosage', e.target.value)}
+                placeholder="Ej: 5ml, 2 pastillas"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="veterinarian">Veterinario</Label>
               <Input
                 id="veterinarian"
-                {...register('veterinarian')}
+                value={formData.veterinarian}
+                onChange={(e) => handleInputChange('veterinarian', e.target.value)}
                 placeholder="Nombre del veterinario"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cost">Costo</Label>
+            <div>
+              <Label htmlFor="cost">Costo ($)</Label>
               <Input
                 id="cost"
                 type="number"
                 step="0.01"
                 min="0"
-                {...register('cost', { valueAsNumber: true })}
+                value={formData.cost}
+                onChange={(e) => handleInputChange('cost', e.target.value)}
                 placeholder="0.00"
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
+      <Card>
+        <CardHeader>
+          <CardTitle>Fechas</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="dateAdministered">Fecha de Administración *</Label>
+              <Input
+                id="dateAdministered"
+                type="date"
+                value={formData.dateAdministered}
+                onChange={(e) => handleInputChange('dateAdministered', e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="nextDueDate">Próxima Fecha Requerida</Label>
+              <Input
+                id="nextDueDate"
+                type="date"
+                value={formData.nextDueDate}
+                onChange={(e) => handleInputChange('nextDueDate', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="notes">Notas Adicionales</Label>
             <Textarea
               id="notes"
-              {...register('notes')}
-              placeholder="Notas adicionales..."
-              className="min-h-[80px]"
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              placeholder="Notas adicionales sobre el tratamiento..."
+              rows={3}
             />
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Guardando...' : 'Guardar Registro'}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="flex space-x-4">
+        <Button
+          type="submit"
+          className="flex-1"
+          disabled={createMutation.isPending}
+        >
+          {createMutation.isPending ? 'Guardando...' : 'Crear Registro'}
+        </Button>
+      </div>
+    </form>
   );
 };
 
