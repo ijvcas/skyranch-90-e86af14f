@@ -38,7 +38,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 type="text"
                 value={formData.motherId || ''}
                 onChange={(e) => onInputChange('motherId', e.target.value)}
-                placeholder="Nombre o etiqueta de la madre"
+                placeholder="Nombre de la madre"
                 className="mt-1"
                 disabled={disabled}
                 autoComplete="off"
@@ -49,7 +49,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 spellCheck="false"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Escribe cualquier nombre, no necesita estar registrado
+                Acepta cualquier nombre (registrado o externo)
               </p>
             </div>
             <div>
@@ -60,7 +60,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 type="text"
                 value={formData.fatherId || ''}
                 onChange={(e) => onInputChange('fatherId', e.target.value)}
-                placeholder="Nombre o etiqueta del padre"
+                placeholder="Nombre del padre"
                 className="mt-1"
                 disabled={disabled}
                 autoComplete="off"
@@ -71,7 +71,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 spellCheck="false"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Escribe cualquier nombre, no necesita estar registrado
+                Acepta cualquier nombre (registrado o externo)
               </p>
             </div>
           </div>
@@ -92,7 +92,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     type="text"
                     value={formData.maternalGrandmotherId || ''}
                     onChange={(e) => onInputChange('maternalGrandmotherId', e.target.value)}
-                    placeholder="Nombre o etiqueta de la abuela materna"
+                    placeholder="Nombre de la abuela materna"
                     className="mt-1"
                     disabled={disabled}
                     autoComplete="off"
@@ -102,7 +102,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                  <p className="text-xs text-gray-500 mt-1">Opcional - cualquier nombre</p>
                 </div>
                 <div>
                   <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
@@ -112,7 +112,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     type="text"
                     value={formData.maternalGrandfatherId || ''}
                     onChange={(e) => onInputChange('maternalGrandfatherId', e.target.value)}
-                    placeholder="Nombre o etiqueta del abuelo materno"
+                    placeholder="Nombre del abuelo materno"
                     className="mt-1"
                     disabled={disabled}
                     autoComplete="off"
@@ -122,7 +122,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                  <p className="text-xs text-gray-500 mt-1">Opcional - cualquier nombre</p>
                 </div>
               </div>
             </div>
@@ -138,7 +138,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     type="text"
                     value={formData.paternalGrandmotherId || ''}
                     onChange={(e) => onInputChange('paternalGrandmotherId', e.target.value)}
-                    placeholder="Nombre o etiqueta de la abuela paterna"
+                    placeholder="Nombre de la abuela paterna"
                     className="mt-1"
                     disabled={disabled}
                     autoComplete="off"
@@ -148,7 +148,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                  <p className="text-xs text-gray-500 mt-1">Opcional - cualquier nombre</p>
                 </div>
                 <div>
                   <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
@@ -158,7 +158,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     type="text"
                     value={formData.paternalGrandfatherId || ''}
                     onChange={(e) => onInputChange('paternalGrandfatherId', e.target.value)}
-                    placeholder="Nombre o etiqueta del abuelo paterno"
+                    placeholder="Nombre del abuelo paterno"
                     className="mt-1"
                     disabled={disabled}
                     autoComplete="off"
@@ -168,7 +168,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                  <p className="text-xs text-gray-500 mt-1">Opcional - cualquier nombre</p>
                 </div>
               </div>
             </div>

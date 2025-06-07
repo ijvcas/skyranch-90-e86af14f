@@ -24,13 +24,27 @@ interface AnimalPedigreeProps {
 const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal, animalNames }) => {
   const navigate = useNavigate();
 
+  // Helper function to check if a string is a valid UUID
+  const isValidUUID = (str: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   const getAnimalName = (id?: string) => {
     if (!id) return null;
-    return animalNames[id] || 'Animal no encontrado';
+    
+    // If it's a UUID, try to get the registered animal name
+    if (isValidUUID(id)) {
+      return animalNames[id] || 'Animal no encontrado';
+    }
+    
+    // If it's not a UUID, it's a text name, so return it as-is
+    return id;
   };
 
   const AnimalCard = ({ id, label, gender }: { id?: string; label: string; gender?: 'male' | 'female' }) => {
     const name = getAnimalName(id);
+    const isRegisteredAnimal = id && isValidUUID(id);
     
     if (!name) {
       return (
@@ -50,7 +64,7 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal, animalName
               <Badge variant={gender === 'male' ? 'default' : 'secondary'} className="text-xs">
                 {gender === 'male' ? '♂' : gender === 'female' ? '♀' : '?'}
               </Badge>
-              {id && (
+              {isRegisteredAnimal && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -63,6 +77,9 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal, animalName
             </div>
             <div className="font-medium text-sm truncate">{name}</div>
             <div className="text-xs text-gray-500">{label}</div>
+            {!isRegisteredAnimal && (
+              <div className="text-xs text-blue-600 mt-1">Externo</div>
+            )}
           </div>
         </CardContent>
       </Card>

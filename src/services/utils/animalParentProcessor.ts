@@ -57,13 +57,14 @@ export const processParentId = async (parentInput: string | undefined | null): P
       return data.id;
     }
     
-    // If no registered animal found, return null since database expects UUID
-    console.log('🔍 No registered animal found, returning null (database expects UUID format)');
-    return null;
+    // CHANGED: Instead of returning null, return the text name as-is
+    // This allows storing any text name for parents not in the system
+    console.log('🔍 No registered animal found, storing text name as-is:', cleanInput);
+    return cleanInput;
   } catch (error) {
-    // Return null to prevent database errors
-    console.log('🔍 Error searching for animal, returning null');
-    return null;
+    // CHANGED: Return the text name instead of null
+    console.log('🔍 Error searching for animal, storing text name as-is:', cleanInput);
+    return cleanInput;
   }
 };
 
@@ -74,9 +75,9 @@ export const getAnimalNameById = async (animalId: string): Promise<string> => {
     return '';
   }
 
-  // If it's not a UUID, it's probably already a name, so return it
+  // If it's not a UUID, it's already a text name, so return it
   if (!isValidUUID(animalId)) {
-    console.log('🔍 Not a UUID, returning as name:', animalId);
+    console.log('🔍 Not a UUID, returning as text name:', animalId);
     return animalId;
   }
 
