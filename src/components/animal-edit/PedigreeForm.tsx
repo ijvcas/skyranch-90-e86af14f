@@ -49,7 +49,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 spellCheck="false"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Escribe el nombre o número de etiqueta de la madre
+                Escribe cualquier nombre, no necesita estar registrado
               </p>
             </div>
             <div>
@@ -71,7 +71,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                 spellCheck="false"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Escribe el nombre o número de etiqueta del padre
+                Escribe cualquier nombre, no necesita estar registrado
               </p>
             </div>
           </div>
@@ -102,6 +102,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
                 </div>
                 <div>
                   <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
@@ -121,6 +122,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
                 </div>
               </div>
             </div>
@@ -146,6 +148,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
                 </div>
                 <div>
                   <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
@@ -165,6 +168,7 @@ const PedigreeForm = ({ formData, onInputChange, disabled = false }: PedigreeFor
                     data-form-type="other"
                     spellCheck="false"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Opcional</p>
                 </div>
               </div>
             </div>

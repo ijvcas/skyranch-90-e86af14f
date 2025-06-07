@@ -38,6 +38,15 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
 };
 
 export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> => {
+  console.log('🔄 Adding animal with parent data:', {
+    motherId: animal.motherId,
+    fatherId: animal.fatherId,
+    maternalGrandmotherId: animal.maternalGrandmotherId,
+    maternalGrandfatherId: animal.maternalGrandfatherId,
+    paternalGrandmotherId: animal.paternalGrandmotherId,
+    paternalGrandfatherId: animal.paternalGrandfatherId
+  });
+
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
@@ -55,6 +64,15 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> =>
     processParentId(animal.paternalGrandfatherId)
   ]);
 
+  console.log('🔄 Processed parent IDs:', {
+    motherId,
+    fatherId,
+    maternalGrandmotherId,
+    maternalGrandfatherId,
+    paternalGrandmotherId,
+    paternalGrandfatherId
+  });
+
   const databaseData = {
     ...mapAnimalToDatabase(animal, user.id),
     mother_id: motherId,
@@ -65,6 +83,8 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> =>
     paternal_grandfather_id: paternalGrandfatherId,
   };
 
+  console.log('🔄 Final database data:', databaseData);
+
   const { error } = await supabase
     .from('animals')
     .insert(databaseData);
@@ -74,10 +94,20 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> =>
     return false;
   }
 
+  console.log('✅ Animal added successfully');
   return true;
 };
 
 export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Promise<boolean> => {
+  console.log('🔄 Updating animal with parent data:', {
+    motherId: animal.motherId,
+    fatherId: animal.fatherId,
+    maternalGrandmotherId: animal.maternalGrandmotherId,
+    maternalGrandfatherId: animal.maternalGrandfatherId,
+    paternalGrandmotherId: animal.paternalGrandmotherId,
+    paternalGrandfatherId: animal.paternalGrandfatherId
+  });
+
   // Process parent and grandparent IDs concurrently for better performance
   const [motherId, fatherId, maternalGrandmotherId, maternalGrandfatherId, paternalGrandmotherId, paternalGrandfatherId] = await Promise.all([
     processParentId(animal.motherId),
@@ -87,6 +117,15 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     processParentId(animal.paternalGrandmotherId),
     processParentId(animal.paternalGrandfatherId)
   ]);
+
+  console.log('🔄 Processed parent IDs for update:', {
+    motherId,
+    fatherId,
+    maternalGrandmotherId,
+    maternalGrandfatherId,
+    paternalGrandmotherId,
+    paternalGrandfatherId
+  });
 
   const updateData = {
     ...createUpdateObject(animal),
@@ -98,6 +137,8 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     paternal_grandfather_id: paternalGrandfatherId,
   };
 
+  console.log('🔄 Final update data:', updateData);
+
   const { error } = await supabase
     .from('animals')
     .update(updateData)
@@ -108,6 +149,7 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     return false;
   }
 
+  console.log('✅ Animal updated successfully');
   return true;
 };
 
