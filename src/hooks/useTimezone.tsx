@@ -10,9 +10,9 @@ interface TimezoneHook {
 
 export const useTimezone = (): TimezoneHook => {
   const [timezone, setTimezoneState] = useState<string>(() => {
-    // Load from localStorage or use default
+    // Load from localStorage or use Madrid as default
     const saved = localStorage.getItem('selectedTimezone');
-    return saved || 'America/Lima';
+    return saved || 'Europe/Madrid';
   });
 
   const setTimezone = (tz: string) => {

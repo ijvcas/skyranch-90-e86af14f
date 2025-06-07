@@ -9,11 +9,11 @@ const TimezoneSettings = () => {
   const { timezone, setTimezone } = useTimezone();
 
   const timezones = [
+    { value: 'Europe/Madrid', label: 'Madrid (UTC+1)' },
     { value: 'America/Lima', label: 'Lima, Peru (UTC-5)' },
     { value: 'America/Mexico_City', label: 'Mexico City (UTC-6)' },
     { value: 'America/New_York', label: 'New York (UTC-5)' },
     { value: 'America/Los_Angeles', label: 'Los Angeles (UTC-8)' },
-    { value: 'Europe/Madrid', label: 'Madrid (UTC+1)' },
     { value: 'Europe/London', label: 'London (UTC+0)' },
     { value: 'Asia/Tokyo', label: 'Tokyo (UTC+9)' },
     { value: 'Australia/Sydney', label: 'Sydney (UTC+10)' },

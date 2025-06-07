@@ -28,7 +28,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
     expectedDueDate: '',
     pregnancyConfirmed: false,
     pregnancyConfirmationDate: '',
-    pregnancyMethod: '',
+    pregnancyMethod: '' as 'visual' | 'ultrasound' | 'blood_test' | 'palpation' | '',
     offspringCount: 0,
     breedingNotes: '',
     veterinarian: '',
