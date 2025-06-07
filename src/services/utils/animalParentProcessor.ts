@@ -32,13 +32,13 @@ export const processParentId = async (parentInput: string | undefined | null): P
         console.log('🔍 UUID exists in database, returning:', cleanInput);
         return cleanInput;
       } else {
-        console.log('🔍 UUID not found in database, returning as text:', cleanInput);
-        return cleanInput; // Return the UUID as text if not found
+        console.log('🔍 UUID not found in database, returning null to avoid database error');
+        return null; // Return null instead of invalid UUID to prevent database errors
       }
     } catch (error) {
       console.error('Error verifying UUID:', error);
-      console.log('🔍 Error verifying UUID, returning as text:', cleanInput);
-      return cleanInput; // Return as text if there's an error
+      console.log('🔍 Error verifying UUID, returning null');
+      return null; // Return null if there's an error
     }
   }
   
@@ -57,13 +57,13 @@ export const processParentId = async (parentInput: string | undefined | null): P
       return data.id;
     }
     
-    // If no registered animal found, store the name as-is
-    console.log('🔍 No registered animal found, storing name as text:', cleanInput);
-    return cleanInput;
+    // If no registered animal found, return null since database expects UUID
+    console.log('🔍 No registered animal found, returning null (database expects UUID format)');
+    return null;
   } catch (error) {
-    // Still return the original input so the name is preserved
-    console.log('🔍 Error searching for animal, storing name as text:', cleanInput);
-    return cleanInput;
+    // Return null to prevent database errors
+    console.log('🔍 Error searching for animal, returning null');
+    return null;
   }
 };
 

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -211,6 +212,7 @@ const Dashboard = () => {
                   species === 'caprino' ? 'bg-red-100 text-red-800' :
                   species === 'porcino' ? 'bg-pink-100 text-pink-800' :
                   species === 'aviar' ? 'bg-orange-100 text-orange-800' :
+                  species === 'canino' ? 'bg-indigo-100 text-indigo-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {species === 'bovino' ? 'Bovinos' :
@@ -219,6 +221,7 @@ const Dashboard = () => {
                    species === 'caprino' ? 'Caprinos' :
                    species === 'porcino' ? 'Porcinos' :
                    species === 'aviar' ? 'Aves' : 
+                   species === 'canino' ? 'Caninos' :
                    species.charAt(0).toUpperCase() + species.slice(1)}
                 </div>
                 <div className="text-2xl md:text-3xl font-bold text-gray-900">{count}</div>
