@@ -1,202 +1,269 @@
 
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
+import { Textarea } from '@/components/ui/textarea';
+import { CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, X } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { addHealthRecord, HealthRecord } from '@/services/healthRecordService';
+import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
 
+const healthRecordSchema = z.object({
+  animalId: z.string().min(1, 'Selecciona un animal'),
+  recordType: z.enum(['vaccination', 'treatment', 'checkup', 'illness', 'injury', 'medication', 'surgery']),
+  title: z.string().min(1, 'El título es requerido'),
+  description: z.string().optional(),
+  veterinarian: z.string().optional(),
+  medication: z.string().optional(),
+  dosage: z.string().optional(),
+  cost: z.number().min(0).optional(),
+  dateAdministered: z.date({ required_error: 'Selecciona la fecha' }),
+  nextDueDate: z.date().optional(),
+  notes: z.string().optional()
+});
+
+type HealthRecordFormData = z.infer<typeof healthRecordSchema>;
+
 interface HealthRecordFormProps {
-  animalId: string;
-  onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  animalId?: string;
+  initialData?: Partial<HealthRecord>;
 }
 
-const HealthRecordForm: React.FC<HealthRecordFormProps> = ({ animalId, onClose, onSuccess }) => {
-  const [formData, setFormData] = useState({
-    recordType: '' as HealthRecord['recordType'] | '',
-    title: '',
-    description: '',
-    veterinarian: '',
-    medication: '',
-    dosage: '',
-    cost: '',
-    dateAdministered: undefined as Date | undefined,
-    nextDueDate: undefined as Date | undefined,
-    notes: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const HealthRecordForm: React.FC<HealthRecordFormProps> = ({ onSuccess, animalId, initialData }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [dateAdministeredOpen, setDateAdministeredOpen] = useState(false);
+  const [nextDueDateOpen, setNextDueDateOpen] = useState(false);
 
-  const recordTypes = [
-    { value: 'vaccination', label: 'Vacunación' },
-    { value: 'treatment', label: 'Tratamiento' },
-    { value: 'checkup', label: 'Revisión' },
-    { value: 'illness', label: 'Enfermedad' },
-    { value: 'injury', label: 'Lesión' },
-    { value: 'medication', label: 'Medicación' },
-    { value: 'surgery', label: 'Cirugía' }
-  ];
+  const { data: animals = [] } = useQuery({
+    queryKey: ['animals'],
+    queryFn: getAllAnimals
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.recordType || !formData.title || !formData.dateAdministered) {
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos requeridos",
-        variant: "destructive"
-      });
-      return;
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors }
+  } = useForm<HealthRecordFormData>({
+    resolver: zodResolver(healthRecordSchema),
+    defaultValues: {
+      animalId: animalId || initialData?.animalId,
+      recordType: initialData?.recordType,
+      title: initialData?.title,
+      description: initialData?.description,
+      veterinarian: initialData?.veterinarian,
+      medication: initialData?.medication,
+      dosage: initialData?.dosage,
+      cost: initialData?.cost,
+      dateAdministered: initialData?.dateAdministered ? new Date(initialData.dateAdministered) : undefined,
+      nextDueDate: initialData?.nextDueDate ? new Date(initialData.nextDueDate) : undefined,
+      notes: initialData?.notes
     }
+  });
 
-    setIsSubmitting(true);
+  const dateAdministered = watch('dateAdministered');
+  const nextDueDate = watch('nextDueDate');
 
-    try {
-      const success = await addHealthRecord({
-        animalId,
-        recordType: formData.recordType,
-        title: formData.title,
-        description: formData.description || undefined,
-        veterinarian: formData.veterinarian || undefined,
-        medication: formData.medication || undefined,
-        dosage: formData.dosage || undefined,
-        cost: formData.cost ? parseFloat(formData.cost) : undefined,
-        dateAdministered: formData.dateAdministered.toISOString().split('T')[0],
-        nextDueDate: formData.nextDueDate ? formData.nextDueDate.toISOString().split('T')[0] : undefined,
-        notes: formData.notes || undefined
-      });
-
+  const createMutation = useMutation({
+    mutationFn: addHealthRecord,
+    onSuccess: (success) => {
       if (success) {
         toast({
-          title: "Éxito",
-          description: "Registro de salud agregado correctamente"
+          title: "Registro de salud creado",
+          description: "El registro se ha guardado exitosamente.",
         });
-        onSuccess();
-        onClose();
+        queryClient.invalidateQueries({ queryKey: ['health-records'] });
+        onSuccess?.();
       } else {
         toast({
           title: "Error",
-          description: "No se pudo agregar el registro de salud",
-          variant: "destructive"
+          description: "No se pudo crear el registro de salud.",
+          variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error('Error adding health record:', error);
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al agregar el registro",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
     }
+  });
+
+  const onSubmit = (data: HealthRecordFormData) => {
+    const recordData = {
+      ...data,
+      dateAdministered: data.dateAdministered.toISOString().split('T')[0],
+      nextDueDate: data.nextDueDate?.toISOString().split('T')[0]
+    };
+    createMutation.mutate(recordData);
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card>
+      <CardHeader>
         <CardTitle>Nuevo Registro de Salud</CardTitle>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <X className="w-4 h-4" />
-        </Button>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {!animalId && (
             <div className="space-y-2">
-              <Label htmlFor="recordType">Tipo de Registro *</Label>
-              <Select value={formData.recordType} onValueChange={(value) => setFormData(prev => ({ ...prev, recordType: value as HealthRecord['recordType'] }))}>
+              <Label htmlFor="animalId">Animal *</Label>
+              <Select onValueChange={(value) => setValue('animalId', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un tipo" />
+                  <SelectValue placeholder="Selecciona un animal" />
                 </SelectTrigger>
                 <SelectContent>
-                  {recordTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                  {animals.map((animal) => (
+                    <SelectItem key={animal.id} value={animal.id}>
+                      {animal.name} - #{animal.tag}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {errors.animalId && <p className="text-sm text-red-600">{errors.animalId.message}</p>}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="recordType">Tipo de Registro *</Label>
+              <Select onValueChange={(value) => setValue('recordType', value as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona el tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vaccination">Vacunación</SelectItem>
+                  <SelectItem value="treatment">Tratamiento</SelectItem>
+                  <SelectItem value="checkup">Revisión</SelectItem>
+                  <SelectItem value="illness">Enfermedad</SelectItem>
+                  <SelectItem value="injury">Lesión</SelectItem>
+                  <SelectItem value="medication">Medicación</SelectItem>
+                  <SelectItem value="surgery">Cirugía</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.recordType && <p className="text-sm text-red-600">{errors.recordType.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="title">Título *</Label>
               <Input
                 id="title"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Ej: Vacuna contra rabia"
-                required
+                {...register('title')}
+                placeholder="Ej: Vacuna antirrábica"
+              />
+              {errors.title && <p className="text-sm text-red-600">{errors.title.message}</p>}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea
+              id="description"
+              {...register('description')}
+              placeholder="Descripción detallada del procedimiento..."
+              className="min-h-[80px]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Fecha de Administración *</Label>
+              <Popover open={dateAdministeredOpen} onOpenChange={setDateAdministeredOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateAdministered && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateAdministered ? format(dateAdministered, "dd/MM/yyyy", { locale: es }) : "Selecciona fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateAdministered}
+                    onSelect={(date) => {
+                      setValue('dateAdministered', date!);
+                      setDateAdministeredOpen(false);
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.dateAdministered && <p className="text-sm text-red-600">{errors.dateAdministered.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Próximo Vencimiento</Label>
+              <Popover open={nextDueDateOpen} onOpenChange={setNextDueDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !nextDueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {nextDueDate ? format(nextDueDate, "dd/MM/yyyy", { locale: es }) : "Selecciona fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={nextDueDate}
+                    onSelect={(date) => {
+                      setValue('nextDueDate', date);
+                      setNextDueDateOpen(false);
+                    }}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="medication">Medicamento</Label>
+              <Input
+                id="medication"
+                {...register('medication')}
+                placeholder="Nombre del medicamento"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Fecha de Administración *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.dateAdministered && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.dateAdministered ? format(formData.dateAdministered, "PPP") : "Selecciona una fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.dateAdministered}
-                    onSelect={(date) => setFormData(prev => ({ ...prev, dateAdministered: date }))}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="dosage">Dosis</Label>
+              <Input
+                id="dosage"
+                {...register('dosage')}
+                placeholder="Ej: 5ml cada 12 horas"
+              />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Próxima Fecha de Vencimiento</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.nextDueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.nextDueDate ? format(formData.nextDueDate, "PPP") : "Selecciona una fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.nextDueDate}
-                    onSelect={(date) => setFormData(prev => ({ ...prev, nextDueDate: date }))}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="veterinarian">Veterinario</Label>
               <Input
                 id="veterinarian"
-                value={formData.veterinarian}
-                onChange={(e) => setFormData(prev => ({ ...prev, veterinarian: e.target.value }))}
+                {...register('veterinarian')}
                 placeholder="Nombre del veterinario"
               />
             </div>
@@ -207,61 +274,26 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({ animalId, onClose, 
                 id="cost"
                 type="number"
                 step="0.01"
-                value={formData.cost}
-                onChange={(e) => setFormData(prev => ({ ...prev, cost: e.target.value }))}
+                min="0"
+                {...register('cost', { valueAsNumber: true })}
                 placeholder="0.00"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="medication">Medicamento</Label>
-              <Input
-                id="medication"
-                value={formData.medication}
-                onChange={(e) => setFormData(prev => ({ ...prev, medication: e.target.value }))}
-                placeholder="Nombre del medicamento"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dosage">Dosis</Label>
-              <Input
-                id="dosage"
-                value={formData.dosage}
-                onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))}
-                placeholder="Ej: 5ml, 2 tabletas"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Descripción del procedimiento o tratamiento"
-              rows={3}
-            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notas</Label>
             <Textarea
               id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Notas adicionales"
-              rows={3}
+              {...register('notes')}
+              placeholder="Notas adicionales..."
+              className="min-h-[80px]"
             />
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Guardando...' : 'Guardar Registro'}
+          <div className="flex justify-end space-x-2">
+            <Button type="submit" disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Guardando...' : 'Guardar Registro'}
             </Button>
           </div>
         </form>

@@ -1,229 +1,150 @@
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, Activity } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAnimal } from '@/services/animalService';
-import { getHealthRecords, deleteHealthRecord } from '@/services/healthRecordService';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, Activity, Calendar, DollarSign, AlertTriangle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getHealthRecords } from '@/services/healthRecordService';
+import { getAllAnimals } from '@/services/animalService';
 import HealthRecordForm from '@/components/HealthRecordForm';
 import HealthRecordsList from '@/components/HealthRecordsList';
-import { useToast } from '@/hooks/use-toast';
 
-const HealthRecords = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
+const HealthRecords: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: animal, isLoading: animalLoading } = useQuery({
-    queryKey: ['animal', id],
-    queryFn: () => getAnimal(id!),
-    enabled: !!id
+  const { data: animals = [] } = useQuery({
+    queryKey: ['animals'],
+    queryFn: getAllAnimals
   });
 
-  const { data: healthRecords = [], isLoading: recordsLoading, refetch } = useQuery({
-    queryKey: ['healthRecords', id],
-    queryFn: () => getHealthRecords(id!),
-    enabled: !!id
-  });
-
-  const handleDeleteRecord = async (recordId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este registro de salud?')) {
-      return;
-    }
-
-    try {
-      const success = await deleteHealthRecord(recordId);
-      if (success) {
-        toast({
-          title: "Éxito",
-          description: "Registro de salud eliminado correctamente"
-        });
-        refetch();
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo eliminar el registro de salud",
-          variant: "destructive"
-        });
+  // Get health records for all animals
+  const healthRecordsQueries = useQuery({
+    queryKey: ['all-health-records'],
+    queryFn: async () => {
+      const allRecords = [];
+      for (const animal of animals) {
+        try {
+          const records = await getHealthRecords(animal.id);
+          allRecords.push(...records);
+        } catch (error) {
+          console.error(`Error fetching health records for animal ${animal.id}:`, error);
+        }
       }
-    } catch (error) {
-      console.error('Error deleting health record:', error);
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al eliminar el registro",
-        variant: "destructive"
-      });
-    }
+      return allRecords.sort((a, b) => new Date(b.dateAdministered).getTime() - new Date(a.dateAdministered).getTime());
+    },
+    enabled: animals.length > 0
+  });
+
+  const allHealthRecords = healthRecordsQueries.data || [];
+
+  const handleFormSuccess = () => {
+    setShowForm(false);
   };
 
-  if (!id) {
-    return null;
-  }
+  // Calculate statistics
+  const totalRecords = allHealthRecords.length;
+  const totalCost = allHealthRecords.reduce((sum, record) => sum + (record.cost || 0), 0);
+  const upcomingVaccinations = allHealthRecords.filter(record => {
+    if (record.recordType !== 'vaccination' || !record.nextDueDate) return false;
+    const dueDate = new Date(record.nextDueDate);
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    return dueDate <= thirtyDaysFromNow && dueDate >= new Date();
+  }).length;
+  
+  const recentRecords = allHealthRecords.filter(record => {
+    const recordDate = new Date(record.dateAdministered);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return recordDate >= thirtyDaysAgo;
+  }).length;
 
-  if (animalLoading) {
+  if (healthRecordsQueries.isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 opacity-5">
-          <img 
-            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="text-lg text-gray-600 relative z-10">Cargando información...</div>
-      </div>
-    );
-  }
-
-  if (!animal) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 opacity-5">
-          <img 
-            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="text-center relative z-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Animal no encontrado</h2>
-          <Button onClick={() => navigate('/animals')}>
-            Volver a Animales
-          </Button>
-        </div>
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4">
-      <div className="absolute inset-0 opacity-5">
-        <img 
-          src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-          alt="" 
-          className="w-full h-full object-cover"
-        />
-      </div>
-      <div className="max-w-6xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="mb-8">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(`/animals/${id}`)}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver a {animal.name}
-          </Button>
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-                <Activity className="w-8 h-8 mr-3 text-green-600" />
-                Registros de Salud
-              </h1>
-              <p className="text-gray-600">
-                Historial médico y veterinario de <span className="font-medium">{animal.name}</span> (#{animal.tag})
-              </p>
-            </div>
-            <Button 
-              onClick={() => setShowForm(true)}
-              className="bg-green-600 hover:bg-green-700 text-white mt-4 md:mt-0"
-            >
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Activity className="w-8 h-8 text-green-500" />
+          <h1 className="text-3xl font-bold">Registros de Salud</h1>
+        </div>
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogTrigger asChild>
+            <Button>
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Registro
             </Button>
-          </div>
-        </div>
-
-        {/* Content */}
-        {showForm ? (
-          <HealthRecordForm
-            animalId={id}
-            onClose={() => setShowForm(false)}
-            onSuccess={() => {
-              refetch();
-              setShowForm(false);
-            }}
-          />
-        ) : (
-          <div className="space-y-6">
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Total Registros</p>
-                      <p className="text-2xl font-bold text-gray-900">{healthRecords.length}</p>
-                    </div>
-                    <Activity className="w-8 h-8 text-green-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Vacunaciones</p>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {healthRecords.filter(r => r.recordType === 'vaccination').length}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Tratamientos</p>
-                      <p className="text-2xl font-bold text-purple-600">
-                        {healthRecords.filter(r => r.recordType === 'treatment').length}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Revisiones</p>
-                      <p className="text-2xl font-bold text-orange-600">
-                        {healthRecords.filter(r => r.recordType === 'checkup').length}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Records List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Historial Médico</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {recordsLoading ? (
-                  <div className="text-center py-8">
-                    <div className="text-gray-600">Cargando registros...</div>
-                  </div>
-                ) : (
-                  <HealthRecordsList
-                    records={healthRecords}
-                    onDelete={handleDeleteRecord}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Registro de Salud</DialogTitle>
+            </DialogHeader>
+            <HealthRecordForm onSuccess={handleFormSuccess} />
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Registros</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalRecords}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Registros Recientes</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{recentRecords}</div>
+            <p className="text-xs text-muted-foreground">Últimos 30 días</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vacunas Próximas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{upcomingVaccinations}</div>
+            <p className="text-xs text-muted-foreground">Próximos 30 días</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Costo Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${totalCost.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Health Records List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Todos los Registros de Salud</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <HealthRecordsList records={allHealthRecords} />
+        </CardContent>
+      </Card>
     </div>
   );
 };

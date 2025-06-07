@@ -1,33 +1,18 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart3 } from 'lucide-react';
 import ReportsDashboard from '@/components/ReportsDashboard';
 
-const Reports = () => {
-  const navigate = useNavigate();
-
+const Reports: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4 pb-24">
-      <div className="absolute inset-0 opacity-5">
-        <img 
-          src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-          alt="" 
-          className="w-full h-full object-cover"
-        />
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      <div className="flex items-center space-x-2">
+        <BarChart3 className="w-8 h-8 text-blue-500" />
+        <h1 className="text-3xl font-bold">Reportes y Análisis</h1>
       </div>
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="mb-8">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/dashboard')}
-            className="mb-4"
-          >
-            ← Volver al Panel
-          </Button>
-        </div>
-        <ReportsDashboard />
-      </div>
+
+      <ReportsDashboard />
     </div>
   );
 };
