@@ -1,86 +1,72 @@
 
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Calendar, Weight, Palette, Users, Activity } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Heart, Calendar, Scale, Palette } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getAnimal } from '@/services/animalService';
+import { getAnimal, getAllAnimals } from '@/services/animalService';
+import { format, differenceInYears, differenceInMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
+import AnimalDeleteDialog from '@/components/AnimalDeleteDialog';
+import AnimalPedigreeChart from '@/components/AnimalPedigreeChart';
 
 const AnimalDetail = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { id } = useParams();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const { data: animal, isLoading, error } = useQuery({
+  const { data: animal, isLoading: isLoadingAnimal } = useQuery({
     queryKey: ['animal', id],
     queryFn: () => getAnimal(id!),
     enabled: !!id,
-    retry: 3,
-    retryDelay: 1000
   });
 
-  console.log('Animal data loaded:', animal);
-
-  // Query for parents using actual IDs from the animal record
-  const { data: mother } = useQuery({
-    queryKey: ['mother', animal?.motherId],
-    queryFn: () => animal?.motherId && animal.motherId.trim() !== '' ? getAnimal(animal.motherId) : null,
-    enabled: !!animal?.motherId && animal.motherId.trim() !== '',
-    retry: 1
+  const { data: allAnimals = [] } = useQuery({
+    queryKey: ['animals', 'all-users'],
+    queryFn: getAllAnimals,
   });
 
-  const { data: father } = useQuery({
-    queryKey: ['father', animal?.fatherId],
-    queryFn: () => animal?.fatherId && animal.fatherId.trim() !== '' ? getAnimal(animal.fatherId) : null,
-    enabled: !!animal?.fatherId && animal.fatherId.trim() !== '',
-    retry: 1
-  });
+  // Create a map of animal IDs to names for the pedigree chart
+  const animalNames = React.useMemo(() => {
+    const nameMap: Record<string, string> = {};
+    allAnimals.forEach(a => {
+      nameMap[a.id] = `${a.name} (${a.tag})`;
+    });
+    return nameMap;
+  }, [allAnimals]);
 
-  // Query grandparents using actual IDs from the animal record
-  const { data: maternalGrandmother } = useQuery({
-    queryKey: ['maternalGrandmother', animal?.maternalGrandmotherId],
-    queryFn: () => animal?.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '' ? getAnimal(animal.maternalGrandmotherId) : null,
-    enabled: !!animal?.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '',
-    retry: 1
-  });
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">ID de animal no válido</div>
+      </div>
+    );
+  }
 
-  const { data: maternalGrandfather } = useQuery({
-    queryKey: ['maternalGrandfather', animal?.maternalGrandfatherId],
-    queryFn: () => animal?.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '' ? getAnimal(animal.maternalGrandfatherId) : null,
-    enabled: !!animal?.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '',
-    retry: 1
-  });
+  if (isLoadingAnimal) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Cargando información del animal...</div>
+      </div>
+    );
+  }
 
-  const { data: paternalGrandmother } = useQuery({
-    queryKey: ['paternalGrandmother', animal?.paternalGrandmotherId],
-    queryFn: () => animal?.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '' ? getAnimal(animal.paternalGrandmotherId) : null,
-    enabled: !!animal?.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '',
-    retry: 1
-  });
-
-  const { data: paternalGrandfather } = useQuery({
-    queryKey: ['paternalGrandfather', animal?.paternalGrandfatherId],
-    queryFn: () => animal?.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '' ? getAnimal(animal.paternalGrandfatherId) : null,
-    enabled: !!animal?.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '',
-    retry: 1
-  });
-
-  const calculateAge = (birthDate: string): string => {
-    if (!birthDate) return 'N/A';
-    const birth = new Date(birthDate);
-    const now = new Date();
-    const years = now.getFullYear() - birth.getFullYear();
-    const months = now.getMonth() - birth.getMonth();
-    
-    if (years > 0) {
-      return `${years} año${years > 1 ? 's' : ''}`;
-    } else if (months > 0) {
-      return `${months} mes${months > 1 ? 'es' : ''}`;
-    } else {
-      return 'Menos de 1 mes';
-    }
-  };
+  if (!animal) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Animal no encontrado</h2>
+          <p className="text-gray-600 mb-6">El animal solicitado no existe o no tienes permisos para verlo.</p>
+          <Button onClick={() => navigate('/animals')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver a la lista
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -133,103 +119,24 @@ const AnimalDetail = () => {
     }
   };
 
-  const PedigreeAnimalCard = ({ animal: pedigreeAnimal, label, level }: { animal: any; label: string; level: number }) => {
-    if (!pedigreeAnimal) {
-      return (
-        <div className={`border-2 border-dashed border-gray-200 rounded-lg p-3 text-center ${level === 1 ? 'h-32' : 'h-24'}`}>
-          <p className="text-xs text-gray-400 font-medium mb-1">{label}</p>
-          <p className="text-xs text-gray-500">No registrado</p>
-        </div>
-      );
+  const calculateAge = (birthDate: string) => {
+    const birth = new Date(birthDate);
+    const now = new Date();
+    const years = differenceInYears(now, birth);
+    const months = differenceInMonths(now, birth) % 12;
+    
+    if (years === 0) {
+      return `${months} mes${months !== 1 ? 'es' : ''}`;
+    } else if (months === 0) {
+      return `${years} año${years !== 1 ? 's' : ''}`;
+    } else {
+      return `${years} año${years !== 1 ? 's' : ''} y ${months} mes${months !== 1 ? 'es' : ''}`;
     }
-
-    return (
-      <div 
-        className={`border border-gray-200 rounded-lg p-3 bg-white hover:shadow-md transition-shadow cursor-pointer ${level === 1 ? 'h-32' : 'h-24'}`}
-        onClick={() => navigate(`/animals/${pedigreeAnimal.id}`)}
-      >
-        <p className="text-xs text-gray-600 font-medium mb-1">{label}</p>
-        <div className="space-y-1">
-          <p className="font-semibold text-sm text-gray-900">{pedigreeAnimal.name}</p>
-          <p className="text-xs text-gray-600">#{pedigreeAnimal.tag}</p>
-          <p className="text-xs text-gray-500">{getSpeciesText(pedigreeAnimal.species)}</p>
-          {pedigreeAnimal.breed && (
-            <p className="text-xs text-gray-500">{pedigreeAnimal.breed}</p>
-          )}
-        </div>
-      </div>
-    );
   };
 
-  if (!id) {
-    return null;
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 opacity-5">
-          <img 
-            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="text-lg text-gray-600 relative z-10">Cargando animal...</div>
-      </div>
-    );
-  }
-
-  if (error || !animal) {
-    console.error('Error loading animal:', error);
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 opacity-5">
-          <img 
-            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="text-center relative z-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Animal no encontrado</h2>
-          <p className="text-gray-600 mb-6">El animal que buscas no existe o hubo un error al cargarlo.</p>
-          <Button onClick={() => navigate('/animals')}>
-            Volver a Animales
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if we should show pedigree - look for actual ID values
-  const hasParents = (animal.motherId && animal.motherId.trim() !== '') || (animal.fatherId && animal.fatherId.trim() !== '');
-  const hasGrandparents = (animal.maternalGrandmotherId && animal.maternalGrandmotherId.trim() !== '') || 
-                         (animal.maternalGrandfatherId && animal.maternalGrandfatherId.trim() !== '') ||
-                         (animal.paternalGrandmotherId && animal.paternalGrandmotherId.trim() !== '') ||
-                         (animal.paternalGrandfatherId && animal.paternalGrandfatherId.trim() !== '');
-
-  console.log('Pedigree display logic:', { 
-    hasParents, 
-    hasGrandparents,
-    motherId: animal.motherId,
-    fatherId: animal.fatherId,
-    maternalGrandmotherId: animal.maternalGrandmotherId,
-    maternalGrandfatherId: animal.maternalGrandfatherId,
-    paternalGrandmotherId: animal.paternalGrandmotherId,
-    paternalGrandfatherId: animal.paternalGrandfatherId
-  });
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4">
-      <div className="absolute inset-0 opacity-5">
-        <img 
-          src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-          alt="" 
-          className="w-full h-full object-cover"
-        />
-      </div>
-      <div className="max-w-6xl mx-auto relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20 md:pb-4">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <Button 
@@ -246,207 +153,190 @@ const AnimalDetail = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {animal.name}
               </h1>
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="text-sm">
-                  #{animal.tag}
-                </Badge>
-                <Badge className={`${getStatusColor(animal.healthStatus)}`}>
-                  {getStatusText(animal.healthStatus)}
-                </Badge>
-              </div>
+              <p className="text-gray-600">ID: #{animal.tag}</p>
             </div>
-            <Button 
-              onClick={() => navigate(`/animals/${id}/edit`)}
-              className="bg-green-600 hover:bg-green-700 text-white mt-4 md:mt-0"
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Editar Animal
-            </Button>
+            <div className="flex gap-2 mt-4 md:mt-0">
+              <Button
+                onClick={() => navigate(`/animals/${animal.id}/edit`)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Editar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Eliminar
+              </Button>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Information */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Photo */}
-            {animal.image && (
-              <Card className="shadow-lg">
-                <CardContent className="p-0">
-                  <img
-                    src={animal.image}
-                    alt={animal.name}
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Basic Information */}
+            {/* Basic Information Card */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-xl text-gray-900">Información Básica</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-red-500" />
+                  Información Básica
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <Users className="w-5 h-5 text-gray-500" />
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-gray-600">Especie</p>
-                      <p className="font-medium">{getSpeciesText(animal.species)}</p>
+                      <label className="text-sm font-medium text-gray-500">Especie</label>
+                      <p className="text-lg font-semibold">{getSpeciesText(animal.species)}</p>
+                    </div>
+                    {animal.breed && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Raza</label>
+                        <p className="text-lg font-semibold">{animal.breed}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Género</label>
+                      <p className="text-lg font-semibold">
+                        {animal.gender === 'macho' ? 'Macho' : animal.gender === 'hembra' ? 'Hembra' : 'No especificado'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Estado de Salud</label>
+                      <div className="mt-1">
+                        <Badge className={`${getStatusColor(animal.healthStatus)}`}>
+                          {getStatusText(animal.healthStatus)}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <p className="text-sm text-gray-600">Raza</p>
-                      <p className="font-medium">{animal.breed || 'No especificada'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Edad</p>
-                      <p className="font-medium">{calculateAge(animal.birthDate)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <p className="text-sm text-gray-600">Sexo</p>
-                      <p className="font-medium">{animal.gender === 'macho' ? 'Macho' : animal.gender === 'hembra' ? 'Hembra' : 'No especificado'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Weight className="w-5 h-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Peso</p>
-                      <p className="font-medium">{animal.weight ? `${animal.weight} kg` : 'No registrado'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Palette className="w-5 h-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Color/Marcas</p>
-                      <p className="font-medium">{animal.color || 'No especificado'}</p>
-                    </div>
+                  
+                  <div className="space-y-4">
+                    {animal.birthDate && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          Fecha de Nacimiento
+                        </label>
+                        <p className="text-lg font-semibold">
+                          {format(new Date(animal.birthDate), 'dd/MM/yyyy', { locale: es })}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Edad: {calculateAge(animal.birthDate)}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {animal.weight && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                          <Scale className="w-4 h-4" />
+                          Peso
+                        </label>
+                        <p className="text-lg font-semibold">{animal.weight} kg</p>
+                      </div>
+                    )}
+                    
+                    {animal.color && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                          <Palette className="w-4 h-4" />
+                          Color
+                        </label>
+                        <p className="text-lg font-semibold">{animal.color}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Pedigree Chart - Show when we have parents or grandparents */}
-            {(hasParents || hasGrandparents) && (
+            {/* Notes Card */}
+            {animal.notes && (
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-xl text-gray-900">Árbol Genealógico</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {/* Current Animal */}
-                    <div className="text-center">
-                      <div className="inline-block border-2 border-blue-500 rounded-lg p-4 bg-blue-50">
-                        <p className="text-sm text-blue-600 font-medium mb-1">Animal Actual</p>
-                        <p className="font-bold text-lg text-blue-900">{animal.name}</p>
-                        <p className="text-sm text-blue-700">#{animal.tag}</p>
-                      </div>
-                    </div>
-
-                    {/* First Generation - Parents */}
-                    {hasParents && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <PedigreeAnimalCard animal={mother} label="Madre" level={1} />
-                        <PedigreeAnimalCard animal={father} label="Padre" level={1} />
-                      </div>
-                    )}
-
-                    {/* Second Generation - Grandparents */}
-                    {hasGrandparents && (
-                      <div className="space-y-4">
-                        <h4 className="text-lg font-semibold text-gray-800 text-center">Abuelos</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <PedigreeAnimalCard animal={maternalGrandmother} label="Abuela Materna" level={2} />
-                          <PedigreeAnimalCard animal={maternalGrandfather} label="Abuelo Materno" level={2} />
-                          <PedigreeAnimalCard animal={paternalGrandmother} label="Abuela Paterna" level={2} />
-                          <PedigreeAnimalCard animal={paternalGrandfather} label="Abuelo Paterno" level={2} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Notes */}
-            {animal.notes && animal.notes.trim() !== '' && (
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-xl text-gray-900">Notas</CardTitle>
+                  <CardTitle>Notas</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-700 whitespace-pre-wrap">{animal.notes}</p>
                 </CardContent>
               </Card>
             )}
+
+            {/* Pedigree Chart */}
+            <AnimalPedigreeChart animal={animal} animalNames={animalNames} />
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - Image and Quick Stats */}
           <div className="space-y-6">
-            {/* Key Stats */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Datos Clave</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">ID:</span>
-                  <span className="font-medium">#{animal.tag}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Fecha de Nacimiento:</span>
-                  <span className="font-medium">
-                    {animal.birthDate ? new Date(animal.birthDate).toLocaleDateString() : 'No registrada'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Registro:</span>
-                  <span className="font-medium">Activo</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Image Card */}
+            {animal.image && (
+              <Card className="shadow-lg">
+                <CardContent className="p-0">
+                  <img
+                    src={animal.image}
+                    alt={animal.name}
+                    className="w-full h-64 object-cover rounded-t-lg"
+                  />
+                  <div className="p-4">
+                    <p className="text-sm text-gray-600 text-center">Foto de {animal.name}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Quick Actions */}
+            {/* Quick Stats Card */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Acciones Rápidas</CardTitle>
+                <CardTitle>Resumen</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={() => navigate(`/animals/${id}/edit`)}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar Información
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate(`/animals/${id}/health`)}
-                >
-                  <Activity className="w-4 h-4 mr-2" />
-                  Registros de Salud
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate('/calendar')}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Ver Calendario
-                </Button>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ID/Tag:</span>
+                    <span className="font-medium">#{animal.tag}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Especie:</span>
+                    <span className="font-medium">{getSpeciesText(animal.species)}</span>
+                  </div>
+                  {animal.birthDate && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Edad:</span>
+                      <span className="font-medium">{calculateAge(animal.birthDate)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Estado:</span>
+                    <Badge className={`${getStatusColor(animal.healthStatus)} text-xs`}>
+                      {getStatusText(animal.healthStatus)}
+                    </Badge>
+                  </div>
+                  {animal.weight && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Peso:</span>
+                      <span className="font-medium">{animal.weight} kg</span>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Delete Dialog */}
+      <AnimalDeleteDialog
+        animalId={animal.id}
+        animalName={animal.name}
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        redirectAfterDelete={true}
+      />
     </div>
   );
 };

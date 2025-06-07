@@ -1,21 +1,32 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, Edit, Eye, RefreshCw } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Eye, RefreshCw, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import AnimalDeleteDialog from '@/components/AnimalDeleteDialog';
 
 const AnimalList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    animalId: string;
+    animalName: string;
+  }>({
+    isOpen: false,
+    animalId: '',
+    animalName: ''
+  });
   
   const { data: animals = [], isLoading, error, refetch } = useQuery({
     queryKey: ['animals', 'all-users'], // Same key as Dashboard
@@ -37,6 +48,14 @@ const AnimalList = () => {
     toast({
       title: "Actualizando lista",
       description: "Recargando todos los animales...",
+    });
+  };
+
+  const handleDeleteClick = (animalId: string, animalName: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      animalId,
+      animalName
     });
   };
 
@@ -321,7 +340,7 @@ const AnimalList = () => {
                       </div>
                     )}
                   </div>
-                  <div className="flex space-x-2 mt-4">
+                  <div className="flex space-x-1 mt-4">
                     <Button
                       variant="outline"
                       size="sm"
@@ -339,6 +358,14 @@ const AnimalList = () => {
                     >
                       <Edit className="w-4 h-4 mr-1" />
                       Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteClick(animal.id, animal.name)}
+                      className="flex-1 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -383,6 +410,14 @@ const AnimalList = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Dialog */}
+      <AnimalDeleteDialog
+        animalId={deleteDialog.animalId}
+        animalName={deleteDialog.animalName}
+        isOpen={deleteDialog.isOpen}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, isOpen: open }))}
+      />
     </div>
   );
 };
