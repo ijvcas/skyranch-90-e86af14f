@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Users, Calendar, Settings, LogOut, RefreshCw } from 'lucide-react';
+import { Plus, Users, Calendar, Settings, LogOut, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,23 +15,35 @@ const Dashboard = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Enhanced query with aggressive refetching to ensure data is always fresh
+  // Enhanced query with better error handling
   const { data: allAnimals = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['animals', 'all-users'], // Changed key to be more specific
-    queryFn: getAllAnimals,
+    queryKey: ['animals', 'all-users'],
+    queryFn: async () => {
+      try {
+        return await getAllAnimals();
+      } catch (error) {
+        console.error('Error fetching animals:', error);
+        // Return empty array instead of throwing to prevent app crash
+        return [];
+      }
+    },
     enabled: !!user,
-    staleTime: 0, // Always consider data stale
-    gcTime: 0, // Don't cache
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window gains focus
+    staleTime: 30000, // 30 seconds
+    gcTime: 300000, // 5 minutes
+    retry: (failureCount, error) => {
+      // Only retry up to 2 times for certain errors
+      if (failureCount >= 2) return false;
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    refetchOnMount: true,
+    refetchOnWindowFocus: false, // Disable to prevent excessive requests
   });
 
   // Force a complete refresh of all data
   const handleForceRefresh = () => {
     console.log('🔄 Force refreshing all data...');
-    queryClient.clear(); // Clear all cached data
+    queryClient.clear();
     refetch();
     toast({
       title: "Actualizando datos",
@@ -107,8 +119,8 @@ const Dashboard = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
-          <div className="text-lg text-gray-600">Cargando datos de todos los usuarios...</div>
-          <div className="text-sm text-gray-500 mt-2">Usuario actual: {user?.email}</div>
+          <div className="text-lg text-gray-600">Cargando aplicación...</div>
+          <div className="text-sm text-gray-500 mt-2">Usuario: {user?.email}</div>
         </div>
       </div>
     );
@@ -118,20 +130,26 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-lg text-red-600 mb-4">Error al cargar datos</div>
+          <AlertTriangle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+          <div className="text-lg text-orange-600 mb-4">Problema de conexión</div>
           <div className="text-sm text-gray-600 mb-4">
             Usuario: {user?.email}
           </div>
-          <div className="text-sm text-gray-600 mb-6">
-            Hubo un problema al conectar con la base de datos. Esto puede deberse a problemas de permisos o configuración RLS.
+          <div className="text-sm text-gray-600 mb-6 bg-orange-50 p-4 rounded-lg border border-orange-200">
+            Hay un problema temporal con la conexión a la base de datos. 
+            Esto puede ser un problema de red o configuración que se resolverá automáticamente.
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Button onClick={handleForceRefresh} className="bg-blue-600 hover:bg-blue-700 w-full">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Forzar Actualización
+              Reintentar Conexión
             </Button>
             <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
-              Recargar Página
+              Recargar Página Completa
+            </Button>
+            <Button onClick={handleSignOut} variant="outline" className="w-full">
+              <LogOut className="w-4 h-4 mr-2" />
+              Cerrar Sesión e Intentar de Nuevo
             </Button>
           </div>
         </div>

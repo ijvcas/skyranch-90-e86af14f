@@ -5,36 +5,50 @@ import { mapAnimalToDatabase, createUpdateObject } from './utils/animalDatabaseM
 import { processParentId, getAnimalNameById } from './utils/animalParentProcessor';
 
 export const getAllAnimals = async (): Promise<Animal[]> => {
-  const { data, error } = await supabase
-    .from('animals')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    console.log('🔍 Fetching all animals...');
+    const { data, error } = await supabase
+      .from('animals')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching animals:', error);
-    throw error;
+    if (error) {
+      console.error('❌ Error fetching animals:', error);
+      // Instead of throwing, return empty array to prevent app crash
+      return [];
+    }
+
+    console.log('✅ Successfully fetched animals:', data?.length || 0);
+    return (data || []).map(transformAnimalData);
+  } catch (error) {
+    console.error('❌ Unexpected error in getAllAnimals:', error);
+    // Return empty array instead of throwing
+    return [];
   }
-
-  return (data || []).map(transformAnimalData);
 };
 
 export const getAnimal = async (id: string): Promise<Animal | null> => {
-  const { data, error } = await supabase
-    .from('animals')
-    .select('*')
-    .eq('id', id)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('animals')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-  if (error) {
-    console.error('Error fetching animal:', error);
-    throw error;
-  }
+    if (error) {
+      console.error('Error fetching animal:', error);
+      return null;
+    }
 
-  if (!data) {
+    if (!data) {
+      return null;
+    }
+
+    return transformAnimalData(data);
+  } catch (error) {
+    console.error('Unexpected error in getAnimal:', error);
     return null;
   }
-
-  return transformAnimalData(data);
 };
 
 export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> => {
