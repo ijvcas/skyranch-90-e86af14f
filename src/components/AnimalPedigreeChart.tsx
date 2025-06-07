@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAnimalNames } from '@/hooks/useAnimalNames';
 
 interface AnimalPedigreeProps {
   animal: {
@@ -18,11 +19,11 @@ interface AnimalPedigreeProps {
     paternalGrandmotherId?: string;
     paternalGrandfatherId?: string;
   };
-  animalNames: Record<string, string>;
 }
 
-const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal, animalNames }) => {
+const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
   const navigate = useNavigate();
+  const { getDisplayName, animalNamesMap } = useAnimalNames();
 
   // Helper function to check if a string is a valid UUID
   const isValidUUID = (str: string) => {
@@ -30,21 +31,9 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal, animalName
     return uuidRegex.test(str);
   };
 
-  const getAnimalName = (id?: string) => {
-    if (!id) return null;
-    
-    // If it's a UUID, try to get the registered animal name
-    if (isValidUUID(id)) {
-      return animalNames[id] || 'Animal no encontrado';
-    }
-    
-    // If it's not a UUID, it's a text name, so return it as-is
-    return id;
-  };
-
   const AnimalCard = ({ id, label, gender }: { id?: string; label: string; gender?: 'male' | 'female' }) => {
-    const name = getAnimalName(id);
-    const isRegisteredAnimal = id && isValidUUID(id);
+    const name = getDisplayName(id);
+    const isRegisteredAnimal = id && isValidUUID(id) && animalNamesMap[id];
     
     if (!name) {
       return (
