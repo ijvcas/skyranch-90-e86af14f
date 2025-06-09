@@ -5,8 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Navigation from "./components/Navigation";
-import MobileNavigation from "./components/MobileNavigation";
+import HeaderWithDropdown from "./components/HeaderWithDropdown";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -35,69 +34,79 @@ function App() {
           <Toaster />
           <BrowserRouter>
             <div className="min-h-screen bg-gray-50">
-              <Navigation />
-              <MobileNavigation />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <Dashboard />
                   </ProtectedRoute>
                 } />
                 <Route path="/animals" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <AnimalList />
                   </ProtectedRoute>
                 } />
                 <Route path="/animals/new" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <AnimalForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/animals/:id" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <AnimalDetail />
                   </ProtectedRoute>
                 } />
                 <Route path="/animals/:id/edit" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <AnimalEdit />
                   </ProtectedRoute>
                 } />
                 <Route path="/lots" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <Lots />
                   </ProtectedRoute>
                 } />
                 <Route path="/breeding" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <Breeding />
                   </ProtectedRoute>
                 } />
                 <Route path="/calendar" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <Calendar />
                   </ProtectedRoute>
                 } />
                 <Route path="/reports" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <Reports />
                   </ProtectedRoute>
                 } />
                 <Route path="/notifications" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <Notifications />
                   </ProtectedRoute>
                 } />
                 <Route path="/health-records" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <HealthRecords />
                   </ProtectedRoute>
                 } />
                 <Route path="/settings" element={
                   <ProtectedRoute>
+                    <HeaderWithDropdown />
                     <Settings />
                   </ProtectedRoute>
                 } />

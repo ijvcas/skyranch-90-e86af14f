@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Users, Calendar, Settings, LogOut, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Plus, Users, Calendar, Settings, LogOut, RefreshCw, AlertTriangle, PlusCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -85,18 +84,12 @@ const Dashboard = () => {
 
   const quickActions = [
     { 
-      title: 'Registrar Animal', 
-      description: 'Añadir nuevo animal a la granja',
-      icon: Plus,
-      action: () => navigate('/animals/new'),
-      color: 'bg-green-600 hover:bg-green-700'
-    },
-    { 
       title: 'Ver Animales', 
       description: 'Gestionar animales existentes',
       icon: Users,
       action: () => navigate('/animals'),
-      color: 'bg-blue-600 hover:bg-blue-700'
+      color: 'bg-blue-600 hover:bg-blue-700',
+      showAddButton: true
     },
     { 
       title: 'Calendario', 
@@ -116,7 +109,7 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center pt-16">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
           <div className="text-lg text-gray-600">Cargando aplicación...</div>
@@ -128,7 +121,7 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center pt-16">
         <div className="text-center max-w-md mx-auto p-6">
           <AlertTriangle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
           <div className="text-lg text-orange-600 mb-4">Problema de conexión</div>
@@ -158,9 +151,9 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pt-20">
       <div className="max-w-7xl mx-auto">
-        {/* Header with user info and logout */}
+        {/* Header with user info and refresh */}
         <div className="mb-8 flex justify-between items-start">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
@@ -188,24 +181,14 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleForceRefresh}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Actualizar
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleSignOut}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Cerrar Sesión
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={handleForceRefresh}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Actualizar
+          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -249,9 +232,9 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {quickActions.map((action, index) => (
-            <Card key={index} className="shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform active:scale-95">
+            <Card key={index} className="shadow-lg hover:shadow-xl transition-all duration-300 relative">
               <CardHeader className="pb-4">
                 <div className={`w-14 h-14 md:w-16 md:h-16 rounded-lg ${action.color} flex items-center justify-center mb-4 shadow-md`}>
                   <action.icon className="w-7 h-7 md:w-8 md:h-8 text-white" />
@@ -262,12 +245,23 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-gray-600 text-base md:text-lg mb-6">{action.description}</p>
-                <Button 
-                  onClick={action.action}
-                  className={`w-full h-12 text-base font-semibold ${action.color} text-white transition-colors duration-200`}
-                >
-                  Acceder
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={action.action}
+                    className={`flex-1 h-12 text-base font-semibold ${action.color} text-white transition-colors duration-200`}
+                  >
+                    Acceder
+                  </Button>
+                  {action.showAddButton && (
+                    <Button
+                      onClick={() => navigate('/animals/new')}
+                      className="h-12 px-4 bg-green-600 hover:bg-green-700 text-white transition-colors duration-200"
+                      title="Agregar nuevo animal"
+                    >
+                      <PlusCircle className="w-5 h-5" />
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
