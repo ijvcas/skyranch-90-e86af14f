@@ -22,7 +22,6 @@ import HealthRecords from "./pages/HealthRecords";
 import Lots from "./pages/Lots";
 import NotFound from "./pages/NotFound";
 import "./App.css";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +31,6 @@ function App() {
       <TooltipProvider>
         <AuthProvider>
           <Toaster />
-          <PWAInstallPrompt />
           <BrowserRouter>
             <div className="min-h-screen bg-gray-50">
               <Routes>
