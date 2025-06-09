@@ -3,15 +3,24 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Heart } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getBreedingRecords } from '@/services/breedingService';
+import { Plus, Heart, Calendar, TrendingUp } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getBreedingRecords, deleteBreedingRecord } from '@/services/breedingService';
 import { getAllAnimals } from '@/services/animalService';
+import { useToast } from '@/hooks/use-toast';
 import BreedingForm from '@/components/BreedingForm';
 import BreedingRecordsList from '@/components/BreedingRecordsList';
+import BreedingEditForm from '@/components/BreedingEditForm';
+import BreedingCalendarView from '@/components/BreedingCalendarView';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Breeding: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [activeTab, setActiveTab] = useState('list');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: breedingRecords = [], isLoading: isLoadingRecords } = useQuery({
     queryKey: ['breeding-records'],
@@ -23,6 +32,25 @@ const Breeding: React.FC = () => {
     queryFn: getAllAnimals
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteBreedingRecord,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['breeding-records'] });
+      toast({
+        title: "Registro Eliminado",
+        description: "El registro de apareamiento ha sido eliminado exitosamente.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting breeding record:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el registro de apareamiento.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Create a map of animal IDs to names for display
   const animalNames = animals.reduce((acc, animal) => {
     acc[animal.id] = animal.name;
@@ -31,6 +59,22 @@ const Breeding: React.FC = () => {
 
   const handleFormSuccess = () => {
     setShowForm(false);
+  };
+
+  const handleEditFormSuccess = () => {
+    setShowEditForm(false);
+    setEditingRecord(null);
+  };
+
+  const handleEdit = (record) => {
+    setEditingRecord(record);
+    setShowEditForm(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este registro de apareamiento?')) {
+      deleteMutation.mutate(id);
+    }
   };
 
   if (isLoadingRecords) {
@@ -113,18 +157,78 @@ const Breeding: React.FC = () => {
         </Card>
       </div>
 
-      {/* Breeding Records List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Registros de Apareamiento</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BreedingRecordsList 
-            records={breedingRecords} 
-            animalNames={animalNames}
-          />
-        </CardContent>
-      </Card>
+      {/* Tabs for different views */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="list">Lista</TabsTrigger>
+          <TabsTrigger value="calendar">Calendario</TabsTrigger>
+          <TabsTrigger value="planning">Planificación</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list">
+          <Card>
+            <CardHeader>
+              <CardTitle>Registros de Apareamiento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BreedingRecordsList 
+                records={breedingRecords} 
+                animalNames={animalNames}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="w-5 h-5" />
+                <span>Vista de Calendario</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BreedingCalendarView 
+                records={breedingRecords}
+                animalNames={animalNames}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="planning">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="w-5 h-5" />
+                <span>Planificación de Apareamientos</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <p className="text-gray-500">Funciones de planificación avanzada próximamente...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditForm} onOpenChange={setShowEditForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Registro de Apareamiento</DialogTitle>
+          </DialogHeader>
+          {editingRecord && (
+            <BreedingEditForm 
+              record={editingRecord}
+              onSuccess={handleEditFormSuccess}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

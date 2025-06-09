@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, Edit, Eye, RefreshCw, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Eye, RefreshCw, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +12,7 @@ import { getAllAnimals } from '@/services/animalService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import AnimalDeleteDialog from '@/components/AnimalDeleteDialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const AnimalList = () => {
   const navigate = useNavigate();
@@ -29,18 +31,17 @@ const AnimalList = () => {
   });
   
   const { data: animals = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['animals', 'all-users'], // Same key as Dashboard
+    queryKey: ['animals', 'all-users'],
     queryFn: getAllAnimals,
     enabled: !!user,
-    staleTime: 0, // Always consider data stale
-    gcTime: 0, // Don't cache
+    staleTime: 0,
+    gcTime: 0,
     retry: 3,
     retryDelay: 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
 
-  // Force refresh function
   const handleForceRefresh = () => {
     console.log('🔄 Force refreshing animal list...');
     queryClient.clear();
@@ -62,17 +63,48 @@ const AnimalList = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedSpecies, setSelectedSpecies] = React.useState('all');
   const [selectedStatus, setSelectedStatus] = React.useState('all');
+  const [collapsedSpecies, setCollapsedSpecies] = React.useState<Set<string>>(new Set());
 
-  const filteredAnimals = animals.filter(animal => {
-    const matchesSearch = 
-      animal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      animal.tag.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSpecies = selectedSpecies === 'all' || animal.species === selectedSpecies;
-    const matchesStatus = selectedStatus === 'all' || animal.healthStatus === selectedStatus;
-    
-    return matchesSearch && matchesSpecies && matchesStatus;
-  });
+  // Group and sort animals by species
+  const groupedAnimals = React.useMemo(() => {
+    const filtered = animals.filter(animal => {
+      const matchesSearch = 
+        animal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        animal.tag.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesSpecies = selectedSpecies === 'all' || animal.species === selectedSpecies;
+      const matchesStatus = selectedStatus === 'all' || animal.healthStatus === selectedStatus;
+      
+      return matchesSearch && matchesSpecies && matchesStatus;
+    });
+
+    // Group by species
+    const grouped = filtered.reduce((acc, animal) => {
+      const species = animal.species || 'otros';
+      if (!acc[species]) {
+        acc[species] = [];
+      }
+      acc[species].push(animal);
+      return acc;
+    }, {} as Record<string, typeof animals>);
+
+    // Sort animals within each species by name
+    Object.keys(grouped).forEach(species => {
+      grouped[species].sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    return grouped;
+  }, [animals, searchTerm, selectedSpecies, selectedStatus]);
+
+  const toggleSpeciesCollapse = (species: string) => {
+    const newCollapsed = new Set(collapsedSpecies);
+    if (newCollapsed.has(species)) {
+      newCollapsed.delete(species);
+    } else {
+      newCollapsed.add(species);
+    }
+    setCollapsedSpecies(newCollapsed);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -82,6 +114,10 @@ const AnimalList = () => {
         return 'bg-red-100 text-red-800';
       case 'pregnant':
         return 'bg-blue-100 text-blue-800';
+      case 'pregnant-healthy':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'pregnant-sick':
+        return 'bg-orange-100 text-orange-800';
       case 'treatment':
         return 'bg-yellow-100 text-yellow-800';
       default:
@@ -97,6 +133,10 @@ const AnimalList = () => {
         return 'Enfermo';
       case 'pregnant':
         return 'Gestante';
+      case 'pregnant-healthy':
+        return 'Gestante Saludable';
+      case 'pregnant-sick':
+        return 'Gestante Enferma';
       case 'treatment':
         return 'En Tratamiento';
       default:
@@ -189,7 +229,7 @@ const AnimalList = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Todos los Animales</h1>
               <p className="text-gray-600">
-                Gestiona y visualiza todos los animales del sistema
+                Gestiona y visualiza todos los animales del sistema agrupados por especie
               </p>
               <div className="text-sm text-gray-500 mt-1">
                 Usuario: {user?.email} | Total: {animals.length} animales
@@ -254,6 +294,8 @@ const AnimalList = () => {
                       <SelectItem value="healthy">Saludable</SelectItem>
                       <SelectItem value="sick">Enfermo</SelectItem>
                       <SelectItem value="pregnant">Gestante</SelectItem>
+                      <SelectItem value="pregnant-healthy">Gestante Saludable</SelectItem>
+                      <SelectItem value="pregnant-sick">Gestante Enferma</SelectItem>
                       <SelectItem value="treatment">En Tratamiento</SelectItem>
                     </SelectContent>
                   </Select>
@@ -263,8 +305,8 @@ const AnimalList = () => {
           </Card>
         </div>
 
-        {/* Animals Grid */}
-        {filteredAnimals.length === 0 ? (
+        {/* Animals by Species */}
+        {Object.keys(groupedAnimals).length === 0 ? (
           <div className="text-center py-12">
             <h3 className="text-xl font-semibold text-gray-700 mb-2">No se encontraron animales</h3>
             <p className="text-gray-500 mb-6">
@@ -292,91 +334,121 @@ const AnimalList = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAnimals.map((animal) => (
-              <Card key={animal.id} className="shadow-lg hover:shadow-xl transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg text-gray-900">{animal.name}</CardTitle>
-                      <p className="text-sm text-gray-600">#{animal.tag}</p>
-                    </div>
-                    <Badge className={`${getStatusColor(animal.healthStatus)}`}>
-                      {getStatusText(animal.healthStatus)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {animal.image && (
-                    <div className="mb-4">
-                      <img
-                        src={animal.image}
-                        alt={animal.name}
-                        className="w-full h-32 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Especie:</span>
-                      <span className="font-medium">{getSpeciesText(animal.species)}</span>
-                    </div>
-                    {animal.breed && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Raza:</span>
-                        <span className="font-medium">{animal.breed}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Sexo:</span>
-                      <span className="font-medium">
-                        {animal.gender === 'macho' ? 'Macho' : animal.gender === 'hembra' ? 'Hembra' : 'No especificado'}
-                      </span>
-                    </div>
-                    {animal.weight && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Peso:</span>
-                        <span className="font-medium">{animal.weight} kg</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex space-x-1 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/animals/${animal.id}`)}
-                      className="flex-1"
+          <div className="space-y-6">
+            {Object.entries(groupedAnimals)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([species, speciesAnimals]) => (
+                <Card key={species} className="shadow-lg">
+                  <Collapsible>
+                    <CollapsibleTrigger
+                      onClick={() => toggleSpeciesCollapse(species)}
+                      className="w-full"
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/animals/${animal.id}/edit`)}
-                      className="flex-1"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(animal.id, animal.name)}
-                      className="flex-1 text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <CardHeader className="hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-xl flex items-center space-x-2">
+                            {collapsedSpecies.has(species) ? (
+                              <ChevronRight className="w-5 h-5" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5" />
+                            )}
+                            <span>{getSpeciesText(species)}</span>
+                            <Badge variant="secondary" className="ml-2">
+                              {speciesAnimals.length}
+                            </Badge>
+                          </CardTitle>
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {speciesAnimals.map((animal) => (
+                            <Card key={animal.id} className="shadow hover:shadow-lg transition-shadow">
+                              <CardHeader className="pb-3">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <CardTitle className="text-lg text-gray-900">{animal.name}</CardTitle>
+                                    <p className="text-sm text-gray-600">#{animal.tag}</p>
+                                  </div>
+                                  <Badge className={`${getStatusColor(animal.healthStatus)}`}>
+                                    {getStatusText(animal.healthStatus)}
+                                  </Badge>
+                                </div>
+                              </CardHeader>
+                              <CardContent>
+                                {animal.image && (
+                                  <div className="mb-4">
+                                    <img
+                                      src={animal.image}
+                                      alt={animal.name}
+                                      className="w-full h-32 object-cover rounded-lg"
+                                    />
+                                  </div>
+                                )}
+                                <div className="space-y-2">
+                                  {animal.breed && (
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">Raza:</span>
+                                      <span className="font-medium">{animal.breed}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Sexo:</span>
+                                    <span className="font-medium">
+                                      {animal.gender === 'macho' ? 'Macho' : animal.gender === 'hembra' ? 'Hembra' : 'No especificado'}
+                                    </span>
+                                  </div>
+                                  {animal.weight && (
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">Peso:</span>
+                                      <span className="font-medium">{animal.weight} kg</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex space-x-1 mt-4">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/animals/${animal.id}`)}
+                                    className="flex-1"
+                                  >
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    Ver
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/animals/${animal.id}/edit`)}
+                                    className="flex-1"
+                                  >
+                                    <Edit className="w-4 h-4 mr-1" />
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDeleteClick(animal.id, animal.name)}
+                                    className="flex-1 text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              ))}
           </div>
         )}
 
         {/* Summary Stats */}
         {animals.length > 0 && (
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card className="shadow-lg">
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-gray-900">{animals.length}</div>
@@ -393,18 +465,26 @@ const AnimalList = () => {
             </Card>
             <Card className="shadow-lg">
               <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {animals.filter(a => a.healthStatus === 'pregnant' || a.healthStatus === 'pregnant-healthy' || a.healthStatus === 'pregnant-sick').length}
+                </div>
+                <div className="text-sm text-gray-600">Gestantes</div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg">
+              <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-red-600">
-                  {animals.filter(a => a.healthStatus === 'sick').length}
+                  {animals.filter(a => a.healthStatus === 'sick' || a.healthStatus === 'pregnant-sick').length}
                 </div>
                 <div className="text-sm text-gray-600">Enfermos</div>
               </CardContent>
             </Card>
             <Card className="shadow-lg">
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {animals.filter(a => a.healthStatus === 'pregnant').length}
+                <div className="text-2xl font-bold text-yellow-600">
+                  {animals.filter(a => a.healthStatus === 'treatment').length}
                 </div>
-                <div className="text-sm text-gray-600">Gestantes</div>
+                <div className="text-sm text-gray-600">En Tratamiento</div>
               </CardContent>
             </Card>
           </div>
