@@ -118,22 +118,7 @@ export type Database = {
           user_id?: string
           weight?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "animals_father_id_fkey"
-            columns: ["father_id"]
-            isOneToOne: false
-            referencedRelation: "animals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "animals_mother_id_fkey"
-            columns: ["mother_id"]
-            isOneToOne: false
-            referencedRelation: "animals"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       app_users: {
         Row: {
