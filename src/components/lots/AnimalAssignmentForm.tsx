@@ -27,8 +27,8 @@ const AnimalAssignmentForm = ({ lotId, onClose }: AnimalAssignmentFormProps) => 
     loadAnimals();
   }, [loadAnimals]);
 
-  // Filter animals that are not currently assigned to any lot
-  const availableAnimals = animals.filter(animal => !animal.currentLotId);
+  // Filter animals that are not currently assigned to any lot (using correct property name)
+  const availableAnimals = animals.filter(animal => !animal.current_lot_id);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

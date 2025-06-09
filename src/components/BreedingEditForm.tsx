@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,7 +85,7 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
       pregnancyConfirmed: formData.pregnancyConfirmed,
       pregnancyConfirmationDate: formData.pregnancyConfirmationDate || undefined,
       pregnancyMethod: formData.pregnancyMethod || undefined,
-      gestationLength: formData.gestationLength ? parseInt(formData.gestationLength) : undefined,
+      gestationLength: formData.gestationLength ? parseInt(formData.gestationLength.toString()) : undefined,
       offspringCount: formData.offspringCount,
       breedingNotes: formData.breedingNotes || undefined,
       veterinarian: formData.veterinarian || undefined,

@@ -21,6 +21,7 @@ export interface Animal {
   healthStatus: string;
   notes: string;
   image: string | null;
+  current_lot_id?: string; // Added to match database schema
 }
 
 interface AnimalStore {

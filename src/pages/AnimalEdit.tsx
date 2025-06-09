@@ -87,8 +87,10 @@ const AnimalEdit = () => {
           />
 
           <HealthStatusForm
-            formData={formData}
-            onInputChange={handleInputChange}
+            healthStatus={formData.healthStatus}
+            notes={formData.notes}
+            onHealthStatusChange={(value) => handleInputChange('healthStatus', value)}
+            onNotesChange={(value) => handleInputChange('notes', value)}
             disabled={updateMutation.isPending}
           />
 
