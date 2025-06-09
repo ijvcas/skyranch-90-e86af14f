@@ -1,0 +1,185 @@
+
+import { create } from 'zustand';
+import { getAllLots, getLot, addLot, updateLot, deleteLot, assignAnimalToLot, removeAnimalFromLot, getLotAssignments, createRotation } from '@/services/lotService';
+
+export interface Lot {
+  id: string;
+  name: string;
+  description?: string;
+  sizeHectares?: number;
+  capacity?: number;
+  grassType?: string;
+  locationCoordinates?: string;
+  status: string;
+  lastRotationDate?: string;
+  nextRotationDate?: string;
+  grassCondition: string;
+  currentAnimals?: number;
+}
+
+export interface LotAssignment {
+  id: string;
+  animalId: string;
+  lotId: string;
+  assignedDate: string;
+  removedDate?: string;
+  assignmentReason?: string;
+  notes?: string;
+  animalName?: string;
+  animalTag?: string;
+}
+
+export interface LotRotation {
+  id: string;
+  lotId: string;
+  rotationDate: string;
+  fromLotId?: string;
+  rotationType: string;
+  reason?: string;
+  animalsMoved: number;
+  notes?: string;
+}
+
+interface LotStore {
+  lots: Lot[];
+  assignments: LotAssignment[];
+  rotations: LotRotation[];
+  isLoading: boolean;
+  selectedLot: Lot | null;
+  
+  // Lot management
+  loadLots: () => Promise<void>;
+  addLot: (lot: Omit<Lot, 'id'>) => Promise<boolean>;
+  updateLot: (id: string, lot: Omit<Lot, 'id'>) => Promise<boolean>;
+  deleteLot: (id: string) => Promise<boolean>;
+  setSelectedLot: (lot: Lot | null) => void;
+  
+  // Animal assignments
+  loadAssignments: (lotId?: string) => Promise<void>;
+  assignAnimal: (animalId: string, lotId: string, reason?: string, notes?: string) => Promise<boolean>;
+  removeAnimal: (animalId: string, lotId: string) => Promise<boolean>;
+  
+  // Rotations
+  loadRotations: (lotId?: string) => Promise<void>;
+  createRotation: (rotation: Omit<LotRotation, 'id'>) => Promise<boolean>;
+}
+
+export const useLotStore = create<LotStore>((set, get) => ({
+  lots: [],
+  assignments: [],
+  rotations: [],
+  isLoading: false,
+  selectedLot: null,
+
+  loadLots: async () => {
+    set({ isLoading: true });
+    try {
+      const lots = await getAllLots();
+      set({ lots, isLoading: false });
+    } catch (error) {
+      console.error('Error loading lots:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  addLot: async (lot) => {
+    try {
+      const success = await addLot(lot);
+      if (success) {
+        await get().loadLots();
+      }
+      return success;
+    } catch (error) {
+      console.error('Error adding lot:', error);
+      return false;
+    }
+  },
+
+  updateLot: async (id, lot) => {
+    try {
+      const success = await updateLot(id, lot);
+      if (success) {
+        await get().loadLots();
+      }
+      return success;
+    } catch (error) {
+      console.error('Error updating lot:', error);
+      return false;
+    }
+  },
+
+  deleteLot: async (id) => {
+    try {
+      const success = await deleteLot(id);
+      if (success) {
+        await get().loadLots();
+      }
+      return success;
+    } catch (error) {
+      console.error('Error deleting lot:', error);
+      return false;
+    }
+  },
+
+  setSelectedLot: (lot) => set({ selectedLot: lot }),
+
+  loadAssignments: async (lotId) => {
+    try {
+      const assignments = await getLotAssignments(lotId);
+      set({ assignments });
+    } catch (error) {
+      console.error('Error loading assignments:', error);
+    }
+  },
+
+  assignAnimal: async (animalId, lotId, reason, notes) => {
+    try {
+      const success = await assignAnimalToLot(animalId, lotId, reason, notes);
+      if (success) {
+        await get().loadAssignments();
+        await get().loadLots();
+      }
+      return success;
+    } catch (error) {
+      console.error('Error assigning animal:', error);
+      return false;
+    }
+  },
+
+  removeAnimal: async (animalId, lotId) => {
+    try {
+      const success = await removeAnimalFromLot(animalId, lotId);
+      if (success) {
+        await get().loadAssignments();
+        await get().loadLots();
+      }
+      return success;
+    } catch (error) {
+      console.error('Error removing animal:', error);
+      return false;
+    }
+  },
+
+  loadRotations: async (lotId) => {
+    try {
+      // Implementation will be added when rotation service is complete
+      set({ rotations: [] });
+    } catch (error) {
+      console.error('Error loading rotations:', error);
+    }
+  },
+
+  createRotation: async (rotation) => {
+    try {
+      const success = await createRotation(rotation);
+      if (success) {
+        await get().loadRotations();
+        await get().loadLots();
+      }
+      return success;
+    } catch (error) {
+      console.error('Error creating rotation:', error);
+      return false;
+    }
+  },
+}));

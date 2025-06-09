@@ -1,58 +1,42 @@
 
-import React, { useMemo } from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Navigation from "./components/Navigation";
+import MobileNavigation from "./components/MobileNavigation";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AnimalList from "./pages/AnimalList";
-import AnimalForm from "./pages/AnimalForm";
 import AnimalDetail from "./pages/AnimalDetail";
+import AnimalForm from "./pages/AnimalForm";
 import AnimalEdit from "./pages/AnimalEdit";
-import HealthRecords from "./pages/HealthRecords";
 import Breeding from "./pages/Breeding";
 import Calendar from "./pages/Calendar";
-import Settings from "./pages/Settings";
-import Navigation from "./components/Navigation";
-import MobileNavigation from "./components/MobileNavigation";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import NotFound from "./pages/NotFound";
 import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
-import { useIsMobile } from "./hooks/use-mobile";
+import HealthRecords from "./pages/HealthRecords";
+import Lots from "./pages/Lots";
+import NotFound from "./pages/NotFound";
+import "./App.css";
 
-// Create QueryClient with optimized settings
-const createQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
-const App = () => {
-  const isMobile = useIsMobile();
-  
-  // Memoize queryClient to prevent recreation on every render
-  const queryClient = useMemo(() => createQueryClient(), []);
-
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <div className="relative">
+        <AuthProvider>
+          <Toaster />
+          <BrowserRouter>
+            <div className="min-h-screen bg-gray-50">
+              <Navigation />
+              <MobileNavigation />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
@@ -82,9 +66,9 @@ const App = () => {
                     <AnimalEdit />
                   </ProtectedRoute>
                 } />
-                <Route path="/animals/:id/health" element={
+                <Route path="/lots" element={
                   <ProtectedRoute>
-                    <HealthRecords />
+                    <Lots />
                   </ProtectedRoute>
                 } />
                 <Route path="/breeding" element={
@@ -97,9 +81,19 @@ const App = () => {
                     <Calendar />
                   </ProtectedRoute>
                 } />
+                <Route path="/reports" element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                } />
                 <Route path="/notifications" element={
                   <ProtectedRoute>
                     <Notifications />
+                  </ProtectedRoute>
+                } />
+                <Route path="/health-records" element={
+                  <ProtectedRoute>
+                    <HealthRecords />
                   </ProtectedRoute>
                 } />
                 <Route path="/settings" element={
@@ -107,25 +101,14 @@ const App = () => {
                     <Settings />
                   </ProtectedRoute>
                 } />
-                <Route path="/reports" element={
-                  <ProtectedRoute>
-                    <Reports />
-                  </ProtectedRoute>
-                } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              
-              {/* Use mobile navigation on mobile devices, regular navigation on desktop */}
-              {isMobile ? <MobileNavigation /> : <Navigation />}
-              
-              {/* PWA Install Prompt */}
-              <PWAInstallPrompt />
             </div>
-          </AuthProvider>
-        </BrowserRouter>
+          </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

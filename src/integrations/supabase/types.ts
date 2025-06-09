@@ -48,12 +48,64 @@ export type Database = {
         }
         Relationships: []
       }
+      animal_lot_assignments: {
+        Row: {
+          animal_id: string
+          assigned_date: string
+          assignment_reason: string | null
+          created_at: string
+          id: string
+          lot_id: string
+          notes: string | null
+          removed_date: string | null
+          user_id: string
+        }
+        Insert: {
+          animal_id: string
+          assigned_date?: string
+          assignment_reason?: string | null
+          created_at?: string
+          id?: string
+          lot_id: string
+          notes?: string | null
+          removed_date?: string | null
+          user_id: string
+        }
+        Update: {
+          animal_id?: string
+          assigned_date?: string
+          assignment_reason?: string | null
+          created_at?: string
+          id?: string
+          lot_id?: string
+          notes?: string | null
+          removed_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animal_lot_assignments_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_lot_assignments_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       animals: {
         Row: {
           birth_date: string | null
           breed: string | null
           color: string | null
           created_at: string | null
+          current_lot_id: string | null
           father_id: string | null
           gender: string | null
           health_status: string | null
@@ -77,6 +129,7 @@ export type Database = {
           breed?: string | null
           color?: string | null
           created_at?: string | null
+          current_lot_id?: string | null
           father_id?: string | null
           gender?: string | null
           health_status?: string | null
@@ -100,6 +153,7 @@ export type Database = {
           breed?: string | null
           color?: string | null
           created_at?: string | null
+          current_lot_id?: string | null
           father_id?: string | null
           gender?: string | null
           health_status?: string | null
@@ -118,7 +172,15 @@ export type Database = {
           user_id?: string
           weight?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "animals_current_lot_id_fkey"
+            columns: ["current_lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       app_users: {
         Row: {
@@ -358,6 +420,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lot_rotations: {
+        Row: {
+          animals_moved: number | null
+          created_at: string
+          from_lot_id: string | null
+          id: string
+          lot_id: string
+          notes: string | null
+          reason: string | null
+          rotation_date: string
+          rotation_type: string
+          user_id: string
+        }
+        Insert: {
+          animals_moved?: number | null
+          created_at?: string
+          from_lot_id?: string | null
+          id?: string
+          lot_id: string
+          notes?: string | null
+          reason?: string | null
+          rotation_date: string
+          rotation_type?: string
+          user_id: string
+        }
+        Update: {
+          animals_moved?: number | null
+          created_at?: string
+          from_lot_id?: string | null
+          id?: string
+          lot_id?: string
+          notes?: string | null
+          reason?: string | null
+          rotation_date?: string
+          rotation_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lot_rotations_from_lot_id_fkey"
+            columns: ["from_lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lot_rotations_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lots: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          grass_condition: string | null
+          grass_type: string | null
+          id: string
+          last_rotation_date: string | null
+          location_coordinates: string | null
+          name: string
+          next_rotation_date: string | null
+          size_hectares: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          grass_condition?: string | null
+          grass_type?: string | null
+          id?: string
+          last_rotation_date?: string | null
+          location_coordinates?: string | null
+          name: string
+          next_rotation_date?: string | null
+          size_hectares?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          grass_condition?: string | null
+          grass_type?: string | null
+          id?: string
+          last_rotation_date?: string | null
+          location_coordinates?: string | null
+          name?: string
+          next_rotation_date?: string | null
+          size_hectares?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       offspring: {
         Row: {

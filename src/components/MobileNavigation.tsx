@@ -9,7 +9,8 @@ import {
   PlusCircle,
   FileText,
   Heart,
-  Bell
+  Bell,
+  MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NotificationBell from './NotificationBell';
@@ -18,9 +19,9 @@ const MobileNavigation = () => {
   const navItems = [
     { to: '/dashboard', icon: Home, label: 'Panel' },
     { to: '/animals', icon: Users, label: 'Animales' },
+    { to: '/lots', icon: MapPin, label: 'Lotes' },
     { to: '/breeding', icon: Heart, label: 'Reproducción' },
     { to: '/calendar', icon: Calendar, label: 'Calendario' },
-    { to: '/reports', icon: FileText, label: 'Reportes' },
   ];
 
   return (
