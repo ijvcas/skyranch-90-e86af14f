@@ -63,7 +63,7 @@ const HeaderWithDropdown = () => {
                   className="h-10 w-10 flex-shrink-0"
                 />
                 <div className="flex items-center">
-                  <span className="text-xl font-bold text-gray-900 whitespace-nowrap">SkyRanch</span>
+                  <span className="text-2xl font-bold text-gray-900 whitespace-nowrap uppercase">SKYRANCH</span>
                   <ChevronDown className="w-4 h-4 ml-2 text-gray-600" />
                 </div>
               </Button>
