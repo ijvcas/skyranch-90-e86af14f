@@ -23,6 +23,8 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   const [showLabels, setShowLabels] = useState(true);
   const [tempApiKey, setTempApiKey] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedLot, setSelectedLot] = useState<string | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const {
     mapContainer,
@@ -68,6 +70,51 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     } else {
       document.exitFullscreen();
     }
+  };
+
+  // Wrapper functions that match PolygonDrawer's expected signatures
+  const handleStartDrawing = () => {
+    if (selectedLot) {
+      console.log('Starting drawing for lot:', selectedLot);
+      setIsDrawing(true);
+      startDrawingPolygon(selectedLot);
+    } else {
+      console.log('No lot selected for drawing');
+    }
+  };
+
+  const handleSavePolygon = () => {
+    if (selectedLot) {
+      console.log('Saving polygon for lot:', selectedLot);
+      saveCurrentPolygon(selectedLot);
+      setIsDrawing(false);
+    } else {
+      console.log('No lot selected for saving');
+    }
+  };
+
+  const handleDeletePolygon = () => {
+    if (selectedLot) {
+      console.log('Deleting polygon for lot:', selectedLot);
+      deletePolygonForLot(selectedLot);
+    } else {
+      console.log('No lot selected for deletion');
+    }
+  };
+
+  const handleColorChange = (color: string) => {
+    if (selectedLot) {
+      console.log('Changing color for lot:', selectedLot, 'to:', color);
+      setPolygonColor(selectedLot, color);
+    } else {
+      console.log('No lot selected for color change');
+    }
+  };
+
+  const handleLotSelection = (lotId: string) => {
+    console.log('Lot selected:', lotId);
+    setSelectedLot(lotId);
+    onLotSelect(lotId);
   };
 
   if (showApiKeyInput) {
@@ -183,10 +230,13 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       {(showControls || isFullscreen) && (
         <PolygonDrawer
           lots={lots}
-          onStartDrawing={startDrawingPolygon}
-          onSavePolygon={saveCurrentPolygon}
-          onDeletePolygon={deletePolygonForLot}
-          onColorChange={setPolygonColor}
+          selectedLot={selectedLot}
+          isDrawing={isDrawing}
+          onLotSelect={handleLotSelection}
+          onStartDrawing={handleStartDrawing}
+          onSavePolygon={handleSavePolygon}
+          onDeletePolygon={handleDeletePolygon}
+          onColorChange={handleColorChange}
           isFullscreen={isFullscreen}
         />
       )}
