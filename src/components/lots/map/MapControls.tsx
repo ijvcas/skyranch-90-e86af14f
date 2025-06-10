@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, X, Eye, EyeOff } from 'lucide-react';
+import { Settings, X, Eye, EyeOff, Compass, RotateCcw } from 'lucide-react';
 
 interface MapControlsProps {
   showControls: boolean;
@@ -10,6 +10,8 @@ interface MapControlsProps {
   showLabels: boolean;
   onTogglePolygons: () => void;
   onToggleLabels: () => void;
+  onResetRotation?: () => void;
+  mapRotation?: number;
 }
 
 export const MapControls = ({
@@ -18,15 +20,17 @@ export const MapControls = ({
   showPolygons,
   showLabels,
   onTogglePolygons,
-  onToggleLabels
+  onToggleLabels,
+  onResetRotation,
+  mapRotation = 0
 }: MapControlsProps) => {
   return (
     <>
-      {/* Main Controls Toggle Button - Top Left to avoid conflicts */}
+      {/* Main Controls Toggle Button - Bottom Left to avoid Google Maps controls */}
       <Button
         variant="secondary"
         size="sm"
-        className="absolute top-4 left-4 z-30 shadow-lg bg-background/95 backdrop-blur-sm"
+        className="absolute bottom-4 left-4 z-30 shadow-lg bg-background/95 backdrop-blur-sm"
         onClick={onToggleControls}
       >
         {showControls ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
@@ -35,9 +39,34 @@ export const MapControls = ({
         </span>
       </Button>
 
-      {/* Simple Layer Controls */}
+      {/* North Indicator & Rotation Controls */}
+      <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+        {/* North Indicator */}
+        <div className="bg-background/95 backdrop-blur-sm shadow-lg rounded-lg p-2 flex items-center justify-center">
+          <Compass 
+            className="w-6 h-6 text-primary" 
+            style={{ transform: `rotate(${-mapRotation}deg)` }}
+          />
+          <span className="ml-1 text-xs font-bold">N</span>
+        </div>
+        
+        {/* Reset Rotation Button */}
+        {onResetRotation && Math.abs(mapRotation) > 1 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onResetRotation}
+            className="bg-background/95 backdrop-blur-sm shadow-lg"
+            title="Resetear rotación"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Layer Controls */}
       {showControls && (
-        <div className="absolute top-16 left-4 z-30 flex flex-col gap-2">
+        <div className="absolute bottom-16 left-4 z-30 flex flex-col gap-2">
           <Button
             variant="outline"
             size="sm"

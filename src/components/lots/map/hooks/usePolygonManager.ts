@@ -1,3 +1,4 @@
+
 import { useRef, useState } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useToast } from '@/hooks/use-toast';
@@ -56,7 +57,7 @@ export const usePolygonManager = (lots: Lot[]) => {
         e.stop();
         
         toast({
-          title: lot.name,
+          title: `${lot.name} - Polígono`,
           description: `Área: ${areaText}`,
         });
       });
@@ -68,24 +69,25 @@ export const usePolygonManager = (lots: Lot[]) => {
       lotPolygon.coordinates.forEach(coord => bounds.extend(coord));
       const center = bounds.getCenter();
 
-      // Create lot label marker
+      // Create lot label marker with improved styling
       const labelMarker = new google.maps.Marker({
         position: center,
         map: map,
         label: {
           text: lot.name,
           color: '#ffffff',
-          fontSize: '14px',
+          fontSize: '12px',
           fontWeight: 'bold'
         },
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 12,
+          scale: 15,
           strokeWeight: 2,
           strokeColor: '#ffffff',
-          fillOpacity: 0.8,
+          fillOpacity: 0.9,
           fillColor: lotPolygon.color
-        }
+        },
+        title: `${lot.name} - Área: ${areaText}`
       });
 
       // Add click handler for label - only show toast
@@ -94,7 +96,7 @@ export const usePolygonManager = (lots: Lot[]) => {
         e.stop();
         
         toast({
-          title: lot.name,
+          title: `${lot.name} - Información`,
           description: `Área: ${areaText}`,
         });
       });
@@ -191,6 +193,12 @@ export const usePolygonManager = (lots: Lot[]) => {
     );
     savePolygons(newPolygons);
     renderLotPolygons(map);
+
+    console.log('🎨 Polygon color changed for lot:', lotId, 'to:', color);
+    toast({
+      title: "Color Actualizado",
+      description: "El color del polígono ha sido actualizado.",
+    });
   };
 
   const togglePolygonsVisibility = () => {

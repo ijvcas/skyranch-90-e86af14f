@@ -20,8 +20,10 @@ export const GOOGLE_MAPS_CONFIG = {
   fullscreenControl: true,
   mapTypeControl: true,
   zoomControl: true,
-  rotateControl: false,
-  scaleControl: true
+  rotateControl: true, // Enable rotation controls
+  scaleControl: true,
+  tilt: 0, // Allow rotation
+  gestureHandling: 'auto' // Enable all gestures including rotation
 };
 
 // Default API key message for users

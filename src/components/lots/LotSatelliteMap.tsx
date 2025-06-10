@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
 import { LoadingOverlay, ErrorOverlay, CoordinatesInfo, ApiKeyInput } from './map/MapOverlays';
@@ -17,9 +17,11 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   const [showPolygons, setShowPolygons] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [mapRotation, setMapRotation] = useState(0);
 
   const {
     mapContainer,
+    map,
     isLoading,
     error,
     apiKey,
@@ -31,11 +33,14 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     deletePolygonForLot,
     setPolygonColor,
     togglePolygonsVisibility,
-    toggleLabelsVisibility
+    toggleLabelsVisibility,
+    lotPolygons
   } = useGoogleMapsInitialization(lots);
 
+  // Get current lot polygon data
+  const currentLotPolygon = selectedLot ? lotPolygons.find(p => p.lotId === selectedLot.id) : null;
+
   const handleLotSelect = (lot: Lot) => {
-    // Only select lot for drawing, don't navigate to detail
     setSelectedLot(lot);
     console.log('🎯 Lot selected for drawing:', lot.name);
   };
@@ -100,6 +105,27 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     toggleLabelsVisibility();
   };
 
+  const handleResetRotation = useCallback(() => {
+    if (map.current) {
+      map.current.setHeading(0);
+      setMapRotation(0);
+    }
+  }, [map]);
+
+  // Listen for map rotation changes
+  React.useEffect(() => {
+    if (map.current) {
+      const listener = map.current.addListener('heading_changed', () => {
+        const heading = map.current?.getHeading() || 0;
+        setMapRotation(heading);
+      });
+
+      return () => {
+        google.maps.event.removeListener(listener);
+      };
+    }
+  }, [map.current]);
+
   return (
     <div className="relative w-full h-full">
       {/* Map Container - Full Screen */}
@@ -136,6 +162,8 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
             showLabels={showLabels}
             onTogglePolygons={handleTogglePolygons}
             onToggleLabels={handleToggleLabels}
+            onResetRotation={handleResetRotation}
+            mapRotation={mapRotation}
           />
 
           {/* Polygon Drawing Tool */}
@@ -150,6 +178,8 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
               onColorChange={handleColorChange}
               onCancelDrawing={handleCancelDrawing}
               isDrawing={isDrawing}
+              hasPolygon={!!currentLotPolygon}
+              currentColor={currentLotPolygon?.color}
             />
           )}
 
