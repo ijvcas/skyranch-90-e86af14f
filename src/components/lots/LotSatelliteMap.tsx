@@ -13,7 +13,8 @@ interface LotSatelliteMapProps {
 const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   const [selectedLayers, setSelectedLayers] = useState({
     lots: true,
-    labels: true
+    labels: true,
+    areas: true
   });
   const [showControls, setShowControls] = useState(true);
 
@@ -31,7 +32,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     toggleLayer
   } = useGoogleMapsInitialization(lots, onLotSelect);
 
-  const handleToggleLayer = (layerName: 'lots' | 'labels') => {
+  const handleToggleLayer = (layerName: 'lots' | 'labels' | 'areas') => {
     setSelectedLayers(prev => ({ ...prev, [layerName]: !prev[layerName] }));
     toggleLayer(layerName);
   };
@@ -75,7 +76,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
             onUpdateLotColor={updateLotColor}
           />
 
-          {/* Legend */}
+          {/* Enhanced Legend */}
           <MapLegend showControls={showControls} />
 
           {/* Coordinates Info */}

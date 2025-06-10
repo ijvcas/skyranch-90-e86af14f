@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, AlertCircle, Key } from 'lucide-react';
+import { Loader2, AlertCircle, Key, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,7 @@ export const LoadingOverlay = ({ isLoading }: { isLoading: boolean }) => {
       <div className="text-center bg-background p-8 rounded-lg shadow-xl border">
         <Loader2 className="w-10 h-10 animate-spin mx-auto mb-3 text-green-600" />
         <p className="text-base font-medium text-foreground mb-1">Cargando SkyRanch</p>
-        <p className="text-sm text-muted-foreground">Preparando vista satelital con Google Maps...</p>
+        <p className="text-sm text-muted-foreground">Preparando vista satelital con mediciones de área...</p>
       </div>
     </div>
   );
@@ -64,7 +64,7 @@ export const ApiKeyInput = ({
         <CardHeader>
           <CardTitle className="flex items-center">
             <Key className="w-5 h-5 mr-2" />
-            Configurar Google Maps
+            Configurar Google Maps API
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -81,9 +81,13 @@ export const ApiKeyInput = ({
                 className="font-mono text-sm"
               />
               <Button type="submit" className="w-full" disabled={!inputValue.trim()}>
-                Cargar Mapa
+                <Save className="w-4 h-4 mr-2" />
+                Guardar y Cargar Mapa
               </Button>
             </form>
+            <div className="text-xs text-muted-foreground text-center">
+              La API key se guardará localmente para todos los usuarios
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -94,7 +98,7 @@ export const ApiKeyInput = ({
 export const CoordinatesInfo = () => (
   <div className="absolute bottom-4 right-4 z-30 bg-background/95 backdrop-blur-sm px-4 py-2 rounded-lg border shadow-lg">
     <p className="text-xs text-muted-foreground font-mono">
-      SkyRanch - 40°19'3.52"N, 4°28'27.47"W (Google Maps)
+      SkyRanch - 40°19'3.52"N, 4°28'27.47"W | Google Maps con mediciones
     </p>
   </div>
 );
