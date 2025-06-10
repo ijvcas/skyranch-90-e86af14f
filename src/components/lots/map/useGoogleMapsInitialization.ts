@@ -1,32 +1,46 @@
 
 import { useEffect } from 'react';
 import { type Lot } from '@/stores/lotStore';
-import { usePolygonManager } from './hooks/usePolygonManager';
 import { useApiKeyManagement } from './hooks/useApiKeyManagement';
 import { useMapInitialization } from './hooks/useMapInitialization';
 import { useMapRotation } from './hooks/useMapRotation';
-import { usePolygonOperations } from './hooks/usePolygonOperations';
+import { usePolygonStorage } from './hooks/usePolygonStorage';
+import { usePolygonRenderer } from './hooks/usePolygonRenderer';
+import { usePolygonDrawing } from './hooks/usePolygonDrawing';
 
 export const useGoogleMapsInitialization = (lots: Lot[]) => {
   const { apiKey, showApiKeyInput, setShowApiKeyInput, saveApiKey } = useApiKeyManagement();
   const { mapContainer, map, isLoading, error, initializeMap } = useMapInitialization();
   const { mapRotation, resetMapRotation, setupRotationListener } = useMapRotation();
   
-  const polygonManager = usePolygonManager(lots);
+  // Polygon management hooks - used directly instead of through managers
+  const {
+    lotPolygons,
+    savePolygons,
+    updatePolygonForLot,
+    deletePolygonForLot,
+    addPolygonForLot
+  } = usePolygonStorage();
   
-  const polygonOperations = usePolygonOperations({
-    map,
-    startDrawingPolygon: polygonManager.startDrawingPolygon,
-    saveCurrentPolygon: polygonManager.saveCurrentPolygon,
-    deletePolygonForLot: polygonManager.deletePolygonForLot,
-    setPolygonColor: polygonManager.setPolygonColor
-  });
+  const {
+    renderLotPolygons,
+    togglePolygonsVisibility,
+    toggleLabelsVisibility,
+    cleanup: cleanupRenderer
+  } = usePolygonRenderer(lots);
+  
+  const {
+    initializeDrawingManager,
+    startDrawingPolygon,
+    saveCurrentPolygon,
+    cleanup: cleanupDrawing
+  } = usePolygonDrawing({ lots, addPolygonForLot });
 
   const handleMapReady = (mapInstance: google.maps.Map) => {
     console.log('🎯 Map ready, initializing components...');
     setupRotationListener(mapInstance);
-    polygonManager.initializeDrawingManager(mapInstance);
-    polygonManager.renderLotPolygons(mapInstance);
+    initializeDrawingManager(mapInstance);
+    renderLotPolygons(mapInstance, lotPolygons);
   };
 
   const handleInitializeMap = async () => {
@@ -42,6 +56,31 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
   };
 
+  // Polygon operation handlers - simplified
+  const handleStartDrawingPolygon = (lotId: string) => {
+    startDrawingPolygon(lotId);
+  };
+
+  const handleSaveCurrentPolygon = (lotId: string, onComplete: () => void) => {
+    if (map.current) {
+      saveCurrentPolygon(lotId, map.current, onComplete);
+    }
+  };
+
+  const handleDeletePolygonForLot = (lotId: string) => {
+    deletePolygonForLot(lotId);
+    if (map.current) {
+      renderLotPolygons(map.current, lotPolygons.filter(p => p.lotId !== lotId));
+    }
+  };
+
+  const handleSetPolygonColor = (lotId: string, color: string) => {
+    updatePolygonForLot(lotId, { color });
+    if (map.current) {
+      renderLotPolygons(map.current, lotPolygons);
+    }
+  };
+
   // Initialize map when API key is available
   useEffect(() => {
     console.log('🔄 API key effect triggered:', !!apiKey);
@@ -50,7 +89,8 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
     return () => {
       console.log('🧹 Cleaning up Google Maps...');
-      polygonManager.cleanup();
+      cleanupRenderer();
+      cleanupDrawing();
     };
   }, [apiKey]);
 
@@ -58,9 +98,9 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   useEffect(() => {
     if (map.current) {
       console.log('🔄 Re-rendering polygons for lots change');
-      polygonManager.renderLotPolygons(map.current);
+      renderLotPolygons(map.current, lotPolygons);
     }
-  }, [lots, polygonManager.lotPolygons]);
+  }, [lots, lotPolygons]);
 
   return {
     mapContainer,
@@ -69,16 +109,16 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     error,
     apiKey,
     showApiKeyInput,
-    lotPolygons: polygonManager.lotPolygons,
+    lotPolygons,
     mapRotation,
     setApiKey: saveApiKey,
     initializeMap: handleInitializeMap,
     resetMapRotation,
-    startDrawingPolygon: polygonOperations.handleStartDrawingPolygon,
-    saveCurrentPolygon: polygonOperations.handleSaveCurrentPolygon,
-    deletePolygonForLot: polygonOperations.handleDeletePolygonForLot,
-    setPolygonColor: polygonOperations.handleSetPolygonColor,
-    togglePolygonsVisibility: polygonManager.togglePolygonsVisibility,
-    toggleLabelsVisibility: polygonManager.toggleLabelsVisibility
+    startDrawingPolygon: handleStartDrawingPolygon,
+    saveCurrentPolygon: handleSaveCurrentPolygon,
+    deletePolygonForLot: handleDeletePolygonForLot,
+    setPolygonColor: handleSetPolygonColor,
+    togglePolygonsVisibility,
+    toggleLabelsVisibility
   };
 };
