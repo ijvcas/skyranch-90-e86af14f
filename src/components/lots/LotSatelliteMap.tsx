@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Layers, Home, Settings, AlertCircle, Loader2 } from 'lucide-react';
+import { MapPin, Layers, Home, Settings, AlertCircle, Loader2, X } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
 import { useToast } from '@/hooks/use-toast';
 
@@ -81,6 +81,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     sheds: true,
     boundaries: true
   });
+  const [showControls, setShowControls] = useState(true);
   const { toast } = useToast();
 
   const validateToken = (token: string): boolean => {
@@ -137,7 +138,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         bearing: 0
       });
 
-      // Add error handler for map load failures
       map.current.on('error', (e) => {
         console.error('❌ Map error:', e);
         setError(`Map failed to load: ${e.error?.message || 'Unknown error'}`);
@@ -149,7 +149,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         });
       });
 
-      // Add success handler
       map.current.on('load', () => {
         console.log('✅ Map loaded successfully');
         setIsLoading(false);
@@ -425,118 +424,167 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className="relative w-full h-full">
       {/* Token Input Overlay */}
       {showTokenInput && (
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <MapPin className="w-5 h-5 mr-2" />
-              Configurar Mapa Satelital
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="flex items-center p-3 text-sm text-red-800 bg-red-50 rounded-lg border border-red-200">
-                <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-            
-            <div>
-              <p className="text-sm text-gray-600 mb-4">
-                Para mostrar el mapa satelital de SkyRanch, necesitas proporcionar tu token público de Mapbox.
-              </p>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Token Público de Mapbox</label>
-                <Input
-                  type="text"
-                  value={mapboxToken}
-                  onChange={(e) => {
-                    setMapboxToken(e.target.value);
-                    setError(null); // Clear error when user types
-                  }}
-                  placeholder="pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja..."
-                  className="font-mono text-sm"
-                  disabled={isLoading}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Obtén tu token en{' '}
-                <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  mapbox.com
-                </a>
-              </p>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                onClick={initializeMap} 
-                disabled={!mapboxToken || isLoading}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Cargando Mapa...
-                  </>
-                ) : (
-                  'Cargar Mapa'
+        <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-center min-h-full p-4">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MapPin className="w-5 h-5 mr-2" />
+                  Configurar Mapa Satelital
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {error && (
+                  <div className="flex items-center p-3 text-sm text-red-800 bg-red-50 rounded-lg border border-red-200">
+                    <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
                 )}
-              </Button>
-              
-              {error && (
-                <Button 
-                  onClick={handleRetry}
-                  variant="outline"
-                  disabled={isLoading}
-                >
-                  Reintentar
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                
+                <div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Para mostrar el mapa satelital de SkyRanch, necesitas proporcionar tu token público de Mapbox.
+                  </p>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Token Público de Mapbox</label>
+                    <Input
+                      type="text"
+                      value={mapboxToken}
+                      onChange={(e) => {
+                        setMapboxToken(e.target.value);
+                        setError(null);
+                      }}
+                      placeholder="pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja..."
+                      className="font-mono text-sm"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Obtén tu token en{' '}
+                    <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      mapbox.com
+                    </a>
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={initializeMap} 
+                    disabled={!mapboxToken || isLoading}
+                    className="flex-1"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Cargando Mapa...
+                      </>
+                    ) : (
+                      'Cargar Mapa'
+                    )}
+                  </Button>
+                  
+                  {error && (
+                    <Button 
+                      onClick={handleRetry}
+                      variant="outline"
+                      disabled={isLoading}
+                    >
+                      Reintentar
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
 
-      {/* Map Container - Always rendered */}
-      <div className={`${showTokenInput ? 'hidden' : ''}`}>
-        {/* Map Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center">
-                <MapPin className="w-5 h-5 mr-2" />
-                Mapa Satelital de SkyRanch
-              </span>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleLayer('lots')}
-                  className={selectedLayers.lots ? 'bg-green-50' : ''}
-                >
-                  <Layers className="w-4 h-4 mr-1" />
-                  Lotes
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleLayer('sheds')}
-                  className={selectedLayers.sheds ? 'bg-blue-50' : ''}
-                >
-                  <Home className="w-4 h-4 mr-1" />
-                  Cobertizos
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleLayer('boundaries')}
-                  className={selectedLayers.boundaries ? 'bg-red-50' : ''}
-                >
-                  <Settings className="w-4 h-4 mr-1" />
-                  Límites
-                </Button>
+      {/* Map Container - Full Screen */}
+      <div 
+        ref={mapContainer} 
+        className="w-full h-[calc(100vh-8rem)]" 
+        style={{ minHeight: '400px' }}
+      />
+
+      {/* Loading Overlay */}
+      {isLoading && !showTokenInput && (
+        <div className="absolute inset-0 z-40 bg-background/50 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center bg-background p-6 rounded-lg shadow-lg border">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
+            <p className="text-sm text-gray-600">Cargando mapa satelital...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Overlay */}
+      {error && !isLoading && !showTokenInput && (
+        <div className="absolute inset-0 z-40 bg-background/50 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center bg-background p-6 rounded-lg shadow-lg border">
+            <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-600" />
+            <p className="text-sm text-red-800 mb-3">{error}</p>
+            <Button onClick={handleRetry} variant="outline" size="sm">
+              Reintentar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Controls */}
+      {!showTokenInput && !isLoading && !error && (
+        <>
+          {/* Controls Toggle Button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            className="absolute top-4 left-4 z-30 shadow-lg"
+            onClick={() => setShowControls(!showControls)}
+          >
+            {showControls ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
+          </Button>
+
+          {/* Layer Controls */}
+          {showControls && (
+            <Card className="absolute top-4 left-16 z-30 shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Mapa Satelital de SkyRanch
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleLayer('lots')}
+                    className={selectedLayers.lots ? 'bg-green-50' : ''}
+                  >
+                    <Layers className="w-4 h-4 mr-1" />
+                    Lotes
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleLayer('sheds')}
+                    className={selectedLayers.sheds ? 'bg-blue-50' : ''}
+                  >
+                    <Home className="w-4 h-4 mr-1" />
+                    Cobertizos
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleLayer('boundaries')}
+                    className={selectedLayers.boundaries ? 'bg-red-50' : ''}
+                  >
+                    <Settings className="w-4 h-4 mr-1" />
+                    Límites
+                  </Button>
+                </div>
+                
                 <Button
                   variant="outline"
                   size="sm"
@@ -545,66 +593,52 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
                     map.current?.remove();
                     map.current = null;
                   }}
+                  className="w-full"
                 >
                   <Settings className="w-4 h-4 mr-1" />
                   Cambiar Token
                 </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Badge variant="outline" className="bg-green-50">
-                <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-                Lotes Activos
-              </Badge>
-              <Badge variant="outline" className="bg-yellow-50">
-                <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
-                En Descanso
-              </Badge>
-              <Badge variant="outline" className="bg-red-50">
-                <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                Mantenimiento
-              </Badge>
-              <Badge variant="outline" className="bg-blue-50">
-                🏠 Cobertizos
-              </Badge>
-            </div>
-            
-            {isLoading && (
-              <div className="w-full h-96 rounded-lg border flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
-                  <p className="text-sm text-gray-600">Cargando mapa satelital...</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Legend */}
+          {showControls && (
+            <Card className="absolute bottom-4 left-4 z-30 shadow-lg">
+              <CardContent className="p-3">
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Badge variant="outline" className="bg-green-50">
+                    <div className="w-2 h-2 bg-green-500 rounded mr-1"></div>
+                    Activos
+                  </Badge>
+                  <Badge variant="outline" className="bg-yellow-50">
+                    <div className="w-2 h-2 bg-yellow-500 rounded mr-1"></div>
+                    Descanso
+                  </Badge>
+                  <Badge variant="outline" className="bg-red-50">
+                    <div className="w-2 h-2 bg-red-500 rounded mr-1"></div>
+                    Mantenimiento
+                  </Badge>
+                  <Badge variant="outline" className="bg-blue-50">
+                    🏠 Cobertizos
+                  </Badge>
                 </div>
-              </div>
-            )}
-            
-            {error && !isLoading && (
-              <div className="w-full h-96 rounded-lg border flex items-center justify-center bg-red-50">
-                <div className="text-center p-4">
-                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-600" />
-                  <p className="text-sm text-red-800 mb-3">{error}</p>
-                  <Button onClick={handleRetry} variant="outline" size="sm">
-                    Reintentar
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            <div 
-              ref={mapContainer} 
-              className={`w-full h-96 rounded-lg border ${isLoading || error ? 'hidden' : ''}`} 
-            />
-            
-            <p className="text-xs text-gray-500 mt-2">
-              Coordenadas: 40°19'3.52"N, 4°28'27.47"W - Haz clic en los lotes para ver detalles
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Coordinates Info */}
+          <div className="absolute bottom-4 right-4 z-30 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-lg border shadow-lg">
+            <p className="text-xs text-muted-foreground">
+              40°19'3.52"N, 4°28'27.47"W
             </p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 export default LotSatelliteMap;
+
+</edits_to_apply>
