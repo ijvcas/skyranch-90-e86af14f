@@ -23,7 +23,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   const [showLabels, setShowLabels] = useState(true);
   const [tempApiKey, setTempApiKey] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedLot, setSelectedLot] = useState<string | null>(null);
+  const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   const {
@@ -75,9 +75,9 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   // Wrapper functions that match PolygonDrawer's expected signatures
   const handleStartDrawing = () => {
     if (selectedLot) {
-      console.log('Starting drawing for lot:', selectedLot);
+      console.log('Starting drawing for lot:', selectedLot.id);
       setIsDrawing(true);
-      startDrawingPolygon(selectedLot);
+      startDrawingPolygon(selectedLot.id);
     } else {
       console.log('No lot selected for drawing');
     }
@@ -85,8 +85,8 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
   const handleSavePolygon = () => {
     if (selectedLot) {
-      console.log('Saving polygon for lot:', selectedLot);
-      saveCurrentPolygon(selectedLot);
+      console.log('Saving polygon for lot:', selectedLot.id);
+      saveCurrentPolygon(selectedLot.id);
       setIsDrawing(false);
     } else {
       console.log('No lot selected for saving');
@@ -95,8 +95,8 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
   const handleDeletePolygon = () => {
     if (selectedLot) {
-      console.log('Deleting polygon for lot:', selectedLot);
-      deletePolygonForLot(selectedLot);
+      console.log('Deleting polygon for lot:', selectedLot.id);
+      deletePolygonForLot(selectedLot.id);
     } else {
       console.log('No lot selected for deletion');
     }
@@ -104,18 +104,29 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
   const handleColorChange = (color: string) => {
     if (selectedLot) {
-      console.log('Changing color for lot:', selectedLot, 'to:', color);
-      setPolygonColor(selectedLot, color);
+      console.log('Changing color for lot:', selectedLot.id, 'to:', color);
+      setPolygonColor(selectedLot.id, color);
     } else {
       console.log('No lot selected for color change');
     }
   };
 
-  const handleLotSelection = (lotId: string) => {
-    console.log('Lot selected:', lotId);
-    setSelectedLot(lotId);
-    onLotSelect(lotId);
+  const handleCancelDrawing = () => {
+    console.log('Cancelling drawing');
+    setIsDrawing(false);
   };
+
+  const handleLotSelection = (lot: Lot) => {
+    console.log('Lot selected:', lot.id);
+    setSelectedLot(lot);
+    onLotSelect(lot.id);
+  };
+
+  // Check if selected lot has a polygon (placeholder logic)
+  const hasPolygon = selectedLot ? false : false; // TODO: Implement polygon existence check
+
+  // Get current color for selected lot (placeholder logic)
+  const currentColor = selectedLot ? '#10b981' : '#6b7280'; // TODO: Implement color retrieval
 
   if (showApiKeyInput) {
     return (
@@ -237,7 +248,9 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
           onSavePolygon={handleSavePolygon}
           onDeletePolygon={handleDeletePolygon}
           onColorChange={handleColorChange}
-          isFullscreen={isFullscreen}
+          onCancelDrawing={handleCancelDrawing}
+          hasPolygon={hasPolygon}
+          currentColor={currentColor}
         />
       )}
     </div>
