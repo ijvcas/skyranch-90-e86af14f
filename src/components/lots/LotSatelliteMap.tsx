@@ -26,7 +26,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     error,
     apiKey,
     showApiKeyInput,
-    lotPolygons = [], // Add default empty array fallback
+    lotPolygons = [],
     setApiKey,
     initializeMap,
     startDrawingPolygon,
@@ -108,6 +108,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
   const handleResetRotation = useCallback(() => {
     if (map.current) {
+      console.log('🧭 Resetting map rotation to north');
       map.current.setHeading(0);
       setMapRotation(0);
     }

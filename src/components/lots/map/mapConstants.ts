@@ -12,7 +12,7 @@ export const LOT_COLORS = {
   default: '#6b7280' // Gray - Default state
 };
 
-// Google Maps API configuration
+// Google Maps API configuration with proper rotation support
 export const GOOGLE_MAPS_CONFIG = {
   zoom: 19,
   mapTypeId: 'satellite' as const,
@@ -20,9 +20,9 @@ export const GOOGLE_MAPS_CONFIG = {
   fullscreenControl: true,
   mapTypeControl: true,
   zoomControl: true,
-  rotateControl: true, // Enable rotation controls
-  scaleControl: true,
-  tilt: 45, // Enable 3D tilt for rotation
+  rotateControl: true, // Enable Google's native rotation controls
+  scaleControl: true, // Enable scale control for better reference
+  tilt: 0, // Start with no tilt for better initial view
   gestureHandling: 'greedy', // Enable all gestures including rotation
   keyboardShortcuts: true, // Enable keyboard shortcuts for rotation
   clickableIcons: false // Prevent interference with our polygons
@@ -40,15 +40,31 @@ Para usar Google Maps necesitas una API key:
 La API key se guardará para todos los usuarios.
 `;
 
-// Polygon area calculation helper
-export const calculatePolygonArea = (coordinates: google.maps.LatLngLiteral[]) => {
-  if (coordinates.length < 3) return 0;
+// Polygon area calculation helper - with proper error handling
+export const calculatePolygonArea = (coordinates: google.maps.LatLngLiteral[]): number => {
+  if (coordinates.length < 3) {
+    console.warn('⚠️ Need at least 3 coordinates to calculate area');
+    return 0;
+  }
   
-  // Convert to Google Maps LatLng objects
-  const path = coordinates.map(coord => new google.maps.LatLng(coord.lat, coord.lng));
-  
-  // Calculate area using Google Maps geometry library
-  return google.maps.geometry.spherical.computeArea(path);
+  try {
+    // Check if geometry library is available
+    if (!google.maps.geometry || !google.maps.geometry.spherical) {
+      console.error('❌ Google Maps geometry library not available');
+      return 0;
+    }
+    
+    // Convert to Google Maps LatLng objects
+    const path = coordinates.map(coord => new google.maps.LatLng(coord.lat, coord.lng));
+    
+    // Calculate area using Google Maps geometry library
+    const area = google.maps.geometry.spherical.computeArea(path);
+    console.log('📐 Calculated area:', area, 'square meters');
+    return area;
+  } catch (error) {
+    console.error('❌ Error calculating polygon area:', error);
+    return 0;
+  }
 };
 
 // Convert area from square meters to hectares

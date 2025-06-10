@@ -26,7 +26,7 @@ export const MapControls = ({
 }: MapControlsProps) => {
   return (
     <>
-      {/* Main Controls Toggle Button - Bottom Left to avoid Google Maps controls */}
+      {/* Main Controls Toggle Button - Bottom Left */}
       <Button
         variant="secondary"
         size="sm"
@@ -39,39 +39,39 @@ export const MapControls = ({
         </span>
       </Button>
 
-      {/* North Indicator & Rotation Controls - Positioned below Google's fullscreen button */}
-      <div className="absolute top-16 right-4 z-30 flex flex-col gap-2">
-        {/* North Indicator */}
-        <div className="bg-background/95 backdrop-blur-sm shadow-lg rounded-lg p-2 flex items-center justify-center">
+      {/* North Indicator & Reset - Positioned below Google's controls on the right */}
+      <div className="absolute top-32 right-4 z-30 flex flex-col gap-2">
+        {/* North Indicator - always visible */}
+        <div className="bg-background/95 backdrop-blur-sm shadow-lg rounded-lg p-2 flex items-center justify-center border">
           <Compass 
-            className="w-6 h-6 text-primary" 
+            className="w-6 h-6 text-primary transition-transform duration-300" 
             style={{ transform: `rotate(${-mapRotation}deg)` }}
           />
           <span className="ml-1 text-xs font-bold">N</span>
         </div>
         
-        {/* Reset Rotation Button */}
-        {onResetRotation && Math.abs(mapRotation) > 1 && (
+        {/* Reset Rotation Button - show when rotated more than 5 degrees */}
+        {onResetRotation && Math.abs(mapRotation) > 5 && (
           <Button
             variant="outline"
             size="sm"
             onClick={onResetRotation}
-            className="bg-background/95 backdrop-blur-sm shadow-lg"
-            title="Resetear rotación"
+            className="bg-background/95 backdrop-blur-sm shadow-lg border"
+            title="Resetear rotación al norte"
           >
             <RotateCcw className="w-4 h-4" />
           </Button>
         )}
       </div>
 
-      {/* Layer Controls */}
+      {/* Layer Controls - show when controls are visible */}
       {showControls && (
         <div className="absolute bottom-16 left-4 z-30 flex flex-col gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={onTogglePolygons}
-            className="bg-background/95 backdrop-blur-sm shadow-lg"
+            className="bg-background/95 backdrop-blur-sm shadow-lg border"
           >
             {showPolygons ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             <span className="ml-2">Polígonos</span>
@@ -80,11 +80,20 @@ export const MapControls = ({
             variant="outline"
             size="sm"
             onClick={onToggleLabels}
-            className="bg-background/95 backdrop-blur-sm shadow-lg"
+            className="bg-background/95 backdrop-blur-sm shadow-lg border"
           >
             {showLabels ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             <span className="ml-2">Etiquetas</span>
           </Button>
+        </div>
+      )}
+
+      {/* Rotation Instructions - show briefly when controls are first shown */}
+      {showControls && (
+        <div className="absolute top-4 left-4 z-30 bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-lg p-3 max-w-sm">
+          <p className="text-xs text-blue-800">
+            <strong>Rotar mapa:</strong> Mantén Shift + clic y arrastra, o usa dos dedos en móvil
+          </p>
         </div>
       )}
     </>
