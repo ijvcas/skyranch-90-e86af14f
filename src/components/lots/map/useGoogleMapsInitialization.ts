@@ -145,6 +145,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     error,
     apiKey,
     showApiKeyInput,
+    lotPolygons, // Add this to the return object
     setApiKey: saveApiKey,
     initializeMap,
     startDrawingPolygon: handleStartDrawingPolygon,

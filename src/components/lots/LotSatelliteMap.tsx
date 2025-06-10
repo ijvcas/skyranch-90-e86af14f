@@ -26,6 +26,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     error,
     apiKey,
     showApiKeyInput,
+    lotPolygons = [], // Add default empty array fallback
     setApiKey,
     initializeMap,
     startDrawingPolygon,
@@ -33,12 +34,12 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     deletePolygonForLot,
     setPolygonColor,
     togglePolygonsVisibility,
-    toggleLabelsVisibility,
-    lotPolygons
+    toggleLabelsVisibility
   } = useGoogleMapsInitialization(lots);
 
-  // Get current lot polygon data
-  const currentLotPolygon = selectedLot ? lotPolygons.find(p => p.lotId === selectedLot.id) : null;
+  // Get current lot polygon data with proper null checking
+  const currentLotPolygon = selectedLot && lotPolygons ? 
+    lotPolygons.find(p => p.lotId === selectedLot.id) : null;
 
   const handleLotSelect = (lot: Lot) => {
     setSelectedLot(lot);
