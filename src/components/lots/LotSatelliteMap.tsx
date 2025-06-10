@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
 import { LoadingOverlay, ErrorOverlay, CoordinatesInfo, ApiKeyInput } from './map/MapOverlays';
-import { MapControls, MapLegend } from './map/MapControls';
+import { MapControls } from './map/MapControls';
+import { PolygonDrawer } from './map/PolygonDrawer';
 
 interface LotSatelliteMapProps {
   lots: Lot[];
@@ -11,30 +12,67 @@ interface LotSatelliteMapProps {
 }
 
 const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
-  const [selectedLayers, setSelectedLayers] = useState({
-    lots: true,
-    labels: true,
-    areas: true
-  });
+  const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [showControls, setShowControls] = useState(true);
+  const [showPolygons, setShowPolygons] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const {
     mapContainer,
     isLoading,
     error,
-    selectedLot,
-    lotColors,
     apiKey,
     showApiKeyInput,
     setApiKey,
     initializeMap,
-    updateLotColor,
-    toggleLayer
-  } = useGoogleMapsInitialization(lots, onLotSelect);
+    startDrawingPolygon,
+    saveCurrentPolygon,
+    deletePolygonForLot,
+    setPolygonColor,
+    togglePolygonsVisibility,
+    toggleLabelsVisibility
+  } = useGoogleMapsInitialization(lots);
 
-  const handleToggleLayer = (layerName: 'lots' | 'labels' | 'areas') => {
-    setSelectedLayers(prev => ({ ...prev, [layerName]: !prev[layerName] }));
-    toggleLayer(layerName);
+  const handleLotSelect = (lot: Lot) => {
+    setSelectedLot(lot);
+    onLotSelect(lot.id);
+  };
+
+  const handleStartDrawing = () => {
+    if (selectedLot) {
+      setIsDrawing(true);
+      startDrawingPolygon(selectedLot.id);
+    }
+  };
+
+  const handleSavePolygon = () => {
+    if (selectedLot) {
+      saveCurrentPolygon(selectedLot.id);
+      setIsDrawing(false);
+    }
+  };
+
+  const handleDeletePolygon = () => {
+    if (selectedLot) {
+      deletePolygonForLot(selectedLot.id);
+    }
+  };
+
+  const handleColorChange = (color: string) => {
+    if (selectedLot) {
+      setPolygonColor(selectedLot.id, color);
+    }
+  };
+
+  const handleTogglePolygons = () => {
+    setShowPolygons(!showPolygons);
+    togglePolygonsVisibility();
+  };
+
+  const handleToggleLabels = () => {
+    setShowLabels(!showLabels);
+    toggleLabelsVisibility();
   };
 
   return (
@@ -63,21 +101,31 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         onRetry={initializeMap} 
       />
 
-      {/* Floating Controls */}
+      {/* Map Controls */}
       {!isLoading && !error && !showApiKeyInput && (
         <>
           <MapControls
             showControls={showControls}
-            selectedLayers={selectedLayers}
-            selectedLot={selectedLot}
-            lotColors={lotColors}
             onToggleControls={() => setShowControls(!showControls)}
-            onToggleLayer={handleToggleLayer}
-            onUpdateLotColor={updateLotColor}
+            showPolygons={showPolygons}
+            showLabels={showLabels}
+            onTogglePolygons={handleTogglePolygons}
+            onToggleLabels={handleToggleLabels}
           />
 
-          {/* Enhanced Legend */}
-          <MapLegend showControls={showControls} />
+          {/* Polygon Drawing Tool */}
+          {showControls && (
+            <PolygonDrawer
+              lots={lots}
+              selectedLot={selectedLot}
+              onLotSelect={handleLotSelect}
+              onStartDrawing={handleStartDrawing}
+              onSavePolygon={handleSavePolygon}
+              onDeletePolygon={handleDeletePolygon}
+              onColorChange={handleColorChange}
+              isDrawing={isDrawing}
+            />
+          )}
 
           {/* Coordinates Info */}
           <CoordinatesInfo />
