@@ -3,148 +3,39 @@ import { useRef, useEffect, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 import { type Lot } from '@/stores/lotStore';
 import { useToast } from '@/hooks/use-toast';
-import { SKYRANCH_CENTER, LOT_COLORS, GOOGLE_MAPS_CONFIG, calculatePolygonArea, formatArea } from './mapConstants';
-
-// API Key storage in localStorage for persistence
-const API_KEY_STORAGE_KEY = 'skyranch_google_maps_api_key';
-
-// Polygon storage in localStorage for now (will be moved to database later)
-const POLYGON_STORAGE_KEY = 'skyranch_lot_polygons';
-
-interface LotPolygon {
-  lotId: string;
-  coordinates: google.maps.LatLngLiteral[];
-  color: string;
-}
+import { SKYRANCH_CENTER, GOOGLE_MAPS_CONFIG } from './mapConstants';
+import { mapStorage } from './utils/mapStorage';
+import { usePolygonManager } from './hooks/usePolygonManager';
+import { useMapRenderer } from './hooks/useMapRenderer';
 
 export const useGoogleMapsInitialization = (lots: Lot[]) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
-  const drawingManager = useRef<google.maps.drawing.DrawingManager | null>(null);
-  const polygons = useRef<Map<string, google.maps.Polygon>>(new Map());
-  const labels = useRef<Map<string, google.maps.Marker>>(new Map());
-  const currentDrawing = useRef<google.maps.Polygon | null>(null);
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState<string>(() => {
-    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
-  });
+  const [apiKey, setApiKey] = useState<string>(() => mapStorage.getApiKey());
   const [showApiKeyInput, setShowApiKeyInput] = useState(!apiKey);
-  const [lotPolygons, setLotPolygons] = useState<LotPolygon[]>(() => {
-    const stored = localStorage.getItem(POLYGON_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  });
   
   const { toast } = useToast();
+  const { addSkyRanchLabel } = useMapRenderer();
+  const {
+    lotPolygons,
+    renderLotPolygons,
+    initializeDrawingManager,
+    startDrawingPolygon,
+    saveCurrentPolygon,
+    deletePolygonForLot,
+    setPolygonColor,
+    togglePolygonsVisibility,
+    toggleLabelsVisibility,
+    cleanup
+  } = usePolygonManager(lots);
 
   // Persist API key to localStorage
   const saveApiKey = (key: string) => {
-    localStorage.setItem(API_KEY_STORAGE_KEY, key);
+    mapStorage.saveApiKey(key);
     setApiKey(key);
-  };
-
-  // Save polygons to localStorage
-  const savePolygons = (polygons: LotPolygon[]) => {
-    localStorage.setItem(POLYGON_STORAGE_KEY, JSON.stringify(polygons));
-    setLotPolygons(polygons);
-  };
-
-  const addSkyRanchLabel = () => {
-    if (!map.current) return;
-
-    console.log('🏷️ Adding SKYRANCH label...');
-
-    const marker = new google.maps.Marker({
-      position: SKYRANCH_CENTER,
-      map: map.current,
-      label: {
-        text: 'SKYRANCH',
-        color: '#ffffff',
-        fontSize: '24px',
-        fontWeight: 'bold'
-      },
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 0,
-        strokeWeight: 0,
-        fillOpacity: 0
-      }
-    });
-
-    console.log('✅ SKYRANCH label added successfully');
-  };
-
-  const renderLotPolygons = () => {
-    if (!map.current) return;
-
-    console.log('📍 Rendering user-defined lot polygons...');
-
-    // Clear existing polygons and labels
-    polygons.current.forEach(polygon => polygon.setMap(null));
-    labels.current.forEach(label => label.setMap(null));
-    polygons.current.clear();
-    labels.current.clear();
-
-    lotPolygons.forEach(lotPolygon => {
-      const lot = lots.find(l => l.id === lotPolygon.lotId);
-      if (!lot || !lotPolygon.coordinates.length) return;
-
-      // Create polygon
-      const polygon = new google.maps.Polygon({
-        paths: lotPolygon.coordinates,
-        strokeColor: '#ffffff',
-        strokeOpacity: 0.95,
-        strokeWeight: 2.5,
-        fillColor: lotPolygon.color,
-        fillOpacity: 0.4,
-        map: map.current,
-        clickable: true
-      });
-
-      // Calculate area
-      const area = calculatePolygonArea(lotPolygon.coordinates);
-      const areaText = formatArea(area);
-
-      // Add click handler
-      polygon.addListener('click', () => {
-        toast({
-          title: lot.name,
-          description: `Área: ${areaText}`,
-        });
-      });
-
-      polygons.current.set(lotPolygon.lotId, polygon);
-
-      // Calculate center point for label
-      const bounds = new google.maps.LatLngBounds();
-      lotPolygon.coordinates.forEach(coord => bounds.extend(coord));
-      const center = bounds.getCenter();
-
-      // Create lot label marker
-      const labelMarker = new google.maps.Marker({
-        position: center,
-        map: map.current,
-        label: {
-          text: lot.name,
-          color: '#ffffff',
-          fontSize: '14px',
-          fontWeight: 'bold'
-        },
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 12,
-          strokeWeight: 2,
-          strokeColor: '#ffffff',
-          fillOpacity: 0.8,
-          fillColor: lotPolygon.color
-        }
-      });
-
-      labels.current.set(lotPolygon.lotId, labelMarker);
-    });
-
-    console.log('✅ User-defined lot polygons rendered successfully');
   };
 
   const initializeMap = async () => {
@@ -184,24 +75,11 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
       });
 
       // Initialize drawing manager
-      drawingManager.current = new google.maps.drawing.DrawingManager({
-        drawingMode: null,
-        drawingControl: false,
-        polygonOptions: {
-          strokeColor: '#ffffff',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: LOT_COLORS.default,
-          fillOpacity: 0.35,
-          editable: true
-        }
-      });
-
-      drawingManager.current.setMap(map.current);
+      initializeDrawingManager(map.current);
 
       setIsLoading(false);
-      addSkyRanchLabel();
-      renderLotPolygons();
+      addSkyRanchLabel(map.current);
+      renderLotPolygons(map.current);
       
       toast({
         title: "Mapa Cargado",
@@ -221,82 +99,26 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
   };
 
-  const startDrawingPolygon = (lotId: string) => {
-    if (!drawingManager.current) return;
-
-    drawingManager.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-
-    const listener = google.maps.event.addListener(
-      drawingManager.current,
-      'polygoncomplete',
-      (polygon: google.maps.Polygon) => {
-        currentDrawing.current = polygon;
-        drawingManager.current?.setDrawingMode(null);
-        google.maps.event.removeListener(listener);
-      }
-    );
+  const handleStartDrawingPolygon = (lotId: string) => {
+    startDrawingPolygon(lotId);
   };
 
-  const saveCurrentPolygon = (lotId: string) => {
-    if (!currentDrawing.current) return;
-
-    const path = currentDrawing.current.getPath();
-    const coordinates: google.maps.LatLngLiteral[] = [];
-    
-    for (let i = 0; i < path.getLength(); i++) {
-      const point = path.getAt(i);
-      coordinates.push({ lat: point.lat(), lng: point.lng() });
+  const handleSaveCurrentPolygon = (lotId: string) => {
+    if (map.current) {
+      saveCurrentPolygon(lotId, map.current);
     }
-
-    const newPolygons = lotPolygons.filter(p => p.lotId !== lotId);
-    newPolygons.push({
-      lotId,
-      coordinates,
-      color: LOT_COLORS.default
-    });
-
-    savePolygons(newPolygons);
-    currentDrawing.current.setMap(null);
-    currentDrawing.current = null;
-    renderLotPolygons();
-
-    toast({
-      title: "Polígono Guardado",
-      description: "El polígono del lote ha sido guardado exitosamente.",
-    });
   };
 
-  const deletePolygonForLot = (lotId: string) => {
-    const newPolygons = lotPolygons.filter(p => p.lotId !== lotId);
-    savePolygons(newPolygons);
-    renderLotPolygons();
-
-    toast({
-      title: "Polígono Eliminado",
-      description: "El polígono del lote ha sido eliminado.",
-    });
+  const handleDeletePolygonForLot = (lotId: string) => {
+    if (map.current) {
+      deletePolygonForLot(lotId, map.current);
+    }
   };
 
-  const setPolygonColor = (lotId: string, color: string) => {
-    const newPolygons = lotPolygons.map(p => 
-      p.lotId === lotId ? { ...p, color } : p
-    );
-    savePolygons(newPolygons);
-    renderLotPolygons();
-  };
-
-  const togglePolygonsVisibility = () => {
-    polygons.current.forEach(polygon => {
-      const visible = polygon.getVisible();
-      polygon.setVisible(!visible);
-    });
-  };
-
-  const toggleLabelsVisibility = () => {
-    labels.current.forEach(label => {
-      const visible = label.getVisible();
-      label.setVisible(!visible);
-    });
+  const handleSetPolygonColor = (lotId: string, color: string) => {
+    if (map.current) {
+      setPolygonColor(lotId, color, map.current);
+    }
   };
 
   useEffect(() => {
@@ -305,18 +127,14 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
     return () => {
       console.log('🧹 Cleaning up Google Maps...');
-      polygons.current.clear();
-      labels.current.clear();
-      if (currentDrawing.current) {
-        currentDrawing.current.setMap(null);
-      }
+      cleanup();
     };
   }, [apiKey]);
 
   // Re-render polygons when lots change
   useEffect(() => {
     if (map.current) {
-      renderLotPolygons();
+      renderLotPolygons(map.current);
     }
   }, [lots, lotPolygons]);
 
@@ -329,10 +147,10 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     showApiKeyInput,
     setApiKey: saveApiKey,
     initializeMap,
-    startDrawingPolygon,
-    saveCurrentPolygon,
-    deletePolygonForLot,
-    setPolygonColor,
+    startDrawingPolygon: handleStartDrawingPolygon,
+    saveCurrentPolygon: handleSaveCurrentPolygon,
+    deletePolygonForLot: handleDeletePolygonForLot,
+    setPolygonColor: handleSetPolygonColor,
     togglePolygonsVisibility,
     toggleLabelsVisibility
   };
