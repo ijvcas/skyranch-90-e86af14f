@@ -1,7 +1,6 @@
 
 import { useRef } from 'react';
 import { type Lot } from '@/stores/lotStore';
-import { useToast } from '@/hooks/use-toast';
 import { LOT_COLORS, calculatePolygonArea, formatArea, metersToHectares } from '../mapConstants';
 import { type LotPolygon } from '../utils/mapStorage';
 import { updateLot } from '@/services/lotService';
@@ -14,7 +13,6 @@ interface UsePolygonDrawingProps {
 export const usePolygonDrawing = ({ lots, addPolygonForLot }: UsePolygonDrawingProps) => {
   const currentDrawing = useRef<google.maps.Polygon | null>(null);
   const drawingManager = useRef<google.maps.drawing.DrawingManager | null>(null);
-  const { toast } = useToast();
 
   const initializeDrawingManager = (map: google.maps.Map) => {
     console.log('🖊️ Initializing drawing manager...');
@@ -60,10 +58,7 @@ export const usePolygonDrawing = ({ lots, addPolygonForLot }: UsePolygonDrawingP
         drawingManager.current?.setDrawingMode(null);
         google.maps.event.removeListener(listener);
         
-        toast({
-          title: "Polígono Dibujado",
-          description: "Haz clic en 'Guardar' para confirmar el polígono",
-        });
+        console.log('Polygon drawn - ready to save');
       }
     );
   };
@@ -71,11 +66,6 @@ export const usePolygonDrawing = ({ lots, addPolygonForLot }: UsePolygonDrawingP
   const saveCurrentPolygon = async (lotId: string, map: google.maps.Map, onComplete: () => void) => {
     if (!currentDrawing.current) {
       console.warn('⚠️ No polygon to save');
-      toast({
-        title: "Error",
-        description: "No hay polígono para guardar",
-        variant: "destructive"
-      });
       return;
     }
 
@@ -99,11 +89,7 @@ export const usePolygonDrawing = ({ lots, addPolygonForLot }: UsePolygonDrawingP
       console.log('📏 Calculated area:', areaInMeters, 'm²', '=', areaInHectares, 'ha');
 
       if (areaInMeters === 0) {
-        toast({
-          title: "Error de Cálculo",
-          description: "No se pudo calcular el área del polígono",
-          variant: "destructive"
-        });
+        console.error('Error calculating polygon area');
         return;
       }
 
@@ -129,25 +115,11 @@ export const usePolygonDrawing = ({ lots, addPolygonForLot }: UsePolygonDrawingP
 
           if (success) {
             console.log('💾 Lot area updated in database:', areaInHectares.toFixed(2), 'ha');
-            toast({
-              title: "Polígono Guardado",
-              description: `Área calculada: ${formatArea(areaInMeters)} - Base de datos actualizada`,
-            });
           } else {
             console.warn('⚠️ Failed to update lot area in database');
-            toast({
-              title: "Polígono Guardado Localmente",
-              description: `Área: ${formatArea(areaInMeters)} - Error actualizando base de datos`,
-              variant: "destructive"
-            });
           }
         } catch (error) {
           console.error('❌ Error updating lot area:', error);
-          toast({
-            title: "Polígono Guardado Localmente",
-            description: `Área: ${formatArea(areaInMeters)} - Error actualizando base de datos`,
-            variant: "destructive"
-          });
         }
       }
 
@@ -155,11 +127,6 @@ export const usePolygonDrawing = ({ lots, addPolygonForLot }: UsePolygonDrawingP
 
     } catch (error) {
       console.error('❌ Error saving polygon:', error);
-      toast({
-        title: "Error",
-        description: "Error al guardar el polígono",
-        variant: "destructive"
-      });
     }
   };
 

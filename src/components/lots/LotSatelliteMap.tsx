@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
 import { MapControls } from './map/MapControls';
@@ -36,6 +37,13 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     handleLotSelection
   } = useLotSelection(onLotSelect);
 
+  const initializationResult = useGoogleMapsInitialization(lots);
+
+  // Handle case where initialization might fail
+  if (!initializationResult) {
+    return <MapErrorState error="Failed to initialize map components" />;
+  }
+
   const {
     mapContainer,
     isLoading,
@@ -50,7 +58,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     setPolygonColor,
     togglePolygonsVisibility,
     toggleLabelsVisibility
-  } = useGoogleMapsInitialization(lots);
+  } = initializationResult;
 
   const {
     handleStartDrawing,

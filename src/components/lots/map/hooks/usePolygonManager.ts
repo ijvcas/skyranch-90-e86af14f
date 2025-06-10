@@ -1,13 +1,10 @@
 
-import { useToast } from '@/hooks/use-toast';
 import { type Lot } from '@/stores/lotStore';
 import { usePolygonStorage } from './usePolygonStorage';
 import { usePolygonRenderer } from './usePolygonRenderer';
 import { usePolygonDrawing } from './usePolygonDrawing';
 
 export const usePolygonManager = (lots: Lot[]) => {
-  const { toast } = useToast();
-  
   const {
     lotPolygons,
     updatePolygonForLot,
@@ -43,22 +40,12 @@ export const usePolygonManager = (lots: Lot[]) => {
     console.log('🗑️ Deleting polygon for lot:', lotId);
     deletePolygonForLot(lotId);
     handleRenderPolygons(map);
-
-    toast({
-      title: "Polígono Eliminado",
-      description: "El polígono del lote ha sido eliminado.",
-    });
   };
 
   const setPolygonColor = (lotId: string, color: string, map: google.maps.Map) => {
     console.log('🎨 Setting polygon color for lot:', lotId, 'to:', color);
     updatePolygonForLot(lotId, { color });
     handleRenderPolygons(map);
-
-    toast({
-      title: "Color Actualizado",
-      description: "El color del polígono ha sido actualizado.",
-    });
   };
 
   const cleanup = () => {

@@ -1,14 +1,12 @@
 
 import { useRef } from 'react';
 import { type Lot } from '@/stores/lotStore';
-import { useToast } from '@/hooks/use-toast';
 import { calculatePolygonArea, formatArea } from '../mapConstants';
 import { type LotPolygon } from '../utils/mapStorage';
 
 export const usePolygonRenderer = (lots: Lot[]) => {
   const polygons = useRef<Map<string, google.maps.Polygon>>(new Map());
   const labels = useRef<Map<string, google.maps.Marker>>(new Map());
-  const { toast } = useToast();
 
   const clearPolygonsAndLabels = () => {
     polygons.current.forEach(polygon => polygon.setMap(null));
@@ -48,10 +46,7 @@ export const usePolygonRenderer = (lots: Lot[]) => {
       // Add click handler
       polygon.addListener('click', (e: google.maps.PolyMouseEvent) => {
         e.stop();
-        toast({
-          title: `${lot.name} - Polígono`,
-          description: `Área: ${areaText}`,
-        });
+        console.log(`Clicked on ${lot.name} polygon - Area: ${areaText}`);
       });
 
       polygons.current.set(lotPolygon.lotId, polygon);
@@ -82,10 +77,7 @@ export const usePolygonRenderer = (lots: Lot[]) => {
 
       labelMarker.addListener('click', (e: google.maps.MapMouseEvent) => {
         e.stop();
-        toast({
-          title: `${lot.name} - Información`,
-          description: `Área: ${areaText}`,
-        });
+        console.log(`Clicked on ${lot.name} label - Area: ${areaText}`);
       });
 
       labels.current.set(lotPolygon.lotId, labelMarker);
