@@ -37,8 +37,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     handleLotSelection
   } = useLotSelection(onLotSelect);
 
-  const initializationResult = useGoogleMapsInitialization(lots);
-
   const {
     mapContainer,
     isLoading,
@@ -53,7 +51,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     setPolygonColor,
     togglePolygonsVisibility,
     toggleLabelsVisibility
-  } = initializationResult;
+  } = useGoogleMapsInitialization(lots);
 
   const {
     handleStartDrawing,
