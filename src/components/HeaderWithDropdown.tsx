@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
@@ -136,24 +137,14 @@ const HeaderWithDropdown = () => {
           {/* Right side buttons */}
           <div className="flex items-center space-x-3">
             <NotificationBell />
-            {showInstallButton ? (
-              <Button
-                onClick={handleInstallApp}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Instalar App</span>
-                <span className="sm:hidden">Instalar</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={() => navigate('/animals/new')}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Agregar Animal</span>
-              </Button>
-            )}
+            <Button
+              onClick={handleInstallApp}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Instalar App</span>
+              <span className="sm:hidden">Instalar</span>
+            </Button>
           </div>
         </div>
       </div>
