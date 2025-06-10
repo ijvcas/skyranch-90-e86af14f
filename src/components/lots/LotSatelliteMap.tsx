@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -103,24 +102,9 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     return true;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return '#10b981'; // green
-      case 'resting': return '#f59e0b'; // yellow
-      case 'maintenance': return '#ef4444'; // red
-      default: return '#6b7280'; // gray
-    }
-  };
-
   const initializeMap = async () => {
     console.log('🗺️ Starting map initialization...');
     
-    if (!mapContainer.current) {
-      console.error('❌ Map container not found');
-      setError('Map container not available');
-      return;
-    }
-
     if (!validateToken(mapboxToken)) {
       console.error('❌ Token validation failed');
       return;
@@ -128,6 +112,16 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
     setIsLoading(true);
     setError(null);
+
+    // Wait a bit to ensure the container is rendered
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (!mapContainer.current) {
+      console.error('❌ Map container not found after waiting');
+      setError('Map container not available');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       console.log('🔑 Setting Mapbox access token...');
@@ -430,183 +424,185 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     };
   }, []);
 
-  if (showTokenInput) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <MapPin className="w-5 h-5 mr-2" />
-            Configurar Mapa Satelital
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="flex items-center p-3 text-sm text-red-800 bg-red-50 rounded-lg border border-red-200">
-              <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-          
-          <div>
-            <p className="text-sm text-gray-600 mb-4">
-              Para mostrar el mapa satelital de SkyRanch, necesitas proporcionar tu token público de Mapbox.
-            </p>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Token Público de Mapbox</label>
-              <Input
-                type="text"
-                value={mapboxToken}
-                onChange={(e) => {
-                  setMapboxToken(e.target.value);
-                  setError(null); // Clear error when user types
-                }}
-                placeholder="pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja..."
-                className="font-mono text-sm"
-                disabled={isLoading}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Obtén tu token en{' '}
-              <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                mapbox.com
-              </a>
-            </p>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button 
-              onClick={initializeMap} 
-              disabled={!mapboxToken || isLoading}
-              className="flex-1"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Cargando Mapa...
-                </>
-              ) : (
-                'Cargar Mapa'
-              )}
-            </Button>
-            
-            {error && (
-              <Button 
-                onClick={handleRetry}
-                variant="outline"
-                disabled={isLoading}
-              >
-                Reintentar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      {/* Map Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center">
+      {/* Token Input Overlay */}
+      {showTokenInput && (
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center">
               <MapPin className="w-5 h-5 mr-2" />
-              Mapa Satelital de SkyRanch
-            </span>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleLayer('lots')}
-                className={selectedLayers.lots ? 'bg-green-50' : ''}
-              >
-                <Layers className="w-4 h-4 mr-1" />
-                Lotes
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleLayer('sheds')}
-                className={selectedLayers.sheds ? 'bg-blue-50' : ''}
-              >
-                <Home className="w-4 h-4 mr-1" />
-                Cobertizos
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleLayer('boundaries')}
-                className={selectedLayers.boundaries ? 'bg-red-50' : ''}
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Límites
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowTokenInput(true);
-                  map.current?.remove();
-                  map.current = null;
-                }}
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Cambiar Token
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Badge variant="outline" className="bg-green-50">
-              <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-              Lotes Activos
-            </Badge>
-            <Badge variant="outline" className="bg-yellow-50">
-              <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
-              En Descanso
-            </Badge>
-            <Badge variant="outline" className="bg-red-50">
-              <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-              Mantenimiento
-            </Badge>
-            <Badge variant="outline" className="bg-blue-50">
-              🏠 Cobertizos
-            </Badge>
-          </div>
-          
-          {isLoading && (
-            <div className="w-full h-96 rounded-lg border flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
-                <p className="text-sm text-gray-600">Cargando mapa satelital...</p>
+              Configurar Mapa Satelital
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="flex items-center p-3 text-sm text-red-800 bg-red-50 rounded-lg border border-red-200">
+                <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>{error}</span>
               </div>
+            )}
+            
+            <div>
+              <p className="text-sm text-gray-600 mb-4">
+                Para mostrar el mapa satelital de SkyRanch, necesitas proporcionar tu token público de Mapbox.
+              </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Token Público de Mapbox</label>
+                <Input
+                  type="text"
+                  value={mapboxToken}
+                  onChange={(e) => {
+                    setMapboxToken(e.target.value);
+                    setError(null); // Clear error when user types
+                  }}
+                  placeholder="pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja..."
+                  className="font-mono text-sm"
+                  disabled={isLoading}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Obtén tu token en{' '}
+                <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  mapbox.com
+                </a>
+              </p>
             </div>
-          )}
-          
-          {error && !isLoading && (
-            <div className="w-full h-96 rounded-lg border flex items-center justify-center bg-red-50">
-              <div className="text-center p-4">
-                <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-600" />
-                <p className="text-sm text-red-800 mb-3">{error}</p>
-                <Button onClick={handleRetry} variant="outline" size="sm">
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={initializeMap} 
+                disabled={!mapboxToken || isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cargando Mapa...
+                  </>
+                ) : (
+                  'Cargar Mapa'
+                )}
+              </Button>
+              
+              {error && (
+                <Button 
+                  onClick={handleRetry}
+                  variant="outline"
+                  disabled={isLoading}
+                >
                   Reintentar
                 </Button>
-              </div>
+              )}
             </div>
-          )}
-          
-          <div 
-            ref={mapContainer} 
-            className={`w-full h-96 rounded-lg border ${isLoading || error ? 'hidden' : ''}`} 
-          />
-          
-          <p className="text-xs text-gray-500 mt-2">
-            Coordenadas: 40°19'3.52"N, 4°28'27.47"W - Haz clic en los lotes para ver detalles
-          </p>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Map Container - Always rendered */}
+      <div className={`${showTokenInput ? 'hidden' : ''}`}>
+        {/* Map Controls */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center">
+                <MapPin className="w-5 h-5 mr-2" />
+                Mapa Satelital de SkyRanch
+              </span>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleLayer('lots')}
+                  className={selectedLayers.lots ? 'bg-green-50' : ''}
+                >
+                  <Layers className="w-4 h-4 mr-1" />
+                  Lotes
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleLayer('sheds')}
+                  className={selectedLayers.sheds ? 'bg-blue-50' : ''}
+                >
+                  <Home className="w-4 h-4 mr-1" />
+                  Cobertizos
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleLayer('boundaries')}
+                  className={selectedLayers.boundaries ? 'bg-red-50' : ''}
+                >
+                  <Settings className="w-4 h-4 mr-1" />
+                  Límites
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowTokenInput(true);
+                    map.current?.remove();
+                    map.current = null;
+                  }}
+                >
+                  <Settings className="w-4 h-4 mr-1" />
+                  Cambiar Token
+                </Button>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Badge variant="outline" className="bg-green-50">
+                <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
+                Lotes Activos
+              </Badge>
+              <Badge variant="outline" className="bg-yellow-50">
+                <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
+                En Descanso
+              </Badge>
+              <Badge variant="outline" className="bg-red-50">
+                <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
+                Mantenimiento
+              </Badge>
+              <Badge variant="outline" className="bg-blue-50">
+                🏠 Cobertizos
+              </Badge>
+            </div>
+            
+            {isLoading && (
+              <div className="w-full h-96 rounded-lg border flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
+                  <p className="text-sm text-gray-600">Cargando mapa satelital...</p>
+                </div>
+              </div>
+            )}
+            
+            {error && !isLoading && (
+              <div className="w-full h-96 rounded-lg border flex items-center justify-center bg-red-50">
+                <div className="text-center p-4">
+                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-600" />
+                  <p className="text-sm text-red-800 mb-3">{error}</p>
+                  <Button onClick={handleRetry} variant="outline" size="sm">
+                    Reintentar
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <div 
+              ref={mapContainer} 
+              className={`w-full h-96 rounded-lg border ${isLoading || error ? 'hidden' : ''}`} 
+            />
+            
+            <p className="text-xs text-gray-500 mt-2">
+              Coordenadas: 40°19'3.52"N, 4°28'27.47"W - Haz clic en los lotes para ver detalles
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
