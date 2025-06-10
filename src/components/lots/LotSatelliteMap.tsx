@@ -15,10 +15,10 @@ interface LotSatelliteMapProps {
 }
 
 // SkyRanch coordinates from the images provided
-const SKYRANCH_CENTER = [-4.474297, 40.317645]; // 4°28'27.47"W, 40°19'3.52"N
+const SKYRANCH_CENTER: [number, number] = [-4.474297, 40.317645]; // 4°28'27.47"W, 40°19'3.52"N
 const ANIMAL_SHEDS = [
-  { name: 'Cobertizo Norte', coordinates: [-4.474200, 40.317700] },
-  { name: 'Cobertizo Sur', coordinates: [-4.474400, 40.317600] }
+  { name: 'Cobertizo Norte', coordinates: [-4.474200, 40.317700] as [number, number] },
+  { name: 'Cobertizo Sur', coordinates: [-4.474400, 40.317600] as [number, number] }
 ];
 
 // Example lot boundaries based on the aerial image layout
@@ -32,7 +32,7 @@ const EXAMPLE_LOT_BOUNDARIES = [
       [-4.473800, 40.317700],
       [-4.474800, 40.317700],
       [-4.474800, 40.318000]
-    ]
+    ] as [number, number][]
   },
   {
     id: 'lot-2',
@@ -43,7 +43,7 @@ const EXAMPLE_LOT_BOUNDARIES = [
       [-4.473800, 40.317400],
       [-4.474800, 40.317400],
       [-4.474800, 40.317700]
-    ]
+    ] as [number, number][]
   },
   {
     id: 'lot-3',
@@ -54,7 +54,7 @@ const EXAMPLE_LOT_BOUNDARIES = [
       [-4.473800, 40.317100],
       [-4.474800, 40.317100],
       [-4.474800, 40.317400]
-    ]
+    ] as [number, number][]
   },
   {
     id: 'lot-4',
@@ -65,7 +65,7 @@ const EXAMPLE_LOT_BOUNDARIES = [
       [-4.473300, 40.317100],
       [-4.473800, 40.317100],
       [-4.473800, 40.318000]
-    ]
+    ] as [number, number][]
   }
 ];
 
@@ -259,7 +259,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     if (!map.current) return;
 
     // Add approximate property boundary based on the aerial view
-    const propertyBoundary = [
+    const propertyBoundary: [number, number][] = [
       [-4.475200, 40.318200],
       [-4.473000, 40.318200],
       [-4.473000, 40.316900],
