@@ -4,9 +4,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Layers, Home, Settings, AlertCircle, Loader2, X } from 'lucide-react';
+import { MapPin, Layers, Settings, AlertCircle, Loader2, X, Palette } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,101 +16,125 @@ interface LotSatelliteMapProps {
 
 // SkyRanch coordinates from the images provided
 const SKYRANCH_CENTER: [number, number] = [-4.474297, 40.317645]; // 4°28'27.47"W, 40°19'3.52"N
-const ANIMAL_SHEDS = [
-  { name: 'Cobertizo Norte', coordinates: [-4.474200, 40.317700] as [number, number] },
-  { name: 'Cobertizo Sur', coordinates: [-4.474400, 40.317600] as [number, number] }
-];
 
-// Example lot boundaries based on the aerial image layout
-const EXAMPLE_LOT_BOUNDARIES = [
+// Real lot divisions based on the aerial image layout
+const REAL_LOT_BOUNDARIES = [
   {
     id: 'lot-1',
-    name: 'Lote Norte',
+    name: 'Lote 1',
+    number: 1,
     coordinates: [
-      [-4.474800, 40.318000],
-      [-4.473800, 40.318000],
-      [-4.473800, 40.317700],
-      [-4.474800, 40.317700],
-      [-4.474800, 40.318000]
+      [-4.474850, 40.318100],
+      [-4.474200, 40.318100],
+      [-4.474200, 40.317800],
+      [-4.474850, 40.317800],
+      [-4.474850, 40.318100]
     ] as [number, number][]
   },
   {
     id: 'lot-2',
-    name: 'Lote Central',
+    name: 'Lote 2',
+    number: 2,
     coordinates: [
-      [-4.474800, 40.317700],
-      [-4.473800, 40.317700],
-      [-4.473800, 40.317400],
-      [-4.474800, 40.317400],
-      [-4.474800, 40.317700]
+      [-4.474200, 40.318100],
+      [-4.473550, 40.318100],
+      [-4.473550, 40.317800],
+      [-4.474200, 40.317800],
+      [-4.474200, 40.318100]
     ] as [number, number][]
   },
   {
     id: 'lot-3',
-    name: 'Lote Sur',
+    name: 'Lote 3',
+    number: 3,
     coordinates: [
-      [-4.474800, 40.317400],
-      [-4.473800, 40.317400],
-      [-4.473800, 40.317100],
-      [-4.474800, 40.317100],
-      [-4.474800, 40.317400]
+      [-4.474850, 40.317800],
+      [-4.474200, 40.317800],
+      [-4.474200, 40.317500],
+      [-4.474850, 40.317500],
+      [-4.474850, 40.317800]
     ] as [number, number][]
   },
   {
     id: 'lot-4',
-    name: 'Lote Este',
+    name: 'Lote 4',
+    number: 4,
     coordinates: [
-      [-4.473800, 40.318000],
-      [-4.473300, 40.318000],
-      [-4.473300, 40.317100],
-      [-4.473800, 40.317100],
-      [-4.473800, 40.318000]
+      [-4.474200, 40.317800],
+      [-4.473550, 40.317800],
+      [-4.473550, 40.317500],
+      [-4.474200, 40.317500],
+      [-4.474200, 40.317800]
+    ] as [number, number][]
+  },
+  {
+    id: 'lot-5',
+    name: 'Lote 5',
+    number: 5,
+    coordinates: [
+      [-4.474850, 40.317500],
+      [-4.474200, 40.317500],
+      [-4.474200, 40.317200],
+      [-4.474850, 40.317200],
+      [-4.474850, 40.317500]
+    ] as [number, number][]
+  },
+  {
+    id: 'lot-6',
+    name: 'Lote 6',
+    number: 6,
+    coordinates: [
+      [-4.474200, 40.317500],
+      [-4.473550, 40.317500],
+      [-4.473550, 40.317200],
+      [-4.474200, 40.317200],
+      [-4.474200, 40.317500]
+    ] as [number, number][]
+  },
+  {
+    id: 'lot-7',
+    name: 'Lote 7',
+    number: 7,
+    coordinates: [
+      [-4.473550, 40.318100],
+      [-4.472900, 40.318100],
+      [-4.472900, 40.317200],
+      [-4.473550, 40.317200],
+      [-4.473550, 40.318100]
     ] as [number, number][]
   }
 ];
 
+// Color palette for lot management
+const LOT_COLORS = {
+  grazing: '#10b981', // Green
+  resting: '#f59e0b',  // Amber
+  maintenance: '#ef4444', // Red
+  preparation: '#8b5cf6', // Purple
+  reserved: '#06b6d4', // Cyan
+  default: '#6b7280' // Gray
+};
+
 const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState('');
-  const [showTokenInput, setShowTokenInput] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLayers, setSelectedLayers] = useState({
     lots: true,
-    sheds: true,
-    boundaries: true
+    labels: true
   });
   const [showControls, setShowControls] = useState(true);
+  const [lotColors, setLotColors] = useState<Record<string, string>>({});
+  const [selectedLot, setSelectedLot] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const validateToken = (token: string): boolean => {
-    if (!token) {
-      setError('Token is required');
-      return false;
-    }
-    
-    if (!token.startsWith('pk.')) {
-      setError('Invalid token format. Mapbox public tokens start with "pk."');
-      return false;
-    }
-    
-    if (token.length < 20) {
-      setError('Token appears to be too short');
-      return false;
-    }
-    
-    return true;
-  };
+  // Use a demo token - in production, this should come from environment variables
+  const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
 
   const initializeMap = async () => {
     console.log('🗺️ Starting map initialization...');
     
-    if (!validateToken(mapboxToken)) {
-      console.error('❌ Token validation failed');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
@@ -127,14 +150,14 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
     try {
       console.log('🔑 Setting Mapbox access token...');
-      mapboxgl.accessToken = mapboxToken;
+      mapboxgl.accessToken = MAPBOX_TOKEN;
       
       console.log('🌍 Creating map instance...');
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/satellite-v9',
         center: SKYRANCH_CENTER,
-        zoom: 17,
+        zoom: 17.5,
         pitch: 0,
         bearing: 0
       });
@@ -145,7 +168,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         setIsLoading(false);
         toast({
           title: "Map Error",
-          description: "Failed to load the satellite map. Please check your token and try again.",
+          description: "Failed to load the satellite map.",
           variant: "destructive"
         });
       });
@@ -153,10 +176,8 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       map.current.on('load', () => {
         console.log('✅ Map loaded successfully');
         setIsLoading(false);
-        setShowTokenInput(false);
+        addSkyRanchLabel();
         addLotBoundaries();
-        addAnimalSheds();
-        addPropertyBoundary();
         toast({
           title: "Map Loaded",
           description: "Satellite map loaded successfully!",
@@ -179,6 +200,53 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     }
   };
 
+  const addSkyRanchLabel = () => {
+    if (!map.current) return;
+
+    console.log('🏷️ Adding SKYRANCH label...');
+
+    try {
+      // Add SKYRANCH source
+      map.current.addSource('skyranch-label', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {
+            name: 'SKYRANCH'
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: SKYRANCH_CENTER
+          }
+        }
+      });
+
+      // Add SKYRANCH label layer
+      map.current.addLayer({
+        id: 'skyranch-text',
+        type: 'symbol',
+        source: 'skyranch-label',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 24,
+          'text-anchor': 'center',
+          'text-offset': [0, -2]
+        },
+        paint: {
+          'text-color': '#ffffff',
+          'text-halo-color': 'rgba(0, 0, 0, 0.8)',
+          'text-halo-width': 3,
+          'text-opacity': 0.9
+        }
+      });
+
+      console.log('✅ SKYRANCH label added successfully');
+    } catch (error) {
+      console.error('❌ Error adding SKYRANCH label:', error);
+    }
+  };
+
   const addLotBoundaries = () => {
     if (!map.current) {
       console.warn('⚠️ Cannot add lot boundaries: map not available');
@@ -193,12 +261,13 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
-          features: EXAMPLE_LOT_BOUNDARIES.map(boundary => ({
+          features: REAL_LOT_BOUNDARIES.map(boundary => ({
             type: 'Feature',
             properties: { 
               id: boundary.id,
               name: boundary.name,
-              status: 'active' // Default status
+              number: boundary.number,
+              color: lotColors[boundary.id] || LOT_COLORS.default
             },
             geometry: {
               type: 'Polygon',
@@ -214,14 +283,12 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         type: 'fill',
         source: 'lot-boundaries',
         paint: {
-          'fill-color': [
+          'fill-color': ['get', 'color'],
+          'fill-opacity': [
             'case',
-            ['==', ['get', 'status'], 'active'], '#10b981',
-            ['==', ['get', 'status'], 'resting'], '#f59e0b',
-            ['==', ['get', 'status'], 'maintenance'], '#ef4444',
-            '#6b7280'
-          ],
-          'fill-opacity': 0.3
+            ['==', ['get', 'id'], selectedLot || ''], 0.6,
+            0.3
+          ]
         }
       });
 
@@ -232,20 +299,24 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         source: 'lot-boundaries',
         paint: {
           'line-color': '#ffffff',
-          'line-width': 2,
-          'line-opacity': 0.8
+          'line-width': [
+            'case',
+            ['==', ['get', 'id'], selectedLot || ''], 3,
+            2
+          ],
+          'line-opacity': 0.9
         }
       });
 
-      // Add lot labels
+      // Add lot number labels
       map.current.addLayer({
         id: 'lot-labels',
         type: 'symbol',
         source: 'lot-boundaries',
         layout: {
-          'text-field': ['get', 'name'],
+          'text-field': ['get', 'number'],
           'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': 14,
+          'text-size': 18,
           'text-anchor': 'center'
         },
         paint: {
@@ -260,6 +331,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         if (e.features && e.features[0]) {
           const lotId = e.features[0].properties?.id;
           if (lotId) {
+            setSelectedLot(lotId);
             // Find matching lot in the lots array and select it
             const matchingLot = lots.find(lot => lot.name.toLowerCase().includes(lotId.split('-')[1]));
             if (matchingLot) {
@@ -288,105 +360,29 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     }
   };
 
-  const addAnimalSheds = () => {
-    if (!map.current) {
-      console.warn('⚠️ Cannot add animal sheds: map not available');
-      return;
-    }
-
-    console.log('🏠 Adding animal sheds...');
-
-    try {
-      ANIMAL_SHEDS.forEach((shed, index) => {
-        // Create a custom marker element
-        const el = document.createElement('div');
-        el.className = 'shed-marker';
-        el.style.cssText = `
-          background-color: #3b82f6;
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        `;
-        
-        // Add icon
-        const icon = document.createElement('div');
-        icon.innerHTML = '🏠';
-        icon.style.fontSize = '14px';
-        el.appendChild(icon);
-
-        // Create marker
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat(shed.coordinates)
-          .addTo(map.current!);
-
-        // Add popup
-        const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <div class="p-2">
-              <h3 class="font-semibold">${shed.name}</h3>
-              <p class="text-sm text-gray-600">Instalación para animales</p>
-            </div>
-          `);
-
-        marker.setPopup(popup);
-      });
-
-      console.log('✅ Animal sheds added successfully');
-    } catch (error) {
-      console.error('❌ Error adding animal sheds:', error);
-    }
-  };
-
-  const addPropertyBoundary = () => {
-    if (!map.current) {
-      console.warn('⚠️ Cannot add property boundary: map not available');
-      return;
-    }
-
-    console.log('🏡 Adding property boundary...');
-
-    try {
-      // Add approximate property boundary based on the aerial view
-      const propertyBoundary: [number, number][] = [
-        [-4.475200, 40.318200],
-        [-4.473000, 40.318200],
-        [-4.473000, 40.316900],
-        [-4.475200, 40.316900],
-        [-4.475200, 40.318200]
-      ];
-
-      map.current.addSource('property-boundary', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Polygon',
-            coordinates: [propertyBoundary]
-          }
+  const updateLotColor = (lotId: string, color: string) => {
+    setLotColors(prev => ({ ...prev, [lotId]: color }));
+    
+    if (map.current && map.current.getSource('lot-boundaries')) {
+      // Update the source data with new color
+      const currentData = map.current.getSource('lot-boundaries')._data;
+      const updatedFeatures = currentData.features.map((feature: any) => {
+        if (feature.properties.id === lotId) {
+          return {
+            ...feature,
+            properties: {
+              ...feature.properties,
+              color: color
+            }
+          };
         }
+        return feature;
       });
 
-      map.current.addLayer({
-        id: 'property-border',
-        type: 'line',
-        source: 'property-boundary',
-        paint: {
-          'line-color': '#dc2626',
-          'line-width': 3,
-          'line-dasharray': [2, 2]
-        }
+      map.current.getSource('lot-boundaries').setData({
+        type: 'FeatureCollection',
+        features: updatedFeatures
       });
-
-      console.log('✅ Property boundary added successfully');
-    } catch (error) {
-      console.error('❌ Error adding property boundary:', error);
     }
   };
 
@@ -401,108 +397,39 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       case 'lots':
         map.current.setLayoutProperty('lot-fills', 'visibility', visibility);
         map.current.setLayoutProperty('lot-borders', 'visibility', visibility);
-        map.current.setLayoutProperty('lot-labels', 'visibility', visibility);
         break;
-      case 'boundaries':
-        map.current.setLayoutProperty('property-border', 'visibility', visibility);
+      case 'labels':
+        map.current.setLayoutProperty('lot-labels', 'visibility', visibility);
         break;
     }
   };
 
-  const handleRetry = () => {
-    console.log('🔄 Retrying map initialization...');
-    setError(null);
-    setIsLoading(false);
-    map.current?.remove();
-    map.current = null;
-  };
-
   useEffect(() => {
+    initializeMap();
     return () => {
       console.log('🧹 Cleaning up map...');
       map.current?.remove();
     };
   }, []);
 
+  // Update lot selection highlighting
+  useEffect(() => {
+    if (map.current && map.current.getLayer('lot-fills')) {
+      map.current.setPaintProperty('lot-fills', 'fill-opacity', [
+        'case',
+        ['==', ['get', 'id'], selectedLot || ''], 0.6,
+        0.3
+      ]);
+      map.current.setPaintProperty('lot-borders', 'line-width', [
+        'case',
+        ['==', ['get', 'id'], selectedLot || ''], 3,
+        2
+      ]);
+    }
+  }, [selectedLot]);
+
   return (
     <div className="relative w-full h-full">
-      {/* Token Input Overlay */}
-      {showTokenInput && (
-        <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center justify-center min-h-full p-4">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MapPin className="w-5 h-5 mr-2" />
-                  Configurar Mapa Satelital
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <div className="flex items-center p-3 text-sm text-red-800 bg-red-50 rounded-lg border border-red-200">
-                    <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-                
-                <div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Para mostrar el mapa satelital de SkyRanch, necesitas proporcionar tu token público de Mapbox.
-                  </p>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Token Público de Mapbox</label>
-                    <Input
-                      type="text"
-                      value={mapboxToken}
-                      onChange={(e) => {
-                        setMapboxToken(e.target.value);
-                        setError(null);
-                      }}
-                      placeholder="pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja..."
-                      className="font-mono text-sm"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Obtén tu token en{' '}
-                    <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      mapbox.com
-                    </a>
-                  </p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={initializeMap} 
-                    disabled={!mapboxToken || isLoading}
-                    className="flex-1"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Cargando Mapa...
-                      </>
-                    ) : (
-                      'Cargar Mapa'
-                    )}
-                  </Button>
-                  
-                  {error && (
-                    <Button 
-                      onClick={handleRetry}
-                      variant="outline"
-                      disabled={isLoading}
-                    >
-                      Reintentar
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
       {/* Map Container - Full Screen */}
       <div 
         ref={mapContainer} 
@@ -511,7 +438,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       />
 
       {/* Loading Overlay */}
-      {isLoading && !showTokenInput && (
+      {isLoading && (
         <div className="absolute inset-0 z-40 bg-background/50 backdrop-blur-sm flex items-center justify-center">
           <div className="text-center bg-background p-6 rounded-lg shadow-lg border">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
@@ -521,12 +448,12 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       )}
 
       {/* Error Overlay */}
-      {error && !isLoading && !showTokenInput && (
+      {error && !isLoading && (
         <div className="absolute inset-0 z-40 bg-background/50 backdrop-blur-sm flex items-center justify-center">
           <div className="text-center bg-background p-6 rounded-lg shadow-lg border">
             <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-600" />
             <p className="text-sm text-red-800 mb-3">{error}</p>
-            <Button onClick={handleRetry} variant="outline" size="sm">
+            <Button onClick={initializeMap} variant="outline" size="sm">
               Reintentar
             </Button>
           </div>
@@ -534,7 +461,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       )}
 
       {/* Floating Controls */}
-      {!showTokenInput && !isLoading && !error && (
+      {!isLoading && !error && (
         <>
           {/* Controls Toggle Button */}
           <Button
@@ -548,11 +475,11 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
           {/* Layer Controls */}
           {showControls && (
-            <Card className="absolute top-4 left-16 z-30 shadow-lg">
+            <Card className="absolute top-4 left-16 z-30 shadow-lg max-w-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center">
                   <MapPin className="w-4 h-4 mr-2" />
-                  Mapa Satelital de SkyRanch
+                  SkyRanch - Gestión de Lotes
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -569,36 +496,32 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => toggleLayer('sheds')}
-                    className={selectedLayers.sheds ? 'bg-blue-50' : ''}
+                    onClick={() => toggleLayer('labels')}
+                    className={selectedLayers.labels ? 'bg-blue-50' : ''}
                   >
-                    <Home className="w-4 h-4 mr-1" />
-                    Cobertizos
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleLayer('boundaries')}
-                    className={selectedLayers.boundaries ? 'bg-red-50' : ''}
-                  >
-                    <Settings className="w-4 h-4 mr-1" />
-                    Límites
+                    <Palette className="w-4 h-4 mr-1" />
+                    Números
                   </Button>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowTokenInput(true);
-                    map.current?.remove();
-                    map.current = null;
-                  }}
-                  className="w-full"
-                >
-                  <Settings className="w-4 h-4 mr-1" />
-                  Cambiar Token
-                </Button>
+                {selectedLot && (
+                  <div className="border-t pt-3">
+                    <p className="text-sm font-medium mb-2">
+                      Lote {REAL_LOT_BOUNDARIES.find(l => l.id === selectedLot)?.number} - Color:
+                    </p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {Object.entries(LOT_COLORS).map(([key, color]) => (
+                        <button
+                          key={key}
+                          className="w-8 h-8 rounded border-2 border-white shadow-sm hover:scale-110 transition-transform"
+                          style={{ backgroundColor: color }}
+                          onClick={() => updateLotColor(selectedLot, color)}
+                          title={key}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -610,7 +533,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
                 <div className="flex flex-wrap gap-2 text-xs">
                   <Badge variant="outline" className="bg-green-50">
                     <div className="w-2 h-2 bg-green-500 rounded mr-1"></div>
-                    Activos
+                    Pastoreo
                   </Badge>
                   <Badge variant="outline" className="bg-yellow-50">
                     <div className="w-2 h-2 bg-yellow-500 rounded mr-1"></div>
@@ -620,8 +543,13 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
                     <div className="w-2 h-2 bg-red-500 rounded mr-1"></div>
                     Mantenimiento
                   </Badge>
-                  <Badge variant="outline" className="bg-blue-50">
-                    🏠 Cobertizos
+                  <Badge variant="outline" className="bg-purple-50">
+                    <div className="w-2 h-2 bg-purple-500 rounded mr-1"></div>
+                    Preparación
+                  </Badge>
+                  <Badge variant="outline" className="bg-cyan-50">
+                    <div className="w-2 h-2 bg-cyan-500 rounded mr-1"></div>
+                    Reservado
                   </Badge>
                 </div>
               </CardContent>
@@ -631,7 +559,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
           {/* Coordinates Info */}
           <div className="absolute bottom-4 right-4 z-30 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-lg border shadow-lg">
             <p className="text-xs text-muted-foreground">
-              40°19'3.52"N, 4°28'27.47"W
+              SkyRanch - 40°19'3.52"N, 4°28'27.47"W
             </p>
           </div>
         </>
