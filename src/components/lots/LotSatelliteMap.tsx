@@ -31,7 +31,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     error,
     apiKey,
     showApiKeyInput,
-    lotPolygons,
     mapRotation,
     setApiKey,
     resetMapRotation,
@@ -69,27 +68,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     } else {
       document.exitFullscreen();
     }
-  };
-
-  // Create wrapper functions that match PolygonDrawer's expected signatures
-  const handleStartDrawing = () => {
-    // PolygonDrawer will handle lot selection internally
-    console.log('Start drawing requested');
-  };
-
-  const handleSavePolygon = () => {
-    // PolygonDrawer will handle lot ID internally  
-    console.log('Save polygon requested');
-  };
-
-  const handleDeletePolygon = () => {
-    // PolygonDrawer will handle lot ID internally
-    console.log('Delete polygon requested');
-  };
-
-  const handleColorChange = (color: string) => {
-    // PolygonDrawer will handle lot ID internally
-    console.log('Color change requested:', color);
   };
 
   if (showApiKeyInput) {
@@ -205,11 +183,10 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       {(showControls || isFullscreen) && (
         <PolygonDrawer
           lots={lots}
-          lotPolygons={lotPolygons}
-          onStartDrawing={handleStartDrawing}
-          onSavePolygon={handleSavePolygon}
-          onDeletePolygon={handleDeletePolygon}
-          onColorChange={handleColorChange}
+          onStartDrawing={startDrawingPolygon}
+          onSavePolygon={saveCurrentPolygon}
+          onDeletePolygon={deletePolygonForLot}
+          onColorChange={setPolygonColor}
           isFullscreen={isFullscreen}
         />
       )}
