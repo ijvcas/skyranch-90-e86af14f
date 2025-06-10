@@ -13,10 +13,9 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   const { mapContainer, map, isLoading, error, initializeMap } = useMapInitialization();
   const { mapRotation, resetMapRotation, setupRotationListener } = useMapRotation();
   
-  // Polygon management hooks - used directly instead of through managers
+  // Polygon management hooks - used directly
   const {
     lotPolygons,
-    savePolygons,
     updatePolygonForLot,
     deletePolygonForLot,
     addPolygonForLot
@@ -48,33 +47,41 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     console.log('API Key available:', !!apiKey);
     console.log('Container available:', !!mapContainer.current);
     
-    if (apiKey) {
+    if (apiKey && mapContainer.current) {
       setShowApiKeyInput(false);
       await initializeMap(apiKey, handleMapReady);
     } else {
-      console.log('❌ No API key available');
+      console.log('❌ Missing requirements - API key:', !!apiKey, 'Container:', !!mapContainer.current);
     }
   };
 
-  // Polygon operation handlers - simplified
+  // Simplified polygon operation handlers
   const handleStartDrawingPolygon = (lotId: string) => {
+    console.log('🖊️ Starting drawing for lot:', lotId);
     startDrawingPolygon(lotId);
   };
 
   const handleSaveCurrentPolygon = (lotId: string, onComplete: () => void) => {
+    console.log('💾 Saving polygon for lot:', lotId);
     if (map.current) {
       saveCurrentPolygon(lotId, map.current, onComplete);
+    } else {
+      console.error('❌ Map not available for saving polygon');
+      onComplete();
     }
   };
 
   const handleDeletePolygonForLot = (lotId: string) => {
+    console.log('🗑️ Deleting polygon for lot:', lotId);
     deletePolygonForLot(lotId);
     if (map.current) {
-      renderLotPolygons(map.current, lotPolygons.filter(p => p.lotId !== lotId));
+      const updatedPolygons = lotPolygons.filter(p => p.lotId !== lotId);
+      renderLotPolygons(map.current, updatedPolygons);
     }
   };
 
   const handleSetPolygonColor = (lotId: string, color: string) => {
+    console.log('🎨 Setting polygon color for lot:', lotId, 'to:', color);
     updatePolygonForLot(lotId, { color });
     if (map.current) {
       renderLotPolygons(map.current, lotPolygons);
@@ -83,7 +90,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
 
   // Initialize map when API key is available
   useEffect(() => {
-    console.log('🔄 API key effect triggered:', !!apiKey);
+    console.log('🔄 API key effect triggered. API Key:', !!apiKey, 'Container:', !!mapContainer.current);
     if (apiKey) {
       handleInitializeMap();
     }
@@ -94,10 +101,10 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     };
   }, [apiKey]);
 
-  // Re-render polygons when lots change
+  // Re-render polygons when lots or polygons change
   useEffect(() => {
-    if (map.current) {
-      console.log('🔄 Re-rendering polygons for lots change');
+    if (map.current && lotPolygons.length > 0) {
+      console.log('🔄 Re-rendering polygons - lots:', lots.length, 'polygons:', lotPolygons.length);
       renderLotPolygons(map.current, lotPolygons);
     }
   }, [lots, lotPolygons]);

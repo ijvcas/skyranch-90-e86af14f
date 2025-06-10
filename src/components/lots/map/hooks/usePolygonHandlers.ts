@@ -5,7 +5,7 @@ interface UsePolygonHandlersProps {
   selectedLot: Lot | null;
   setIsDrawing: (drawing: boolean) => void;
   startDrawingPolygon: (lotId: string) => void;
-  saveCurrentPolygon: (lotId: string) => void;
+  saveCurrentPolygon: (lotId: string, onComplete: () => void) => void;
   deletePolygonForLot: (lotId: string) => void;
   setPolygonColor: (lotId: string, color: string) => void;
 }
@@ -31,8 +31,9 @@ export const usePolygonHandlers = ({
   const handleSavePolygon = () => {
     if (selectedLot) {
       console.log('Saving polygon for lot:', selectedLot.id);
-      saveCurrentPolygon(selectedLot.id);
-      setIsDrawing(false);
+      saveCurrentPolygon(selectedLot.id, () => {
+        setIsDrawing(false);
+      });
     } else {
       console.log('No lot selected for saving');
     }
