@@ -1,9 +1,8 @@
 
 import React, { useState } from 'react';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import { type Lot } from '@/stores/lotStore';
-import { useMapInitialization } from './map/useMapInitialization';
-import { LoadingOverlay, ErrorOverlay, CoordinatesInfo } from './map/MapOverlays';
+import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
+import { LoadingOverlay, ErrorOverlay, CoordinatesInfo, ApiKeyInput } from './map/MapOverlays';
 import { MapControls, MapLegend } from './map/MapControls';
 
 interface LotSatelliteMapProps {
@@ -24,10 +23,13 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     error,
     selectedLot,
     lotColors,
+    apiKey,
+    showApiKeyInput,
+    setApiKey,
     initializeMap,
     updateLotColor,
     toggleLayer
-  } = useMapInitialization(lots, onLotSelect);
+  } = useGoogleMapsInitialization(lots, onLotSelect);
 
   const handleToggleLayer = (layerName: 'lots' | 'labels') => {
     setSelectedLayers(prev => ({ ...prev, [layerName]: !prev[layerName] }));
@@ -43,14 +45,25 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         style={{ minHeight: '400px' }}
       />
 
+      {/* API Key Input Overlay */}
+      <ApiKeyInput
+        show={showApiKeyInput}
+        apiKey={apiKey}
+        onApiKeyChange={setApiKey}
+        onSubmit={initializeMap}
+      />
+
       {/* Loading Overlay */}
       <LoadingOverlay isLoading={isLoading} />
 
       {/* Error Overlay */}
-      <ErrorOverlay error={error && !isLoading ? error : null} onRetry={initializeMap} />
+      <ErrorOverlay 
+        error={error && !isLoading && !showApiKeyInput ? error : null} 
+        onRetry={initializeMap} 
+      />
 
       {/* Floating Controls */}
-      {!isLoading && !error && (
+      {!isLoading && !error && !showApiKeyInput && (
         <>
           <MapControls
             showControls={showControls}

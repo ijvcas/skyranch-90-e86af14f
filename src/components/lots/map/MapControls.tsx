@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +48,7 @@ export const MapControls = ({
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center">
               <MapPin className="w-4 h-4 mr-2" />
-              SkyRanch - Gestión de Lotes
+              SkyRanch - Gestión de Lotes (Google Maps)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
