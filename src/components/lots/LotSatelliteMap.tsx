@@ -1,16 +1,16 @@
-
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, AlertCircle, Fullscreen, Minimize } from 'lucide-react';
+import React from 'react';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
 import { MapControls } from './map/MapControls';
 import { PolygonDrawer } from './map/PolygonDrawer';
-import { API_KEY_INSTRUCTIONS } from './map/mapConstants';
+import { ApiKeySetup } from './map/ApiKeySetup';
+import { MapLoadingState } from './map/MapLoadingState';
+import { MapErrorState } from './map/MapErrorState';
+import { SkyRanchLabel } from './map/SkyRanchLabel';
+import { FullscreenToggle } from './map/FullscreenToggle';
+import { useMapState } from './map/hooks/useMapState';
+import { useLotSelection } from './map/hooks/useLotSelection';
+import { usePolygonHandlers } from './map/hooks/usePolygonHandlers';
 import { type Lot } from '@/stores/lotStore';
-import { useDraggable } from '@/hooks/useDraggable';
 
 interface LotSatelliteMapProps {
   lots: Lot[];
@@ -18,20 +18,28 @@ interface LotSatelliteMapProps {
 }
 
 const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
-  const [showControls, setShowControls] = useState(false);
-  const [showPolygons, setShowPolygons] = useState(true);
-  const [showLabels, setShowLabels] = useState(true);
-  const [tempApiKey, setTempApiKey] = useState('');
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const {
+    showControls,
+    setShowControls,
+    showPolygons,
+    setShowPolygons,
+    showLabels,
+    setShowLabels,
+    isFullscreen,
+    toggleFullscreen
+  } = useMapState();
+
+  const {
+    selectedLot,
+    isDrawing,
+    setIsDrawing,
+    handleLotSelection
+  } = useLotSelection(onLotSelect);
 
   const {
     mapContainer,
-    map,
     isLoading,
     error,
-    apiKey,
     showApiKeyInput,
     mapRotation,
     setApiKey,
@@ -44,83 +52,20 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     toggleLabelsVisibility
   } = useGoogleMapsInitialization(lots);
 
-  // Draggable hook for SkyRanch label
-  const { position, dragRef, handleMouseDown, isDragging } = useDraggable({ x: 0, y: 0 });
-
-  // Handle fullscreen changes
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  const handleApiKeySubmit = () => {
-    if (tempApiKey.trim()) {
-      setApiKey(tempApiKey.trim());
-      setTempApiKey('');
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      mapContainer.current?.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  // Wrapper functions that match PolygonDrawer's expected signatures
-  const handleStartDrawing = () => {
-    if (selectedLot) {
-      console.log('Starting drawing for lot:', selectedLot.id);
-      setIsDrawing(true);
-      startDrawingPolygon(selectedLot.id);
-    } else {
-      console.log('No lot selected for drawing');
-    }
-  };
-
-  const handleSavePolygon = () => {
-    if (selectedLot) {
-      console.log('Saving polygon for lot:', selectedLot.id);
-      saveCurrentPolygon(selectedLot.id);
-      setIsDrawing(false);
-    } else {
-      console.log('No lot selected for saving');
-    }
-  };
-
-  const handleDeletePolygon = () => {
-    if (selectedLot) {
-      console.log('Deleting polygon for lot:', selectedLot.id);
-      deletePolygonForLot(selectedLot.id);
-    } else {
-      console.log('No lot selected for deletion');
-    }
-  };
-
-  const handleColorChange = (color: string) => {
-    if (selectedLot) {
-      console.log('Changing color for lot:', selectedLot.id, 'to:', color);
-      setPolygonColor(selectedLot.id, color);
-    } else {
-      console.log('No lot selected for color change');
-    }
-  };
-
-  const handleCancelDrawing = () => {
-    console.log('Cancelling drawing');
-    setIsDrawing(false);
-  };
-
-  const handleLotSelection = (lot: Lot) => {
-    console.log('Lot selected:', lot.id);
-    setSelectedLot(lot);
-    onLotSelect(lot.id);
-  };
+  const {
+    handleStartDrawing,
+    handleSavePolygon,
+    handleDeletePolygon,
+    handleColorChange,
+    handleCancelDrawing
+  } = usePolygonHandlers({
+    selectedLot,
+    setIsDrawing,
+    startDrawingPolygon,
+    saveCurrentPolygon,
+    deletePolygonForLot,
+    setPolygonColor
+  });
 
   // Check if selected lot has a polygon (placeholder logic)
   const hasPolygon = selectedLot ? false : false; // TODO: Implement polygon existence check
@@ -129,63 +74,15 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   const currentColor = selectedLot ? '#10b981' : '#6b7280'; // TODO: Implement color retrieval
 
   if (showApiKeyInput) {
-    return (
-      <div className="w-full h-full flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Configurar Google Maps
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm text-gray-600 whitespace-pre-line">
-              {API_KEY_INSTRUCTIONS}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                placeholder="Ingresa tu Google Maps API Key"
-                value={tempApiKey}
-                onChange={(e) => setTempApiKey(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()}
-              />
-              <Button onClick={handleApiKeySubmit} disabled={!tempApiKey.trim()}>
-                Guardar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <ApiKeySetup onApiKeySubmit={setApiKey} />;
   }
 
   if (isLoading) {
-    return (
-      <div className="w-full h-full">
-        <Skeleton className="w-full h-full rounded-lg" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-lg text-gray-600">Cargando mapa satelital...</div>
-        </div>
-      </div>
-    );
+    return <MapLoadingState />;
   }
 
   if (error) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error al cargar el mapa</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>
-              Reintentar
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <MapErrorState error={error} />;
   }
 
   return (
@@ -194,30 +91,10 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       <div ref={mapContainer} className="w-full h-full rounded-lg" />
 
       {/* SkyRanch Label - Top Center, Draggable */}
-      <div 
-        ref={dragRef}
-        className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20"
-        style={{ 
-          transform: `translate(${position.x - 50}%, ${position.y}px)`,
-          cursor: isDragging ? 'grabbing' : 'grab'
-        }}
-        onMouseDown={handleMouseDown}
-      >
-        <div className="bg-white/95 backdrop-blur-sm border border-gray-300 rounded-lg px-4 py-2 shadow-lg">
-          <div className="text-sm font-semibold text-gray-800">SkyRanch</div>
-          <div className="text-xs text-gray-600">40°19'3.52"N, 4°28'27.47"W</div>
-        </div>
-      </div>
+      <SkyRanchLabel />
 
       {/* Fullscreen Toggle - Top Right */}
-      <Button
-        variant="secondary"
-        size="sm"
-        className="absolute top-4 right-16 z-30 shadow-lg bg-white/95 backdrop-blur-sm"
-        onClick={toggleFullscreen}
-      >
-        {isFullscreen ? <Minimize className="w-4 h-4" /> : <Fullscreen className="w-4 h-4" />}
-      </Button>
+      <FullscreenToggle isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
 
       {/* Map Controls */}
       <MapControls
