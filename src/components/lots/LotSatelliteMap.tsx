@@ -10,6 +10,7 @@ import { MapControls } from './map/MapControls';
 import { PolygonDrawer } from './map/PolygonDrawer';
 import { API_KEY_INSTRUCTIONS } from './map/mapConstants';
 import { type Lot } from '@/stores/lotStore';
+import { useDraggable } from '@/hooks/useDraggable';
 
 interface LotSatelliteMapProps {
   lots: Lot[];
@@ -41,6 +42,9 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     togglePolygonsVisibility,
     toggleLabelsVisibility
   } = useGoogleMapsInitialization(lots);
+
+  // Draggable hook for SkyRanch label
+  const { position, dragRef, handleMouseDown, isDragging } = useDraggable({ x: 0, y: 0 });
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -133,8 +137,16 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
       <div ref={mapContainer} className="w-full h-full rounded-lg" />
 
       {/* SkyRanch Label - Top Center, Draggable */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-        <div className="bg-white/95 backdrop-blur-sm border border-gray-300 rounded-lg px-4 py-2 shadow-lg cursor-move">
+      <div 
+        ref={dragRef}
+        className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20"
+        style={{ 
+          transform: `translate(${position.x - 50}%, ${position.y}px)`,
+          cursor: isDragging ? 'grabbing' : 'grab'
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-300 rounded-lg px-4 py-2 shadow-lg">
           <div className="text-sm font-semibold text-gray-800">SkyRanch</div>
           <div className="text-xs text-gray-600">40°19'3.52"N, 4°28'27.47"W</div>
         </div>
@@ -173,10 +185,10 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         <PolygonDrawer
           lots={lots}
           lotPolygons={lotPolygons}
-          onStartDrawing={(lotId: string) => startDrawingPolygon(lotId)}
-          onSavePolygon={(lotId: string) => saveCurrentPolygon(lotId)}
-          onDeletePolygon={(lotId: string) => deletePolygonForLot(lotId)}
-          onColorChange={(lotId: string, color: string) => setPolygonColor(lotId, color)}
+          onStartDrawing={startDrawingPolygon}
+          onSavePolygon={saveCurrentPolygon}
+          onDeletePolygon={deletePolygonForLot}
+          onColorChange={setPolygonColor}
           isFullscreen={isFullscreen}
         />
       )}

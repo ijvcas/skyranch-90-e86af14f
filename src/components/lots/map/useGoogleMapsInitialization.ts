@@ -93,7 +93,9 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
       }
       
       console.log('🌍 Creating Google Maps instance with native rotation controls...');
-      map.current = new google.maps.Map(mapContainer.current, {
+      
+      // Create map configuration with proper Google Maps control positioning
+      const mapConfig = {
         ...GOOGLE_MAPS_CONFIG,
         center: SKYRANCH_CENTER,
         controlSize: 32,
@@ -113,7 +115,9 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
         scaleControlOptions: {
           // Remove invalid position property - Google Maps will auto-position
         }
-      });
+      };
+
+      map.current = new google.maps.Map(mapContainer.current, mapConfig);
 
       // Track map rotation changes
       map.current.addListener('heading_changed', () => {

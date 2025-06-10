@@ -30,7 +30,7 @@ export const GOOGLE_MAPS_CONFIG = {
   isFractionalZoomEnabled: true,
   // Enable enhanced rotation and tilt controls
   rotateControlOptions: {
-    position: google.maps.ControlPosition.RIGHT_CENTER
+    // Position will be set dynamically when google is available
   }
 };
 
