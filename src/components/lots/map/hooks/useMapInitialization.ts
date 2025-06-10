@@ -1,5 +1,5 @@
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 import { useToast } from '@/hooks/use-toast';
 import { SKYRANCH_CENTER, GOOGLE_MAPS_CONFIG } from '../mapConstants';
@@ -13,26 +13,35 @@ export const useMapInitialization = () => {
   const { toast } = useToast();
   const { addSkyRanchLabel } = useMapRenderer();
 
-  const initializeMap = async (apiKey: string, onMapReady?: (mapInstance: google.maps.Map) => void) => {
+  const initializeMap = useCallback(async (apiKey: string, onMapReady?: (mapInstance: google.maps.Map) => void) => {
     if (!apiKey) {
       setError('API key de Google Maps requerida');
-      return;
-    }
-
-    console.log('🗺️ Starting Google Maps initialization with native rotation controls...');
-    
-    setIsLoading(true);
-    setError(null);
-
-    if (!mapContainer.current) {
-      console.error('❌ Map container not found');
-      setError('Map container not available');
       setIsLoading(false);
       return;
     }
 
+    console.log('🗺️ Starting Google Maps initialization...');
+    
+    setIsLoading(true);
+    setError(null);
+
+    // Wait for the container to be available
+    if (!mapContainer.current) {
+      console.error('❌ Map container not found - waiting for DOM');
+      // Try again after a short delay
+      setTimeout(() => {
+        if (mapContainer.current) {
+          initializeMap(apiKey, onMapReady);
+        } else {
+          setError('Map container not available');
+          setIsLoading(false);
+        }
+      }, 100);
+      return;
+    }
+
     try {
-      console.log('🔑 Loading Google Maps API with ALL libraries...');
+      console.log('🔑 Loading Google Maps API...');
       
       const loader = new Loader({
         apiKey: apiKey,
@@ -46,7 +55,7 @@ export const useMapInitialization = () => {
         throw new Error('Google Maps geometry library failed to load');
       }
       
-      console.log('🌍 Creating Google Maps instance with native rotation controls...');
+      console.log('🌍 Creating Google Maps instance...');
       
       const mapConfig = {
         ...GOOGLE_MAPS_CONFIG,
@@ -87,7 +96,7 @@ export const useMapInitialization = () => {
       
       toast({
         title: "Mapa Cargado",
-        description: "SkyRanch cargado con controles nativos de Google Maps!",
+        description: "SkyRanch cargado correctamente!",
       });
 
     } catch (error) {
@@ -100,7 +109,7 @@ export const useMapInitialization = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast, addSkyRanchLabel]);
 
   return {
     mapContainer,

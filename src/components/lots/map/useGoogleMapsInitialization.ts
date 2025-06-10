@@ -23,18 +23,21 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   });
 
   const handleMapReady = (mapInstance: google.maps.Map) => {
+    console.log('🎯 Map ready, initializing components...');
     setupRotationListener(mapInstance);
     polygonManager.initializeDrawingManager(mapInstance);
     polygonManager.renderLotPolygons(mapInstance);
   };
 
   const handleInitializeMap = async () => {
-    if (apiKey) {
+    if (apiKey && mapContainer.current) {
+      console.log('🚀 Starting map initialization...');
       setShowApiKeyInput(false);
       await initializeMap(apiKey, handleMapReady);
     }
   };
 
+  // Initialize map when API key is available and container is ready
   useEffect(() => {
     if (apiKey) {
       handleInitializeMap();
