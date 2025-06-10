@@ -30,15 +30,21 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   };
 
   const handleInitializeMap = async () => {
-    if (apiKey && mapContainer.current) {
-      console.log('🚀 Starting map initialization...');
+    console.log('🚀 Attempting to initialize map...');
+    console.log('API Key available:', !!apiKey);
+    console.log('Container available:', !!mapContainer.current);
+    
+    if (apiKey) {
       setShowApiKeyInput(false);
       await initializeMap(apiKey, handleMapReady);
+    } else {
+      console.log('❌ No API key available');
     }
   };
 
-  // Initialize map when API key is available and container is ready
+  // Initialize map when API key is available
   useEffect(() => {
+    console.log('🔄 API key effect triggered:', !!apiKey);
     if (apiKey) {
       handleInitializeMap();
     }
@@ -51,6 +57,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   // Re-render polygons when lots change
   useEffect(() => {
     if (map.current) {
+      console.log('🔄 Re-rendering polygons for lots change');
       polygonManager.renderLotPolygons(map.current);
     }
   }, [lots, polygonManager.lotPolygons]);

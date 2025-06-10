@@ -14,7 +14,10 @@ export const useMapInitialization = () => {
   const { addSkyRanchLabel } = useMapRenderer();
 
   const initializeMap = useCallback(async (apiKey: string, onMapReady?: (mapInstance: google.maps.Map) => void) => {
+    console.log('🗺️ initializeMap called with API key:', !!apiKey);
+    
     if (!apiKey) {
+      console.error('❌ No API key provided');
       setError('API key de Google Maps requerida');
       setIsLoading(false);
       return;
@@ -25,19 +28,25 @@ export const useMapInitialization = () => {
     setIsLoading(true);
     setError(null);
 
-    // Wait for the container to be available
-    if (!mapContainer.current) {
-      console.error('❌ Map container not found - waiting for DOM');
-      // Try again after a short delay
-      setTimeout(() => {
-        if (mapContainer.current) {
-          initializeMap(apiKey, onMapReady);
-        } else {
-          setError('Map container not available');
-          setIsLoading(false);
-        }
-      }, 100);
-      return;
+    // Check container availability with retry logic
+    const checkContainer = () => {
+      if (!mapContainer.current) {
+        console.error('❌ Map container not found');
+        return false;
+      }
+      console.log('✅ Map container found');
+      return true;
+    };
+
+    if (!checkContainer()) {
+      console.log('⏳ Waiting for container...');
+      // Wait a bit for the DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 200));
+      if (!checkContainer()) {
+        setError('Map container not available');
+        setIsLoading(false);
+        return;
+      }
     }
 
     try {
@@ -77,7 +86,7 @@ export const useMapInitialization = () => {
         scaleControlOptions: {}
       };
 
-      map.current = new google.maps.Map(mapContainer.current, mapConfig);
+      map.current = new google.maps.Map(mapContainer.current!, mapConfig);
 
       // Wait for map to be fully loaded
       await new Promise<void>((resolve) => {
@@ -87,6 +96,7 @@ export const useMapInitialization = () => {
         });
       });
 
+      console.log('✅ Map loaded successfully');
       setIsLoading(false);
       addSkyRanchLabel(map.current);
       
