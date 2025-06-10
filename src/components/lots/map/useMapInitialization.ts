@@ -44,15 +44,15 @@ export const useMapInitialization = (
         layout: {
           'text-field': ['get', 'name'],
           'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': 24,
+          'text-size': 28,
           'text-anchor': 'center',
-          'text-offset': [0, -2]
+          'text-offset': [0, -3]
         },
         paint: {
           'text-color': '#ffffff',
-          'text-halo-color': 'rgba(0, 0, 0, 0.8)',
-          'text-halo-width': 3,
-          'text-opacity': 0.9
+          'text-halo-color': 'rgba(0, 0, 0, 0.9)',
+          'text-halo-width': 4,
+          'text-opacity': 1
         }
       });
 
@@ -65,7 +65,7 @@ export const useMapInitialization = (
   const addLotBoundaries = () => {
     if (!map.current) return;
 
-    console.log('📍 Adding lot boundaries...');
+    console.log('📍 Adding irregular lot boundaries...');
 
     try {
       map.current.addSource('lot-boundaries', {
@@ -88,7 +88,7 @@ export const useMapInitialization = (
         }
       });
 
-      // Add lot fill layer
+      // Add lot fill layer with better styling
       map.current.addLayer({
         id: 'lot-fills',
         type: 'fill',
@@ -97,13 +97,13 @@ export const useMapInitialization = (
           'fill-color': ['get', 'color'],
           'fill-opacity': [
             'case',
-            ['==', ['get', 'id'], selectedLot || ''], 0.6,
-            0.3
+            ['==', ['get', 'id'], selectedLot || ''], 0.7,
+            0.4
           ]
         }
       });
 
-      // Add lot border layer
+      // Add lot border layer with enhanced styling
       map.current.addLayer({
         id: 'lot-borders',
         type: 'line',
@@ -112,14 +112,14 @@ export const useMapInitialization = (
           'line-color': '#ffffff',
           'line-width': [
             'case',
-            ['==', ['get', 'id'], selectedLot || ''], 3,
-            2
+            ['==', ['get', 'id'], selectedLot || ''], 4,
+            2.5
           ],
-          'line-opacity': 0.9
+          'line-opacity': 0.95
         }
       });
 
-      // Add lot number labels
+      // Add lot number labels with better positioning
       map.current.addLayer({
         id: 'lot-labels',
         type: 'symbol',
@@ -127,13 +127,13 @@ export const useMapInitialization = (
         layout: {
           'text-field': ['get', 'number'],
           'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': 18,
+          'text-size': 20,
           'text-anchor': 'center'
         },
         paint: {
           'text-color': '#ffffff',
           'text-halo-color': '#000000',
-          'text-halo-width': 2
+          'text-halo-width': 3
         }
       });
 
@@ -163,7 +163,7 @@ export const useMapInitialization = (
         }
       });
 
-      console.log('✅ Lot boundaries added successfully');
+      console.log('✅ Irregular lot boundaries added successfully');
     } catch (error) {
       console.error('❌ Error adding lot boundaries:', error);
     }
@@ -175,10 +175,8 @@ export const useMapInitialization = (
     setIsLoading(true);
     setError(null);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     if (!mapContainer.current) {
-      console.error('❌ Map container not found after waiting');
+      console.error('❌ Map container not found');
       setError('Map container not available');
       setIsLoading(false);
       return;
@@ -188,23 +186,23 @@ export const useMapInitialization = (
       console.log('🔑 Setting Mapbox access token...');
       mapboxgl.accessToken = MAPBOX_TOKEN;
       
-      console.log('🌍 Creating map instance...');
+      console.log('🌍 Creating map instance with satellite view...');
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/satellite-v9',
         center: SKYRANCH_CENTER,
-        zoom: 17.5,
+        zoom: 18,
         pitch: 0,
         bearing: 0
       });
 
       map.current.on('error', (e) => {
         console.error('❌ Map error:', e);
-        setError(`Map failed to load: ${e.error?.message || 'Unknown error'}`);
+        setError(`Map loading failed. Please check your internet connection.`);
         setIsLoading(false);
         toast({
           title: "Map Error",
-          description: "Failed to load the satellite map.",
+          description: "Failed to load the satellite map. Please try again.",
           variant: "destructive"
         });
       });
@@ -216,7 +214,7 @@ export const useMapInitialization = (
         addLotBoundaries();
         toast({
           title: "Map Loaded",
-          description: "Satellite map loaded successfully!",
+          description: "SkyRanch satellite map loaded with real lot boundaries!",
         });
       });
 
@@ -240,10 +238,8 @@ export const useMapInitialization = (
     setLotColors(prev => ({ ...prev, [lotId]: color }));
     
     if (map.current && map.current.getSource('lot-boundaries')) {
-      // Fix TypeScript error by properly casting to GeoJSONSource
       const source = map.current.getSource('lot-boundaries') as mapboxgl.GeoJSONSource;
       if (source && source.setData) {
-        // Get current data safely
         const currentFeatures = REAL_LOT_BOUNDARIES.map(boundary => ({
           type: 'Feature' as const,
           properties: { 
@@ -269,17 +265,15 @@ export const useMapInitialization = (
   const toggleLayer = (layerName: 'lots' | 'labels') => {
     if (!map.current) return;
 
-    const currentVisibility = map.current.getLayoutProperty('lot-fills', 'visibility');
+    const layerId = layerName === 'lots' ? 'lot-fills' : 'lot-labels';
+    const borderId = 'lot-borders';
+    
+    const currentVisibility = map.current.getLayoutProperty(layerId, 'visibility');
     const visibility = currentVisibility === 'none' ? 'visible' : 'none';
     
-    switch (layerName) {
-      case 'lots':
-        map.current.setLayoutProperty('lot-fills', 'visibility', visibility);
-        map.current.setLayoutProperty('lot-borders', 'visibility', visibility);
-        break;
-      case 'labels':
-        map.current.setLayoutProperty('lot-labels', 'visibility', visibility);
-        break;
+    map.current.setLayoutProperty(layerId, 'visibility', visibility);
+    if (layerName === 'lots') {
+      map.current.setLayoutProperty(borderId, 'visibility', visibility);
     }
   };
 
@@ -296,13 +290,13 @@ export const useMapInitialization = (
     if (map.current && map.current.getLayer('lot-fills')) {
       map.current.setPaintProperty('lot-fills', 'fill-opacity', [
         'case',
-        ['==', ['get', 'id'], selectedLot || ''], 0.6,
-        0.3
+        ['==', ['get', 'id'], selectedLot || ''], 0.7,
+        0.4
       ]);
       map.current.setPaintProperty('lot-borders', 'line-width', [
         'case',
-        ['==', ['get', 'id'], selectedLot || ''], 3,
-        2
+        ['==', ['get', 'id'], selectedLot || ''], 4,
+        2.5
       ]);
     }
   }, [selectedLot]);
