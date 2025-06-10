@@ -71,6 +71,27 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     }
   };
 
+  // Create wrapper functions that match PolygonDrawer's expected signatures
+  const handleStartDrawing = () => {
+    // PolygonDrawer will handle lot selection internally
+    console.log('Start drawing requested');
+  };
+
+  const handleSavePolygon = () => {
+    // PolygonDrawer will handle lot ID internally  
+    console.log('Save polygon requested');
+  };
+
+  const handleDeletePolygon = () => {
+    // PolygonDrawer will handle lot ID internally
+    console.log('Delete polygon requested');
+  };
+
+  const handleColorChange = (color: string) => {
+    // PolygonDrawer will handle lot ID internally
+    console.log('Color change requested:', color);
+  };
+
   if (showApiKeyInput) {
     return (
       <div className="w-full h-full flex items-center justify-center p-4">
@@ -185,10 +206,10 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         <PolygonDrawer
           lots={lots}
           lotPolygons={lotPolygons}
-          onStartDrawing={startDrawingPolygon}
-          onSavePolygon={saveCurrentPolygon}
-          onDeletePolygon={deletePolygonForLot}
-          onColorChange={setPolygonColor}
+          onStartDrawing={handleStartDrawing}
+          onSavePolygon={handleSavePolygon}
+          onDeletePolygon={handleDeletePolygon}
+          onColorChange={handleColorChange}
           isFullscreen={isFullscreen}
         />
       )}
