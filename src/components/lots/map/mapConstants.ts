@@ -22,8 +22,10 @@ export const GOOGLE_MAPS_CONFIG = {
   zoomControl: true,
   rotateControl: true, // Enable rotation controls
   scaleControl: true,
-  tilt: 0, // Allow rotation
-  gestureHandling: 'auto' // Enable all gestures including rotation
+  tilt: 45, // Enable 3D tilt for rotation
+  gestureHandling: 'greedy', // Enable all gestures including rotation
+  keyboardShortcuts: true, // Enable keyboard shortcuts for rotation
+  clickableIcons: false // Prevent interference with our polygons
 };
 
 // Default API key message for users

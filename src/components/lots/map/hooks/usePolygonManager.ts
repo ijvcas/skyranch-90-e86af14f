@@ -2,8 +2,9 @@
 import { useRef, useState } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useToast } from '@/hooks/use-toast';
-import { LOT_COLORS, calculatePolygonArea, formatArea } from '../mapConstants';
+import { LOT_COLORS, calculatePolygonArea, formatArea, metersToHectares } from '../mapConstants';
 import { mapStorage, type LotPolygon } from '../utils/mapStorage';
+import { updateLot } from '@/services/lotService';
 
 export const usePolygonManager = (lots: Lot[]) => {
   const polygons = useRef<Map<string, google.maps.Polygon>>(new Map());
@@ -69,23 +70,21 @@ export const usePolygonManager = (lots: Lot[]) => {
       lotPolygon.coordinates.forEach(coord => bounds.extend(coord));
       const center = bounds.getCenter();
 
-      // Create lot label marker with improved styling
+      // Create lot label marker WITHOUT circle background
       const labelMarker = new google.maps.Marker({
         position: center,
         map: map,
         label: {
           text: lot.name,
           color: '#ffffff',
-          fontSize: '12px',
+          fontSize: '14px',
           fontWeight: 'bold'
         },
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 15,
-          strokeWeight: 2,
-          strokeColor: '#ffffff',
-          fillOpacity: 0.9,
-          fillColor: lotPolygon.color
+          scale: 0, // Remove the circle by setting scale to 0
+          strokeWeight: 0,
+          fillOpacity: 0
         },
         title: `${lot.name} - Área: ${areaText}`
       });
@@ -142,7 +141,7 @@ export const usePolygonManager = (lots: Lot[]) => {
     );
   };
 
-  const saveCurrentPolygon = (lotId: string, map: google.maps.Map) => {
+  const saveCurrentPolygon = async (lotId: string, map: google.maps.Map) => {
     if (!currentDrawing.current) {
       console.warn('⚠️ No polygon to save');
       return;
@@ -156,6 +155,10 @@ export const usePolygonManager = (lots: Lot[]) => {
       coordinates.push({ lat: point.lat(), lng: point.lng() });
     }
 
+    // Calculate area and convert to hectares
+    const areaInMeters = calculatePolygonArea(coordinates);
+    const areaInHectares = metersToHectares(areaInMeters);
+
     const newPolygons = lotPolygons.filter(p => p.lotId !== lotId);
     newPolygons.push({
       lotId,
@@ -166,13 +169,41 @@ export const usePolygonManager = (lots: Lot[]) => {
     savePolygons(newPolygons);
     currentDrawing.current.setMap(null);
     currentDrawing.current = null;
-    renderLotPolygons(map);
 
-    console.log('💾 Polygon saved successfully for lot:', lotId);
-    toast({
-      title: "Polígono Guardado",
-      description: "El polígono del lote ha sido guardado exitosamente.",
-    });
+    // Update the lot's area in the database
+    try {
+      const lot = lots.find(l => l.id === lotId);
+      if (lot) {
+        const success = await updateLot(lotId, {
+          ...lot,
+          sizeHectares: Number(areaInHectares.toFixed(4)) // Round to 4 decimal places
+        });
+
+        if (success) {
+          console.log('💾 Lot area updated in database:', areaInHectares.toFixed(2), 'ha');
+          toast({
+            title: "Polígono Guardado",
+            description: `Área calculada: ${formatArea(areaInMeters)} - Base de datos actualizada`,
+          });
+        } else {
+          console.warn('⚠️ Failed to update lot area in database');
+          toast({
+            title: "Polígono Guardado",
+            description: `Área calculada: ${formatArea(areaInMeters)} - Error actualizando base de datos`,
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error updating lot area:', error);
+      toast({
+        title: "Polígono Guardado",
+        description: `Área calculada: ${formatArea(areaInMeters)} - Error actualizando base de datos`,
+        variant: "destructive"
+      });
+    }
+
+    renderLotPolygons(map);
   };
 
   const deletePolygonForLot = (lotId: string, map: google.maps.Map) => {

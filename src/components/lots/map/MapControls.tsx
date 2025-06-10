@@ -39,8 +39,8 @@ export const MapControls = ({
         </span>
       </Button>
 
-      {/* North Indicator & Rotation Controls */}
-      <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+      {/* North Indicator & Rotation Controls - Positioned below Google's fullscreen button */}
+      <div className="absolute top-16 right-4 z-30 flex flex-col gap-2">
         {/* North Indicator */}
         <div className="bg-background/95 backdrop-blur-sm shadow-lg rounded-lg p-2 flex items-center justify-center">
           <Compass 
