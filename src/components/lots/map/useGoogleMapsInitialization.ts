@@ -32,10 +32,21 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     cleanup
   } = usePolygonManager(lots);
 
-  // Persist API key to localStorage
+  // Enhanced API key persistence
   const saveApiKey = (key: string) => {
-    mapStorage.saveApiKey(key);
-    setApiKey(key);
+    console.log('💾 Saving API key...');
+    const success = mapStorage.saveApiKey(key);
+    if (success) {
+      setApiKey(key);
+      console.log('✅ API key saved successfully');
+    } else {
+      console.error('❌ Failed to save API key');
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la API key",
+        variant: "destructive"
+      });
+    }
   };
 
   const initializeMap = async () => {
@@ -44,7 +55,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
       return;
     }
 
-    console.log('🗺️ Starting Google Maps initialization...');
+    console.log('🗺️ Starting Google Maps initialization with full controls...');
     
     setIsLoading(true);
     setError(null);
@@ -58,20 +69,44 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
 
     try {
-      console.log('🔑 Loading Google Maps API with geometry and drawing libraries...');
+      console.log('🔑 Loading Google Maps API with ALL libraries...');
       
       const loader = new Loader({
         apiKey: apiKey,
         version: 'weekly',
-        libraries: ['geometry', 'drawing']
+        libraries: ['geometry', 'drawing', 'places'] // Load all necessary libraries
       });
 
       await loader.load();
       
-      console.log('🌍 Creating Google Maps instance...');
+      // Verify geometry library is available
+      if (!window.google?.maps?.geometry) {
+        throw new Error('Google Maps geometry library failed to load');
+      }
+      
+      console.log('🌍 Creating Google Maps instance with all native controls...');
       map.current = new google.maps.Map(mapContainer.current, {
         ...GOOGLE_MAPS_CONFIG,
-        center: SKYRANCH_CENTER
+        center: SKYRANCH_CENTER,
+        // Ensure ALL controls are properly positioned
+        controlSize: 28,
+        fullscreenControlOptions: {
+          position: google.maps.ControlPosition.TOP_RIGHT
+        },
+        mapTypeControlOptions: {
+          position: google.maps.ControlPosition.TOP_LEFT
+        },
+        zoomControlOptions: {
+          position: google.maps.ControlPosition.RIGHT_CENTER
+        }
+      });
+
+      // Wait for map to be fully loaded
+      await new Promise<void>((resolve) => {
+        const listener = map.current!.addListener('idle', () => {
+          google.maps.event.removeListener(listener);
+          resolve();
+        });
       });
 
       // Initialize drawing manager
@@ -83,7 +118,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
       
       toast({
         title: "Mapa Cargado",
-        description: "SkyRanch cargado con herramientas de dibujo!",
+        description: "SkyRanch cargado con controles de rotación nativos de Google!",
       });
 
     } catch (error) {
@@ -145,13 +180,13 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     error,
     apiKey,
     showApiKeyInput,
-    lotPolygons, // Add this to the return object
+    lotPolygons,
     setApiKey: saveApiKey,
     initializeMap,
-    startDrawingPolygon: handleStartDrawingPolygon,
-    saveCurrentPolygon: handleSaveCurrentPolygon,
-    deletePolygonForLot: handleDeletePolygonForLot,
-    setPolygonColor: handleSetPolygonColor,
+    startDrawingPolygon,
+    saveCurrentPolygon,
+    deletePolygonForLot,
+    setPolygonColor,
     togglePolygonsVisibility,
     toggleLabelsVisibility
   };

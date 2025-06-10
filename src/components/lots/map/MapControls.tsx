@@ -39,29 +39,22 @@ export const MapControls = ({
         </span>
       </Button>
 
-      {/* North Indicator & Reset - Positioned below Google's controls on the right */}
-      <div className="absolute top-32 right-4 z-30 flex flex-col gap-2">
-        {/* North Indicator - always visible */}
-        <div className="bg-background/95 backdrop-blur-sm shadow-lg rounded-lg p-2 flex items-center justify-center border">
+      {/* North Indicator & Reset - Positioned to not overlap Google controls */}
+      <div className="absolute top-20 right-4 z-30 flex flex-col gap-2">
+        {/* Functional North Button - resets heading to 0 */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onResetRotation}
+          className="bg-background/95 backdrop-blur-sm shadow-lg border flex items-center justify-center p-2"
+          title="Apuntar al Norte (resetear rotación)"
+        >
           <Compass 
-            className="w-6 h-6 text-primary transition-transform duration-300" 
+            className="w-5 h-5 text-primary transition-transform duration-300" 
             style={{ transform: `rotate(${-mapRotation}deg)` }}
           />
           <span className="ml-1 text-xs font-bold">N</span>
-        </div>
-        
-        {/* Reset Rotation Button - show when rotated more than 5 degrees */}
-        {onResetRotation && Math.abs(mapRotation) > 5 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onResetRotation}
-            className="bg-background/95 backdrop-blur-sm shadow-lg border"
-            title="Resetear rotación al norte"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </Button>
-        )}
+        </Button>
       </div>
 
       {/* Layer Controls - show when controls are visible */}
@@ -88,12 +81,12 @@ export const MapControls = ({
         </div>
       )}
 
-      {/* Rotation Instructions - show briefly when controls are first shown */}
+      {/* Mobile rotation tip - only show briefly when controls first opened */}
       {showControls && (
-        <div className="absolute top-4 left-4 z-30 bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-lg p-3 max-w-sm">
-          <p className="text-xs text-blue-800">
-            <strong>Rotar mapa:</strong> Mantén Shift + clic y arrastra, o usa dos dedos en móvil
-          </p>
+        <div className="absolute bottom-4 right-4 z-30 bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-lg p-2 max-w-48 text-xs text-blue-800">
+          <strong>Móvil:</strong> Dos dedos para rotar
+          <br />
+          <strong>PC:</strong> Shift + arrastrar
         </div>
       )}
     </>

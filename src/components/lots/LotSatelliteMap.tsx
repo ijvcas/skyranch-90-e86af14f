@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
 import { LoadingOverlay, ErrorOverlay, CoordinatesInfo, ApiKeyInput } from './map/MapOverlays';
@@ -18,6 +18,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   const [showLabels, setShowLabels] = useState(true);
   const [isDrawing, setIsDrawing] = useState(false);
   const [mapRotation, setMapRotation] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const {
     mapContainer,
@@ -106,34 +107,46 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     toggleLabelsVisibility();
   };
 
+  // Fixed north button functionality
   const handleResetRotation = useCallback(() => {
     if (map.current) {
       console.log('🧭 Resetting map rotation to north');
       map.current.setHeading(0);
+      map.current.setTilt(0);
       setMapRotation(0);
     }
   }, [map]);
 
   // Listen for map rotation changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (map.current) {
-      const listener = map.current.addListener('heading_changed', () => {
+      const headingListener = map.current.addListener('heading_changed', () => {
         const heading = map.current?.getHeading() || 0;
         setMapRotation(heading);
       });
 
       return () => {
-        google.maps.event.removeListener(listener);
+        google.maps.event.removeListener(headingListener);
       };
     }
   }, [map.current]);
 
+  // Listen for fullscreen changes to adjust controls
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   return (
     <div className="relative w-full h-full">
-      {/* Map Container - Full Screen */}
+      {/* Map Container - Full Screen with proper height */}
       <div 
         ref={mapContainer} 
-        className="w-full h-[calc(100vh-8rem)]" 
+        className={`w-full ${isFullscreen ? 'h-screen' : 'h-[calc(100vh-8rem)]'}`}
         style={{ minHeight: '400px' }}
       />
 
@@ -154,7 +167,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         onRetry={initializeMap} 
       />
 
-      {/* Map Controls */}
+      {/* Map Controls - always available when map is loaded */}
       {!isLoading && !error && !showApiKeyInput && (
         <>
           <MapControls
@@ -168,7 +181,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
             mapRotation={mapRotation}
           />
 
-          {/* Polygon Drawing Tool */}
+          {/* Polygon Drawing Tool - works in all views */}
           {showControls && (
             <PolygonDrawer
               lots={lots}

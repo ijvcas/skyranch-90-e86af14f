@@ -12,7 +12,7 @@ export const LOT_COLORS = {
   default: '#6b7280' // Gray - Default state
 };
 
-// Google Maps API configuration with proper rotation support
+// Google Maps API configuration with ALL native controls enabled
 export const GOOGLE_MAPS_CONFIG = {
   zoom: 19,
   mapTypeId: 'satellite' as const,
@@ -21,11 +21,17 @@ export const GOOGLE_MAPS_CONFIG = {
   mapTypeControl: true,
   zoomControl: true,
   rotateControl: true, // Enable Google's native rotation controls
-  scaleControl: true, // Enable scale control for better reference
-  tilt: 0, // Start with no tilt for better initial view
-  gestureHandling: 'greedy', // Enable all gestures including rotation
-  keyboardShortcuts: true, // Enable keyboard shortcuts for rotation
-  clickableIcons: false // Prevent interference with our polygons
+  scaleControl: true, // Enable scale control
+  tilt: 0,
+  gestureHandling: 'greedy', // Enable ALL gestures including rotation
+  keyboardShortcuts: true,
+  clickableIcons: false,
+  // Ensure proper control positioning
+  controlSize: 32,
+  // Enable all rotation and tilt controls
+  restriction: {
+    strictBounds: false
+  }
 };
 
 // Default API key message for users
@@ -49,7 +55,7 @@ export const calculatePolygonArea = (coordinates: google.maps.LatLngLiteral[]): 
   
   try {
     // Check if geometry library is available
-    if (!google.maps.geometry || !google.maps.geometry.spherical) {
+    if (!window.google?.maps?.geometry?.spherical) {
       console.error('❌ Google Maps geometry library not available');
       return 0;
     }
