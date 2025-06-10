@@ -1,4 +1,3 @@
-
 import { useRef, useState } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useToast } from '@/hooks/use-toast';
@@ -51,8 +50,11 @@ export const usePolygonManager = (lots: Lot[]) => {
       const area = calculatePolygonArea(lotPolygon.coordinates);
       const areaText = formatArea(area);
 
-      // Add click handler
-      polygon.addListener('click', () => {
+      // Add click handler - only show toast, don't navigate
+      polygon.addListener('click', (e: google.maps.PolyMouseEvent) => {
+        // Prevent event from bubbling to map
+        e.stop();
+        
         toast({
           title: lot.name,
           description: `Área: ${areaText}`,
@@ -86,6 +88,17 @@ export const usePolygonManager = (lots: Lot[]) => {
         }
       });
 
+      // Add click handler for label - only show toast
+      labelMarker.addListener('click', (e: google.maps.MapMouseEvent) => {
+        // Prevent event from bubbling to map
+        e.stop();
+        
+        toast({
+          title: lot.name,
+          description: `Área: ${areaText}`,
+        });
+      });
+
       labels.current.set(lotPolygon.lotId, labelMarker);
     });
 
@@ -112,12 +125,14 @@ export const usePolygonManager = (lots: Lot[]) => {
   const startDrawingPolygon = (lotId: string) => {
     if (!drawingManager.current) return;
 
+    console.log('🖊️ Starting polygon drawing for lot:', lotId);
     drawingManager.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
 
     const listener = google.maps.event.addListener(
       drawingManager.current,
       'polygoncomplete',
       (polygon: google.maps.Polygon) => {
+        console.log('✅ Polygon drawing completed');
         currentDrawing.current = polygon;
         drawingManager.current?.setDrawingMode(null);
         google.maps.event.removeListener(listener);
@@ -126,7 +141,10 @@ export const usePolygonManager = (lots: Lot[]) => {
   };
 
   const saveCurrentPolygon = (lotId: string, map: google.maps.Map) => {
-    if (!currentDrawing.current) return;
+    if (!currentDrawing.current) {
+      console.warn('⚠️ No polygon to save');
+      return;
+    }
 
     const path = currentDrawing.current.getPath();
     const coordinates: google.maps.LatLngLiteral[] = [];
@@ -148,6 +166,7 @@ export const usePolygonManager = (lots: Lot[]) => {
     currentDrawing.current = null;
     renderLotPolygons(map);
 
+    console.log('💾 Polygon saved successfully for lot:', lotId);
     toast({
       title: "Polígono Guardado",
       description: "El polígono del lote ha sido guardado exitosamente.",
@@ -159,6 +178,7 @@ export const usePolygonManager = (lots: Lot[]) => {
     savePolygons(newPolygons);
     renderLotPolygons(map);
 
+    console.log('🗑️ Polygon deleted for lot:', lotId);
     toast({
       title: "Polígono Eliminado",
       description: "El polígono del lote ha sido eliminado.",

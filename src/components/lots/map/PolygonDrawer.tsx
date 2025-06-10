@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Palette, Pencil, Save, Trash2, GripHorizontal } from 'lucide-react';
+import { Palette, Pencil, Save, Trash2, GripHorizontal, X } from 'lucide-react';
 import { LOT_COLORS } from './mapConstants';
 import { useDraggable } from '@/hooks/useDraggable';
 import { type Lot } from '@/stores/lotStore';
@@ -16,6 +16,7 @@ interface PolygonDrawerProps {
   onSavePolygon: () => void;
   onDeletePolygon: () => void;
   onColorChange: (color: string) => void;
+  onCancelDrawing: () => void;
   isDrawing: boolean;
 }
 
@@ -27,6 +28,7 @@ export const PolygonDrawer = ({
   onSavePolygon,
   onDeletePolygon,
   onColorChange,
+  onCancelDrawing,
   isDrawing
 }: PolygonDrawerProps) => {
   const { position, dragRef, handleMouseDown, isDragging } = useDraggable({ x: 20, y: 100 });
@@ -51,50 +53,70 @@ export const PolygonDrawer = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Lot Selection */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">Selecciona un lote para dibujar:</p>
-          <div className="max-h-32 overflow-y-auto space-y-1">
-            {lots.map((lot) => (
+        {/* Drawing Instructions */}
+        {isDrawing && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm font-medium text-blue-800 mb-2">Modo Dibujo Activo</p>
+            <p className="text-xs text-blue-600 mb-3">
+              Haz clic en el mapa para comenzar a dibujar el polígono del lote
+            </p>
+            <div className="flex gap-2">
               <Button
-                key={lot.id}
-                variant={selectedLot?.id === lot.id ? "default" : "outline"}
                 size="sm"
-                className="w-full justify-start text-left"
-                onClick={() => onLotSelect(lot)}
+                onClick={onSavePolygon}
+                className="flex-1"
               >
-                {lot.name}
-                {lot.sizeHectares && (
-                  <Badge variant="secondary" className="ml-auto">
-                    {lot.sizeHectares} ha
-                  </Badge>
-                )}
+                <Save className="w-4 h-4 mr-1" />
+                Guardar
               </Button>
-            ))}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onCancelDrawing}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Lot Selection */}
+        {!isDrawing && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Selecciona un lote para dibujar:</p>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {lots.map((lot) => (
+                <Button
+                  key={lot.id}
+                  variant={selectedLot?.id === lot.id ? "default" : "outline"}
+                  size="sm"
+                  className="w-full justify-start text-left"
+                  onClick={() => onLotSelect(lot)}
+                >
+                  {lot.name}
+                  {lot.sizeHectares && (
+                    <Badge variant="secondary" className="ml-auto">
+                      {lot.sizeHectares} ha
+                    </Badge>
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Drawing Controls */}
-        {selectedLot && (
+        {selectedLot && !isDrawing && (
           <>
             <div className="border-t pt-3">
               <div className="flex gap-2 mb-3">
                 <Button
                   size="sm"
                   onClick={onStartDrawing}
-                  disabled={isDrawing}
                   className="flex-1"
                 >
                   <Pencil className="w-4 h-4 mr-1" />
-                  {isDrawing ? 'Dibujando...' : 'Dibujar Polígono'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onSavePolygon}
-                  disabled={!isDrawing}
-                >
-                  <Save className="w-4 h-4" />
+                  Dibujar Polígono
                 </Button>
                 <Button
                   size="sm"
@@ -137,11 +159,13 @@ export const PolygonDrawer = ({
         )}
 
         {/* Instructions */}
-        <div className="border-t pt-3">
-          <p className="text-xs text-muted-foreground">
-            💡 Selecciona un lote y dibuja su polígono en el mapa
-          </p>
-        </div>
+        {!isDrawing && (
+          <div className="border-t pt-3">
+            <p className="text-xs text-muted-foreground">
+              💡 Selecciona un lote y dibuja su polígono en el mapa
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -22,11 +22,11 @@ export const MapControls = ({
 }: MapControlsProps) => {
   return (
     <>
-      {/* Main Controls Toggle Button - Top Right */}
+      {/* Main Controls Toggle Button - Top Left to avoid conflicts */}
       <Button
         variant="secondary"
         size="sm"
-        className="absolute top-4 right-4 z-30 shadow-lg bg-background/95 backdrop-blur-sm"
+        className="absolute top-4 left-4 z-30 shadow-lg bg-background/95 backdrop-blur-sm"
         onClick={onToggleControls}
       >
         {showControls ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
@@ -37,7 +37,7 @@ export const MapControls = ({
 
       {/* Simple Layer Controls */}
       {showControls && (
-        <div className="absolute top-16 right-4 z-30 flex flex-col gap-2">
+        <div className="absolute top-16 left-4 z-30 flex flex-col gap-2">
           <Button
             variant="outline"
             size="sm"

@@ -35,32 +35,57 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   } = useGoogleMapsInitialization(lots);
 
   const handleLotSelect = (lot: Lot) => {
+    // Only select lot for drawing, don't navigate to detail
     setSelectedLot(lot);
-    onLotSelect(lot.id);
+    console.log('🎯 Lot selected for drawing:', lot.name);
   };
 
   const handleStartDrawing = () => {
     if (selectedLot) {
+      console.log('✏️ Starting drawing mode for lot:', selectedLot.name);
       setIsDrawing(true);
       startDrawingPolygon(selectedLot.id);
+      
+      // Change cursor to crosshair when drawing
+      if (mapContainer.current) {
+        mapContainer.current.style.cursor = 'crosshair';
+      }
     }
   };
 
   const handleSavePolygon = () => {
     if (selectedLot) {
+      console.log('💾 Saving polygon for lot:', selectedLot.name);
       saveCurrentPolygon(selectedLot.id);
       setIsDrawing(false);
+      
+      // Reset cursor
+      if (mapContainer.current) {
+        mapContainer.current.style.cursor = 'default';
+      }
+    }
+  };
+
+  const handleCancelDrawing = () => {
+    console.log('❌ Canceling drawing mode');
+    setIsDrawing(false);
+    
+    // Reset cursor
+    if (mapContainer.current) {
+      mapContainer.current.style.cursor = 'default';
     }
   };
 
   const handleDeletePolygon = () => {
     if (selectedLot) {
+      console.log('🗑️ Deleting polygon for lot:', selectedLot.name);
       deletePolygonForLot(selectedLot.id);
     }
   };
 
   const handleColorChange = (color: string) => {
     if (selectedLot) {
+      console.log('🎨 Changing color for lot:', selectedLot.name, 'to:', color);
       setPolygonColor(selectedLot.id, color);
     }
   };
@@ -123,6 +148,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
               onSavePolygon={handleSavePolygon}
               onDeletePolygon={handleDeletePolygon}
               onColorChange={handleColorChange}
+              onCancelDrawing={handleCancelDrawing}
               isDrawing={isDrawing}
             />
           )}
