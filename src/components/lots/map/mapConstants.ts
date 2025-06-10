@@ -21,16 +21,16 @@ export const GOOGLE_MAPS_CONFIG = {
   mapTypeControl: true,
   zoomControl: true,
   rotateControl: true, // Enable Google's native rotation controls
-  scaleControl: true, // Enable scale control
-  tilt: 0,
+  scaleControl: true,
+  tilt: 45, // Enable 3D tilt like Google Earth
   gestureHandling: 'greedy', // Enable ALL gestures including rotation
   keyboardShortcuts: true,
   clickableIcons: false,
-  // Ensure proper control positioning
-  controlSize: 32,
-  // Enable all rotation and tilt controls
-  restriction: {
-    strictBounds: false
+  // Remove problematic restriction - let Google handle boundaries
+  isFractionalZoomEnabled: true,
+  // Enable enhanced rotation and tilt controls
+  rotateControlOptions: {
+    position: google.maps.ControlPosition.RIGHT_CENTER
   }
 };
 

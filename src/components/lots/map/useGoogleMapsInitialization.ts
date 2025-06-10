@@ -16,6 +16,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   const [error, setError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string>(() => mapStorage.getApiKey());
   const [showApiKeyInput, setShowApiKeyInput] = useState(!apiKey);
+  const [mapRotation, setMapRotation] = useState(0);
   
   const { toast } = useToast();
   const { addSkyRanchLabel } = useMapRenderer();
@@ -49,13 +50,21 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
   };
 
+  // Reset map rotation to North
+  const resetMapRotation = () => {
+    if (map.current) {
+      map.current.setHeading(0);
+      setMapRotation(0);
+    }
+  };
+
   const initializeMap = async () => {
     if (!apiKey) {
       setError('API key de Google Maps requerida');
       return;
     }
 
-    console.log('🗺️ Starting Google Maps initialization with full controls...');
+    console.log('🗺️ Starting Google Maps initialization with native rotation controls...');
     
     setIsLoading(true);
     setError(null);
@@ -74,30 +83,42 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
       const loader = new Loader({
         apiKey: apiKey,
         version: 'weekly',
-        libraries: ['geometry', 'drawing', 'places'] // Load all necessary libraries
+        libraries: ['geometry', 'drawing', 'places']
       });
 
       await loader.load();
       
-      // Verify geometry library is available
       if (!window.google?.maps?.geometry) {
         throw new Error('Google Maps geometry library failed to load');
       }
       
-      console.log('🌍 Creating Google Maps instance with all native controls...');
+      console.log('🌍 Creating Google Maps instance with native rotation controls...');
       map.current = new google.maps.Map(mapContainer.current, {
         ...GOOGLE_MAPS_CONFIG,
         center: SKYRANCH_CENTER,
-        // Ensure ALL controls are properly positioned
-        controlSize: 28,
+        controlSize: 32,
         fullscreenControlOptions: {
           position: google.maps.ControlPosition.TOP_RIGHT
         },
         mapTypeControlOptions: {
-          position: google.maps.ControlPosition.TOP_LEFT
+          position: google.maps.ControlPosition.TOP_LEFT,
+          style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR
         },
         zoomControlOptions: {
           position: google.maps.ControlPosition.RIGHT_CENTER
+        },
+        rotateControlOptions: {
+          position: google.maps.ControlPosition.RIGHT_CENTER
+        },
+        scaleControlOptions: {
+          position: google.maps.ControlPosition.BOTTOM_LEFT
+        }
+      });
+
+      // Track map rotation changes
+      map.current.addListener('heading_changed', () => {
+        if (map.current) {
+          setMapRotation(map.current.getHeading() || 0);
         }
       });
 
@@ -118,7 +139,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
       
       toast({
         title: "Mapa Cargado",
-        description: "SkyRanch cargado con controles de rotación nativos de Google!",
+        description: "SkyRanch cargado con controles nativos de Google Maps!",
       });
 
     } catch (error) {
@@ -181,12 +202,14 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     apiKey,
     showApiKeyInput,
     lotPolygons,
+    mapRotation,
     setApiKey: saveApiKey,
     initializeMap,
-    startDrawingPolygon,
-    saveCurrentPolygon,
-    deletePolygonForLot,
-    setPolygonColor,
+    resetMapRotation,
+    startDrawingPolygon: handleStartDrawingPolygon,
+    saveCurrentPolygon: handleSaveCurrentPolygon,
+    deletePolygonForLot: handleDeletePolygonForLot,
+    setPolygonColor: handleSetPolygonColor,
     togglePolygonsVisibility,
     toggleLabelsVisibility
   };

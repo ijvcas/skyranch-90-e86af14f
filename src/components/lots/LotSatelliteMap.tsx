@@ -1,10 +1,16 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { type Lot } from '@/stores/lotStore';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { MapPin, AlertCircle, Fullscreen, FullscreenExit } from 'lucide-react';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
-import { LoadingOverlay, ErrorOverlay, CoordinatesInfo, ApiKeyInput } from './map/MapOverlays';
 import { MapControls } from './map/MapControls';
 import { PolygonDrawer } from './map/PolygonDrawer';
+import { MapOverlays } from './map/MapOverlays';
+import { API_KEY_INSTRUCTIONS } from './map/mapConstants';
+import { type Lot } from '@/stores/lotStore';
 
 interface LotSatelliteMapProps {
   lots: Lot[];
@@ -12,12 +18,10 @@ interface LotSatelliteMapProps {
 }
 
 const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
-  const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(false);
   const [showPolygons, setShowPolygons] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [mapRotation, setMapRotation] = useState(0);
+  const [tempApiKey, setTempApiKey] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const {
@@ -27,9 +31,10 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     error,
     apiKey,
     showApiKeyInput,
-    lotPolygons = [],
+    lotPolygons,
+    mapRotation,
     setApiKey,
-    initializeMap,
+    resetMapRotation,
     startDrawingPolygon,
     saveCurrentPolygon,
     deletePolygonForLot,
@@ -38,100 +43,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     toggleLabelsVisibility
   } = useGoogleMapsInitialization(lots);
 
-  // Get current lot polygon data with proper null checking
-  const currentLotPolygon = selectedLot && lotPolygons ? 
-    lotPolygons.find(p => p.lotId === selectedLot.id) : null;
-
-  const handleLotSelect = (lot: Lot) => {
-    setSelectedLot(lot);
-    console.log('🎯 Lot selected for drawing:', lot.name);
-  };
-
-  const handleStartDrawing = () => {
-    if (selectedLot) {
-      console.log('✏️ Starting drawing mode for lot:', selectedLot.name);
-      setIsDrawing(true);
-      startDrawingPolygon(selectedLot.id);
-      
-      // Change cursor to crosshair when drawing
-      if (mapContainer.current) {
-        mapContainer.current.style.cursor = 'crosshair';
-      }
-    }
-  };
-
-  const handleSavePolygon = () => {
-    if (selectedLot) {
-      console.log('💾 Saving polygon for lot:', selectedLot.name);
-      saveCurrentPolygon(selectedLot.id);
-      setIsDrawing(false);
-      
-      // Reset cursor
-      if (mapContainer.current) {
-        mapContainer.current.style.cursor = 'default';
-      }
-    }
-  };
-
-  const handleCancelDrawing = () => {
-    console.log('❌ Canceling drawing mode');
-    setIsDrawing(false);
-    
-    // Reset cursor
-    if (mapContainer.current) {
-      mapContainer.current.style.cursor = 'default';
-    }
-  };
-
-  const handleDeletePolygon = () => {
-    if (selectedLot) {
-      console.log('🗑️ Deleting polygon for lot:', selectedLot.name);
-      deletePolygonForLot(selectedLot.id);
-    }
-  };
-
-  const handleColorChange = (color: string) => {
-    if (selectedLot) {
-      console.log('🎨 Changing color for lot:', selectedLot.name, 'to:', color);
-      setPolygonColor(selectedLot.id, color);
-    }
-  };
-
-  const handleTogglePolygons = () => {
-    setShowPolygons(!showPolygons);
-    togglePolygonsVisibility();
-  };
-
-  const handleToggleLabels = () => {
-    setShowLabels(!showLabels);
-    toggleLabelsVisibility();
-  };
-
-  // Fixed north button functionality
-  const handleResetRotation = useCallback(() => {
-    if (map.current) {
-      console.log('🧭 Resetting map rotation to north');
-      map.current.setHeading(0);
-      map.current.setTilt(0);
-      setMapRotation(0);
-    }
-  }, [map]);
-
-  // Listen for map rotation changes
-  useEffect(() => {
-    if (map.current) {
-      const headingListener = map.current.addListener('heading_changed', () => {
-        const heading = map.current?.getHeading() || 0;
-        setMapRotation(heading);
-      });
-
-      return () => {
-        google.maps.event.removeListener(headingListener);
-      };
-    }
-  }, [map.current]);
-
-  // Listen for fullscreen changes to adjust controls
+  // Handle fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -141,67 +53,158 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  const handleApiKeySubmit = () => {
+    if (tempApiKey.trim()) {
+      setApiKey(tempApiKey.trim());
+      setTempApiKey('');
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      mapContainer.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const handleStartDrawing = (lotId: string) => {
+    startDrawingPolygon(lotId);
+  };
+
+  const handleSavePolygon = (lotId: string) => {
+    saveCurrentPolygon(lotId);
+  };
+
+  const handleDeletePolygon = (lotId: string) => {
+    deletePolygonForLot(lotId);
+  };
+
+  const handleColorChange = (lotId: string, color: string) => {
+    setPolygonColor(lotId, color);
+  };
+
+  if (showApiKeyInput) {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Configurar Google Maps
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm text-gray-600 whitespace-pre-line">
+              {API_KEY_INSTRUCTIONS}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="Ingresa tu Google Maps API Key"
+                value={tempApiKey}
+                onChange={(e) => setTempApiKey(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()}
+              />
+              <Button onClick={handleApiKeySubmit} disabled={!tempApiKey.trim()}>
+                Guardar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full">
+        <Skeleton className="w-full h-full rounded-lg" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-lg text-gray-600">Cargando mapa satelital...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error al cargar el mapa</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full h-full">
-      {/* Map Container - Full Screen with proper height */}
-      <div 
-        ref={mapContainer} 
-        className={`w-full ${isFullscreen ? 'h-screen' : 'h-[calc(100vh-8rem)]'}`}
-        style={{ minHeight: '400px' }}
+    <div className={`relative w-full h-full ${isFullscreen ? 'bg-black' : ''}`}>
+      {/* Map Container */}
+      <div ref={mapContainer} className="w-full h-full rounded-lg" />
+
+      {/* SkyRanch Label - Top Center, Draggable */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-300 rounded-lg px-4 py-2 shadow-lg cursor-move">
+          <div className="text-sm font-semibold text-gray-800">SkyRanch</div>
+          <div className="text-xs text-gray-600">40°19'3.52"N, 4°28'27.47"W</div>
+        </div>
+      </div>
+
+      {/* Fullscreen Toggle - Top Right */}
+      <Button
+        variant="secondary"
+        size="sm"
+        className="absolute top-4 right-16 z-30 shadow-lg bg-white/95 backdrop-blur-sm"
+        onClick={toggleFullscreen}
+      >
+        {isFullscreen ? <FullscreenExit className="w-4 h-4" /> : <Fullscreen className="w-4 h-4" />}
+      </Button>
+
+      {/* Map Controls */}
+      <MapControls
+        showControls={showControls}
+        onToggleControls={() => setShowControls(!showControls)}
+        showPolygons={showPolygons}
+        showLabels={showLabels}
+        onTogglePolygons={() => {
+          setShowPolygons(!showPolygons);
+          togglePolygonsVisibility();
+        }}
+        onToggleLabels={() => {
+          setShowLabels(!showLabels);
+          toggleLabelsVisibility();
+        }}
+        onResetRotation={resetMapRotation}
+        mapRotation={mapRotation}
       />
 
-      {/* API Key Input Overlay */}
-      <ApiKeyInput
-        show={showApiKeyInput}
-        apiKey={apiKey}
-        onApiKeyChange={setApiKey}
-        onSubmit={initializeMap}
-      />
-
-      {/* Loading Overlay */}
-      <LoadingOverlay isLoading={isLoading} />
-
-      {/* Error Overlay */}
-      <ErrorOverlay 
-        error={error && !isLoading && !showApiKeyInput ? error : null} 
-        onRetry={initializeMap} 
-      />
-
-      {/* Map Controls - always available when map is loaded */}
-      {!isLoading && !error && !showApiKeyInput && (
-        <>
-          <MapControls
-            showControls={showControls}
-            onToggleControls={() => setShowControls(!showControls)}
-            showPolygons={showPolygons}
-            showLabels={showLabels}
-            onTogglePolygons={handleTogglePolygons}
-            onToggleLabels={handleToggleLabels}
-            onResetRotation={handleResetRotation}
-            mapRotation={mapRotation}
-          />
-
-          {/* Polygon Drawing Tool - works in all views */}
-          {showControls && (
-            <PolygonDrawer
-              lots={lots}
-              selectedLot={selectedLot}
-              onLotSelect={handleLotSelect}
-              onStartDrawing={handleStartDrawing}
-              onSavePolygon={handleSavePolygon}
-              onDeletePolygon={handleDeletePolygon}
-              onColorChange={handleColorChange}
-              onCancelDrawing={handleCancelDrawing}
-              isDrawing={isDrawing}
-              hasPolygon={!!currentLotPolygon}
-              currentColor={currentLotPolygon?.color}
-            />
-          )}
-
-          {/* Coordinates Info */}
-          <CoordinatesInfo />
-        </>
+      {/* Polygon Drawing Tools - Always visible in fullscreen */}
+      {(showControls || isFullscreen) && (
+        <PolygonDrawer
+          lots={lots}
+          lotPolygons={lotPolygons}
+          onStartDrawing={handleStartDrawing}
+          onSavePolygon={handleSavePolygon}
+          onDeletePolygon={handleDeletePolygon}
+          onColorChange={handleColorChange}
+          isFullscreen={isFullscreen}
+        />
       )}
+
+      {/* Map Overlays */}
+      <MapOverlays
+        lots={lots}
+        lotPolygons={lotPolygons}
+        onLotSelect={onLotSelect}
+        showLabels={showLabels}
+      />
     </div>
   );
 };
