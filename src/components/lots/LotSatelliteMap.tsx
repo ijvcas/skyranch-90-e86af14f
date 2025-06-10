@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, AlertCircle, Fullscreen, FullscreenExit } from 'lucide-react';
+import { MapPin, AlertCircle, Fullscreen, Minimize } from 'lucide-react';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
 import { MapControls } from './map/MapControls';
 import { PolygonDrawer } from './map/PolygonDrawer';
-import { MapOverlays } from './map/MapOverlays';
 import { API_KEY_INSTRUCTIONS } from './map/mapConstants';
 import { type Lot } from '@/stores/lotStore';
 
@@ -66,22 +65,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     } else {
       document.exitFullscreen();
     }
-  };
-
-  const handleStartDrawing = (lotId: string) => {
-    startDrawingPolygon(lotId);
-  };
-
-  const handleSavePolygon = (lotId: string) => {
-    saveCurrentPolygon(lotId);
-  };
-
-  const handleDeletePolygon = (lotId: string) => {
-    deletePolygonForLot(lotId);
-  };
-
-  const handleColorChange = (lotId: string, color: string) => {
-    setPolygonColor(lotId, color);
   };
 
   if (showApiKeyInput) {
@@ -164,7 +147,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         className="absolute top-4 right-16 z-30 shadow-lg bg-white/95 backdrop-blur-sm"
         onClick={toggleFullscreen}
       >
-        {isFullscreen ? <FullscreenExit className="w-4 h-4" /> : <Fullscreen className="w-4 h-4" />}
+        {isFullscreen ? <Minimize className="w-4 h-4" /> : <Fullscreen className="w-4 h-4" />}
       </Button>
 
       {/* Map Controls */}
@@ -190,21 +173,13 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
         <PolygonDrawer
           lots={lots}
           lotPolygons={lotPolygons}
-          onStartDrawing={handleStartDrawing}
-          onSavePolygon={handleSavePolygon}
-          onDeletePolygon={handleDeletePolygon}
-          onColorChange={handleColorChange}
+          onStartDrawing={(lotId: string) => startDrawingPolygon(lotId)}
+          onSavePolygon={(lotId: string) => saveCurrentPolygon(lotId)}
+          onDeletePolygon={(lotId: string) => deletePolygonForLot(lotId)}
+          onColorChange={(lotId: string, color: string) => setPolygonColor(lotId, color)}
           isFullscreen={isFullscreen}
         />
       )}
-
-      {/* Map Overlays */}
-      <MapOverlays
-        lots={lots}
-        lotPolygons={lotPolygons}
-        onLotSelect={onLotSelect}
-        showLabels={showLabels}
-      />
     </div>
   );
 };

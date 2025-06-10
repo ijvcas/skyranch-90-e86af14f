@@ -111,7 +111,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
           position: google.maps.ControlPosition.RIGHT_CENTER
         },
         scaleControlOptions: {
-          position: google.maps.ControlPosition.BOTTOM_LEFT
+          // Remove invalid position property - Google Maps will auto-position
         }
       });
 
