@@ -39,11 +39,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
   const initializationResult = useGoogleMapsInitialization(lots);
 
-  // Handle case where initialization might fail
-  if (!initializationResult) {
-    return <MapErrorState error="Failed to initialize map components" />;
-  }
-
   const {
     mapContainer,
     isLoading,

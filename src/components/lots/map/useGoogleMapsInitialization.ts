@@ -12,36 +12,20 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   const { mapContainer, map, isLoading, error, initializeMap } = useMapInitialization();
   const { mapRotation, resetMapRotation, setupRotationListener } = useMapRotation();
   
-  const {
-    lotPolygons,
-    renderLotPolygons,
-    initializeDrawingManager,
-    startDrawingPolygon,
-    saveCurrentPolygon,
-    deletePolygonForLot,
-    setPolygonColor,
-    togglePolygonsVisibility,
-    toggleLabelsVisibility,
-    cleanup
-  } = usePolygonManager(lots);
-
-  const {
-    handleStartDrawingPolygon,
-    handleSaveCurrentPolygon,
-    handleDeletePolygonForLot,
-    handleSetPolygonColor
-  } = usePolygonOperations({
+  const polygonManager = usePolygonManager(lots);
+  
+  const polygonOperations = usePolygonOperations({
     map,
-    startDrawingPolygon,
-    saveCurrentPolygon,
-    deletePolygonForLot,
-    setPolygonColor
+    startDrawingPolygon: polygonManager.startDrawingPolygon,
+    saveCurrentPolygon: polygonManager.saveCurrentPolygon,
+    deletePolygonForLot: polygonManager.deletePolygonForLot,
+    setPolygonColor: polygonManager.setPolygonColor
   });
 
   const handleMapReady = (mapInstance: google.maps.Map) => {
     setupRotationListener(mapInstance);
-    initializeDrawingManager(mapInstance);
-    renderLotPolygons(mapInstance);
+    polygonManager.initializeDrawingManager(mapInstance);
+    polygonManager.renderLotPolygons(mapInstance);
   };
 
   const handleInitializeMap = async () => {
@@ -57,16 +41,16 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
     return () => {
       console.log('🧹 Cleaning up Google Maps...');
-      cleanup();
+      polygonManager.cleanup();
     };
   }, [apiKey]);
 
   // Re-render polygons when lots change
   useEffect(() => {
     if (map.current) {
-      renderLotPolygons(map.current);
+      polygonManager.renderLotPolygons(map.current);
     }
-  }, [lots, lotPolygons]);
+  }, [lots, polygonManager.lotPolygons]);
 
   return {
     mapContainer,
@@ -75,16 +59,16 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     error,
     apiKey,
     showApiKeyInput,
-    lotPolygons,
+    lotPolygons: polygonManager.lotPolygons,
     mapRotation,
     setApiKey: saveApiKey,
     initializeMap: handleInitializeMap,
     resetMapRotation,
-    startDrawingPolygon: handleStartDrawingPolygon,
-    saveCurrentPolygon: handleSaveCurrentPolygon,
-    deletePolygonForLot: handleDeletePolygonForLot,
-    setPolygonColor: handleSetPolygonColor,
-    togglePolygonsVisibility,
-    toggleLabelsVisibility
+    startDrawingPolygon: polygonOperations.handleStartDrawingPolygon,
+    saveCurrentPolygon: polygonOperations.handleSaveCurrentPolygon,
+    deletePolygonForLot: polygonOperations.handleDeletePolygonForLot,
+    setPolygonColor: polygonOperations.handleSetPolygonColor,
+    togglePolygonsVisibility: polygonManager.togglePolygonsVisibility,
+    toggleLabelsVisibility: polygonManager.toggleLabelsVisibility
   };
 };
