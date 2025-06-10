@@ -67,6 +67,8 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
   const polygons = useRef<Map<string, google.maps.Polygon>>(new Map());
   const labels = useRef<Map<string, google.maps.Marker>>(new Map());
 
+  console.log('🚀 Hook initialized - API Key:', !!apiKey, 'Container ref:', !!mapContainer.current);
+
   // Save API key
   const saveApiKey = useCallback((key: string) => {
     console.log('💾 Saving API key...');
@@ -112,111 +114,6 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
       }
     });
   }, []);
-
-  // Initialize map
-  const initializeMap = useCallback(async (apiKeyToUse: string, onMapReady?: (mapInstance: google.maps.Map) => void) => {
-    console.log('🗺️ initializeMap called with API key:', !!apiKeyToUse);
-    console.log('🗺️ Container available:', !!mapContainer.current);
-    
-    if (!apiKeyToUse) {
-      console.error('❌ No API key provided');
-      setError('API key de Google Maps requerida');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!mapContainer.current) {
-      console.error('❌ Map container not found');
-      setError('Map container not available');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log('🔑 Loading Google Maps API...');
-      
-      const loader = new Loader({
-        apiKey: apiKeyToUse,
-        version: 'weekly',
-        libraries: ['geometry', 'drawing', 'places']
-      });
-
-      await loader.load();
-      
-      if (!window.google?.maps?.geometry) {
-        throw new Error('Google Maps geometry library failed to load');
-      }
-      
-      console.log('🌍 Creating Google Maps instance...');
-      
-      const mapConfig = {
-        ...GOOGLE_MAPS_CONFIG,
-        center: SKYRANCH_CENTER
-      };
-
-      map.current = new google.maps.Map(mapContainer.current, mapConfig);
-
-      // Wait for map to be fully loaded
-      await new Promise<void>((resolve) => {
-        const listener = map.current!.addListener('idle', () => {
-          google.maps.event.removeListener(listener);
-          resolve();
-        });
-      });
-
-      console.log('✅ Map loaded successfully');
-      setIsLoading(false);
-      addSkyRanchLabel(map.current);
-      
-      // Setup rotation listener
-      map.current.addListener('heading_changed', () => {
-        if (map.current) {
-          const heading = map.current.getHeading() || 0;
-          setMapRotation(heading);
-        }
-      });
-
-      // Initialize drawing manager
-      drawingManager.current = new google.maps.drawing.DrawingManager({
-        drawingMode: null,
-        drawingControl: false,
-        polygonOptions: {
-          strokeColor: '#ffffff',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: LOT_COLORS.default,
-          fillOpacity: 0.35,
-          editable: true
-        }
-      });
-      drawingManager.current.setMap(map.current);
-
-      if (onMapReady) {
-        onMapReady(map.current);
-      }
-      
-      // Render existing polygons
-      renderLotPolygons(map.current, lotPolygons);
-      
-      toast({
-        title: "Mapa Cargado",
-        description: "SkyRanch cargado correctamente!",
-      });
-
-    } catch (error) {
-      console.error('❌ Google Maps initialization error:', error);
-      setError(`Failed to initialize map: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setIsLoading(false);
-      toast({
-        title: "Error de Inicialización",
-        description: "Error al inicializar el mapa. Verifica tu API key.",
-        variant: "destructive"
-      });
-    }
-  }, [toast, addSkyRanchLabel, lotPolygons]);
 
   // Render polygons
   const renderLotPolygons = useCallback((mapInstance: google.maps.Map, polygonsToRender: LotPolygon[]) => {
@@ -289,6 +186,118 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     console.log('✅ User-defined lot polygons rendered successfully');
   }, [lots]);
 
+  // Initialize map - SIMPLIFIED VERSION
+  const initializeMap = useCallback(async (apiKeyToUse: string) => {
+    console.log('🗺️ SIMPLIFIED initializeMap called');
+    console.log('🗺️ API key available:', !!apiKeyToUse);
+    console.log('🗺️ Container available:', !!mapContainer.current);
+    
+    if (!apiKeyToUse) {
+      console.error('❌ No API key provided');
+      setError('API key de Google Maps requerida');
+      setIsLoading(false);
+      return;
+    }
+
+    // Wait for container to be available
+    let containerCheckCount = 0;
+    while (!mapContainer.current && containerCheckCount < 10) {
+      console.log('⏳ Waiting for container... attempt', containerCheckCount + 1);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      containerCheckCount++;
+    }
+
+    if (!mapContainer.current) {
+      console.error('❌ Map container not found after waiting');
+      setError('Map container not available');
+      setIsLoading(false);
+      return;
+    }
+
+    console.log('✅ Container found, proceeding with map initialization');
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('🔑 Loading Google Maps API...');
+      
+      const loader = new Loader({
+        apiKey: apiKeyToUse,
+        version: 'weekly',
+        libraries: ['geometry', 'drawing', 'places']
+      });
+
+      await loader.load();
+      
+      if (!window.google?.maps?.geometry) {
+        throw new Error('Google Maps geometry library failed to load');
+      }
+      
+      console.log('🌍 Creating Google Maps instance...');
+      
+      const mapConfig = {
+        ...GOOGLE_MAPS_CONFIG,
+        center: SKYRANCH_CENTER
+      };
+
+      map.current = new google.maps.Map(mapContainer.current, mapConfig);
+
+      // Wait for map to be fully loaded
+      await new Promise<void>((resolve) => {
+        const listener = map.current!.addListener('idle', () => {
+          google.maps.event.removeListener(listener);
+          resolve();
+        });
+      });
+
+      console.log('✅ Map loaded successfully');
+      setIsLoading(false);
+      addSkyRanchLabel(map.current);
+      
+      // Setup rotation listener
+      map.current.addListener('heading_changed', () => {
+        if (map.current) {
+          const heading = map.current.getHeading() || 0;
+          setMapRotation(heading);
+        }
+      });
+
+      // Initialize drawing manager
+      drawingManager.current = new google.maps.drawing.DrawingManager({
+        drawingMode: null,
+        drawingControl: false,
+        polygonOptions: {
+          strokeColor: '#ffffff',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: LOT_COLORS.default,
+          fillOpacity: 0.35,
+          editable: true
+        }
+      });
+      drawingManager.current.setMap(map.current);
+      
+      // Render existing polygons
+      renderLotPolygons(map.current, lotPolygons);
+      
+      toast({
+        title: "Mapa Cargado",
+        description: "SkyRanch cargado correctamente!",
+      });
+
+    } catch (error) {
+      console.error('❌ Google Maps initialization error:', error);
+      setError(`Failed to initialize map: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsLoading(false);
+      toast({
+        title: "Error de Inicialización",
+        description: "Error al inicializar el mapa. Verifica tu API key.",
+        variant: "destructive"
+      });
+    }
+  }, [toast, addSkyRanchLabel, lotPolygons, renderLotPolygons]);
+
   // Polygon operations
   const startDrawingPolygon = useCallback((lotId: string) => {
     if (!drawingManager.current) {
@@ -318,7 +327,7 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     );
   }, []);
 
-  const saveCurrentPolygon = useCallback(async (lotId: string, mapInstance: google.maps.Map, onComplete: () => void) => {
+  const saveCurrentPolygon = useCallback(async (lotId: string, onComplete: () => void) => {
     if (!currentDrawing.current) {
       console.warn('⚠️ No polygon to save');
       onComplete();
@@ -421,26 +430,14 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     }
   }, []);
 
-  const handleInitializeMap = useCallback(async () => {
-    console.log('🚀 Attempting to initialize map...');
-    console.log('API Key available:', !!apiKey);
-    console.log('Container available:', !!mapContainer.current);
-    
-    if (apiKey && mapContainer.current) {
-      setShowApiKeyInput(false);
-      await initializeMap(apiKey);
-    } else {
-      console.log('❌ Missing requirements - API key:', !!apiKey, 'Container:', !!mapContainer.current);
-    }
-  }, [apiKey, initializeMap]);
-
-  // Initialize map when API key is available
+  // Initialize map when API key is available - SIMPLIFIED
   useEffect(() => {
-    console.log('🔄 API key effect triggered. API Key:', !!apiKey, 'Container:', !!mapContainer.current);
-    if (apiKey) {
-      handleInitializeMap();
+    console.log('🔄 Effect triggered - API key:', !!apiKey, 'Show input:', showApiKeyInput);
+    if (apiKey && !showApiKeyInput) {
+      console.log('🚀 Starting map initialization...');
+      initializeMap(apiKey);
     }
-  }, [apiKey, handleInitializeMap]);
+  }, [apiKey, showApiKeyInput, initializeMap]);
 
   // Re-render polygons when lots change
   useEffect(() => {
@@ -460,7 +457,6 @@ export const useGoogleMapsInitialization = (lots: Lot[]) => {
     lotPolygons,
     mapRotation,
     setApiKey: saveApiKey,
-    initializeMap: handleInitializeMap,
     resetMapRotation,
     startDrawingPolygon,
     saveCurrentPolygon,
