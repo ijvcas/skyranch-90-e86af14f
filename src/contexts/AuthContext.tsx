@@ -10,6 +10,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 Auth state changed:', event, session?.user?.email || 'No user');
+        
+        // Clear any corrupted session data on sign out
+        if (event === 'SIGNED_OUT') {
+          console.log('🧹 Clearing session data...');
+          localStorage.removeItem('supabase.auth.token');
+          sessionStorage.clear();
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -92,13 +102,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
     
+    // Clear any existing corrupted session first
+    if (email === 'jvcas@mac.com') {
+      console.log('🧹 Clearing any corrupted session data for jvcas@mac.com');
+      await supabase.auth.signOut();
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
     
     if (error) {
-      console.error('❌ Sign in error:', error);
+      console.error('❌ Sign in error for', email, ':', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.status,
+        name: error.name
+      });
     } else {
       console.log('✅ Sign in successful for:', email);
     }
@@ -109,6 +132,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     console.log('🚪 Signing out...');
     await supabase.auth.signOut();
+    // Clear all session data
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
+  };
+
+  const resetPassword = async (email: string) => {
+    console.log('🔑 Sending password reset for:', email);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password'
+    });
+    
+    if (error) {
+      console.error('❌ Password reset error:', error);
+    } else {
+      console.log('✅ Password reset email sent to:', email);
+    }
+    
+    return { error };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    console.log('🔑 Updating password for current user');
+    
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      console.error('❌ Password update error:', error);
+    } else {
+      console.log('✅ Password updated successfully');
+    }
+    
+    return { error };
   };
 
   const value = {
@@ -117,7 +175,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     signUp,
     signIn,
-    signOut
+    signOut,
+    resetPassword,
+    updatePassword
   };
 
   return (
