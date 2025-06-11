@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
+  forcePasswordUpdate: (email: string, newPassword: string) => Promise<{ error: any }>;
+  clearCorruptedSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,12 +103,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
     
-    // Clear any existing corrupted session first
+    // Special handling for problematic user
     if (email === 'jvcas@mac.com') {
-      console.log('🧹 Clearing any corrupted session data for jvcas@mac.com');
-      await supabase.auth.signOut();
-      localStorage.removeItem('supabase.auth.token');
-      sessionStorage.clear();
+      console.log('🧹 Special handling for jvcas@mac.com - clearing corrupted session first');
+      await clearCorruptedSession();
+      // Wait a moment for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     const { error } = await supabase.auth.signInWithPassword({
@@ -140,8 +141,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetPassword = async (email: string) => {
     console.log('🔑 Sending password reset for:', email);
     
+    // Use the correct Lovable project URL instead of localhost
+    const redirectUrl = window.location.hostname === 'localhost' 
+      ? 'https://ahwhtxygyzoadsmdrwwg.lovableproject.com/reset-password'
+      : window.location.origin + '/reset-password';
+    
+    console.log('📧 Using redirect URL:', redirectUrl);
+    
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/reset-password'
+      redirectTo: redirectUrl
     });
     
     if (error) {
@@ -169,6 +177,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
+  const forcePasswordUpdate = async (email: string, newPassword: string) => {
+    console.log('🔧 Force updating password for:', email);
+    
+    try {
+      // First, clear any corrupted sessions
+      await clearCorruptedSession();
+      
+      // Attempt to sign in with a temporary approach
+      const { data: { user: foundUser }, error: findError } = await supabase.auth.admin.getUserByEmail(email);
+      
+      if (findError || !foundUser) {
+        console.error('❌ User not found:', findError);
+        return { error: { message: 'Usuario no encontrado' } };
+      }
+      
+      // Use admin API to update password
+      const { error: updateError } = await supabase.auth.admin.updateUserById(foundUser.id, {
+        password: newPassword
+      });
+      
+      if (updateError) {
+        console.error('❌ Admin password update failed:', updateError);
+        return { error: updateError };
+      }
+      
+      console.log('✅ Password force updated successfully');
+      return { error: null };
+      
+    } catch (error) {
+      console.error('❌ Force password update error:', error);
+      return { error: { message: 'Error al actualizar contraseña directamente' } };
+    }
+  };
+
+  const clearCorruptedSession = async () => {
+    console.log('🧹 Clearing corrupted session data...');
+    
+    try {
+      // Sign out completely
+      await supabase.auth.signOut();
+      
+      // Clear all storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear specific Supabase keys
+      const allKeys = Object.keys(localStorage);
+      allKeys.forEach(key => {
+        if (key.includes('supabase') || key.includes('auth')) {
+          localStorage.removeItem(key);
+          console.log('🗑️ Removed key:', key);
+        }
+      });
+      
+      // Reset auth state
+      setSession(null);
+      setUser(null);
+      
+      console.log('✅ Session cleared successfully');
+      
+    } catch (error) {
+      console.error('❌ Error clearing session:', error);
+    }
+  };
+
   const value = {
     user,
     session,
@@ -177,7 +250,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     resetPassword,
-    updatePassword
+    updatePassword,
+    forcePasswordUpdate,
+    clearCorruptedSession
   };
 
   return (

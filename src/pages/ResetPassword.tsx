@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -17,20 +18,61 @@ const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasValidTokens, setHasValidTokens] = useState(false);
 
   useEffect(() => {
-    // Check if we have the proper tokens from the reset email
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    
-    if (!accessToken || !refreshToken) {
-      toast({
-        title: "Link Inválido",
-        description: "Este link de reset no es válido o ha expirado.",
-        variant: "destructive"
-      });
-      navigate('/login');
-    }
+    const checkTokens = async () => {
+      // Check if we have the proper tokens from the reset email
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+      const tokenType = searchParams.get('token_type');
+      
+      console.log('🔍 Reset password tokens:', { accessToken: !!accessToken, refreshToken: !!refreshToken, tokenType });
+      
+      if (!accessToken || !refreshToken) {
+        console.log('❌ Missing tokens, redirecting to login');
+        toast({
+          title: "Link Inválido",
+          description: "Este link de reset no es válido o ha expirado.",
+          variant: "destructive"
+        });
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+      }
+
+      try {
+        // Set the session with the tokens from the URL
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        
+        if (error) {
+          console.error('❌ Error setting session:', error);
+          toast({
+            title: "Sesión Inválida",
+            description: "No se pudo establecer la sesión para el reset.",
+            variant: "destructive"
+          });
+          setTimeout(() => navigate('/login'), 2000);
+          return;
+        }
+        
+        console.log('✅ Session set successfully for password reset');
+        setHasValidTokens(true);
+        
+      } catch (error) {
+        console.error('❌ Exception setting session:', error);
+        toast({
+          title: "Error de Sesión",
+          description: "Error al procesar el link de reset.",
+          variant: "destructive"
+        });
+        setTimeout(() => navigate('/login'), 2000);
+      }
+    };
+
+    checkTokens();
   }, [searchParams, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,12 +111,14 @@ const ResetPassword = () => {
       const { error } = await updatePassword(password);
       
       if (error) {
+        console.error('❌ Password update error:', error);
         toast({
           title: "Error",
           description: `Error al actualizar contraseña: ${error.message}`,
           variant: "destructive"
         });
       } else {
+        console.log('✅ Password updated successfully');
         toast({
           title: "¡Contraseña Actualizada!",
           description: "Tu contraseña ha sido actualizada exitosamente.",
@@ -96,6 +140,19 @@ const ResetPassword = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (!hasValidTokens) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardContent className="text-center p-6">
+            <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Verificando link de reset...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
@@ -156,6 +213,16 @@ const ResetPassword = () => {
               )}
             </Button>
           </form>
+
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-green-800">
+                <p className="font-medium mb-1">Link válido detectado</p>
+                <p>Tu link de reset es válido. Cambia tu contraseña y podrás hacer login normalmente.</p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
