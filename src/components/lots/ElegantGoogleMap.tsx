@@ -24,7 +24,7 @@ const ElegantGoogleMap = ({ lots, onLotSelect }: ElegantGoogleMapProps) => {
   } = usePolygonManager({ 
     lots, 
     onLotSelect: (lotId) => {
-      setSelectedLotId(lotId);
+      // Only call onLotSelect when clicking on a polygon, not when selecting for drawing
       onLotSelect(lotId);
     }
   });
@@ -36,9 +36,10 @@ const ElegantGoogleMap = ({ lots, onLotSelect }: ElegantGoogleMapProps) => {
     }
   });
 
-  const handleLotSelect = (lotId: string) => {
+  // Handle lot selection for drawing (internal state only)
+  const handleLotSelectForDrawing = (lotId: string) => {
     setSelectedLotId(lotId);
-    onLotSelect(lotId);
+    // Don't call onLotSelect here - this is just for internal selection
   };
 
   return (
@@ -67,7 +68,7 @@ const ElegantGoogleMap = ({ lots, onLotSelect }: ElegantGoogleMapProps) => {
           onStartDrawing={startDrawing}
           onCancelDrawing={cancelDrawing}
           onDeletePolygon={deletePolygon}
-          onLotSelect={handleLotSelect}
+          onLotSelect={handleLotSelectForDrawing}
           getLotColor={getLotColor}
         />
       )}

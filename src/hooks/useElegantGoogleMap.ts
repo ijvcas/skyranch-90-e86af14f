@@ -67,6 +67,7 @@ export const useElegantGoogleMap = ({ onMapReady }: UseElegantGoogleMapOptions =
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  const idleListenerRef = useRef<google.maps.MapsEventListener | null>(null);
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -113,10 +114,14 @@ export const useElegantGoogleMap = ({ onMapReady }: UseElegantGoogleMapOptions =
           if (onMapReady) {
             onMapReady(map);
           }
-          map.removeListener(idleListener);
+          // Remove the listener properly
+          if (idleListenerRef.current) {
+            google.maps.event.removeListener(idleListenerRef.current);
+            idleListenerRef.current = null;
+          }
         };
 
-        const idleListener = map.addListener('idle', onMapIdle);
+        idleListenerRef.current = map.addListener('idle', onMapIdle);
 
       } catch (error) {
         console.error('Error initializing elegant Google Maps:', error);
@@ -126,6 +131,10 @@ export const useElegantGoogleMap = ({ onMapReady }: UseElegantGoogleMapOptions =
     initializeMap();
 
     return () => {
+      if (idleListenerRef.current) {
+        google.maps.event.removeListener(idleListenerRef.current);
+        idleListenerRef.current = null;
+      }
       if (mapInstance.current) {
         mapInstance.current = null;
       }
