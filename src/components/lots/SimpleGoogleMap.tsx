@@ -3,8 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import MapDrawingControls from './MapDrawingControls';
 
-// SkyRanch coordinates (Adjust these to your actual location)
-const SKYRANCH_CENTER = { lat: 40.7128, lng: -74.0060 };
+// SkyRanch coordinates from the provided image
+const SKYRANCH_CENTER = { lat: 40.32311111, lng: -4.47409722 }; // 40°19'3.52"N, 4°28'27.47"W
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBo7e7hBrnCCtJDSaftXEFHP4qi-KiKXzI';
 
 interface SimpleGoogleMapProps {

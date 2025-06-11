@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Trash2, Square, Circle } from 'lucide-react';
+import { Edit, Trash2, Square, Circle, Move } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
+import { useDraggable } from '@/hooks/useDraggable';
 
 interface MapDrawingControlsProps {
   lots: Lot[];
@@ -30,6 +30,11 @@ const MapDrawingControls = ({
   onCancelDrawing,
   onLotSelect
 }: MapDrawingControlsProps) => {
+  const { position, dragRef, handleMouseDown, isDragging } = useDraggable({
+    x: 16, // Initial position (left: 16px)
+    y: 16  // Initial position (bottom: 16px from bottom)
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -44,12 +49,27 @@ const MapDrawingControls = ({
 
   return (
     <>
-      {/* Main Controls - Bottom Left to avoid Google's controls */}
-      <Card className="absolute bottom-4 left-4 w-80 z-20 shadow-lg">
+      {/* Main Controls - Draggable */}
+      <Card 
+        ref={dragRef}
+        className={`absolute w-80 z-20 shadow-lg ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        style={{
+          left: `${position.x}px`,
+          bottom: `${window.innerHeight - position.y - 400}px`, // Adjust for card height
+        }}
+      >
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center">
-            <Square className="w-5 h-5 mr-2" />
-            Control de Polígonos
+          <CardTitle className="text-lg flex items-center justify-between">
+            <div className="flex items-center">
+              <Square className="w-5 h-5 mr-2" />
+              Control de Polígonos
+            </div>
+            <div 
+              className="cursor-move p-1 hover:bg-gray-100 rounded"
+              onMouseDown={handleMouseDown}
+            >
+              <Move className="w-4 h-4" />
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -160,7 +180,7 @@ const MapDrawingControls = ({
         </CardContent>
       </Card>
 
-      {/* Polygon List - Bottom Right */}
+      {/* Polygon List - Fixed position bottom right */}
       {lotPolygons.length > 0 && (
         <Card className="absolute bottom-4 right-4 w-64 z-20 shadow-lg max-h-48 overflow-y-auto">
           <CardHeader className="pb-2">
