@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Users } from 'lucide-react';
+import { Users, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading, error } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -25,6 +25,17 @@ const Login = () => {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  // Show auth context errors
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error de autenticación",
+        description: error,
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +75,49 @@ const Login = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Show loading screen while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center animate-pulse">
+                <Users className="w-10 h-10 text-white" />
+              </div>
+              <p className="text-lg text-gray-600">Iniciando SkyRanch...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error screen if there's a persistent auth error
+  if (error && !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-10 h-10 text-white" />
+              </div>
+              <p className="text-lg text-gray-600 text-center">Error de conexión</p>
+              <p className="text-sm text-gray-500 text-center">{error}</p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Reintentar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
