@@ -7,7 +7,7 @@ import MapControls from './MapControls';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBo7e7hBrnCCtJDSaftXEFHP4qi-KiKXzI';
 
-// SkyRanch coordinates (example coordinates - adjust as needed)
+// SkyRanch coordinates (these are example coordinates - adjust as needed)
 const SKYRANCH_CENTER = {
   lat: 40.7128,
   lng: -74.0060
@@ -32,7 +32,10 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
   const [lotPolygons, setLotPolygons] = useState<LotPolygon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [error, setError] = useState<string>('');
   const { toast } = useToast();
+
+  console.log('GoogleMapComponent rendering, lots:', lots.length);
 
   // Color mapping based on lot status
   const getColorForLot = (lot: Lot) => {
@@ -47,17 +50,28 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
   // Initialize Google Maps
   useEffect(() => {
     const initializeMap = async () => {
-      if (!mapRef.current) return;
+      console.log('Starting map initialization...');
+      
+      if (!mapRef.current) {
+        console.log('Map container not available');
+        return;
+      }
 
       try {
+        setError('');
+        console.log('Creating Google Maps loader...');
+        
         const loader = new Loader({
           apiKey: GOOGLE_MAPS_API_KEY,
           version: 'weekly',
           libraries: ['drawing', 'geometry']
         });
 
+        console.log('Loading Google Maps API...');
         await loader.load();
+        console.log('Google Maps API loaded successfully');
 
+        console.log('Creating map instance...');
         const mapInstance = new google.maps.Map(mapRef.current, {
           center: SKYRANCH_CENTER,
           zoom: 16,
@@ -77,6 +91,8 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
           }
         });
 
+        console.log('Map instance created, setting up drawing manager...');
+        
         const drawingManagerInstance = new google.maps.drawing.DrawingManager({
           drawingMode: null,
           drawingControl: false,
@@ -94,6 +110,7 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
         
         // Handle polygon completion
         drawingManagerInstance.addListener('polygoncomplete', (polygon: google.maps.Polygon) => {
+          console.log('Polygon completed');
           if (selectedLotId) {
             handlePolygonComplete(polygon);
           } else {
@@ -110,6 +127,7 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
         setDrawingManager(drawingManagerInstance);
         setIsLoading(false);
         
+        console.log('Map initialization completed successfully');
         toast({
           title: "Mapa Cargado",
           description: "Google Maps se ha cargado correctamente",
@@ -117,26 +135,29 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
 
       } catch (error) {
         console.error('Error loading Google Maps:', error);
+        setError(`Error al cargar Google Maps: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         setIsLoading(false);
         toast({
           title: "Error",
-          description: "Error al cargar Google Maps",
+          description: "Error al cargar Google Maps. Verifica tu conexión a internet.",
           variant: "destructive"
         });
       }
     };
 
     initializeMap();
-  }, [selectedLotId, toast]);
+  }, []);
 
   // Load saved polygons from localStorage
   useEffect(() => {
-    if (!map) return;
+    if (!map || lots.length === 0) return;
 
+    console.log('Loading saved polygons...');
     const savedPolygons = localStorage.getItem('lotPolygons');
     if (savedPolygons) {
       try {
         const polygonData = JSON.parse(savedPolygons);
+        console.log('Found saved polygons:', polygonData.length);
         
         polygonData.forEach((data: any) => {
           const lot = lots.find(l => l.id === data.lotId);
@@ -175,6 +196,7 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
     const lot = lots.find(l => l.id === selectedLotId);
     if (!lot) return;
 
+    console.log('Handling polygon completion for lot:', lot.name);
     const color = getColorForLot(lot);
     
     // Style the polygon
@@ -198,18 +220,14 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
     }
 
     // Add new polygon
-    setLotPolygons(prev => [...prev, { 
+    const newPolygons = [...lotPolygons.filter(lp => lp.lotId !== selectedLotId), { 
       lotId: selectedLotId, 
       polygon, 
       color 
-    }]);
-
-    // Save to localStorage
-    savePolygons([...lotPolygons.filter(lp => lp.lotId !== selectedLotId), { 
-      lotId: selectedLotId, 
-      polygon, 
-      color 
-    }]);
+    }];
+    
+    setLotPolygons(newPolygons);
+    savePolygons(newPolygons);
 
     setIsDrawing(false);
     drawingManager?.setDrawingMode(null);
@@ -231,17 +249,20 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
     }));
     
     localStorage.setItem('lotPolygons', JSON.stringify(polygonData));
+    console.log('Saved polygons to localStorage:', polygonData.length);
   };
 
   const startDrawing = (lotId: string) => {
     if (!drawingManager || !lotId) return;
     
+    console.log('Starting drawing for lot:', lotId);
     setSelectedLotId(lotId);
     setIsDrawing(true);
     drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
   };
 
   const deletePolygon = (lotId: string) => {
+    console.log('Deleting polygon for lot:', lotId);
     const polygonIndex = lotPolygons.findIndex(lp => lp.lotId === lotId);
     if (polygonIndex !== -1) {
       lotPolygons[polygonIndex].polygon.setMap(null);
@@ -258,10 +279,35 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
 
   const resetView = () => {
     if (map) {
+      console.log('Resetting map view to SkyRanch center');
       map.setCenter(SKYRANCH_CENTER);
       map.setZoom(16);
     }
   };
+
+  const cancelDrawing = () => {
+    console.log('Canceling drawing mode');
+    setIsDrawing(false);
+    drawingManager?.setDrawingMode(null);
+  };
+
+  if (error) {
+    return (
+      <div className="w-full h-96 flex items-center justify-center bg-gray-100 rounded-lg">
+        <div className="text-center">
+          <div className="text-red-600 mb-2">⚠️</div>
+          <p className="text-red-600 font-medium">Error al cargar el mapa</p>
+          <p className="text-gray-600 text-sm mt-1">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -269,6 +315,7 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
           <p className="text-gray-600">Cargando Google Maps...</p>
+          <p className="text-gray-500 text-sm mt-1">Esto puede tomar unos segundos</p>
         </div>
       </div>
     );
@@ -278,19 +325,18 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
     <div className="relative w-full h-96 rounded-lg overflow-hidden">
       <div ref={mapRef} className="w-full h-full" />
       
-      <MapControls
-        lots={lots}
-        selectedLotId={selectedLotId}
-        isDrawing={isDrawing}
-        lotPolygons={lotPolygons}
-        onStartDrawing={startDrawing}
-        onDeletePolygon={deletePolygon}
-        onResetView={resetView}
-        onCancelDrawing={() => {
-          setIsDrawing(false);
-          drawingManager?.setDrawingMode(null);
-        }}
-      />
+      {map && (
+        <MapControls
+          lots={lots}
+          selectedLotId={selectedLotId}
+          isDrawing={isDrawing}
+          lotPolygons={lotPolygons}
+          onStartDrawing={startDrawing}
+          onDeletePolygon={deletePolygon}
+          onResetView={resetView}
+          onCancelDrawing={cancelDrawing}
+        />
+      )}
     </div>
   );
 };
