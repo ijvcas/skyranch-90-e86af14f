@@ -19,8 +19,11 @@ export const usePolygonUtils = () => {
       // Convert from square meters to hectares (1 hectare = 10,000 square meters)
       const areaHectares = area / 10000;
 
-      console.log('Calculated area:', areaHectares.toFixed(4), 'hectares');
-      return areaHectares;
+      // Format to 4 decimal places for database consistency
+      const formattedArea = Number(areaHectares.toFixed(4));
+
+      console.log('Calculated area:', formattedArea, 'hectares');
+      return formattedArea;
     } catch (error) {
       console.error('Error calculating polygon area:', error);
       return 0;
@@ -31,8 +34,11 @@ export const usePolygonUtils = () => {
     if (!areaHectares || areaHectares <= 0) return '0 ha';
     
     if (areaHectares < 0.01) {
-      return `${(areaHectares * 10000).toFixed(0)} m²`;
+      const squareMeters = Math.round(areaHectares * 10000);
+      return `${squareMeters} m²`;
     }
+    
+    // Always format to exactly 2 decimal places for display
     return `${areaHectares.toFixed(2)} ha`;
   }, []);
 

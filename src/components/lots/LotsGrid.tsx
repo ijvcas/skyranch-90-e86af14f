@@ -48,9 +48,9 @@ const LotsGrid = ({ lots, isLoading, onLotSelect, onCreateLot, onDeleteLot, poly
           <LotCard 
             key={lot.id} 
             lot={lot} 
-            onLotClick={onLotSelect}
-            onDeleteLot={onDeleteLot}
-            polygonArea={polygon?.areaHectares}
+            onClick={onLotSelect}
+            onDelete={onDeleteLot}
+            calculatedAreaHectares={polygon?.areaHectares}
           />
         );
       })}
