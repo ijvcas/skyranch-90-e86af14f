@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import HeaderWithDropdown from '@/components/HeaderWithDropdown';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,7 +23,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-background">
+      <HeaderWithDropdown />
+      <main className="pt-16">
+        {children}
+      </main>
+    </div>
+  );
 };
 
 export default ProtectedRoute;
