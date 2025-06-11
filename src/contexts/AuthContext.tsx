@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { syncUserToAppUsers } from '@/services/userService';
 
 interface AuthContextType {
   user: User | null;
@@ -29,77 +28,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+    console.log('🔄 Setting up auth state listener...');
+    
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('📋 Initial session check:', session?.user?.email || 'No session');
+        
+        if (error) {
+          console.error('❌ Error getting initial session:', error);
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+      } catch (error) {
+        console.error('❌ Exception getting initial session:', error);
+        setLoading(false);
+      }
+    };
 
-        // Sync user to app_users table when they sign in
-        if (event === 'SIGNED_IN' && session?.user) {
-          setTimeout(async () => {
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
+    getInitialSession();
 
-              if (profile && profile.email) {
-                console.log('Syncing user after sign in:', profile.email);
-                await syncUserToAppUsers(
-                  profile.id, 
-                  profile.email, 
-                  profile.full_name || profile.email
-                );
-              }
-            } catch (error) {
-              console.error('Error syncing user on sign in:', error);
-            }
-          }, 0);
-        }
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email || 'No user');
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🧹 Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    console.log('📝 Attempting sign up for:', email);
     
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName || email
         }
       }
     });
     
+    if (error) {
+      console.error('❌ Sign up error:', error);
+    } else {
+      console.log('✅ Sign up successful for:', email);
+    }
+    
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔐 Attempting sign in for:', email);
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
     
+    if (error) {
+      console.error('❌ Sign in error:', error);
+    } else {
+      console.log('✅ Sign in successful for:', email);
+    }
+    
     return { error };
   };
 
   const signOut = async () => {
+    console.log('🚪 Signing out...');
     await supabase.auth.signOut();
   };
 

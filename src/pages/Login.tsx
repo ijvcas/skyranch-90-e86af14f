@@ -6,64 +6,98 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Users } from 'lucide-react';
+import { Users, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !loading) {
+      console.log('✅ User already logged in, redirecting to dashboard');
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor ingresa tu email y contraseña.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     
     try {
+      console.log('🔐 Attempting login for:', formData.email);
       const { error } = await signIn(formData.email, formData.password);
       
       if (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
+        
+        let errorMessage = "Ocurrió un error inesperado. Intenta de nuevo.";
+        
+        if (error.message === 'Invalid login credentials') {
+          errorMessage = "Email o contraseña incorrectos. Verifica tus credenciales.";
+        } else if (error.message?.includes('Email not confirmed')) {
+          errorMessage = "Por favor confirma tu email antes de iniciar sesión.";
+        } else if (error.message?.includes('network')) {
+          errorMessage = "Error de conexión. Verifica tu internet.";
+        }
+        
         toast({
           title: "Error de inicio de sesión",
-          description: error.message === 'Invalid login credentials' 
-            ? "Credenciales inválidas. Verifica tu email y contraseña."
-            : error.message,
+          description: errorMessage,
           variant: "destructive"
         });
       } else {
+        console.log('✅ Login successful');
         toast({
-          title: "Bienvenido",
-          description: "Sesión iniciada correctamente.",
+          title: "¡Bienvenido!",
+          description: "Has iniciado sesión correctamente.",
         });
-        navigate('/dashboard');
+        // Navigation will happen automatically via useEffect when user state updates
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('❌ Unexpected login error:', error);
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado. Intenta de nuevo.",
+        description: "Error inesperado. Por favor intenta de nuevo.",
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Show loading while checking authentication state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
@@ -80,22 +114,18 @@ const Login = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
               <Input
                 id="email"
-                name="login-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder="tu@correo.com"
                 required
                 className="mt-2 h-12 text-base"
-                disabled={isLoading}
-                autoComplete="username"
-                data-1p-ignore
-                data-lpignore="true"
+                disabled={isSubmitting}
               />
             </div>
             
@@ -103,37 +133,50 @@ const Login = () => {
               <Label htmlFor="password" className="text-base font-medium">Contraseña</Label>
               <Input
                 id="password"
-                name="login-password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 placeholder="Tu contraseña"
                 required
                 className="mt-2 h-12 text-base"
-                disabled={isLoading}
-                autoComplete="current-password"
-                data-1p-ignore
-                data-lpignore="true"
+                disabled={isSubmitting}
               />
             </div>
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-semibold mt-8"
             >
-              {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              {isSubmitting ? (
+                <div className="flex items-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Iniciando sesión...
+                </div>
+              ) : (
+                "Iniciar Sesión"
+              )}
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">¿No puedes iniciar sesión?</p>
+                <p>Asegúrate de usar las credenciales correctas. Si no tienes cuenta, regístrate primero.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
             <p className="text-base text-gray-600">
               ¿No tienes cuenta?{' '}
               <Button 
                 variant="link" 
                 className="p-0 text-green-600 text-base font-semibold"
                 onClick={() => navigate('/register')}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 Registrarse
               </Button>
