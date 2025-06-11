@@ -1,6 +1,6 @@
 
 import React from 'react';
-import CleanGoogleMapWithDrawing from './CleanGoogleMapWithDrawing';
+import WorkingGoogleMapDrawing from './WorkingGoogleMapDrawing';
 import { type Lot } from '@/stores/lotStore';
 
 interface LotMapViewProps {
@@ -13,26 +13,24 @@ const LotMapView = ({ lots, onLotSelect }: LotMapViewProps) => {
     <div className="w-full space-y-4">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          Mapa de Lotes con Control de Polígonos
+          Mapa de Lotes con Dibujo de Polígonos
         </h2>
         <p className="text-gray-600">
-          Dibuja polígonos para cada lote usando las herramientas de Google Maps
+          Sistema completo de dibujo usando Google Maps Drawing Tools
         </p>
       </div>
       
-      <CleanGoogleMapWithDrawing lots={lots} onLotSelect={onLotSelect} />
+      <WorkingGoogleMapDrawing lots={lots} onLotSelect={onLotSelect} />
       
       <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border">
-        <h3 className="font-semibold text-gray-800 mb-2">Instrucciones:</h3>
+        <h3 className="font-semibold text-gray-800 mb-2">Instrucciones de Dibujo:</h3>
         <ul className="text-sm text-gray-700 space-y-1">
           <li>• <strong>Selecciona un lote</strong> del dropdown para comenzar</li>
-          <li>• <strong>Haz clic en "Dibujar Polígono"</strong> para activar las herramientas de Google Maps</li>
-          <li>• <strong>Haz clic en el mapa</strong> para crear puntos del polígono</li>
+          <li>• <strong>Haz clic en "Dibujar Polígono"</strong> para activar el modo dibujo</li>
+          <li>• <strong>El cursor cambiará a cruz</strong> cuando el modo dibujo esté activo</li>
+          <li>• <strong>Haz clic en el mapa</strong> para crear cada punto del polígono</li>
           <li>• <strong>Cierra el polígono</strong> haciendo clic en el primer punto</li>
-          <li>• Los colores cambian automáticamente según el estado del lote:</li>
-          <li className="ml-4">- <span className="text-emerald-600 font-medium">Verde</span>: Lotes activos</li>
-          <li className="ml-4">- <span className="text-amber-600 font-medium">Amarillo</span>: Lotes en descanso</li>
-          <li className="ml-4">- <span className="text-red-600 font-medium">Rojo</span>: Lotes en mantenimiento</li>
+          <li>• <strong>El polígono se guardará automáticamente</strong> y aparecerá en el color del lote</li>
         </ul>
       </div>
     </div>
