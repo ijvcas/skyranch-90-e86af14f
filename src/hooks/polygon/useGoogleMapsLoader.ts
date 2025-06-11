@@ -15,7 +15,7 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyBo7e7hBrnCCtJDSaftXEFHP4qi-KiKXzI';
 
 export const loadGoogleMapsAPI = (): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (loaderState.isAPILoaded && window.google?.maps?.drawing) {
+    if (loaderState.isAPILoaded && window.google?.maps?.drawing && window.google?.maps?.geometry) {
       resolve();
       return;
     }
@@ -27,11 +27,11 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
 
     loaderState.isAPILoading = true;
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=drawing&callback=initSimpleDrawing`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=drawing,geometry&callback=initSimpleDrawing`;
     script.async = true;
     
     (window as any).initSimpleDrawing = () => {
-      console.log('Google Maps Drawing API loaded successfully');
+      console.log('Google Maps Drawing and Geometry API loaded successfully');
       loaderState.isAPILoaded = true;
       loaderState.isAPILoading = false;
       resolve();

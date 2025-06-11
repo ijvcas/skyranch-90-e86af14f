@@ -5,6 +5,7 @@ interface StoredPolygonData {
   lotId: string;
   color: string;
   coordinates: { lat: number; lng: number }[];
+  areaHectares?: number;
 }
 
 export const usePolygonStorage = () => {
@@ -12,7 +13,8 @@ export const usePolygonStorage = () => {
     const dataToSave = polygonData.map(p => ({
       lotId: p.lotId,
       color: p.color,
-      coordinates: p.coordinates
+      coordinates: p.coordinates,
+      areaHectares: p.areaHectares
     }));
     console.log('Saving polygons to storage:', dataToSave);
     localStorage.setItem('lotPolygons', JSON.stringify(dataToSave));

@@ -1,12 +1,14 @@
 
 import { useState, useCallback } from 'react';
 import { type Lot } from '@/stores/lotStore';
+import { usePolygonUtils } from './usePolygonUtils';
 
 interface PolygonData {
   lotId: string;
   polygon: google.maps.Polygon;
   color: string;
   coordinates: { lat: number; lng: number }[];
+  areaHectares?: number;
 }
 
 interface UsePolygonManagerOptions {
@@ -18,6 +20,7 @@ interface UsePolygonManagerOptions {
 
 export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygonsToStorage }: UsePolygonManagerOptions) => {
   const [polygons, setPolygons] = useState<PolygonData[]>([]);
+  const { calculatePolygonArea } = usePolygonUtils();
 
   const handlePolygonComplete = useCallback((polygon: google.maps.Polygon, selectedLotId: string) => {
     console.log('handlePolygonComplete called with selectedLotId:', selectedLotId);
@@ -44,7 +47,9 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
       lng: point.lng()
     }));
 
-    console.log('Polygon coordinates:', coordinates);
+    // Calculate area
+    const areaHectares = calculatePolygonArea(polygon);
+    console.log('Calculated area:', areaHectares, 'hectares');
 
     // Set polygon style
     const color = getLotColor(lot);
@@ -76,7 +81,8 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
       lotId: selectedLotId,
       polygon,
       color,
-      coordinates
+      coordinates,
+      areaHectares
     };
 
     console.log('Adding new polygon data:', polygonData);
@@ -88,7 +94,7 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
       savePolygonsToStorage(updated);
       return updated;
     });
-  }, [lots, getLotColor, onLotSelect, savePolygonsToStorage]);
+  }, [lots, getLotColor, onLotSelect, savePolygonsToStorage, calculatePolygonArea]);
 
   const deletePolygon = useCallback((lotId: string) => {
     console.log('Deleting polygon for lot:', lotId);
@@ -122,18 +128,22 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
         polygon.setMap(map);
         polygon.addListener('click', () => onLotSelect(lot.id));
         
+        // Calculate area if not stored
+        const areaHectares = item.areaHectares || calculatePolygonArea(polygon);
+        
         loadedPolygons.push({
           lotId: item.lotId,
           polygon,
           color: getLotColor(lot),
-          coordinates: item.coordinates
+          coordinates: item.coordinates,
+          areaHectares
         });
       }
     });
 
     console.log('Loaded polygons:', loadedPolygons);
     setPolygons(loadedPolygons);
-  }, [lots, getLotColor, onLotSelect]);
+  }, [lots, getLotColor, onLotSelect, calculatePolygonArea]);
 
   return {
     polygons,

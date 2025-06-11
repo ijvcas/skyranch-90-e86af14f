@@ -2,7 +2,7 @@
 import React from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useSimplePolygonDrawing } from '@/hooks/useSimplePolygonDrawing';
-import MinimalPolygonControls from './controls/MinimalPolygonControls';
+import EnhancedPolygonControls from './controls/EnhancedPolygonControls';
 
 interface WorkingGoogleMapDrawingProps {
   lots: Lot[];
@@ -30,7 +30,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
             <p className="text-gray-600 font-medium">Inicializando Google Maps...</p>
-            <p className="text-sm text-gray-500">Cargando herramientas de dibujo</p>
+            <p className="text-sm text-gray-500">Cargando herramientas de dibujo y geometría</p>
           </div>
         </div>
       )}
@@ -38,13 +38,17 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
       
-      {/* Controls overlay */}
+      {/* Enhanced Controls overlay */}
       {isMapReady && (
-        <MinimalPolygonControls
+        <EnhancedPolygonControls
           lots={lots}
           selectedLotId={selectedLotId}
           isDrawing={isDrawing}
-          polygons={polygons.map(p => ({ lotId: p.lotId, color: p.color }))}
+          polygons={polygons.map(p => ({ 
+            lotId: p.lotId, 
+            color: p.color,
+            areaHectares: p.areaHectares 
+          }))}
           onStartDrawing={startDrawing}
           onStopDrawing={stopDrawing}
           onDeletePolygon={deletePolygon}

@@ -16,9 +16,23 @@ const Lots = () => {
   const { lots, isLoading, loadLots } = useLotStore();
   const [showLotForm, setShowLotForm] = useState(false);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
+  const [polygonData, setPolygonData] = useState<Array<{lotId: string; areaHectares?: number}>>([]);
 
   useEffect(() => {
     loadLots();
+    // Load polygon data from localStorage
+    const saved = localStorage.getItem('lotPolygons');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        setPolygonData(data.map((item: any) => ({
+          lotId: item.lotId,
+          areaHectares: item.areaHectares
+        })));
+      } catch (error) {
+        console.error('Error loading polygon data:', error);
+      }
+    }
   }, [loadLots]);
 
   if (selectedLotId) {
@@ -71,6 +85,7 @@ const Lots = () => {
             isLoading={isLoading}
             onLotSelect={setSelectedLotId}
             onCreateLot={() => setShowLotForm(true)}
+            polygonData={polygonData}
           />
         </TabsContent>
 

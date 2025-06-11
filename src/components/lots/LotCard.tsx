@@ -2,14 +2,16 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BarChart3 } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
 
 interface LotCardProps {
   lot: Lot;
   onLotClick: (lotId: string) => void;
+  polygonArea?: number;
 }
 
-const LotCard = ({ lot, onLotClick }: LotCardProps) => {
+const LotCard = ({ lot, onLotClick, polygonArea }: LotCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -27,6 +29,13 @@ const LotCard = ({ lot, onLotClick }: LotCardProps) => {
       case 'poor': return 'bg-red-400';
       default: return 'bg-gray-400';
     }
+  };
+
+  const formatArea = (areaHectares: number): string => {
+    if (areaHectares < 0.01) {
+      return `${(areaHectares * 10000).toFixed(0)} m²`;
+    }
+    return `${areaHectares.toFixed(2)} ha`;
   };
 
   return (
@@ -70,13 +79,19 @@ const LotCard = ({ lot, onLotClick }: LotCardProps) => {
             </span>
           </div>
           
-          {/* Size */}
-          {lot.sizeHectares && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Tamaño</span>
-              <span className="text-sm">{lot.sizeHectares} ha</span>
+          {/* Size - show polygon area if available, otherwise lot size */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Tamaño</span>
+            <div className="flex items-center">
+              {polygonArea && (
+                <BarChart3 className="w-3 h-3 mr-1 text-green-600" />
+              )}
+              <span className="text-sm">
+                {polygonArea ? formatArea(polygonArea) : 
+                 lot.sizeHectares ? `${lot.sizeHectares} ha` : 'No definido'}
+              </span>
             </div>
-          )}
+          </div>
           
           {/* Progress Bar */}
           {lot.capacity && (
