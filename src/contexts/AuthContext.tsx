@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -191,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: { message: 'Error al buscar usuarios' } };
       }
       
-      const foundUser = users.find(u => u.email === email);
+      const foundUser = users?.find((u: any) => u.email === email);
       
       if (!foundUser) {
         console.error('❌ User not found');
@@ -267,3 +268,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
