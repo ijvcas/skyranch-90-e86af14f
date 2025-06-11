@@ -1,7 +1,7 @@
 
 import React from 'react';
-import WorkingGoogleMapDrawing from './WorkingGoogleMapDrawing';
 import { type Lot } from '@/stores/lotStore';
+import WorkingGoogleMapDrawing from './WorkingGoogleMapDrawing';
 
 interface LotMapViewProps {
   lots: Lot[];
@@ -10,29 +10,19 @@ interface LotMapViewProps {
 
 const LotMapView = ({ lots, onLotSelect }: LotMapViewProps) => {
   return (
-    <div className="w-full space-y-4">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          Mapa de Lotes con Dibujo de Polígonos
-        </h2>
-        <p className="text-gray-600">
-          Sistema completo de dibujo usando Google Maps Drawing Tools
+    <div className="space-y-4">
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Mapa Interactivo de Lotes</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Haz clic en "Dibujar" para crear polígonos que representen los límites de cada lote. 
+          Los polígonos se guardan automáticamente en la base de datos.
         </p>
       </div>
       
-      <WorkingGoogleMapDrawing lots={lots} onLotSelect={onLotSelect} />
-      
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border">
-        <h3 className="font-semibold text-gray-800 mb-2">Instrucciones de Dibujo:</h3>
-        <ul className="text-sm text-gray-700 space-y-1">
-          <li>• <strong>Selecciona un lote</strong> del dropdown para comenzar</li>
-          <li>• <strong>Haz clic en "Dibujar Polígono"</strong> para activar el modo dibujo</li>
-          <li>• <strong>El cursor cambiará a cruz</strong> cuando el modo dibujo esté activo</li>
-          <li>• <strong>Haz clic en el mapa</strong> para crear cada punto del polígono</li>
-          <li>• <strong>Cierra el polígono</strong> haciendo clic en el primer punto</li>
-          <li>• <strong>El polígono se guardará automáticamente</strong> y aparecerá en el color del lote</li>
-        </ul>
-      </div>
+      <WorkingGoogleMapDrawing 
+        lots={lots} 
+        onLotSelect={onLotSelect} 
+      />
     </div>
   );
 };
