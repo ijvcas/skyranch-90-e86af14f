@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { type Lot } from '@/stores/lotStore';
 
@@ -40,6 +39,64 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       case 'maintenance': return '#ef4444'; // red-500
       default: return '#6b7280'; // gray-500
     }
+  }, []);
+
+  // Force crosshair cursor on map
+  const setCrosshairCursor = useCallback(() => {
+    if (!mapRef.current) return;
+
+    const mapDiv = mapRef.current.getDiv();
+    
+    // Apply crosshair cursor with !important
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .crosshair-cursor * {
+        cursor: crosshair !important;
+      }
+      .crosshair-cursor canvas {
+        cursor: crosshair !important;
+      }
+      .crosshair-cursor div {
+        cursor: crosshair !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    mapDiv.classList.add('crosshair-cursor');
+    mapDiv.style.cursor = 'crosshair !important';
+    
+    // Force cursor on all child elements
+    const allElements = mapDiv.querySelectorAll('*');
+    allElements.forEach((element: any) => {
+      element.style.cursor = 'crosshair !important';
+    });
+
+    console.log('Crosshair cursor forced on map');
+  }, []);
+
+  // Remove crosshair cursor from map
+  const removeCrosshairCursor = useCallback(() => {
+    if (!mapRef.current) return;
+
+    const mapDiv = mapRef.current.getDiv();
+    mapDiv.classList.remove('crosshair-cursor');
+    mapDiv.style.cursor = '';
+    
+    // Remove forced cursor from all child elements
+    const allElements = mapDiv.querySelectorAll('*');
+    allElements.forEach((element: any) => {
+      element.style.cursor = '';
+    });
+
+    // Remove the style element
+    const styleElements = document.querySelectorAll('style');
+    styleElements.forEach(style => {
+      if (style.innerHTML.includes('crosshair-cursor')) {
+        style.remove();
+      }
+    });
+
+    console.log('Crosshair cursor removed from map');
   }, []);
 
   // Initialize drawing manager
@@ -139,15 +196,12 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     // Disable drawing mode and restore normal cursor
     if (drawingManagerRef.current) {
       drawingManagerRef.current.setDrawingMode(null);
-      // Reset map cursor
-      if (mapRef.current) {
-        const mapDiv = mapRef.current.getDiv();
-        mapDiv.style.cursor = '';
-      }
     }
+    
+    removeCrosshairCursor();
 
     console.log('Polygon creation completed successfully');
-  }, [drawingState.currentLotId, lots, polygons, getLotColor, onLotSelect]);
+  }, [drawingState.currentLotId, lots, polygons, getLotColor, onLotSelect, removeCrosshairCursor]);
 
   // Start drawing for a lot
   const startDrawing = useCallback((lotId: string) => {
@@ -193,23 +247,16 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     // Add new polygon complete listener
     polygonCompleteListenerRef.current = drawingManagerRef.current.addListener('polygoncomplete', handlePolygonComplete);
 
-    // Enable drawing mode with crosshair cursor
+    // Enable drawing mode
     drawingManagerRef.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     
-    // Force crosshair cursor on map
-    const mapDiv = mapRef.current.getDiv();
-    mapDiv.style.cursor = 'crosshair !important';
-    
-    // Additional cursor override for the map canvas
+    // Force crosshair cursor
     setTimeout(() => {
-      const mapCanvas = mapDiv.querySelector('canvas');
-      if (mapCanvas) {
-        mapCanvas.style.cursor = 'crosshair !important';
-      }
+      setCrosshairCursor();
     }, 100);
 
     console.log('Drawing mode enabled with crosshair cursor');
-  }, [lots, getLotColor, handlePolygonComplete]);
+  }, [lots, getLotColor, handlePolygonComplete, setCrosshairCursor]);
 
   // Cancel drawing
   const cancelDrawing = useCallback(() => {
@@ -225,22 +272,14 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       drawingManagerRef.current.setDrawingMode(null);
     }
 
-    // Reset cursor
-    if (mapRef.current) {
-      const mapDiv = mapRef.current.getDiv();
-      mapDiv.style.cursor = '';
-      const mapCanvas = mapDiv.querySelector('canvas');
-      if (mapCanvas) {
-        mapCanvas.style.cursor = '';
-      }
-    }
+    removeCrosshairCursor();
 
     // Remove polygon complete listener
     if (polygonCompleteListenerRef.current) {
       google.maps.event.removeListener(polygonCompleteListenerRef.current);
       polygonCompleteListenerRef.current = null;
     }
-  }, []);
+  }, [removeCrosshairCursor]);
 
   // Delete polygon
   const deletePolygon = useCallback((lotId: string) => {
@@ -339,8 +378,9 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       if (polygonCompleteListenerRef.current) {
         google.maps.event.removeListener(polygonCompleteListenerRef.current);
       }
+      removeCrosshairCursor();
     };
-  }, []);
+  }, [removeCrosshairCursor]);
 
   return {
     polygons,
