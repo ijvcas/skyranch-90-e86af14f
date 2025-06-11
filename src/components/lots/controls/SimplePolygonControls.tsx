@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,8 +30,14 @@ const SimplePolygonControls = ({
   onLotSelect,
   getLotColor
 }: SimplePolygonControlsProps) => {
-  const selectedLot = lots.find(l => l.id === selectedLotId);
-  const hasPolygon = polygons.some(p => p.lotId === selectedLotId);
+  const [internalSelectedLotId, setInternalSelectedLotId] = useState<string>(selectedLotId || '');
+  
+  const selectedLot = lots.find(l => l.id === internalSelectedLotId);
+  const hasPolygon = polygons.some(p => p.lotId === internalSelectedLotId);
+
+  const handleLotSelection = (lotId: string) => {
+    setInternalSelectedLotId(lotId);
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -64,7 +70,7 @@ const SimplePolygonControls = ({
         {/* Lot Selector */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Seleccionar Lote</label>
-          <Select value={selectedLotId} onValueChange={onLotSelect}>
+          <Select value={internalSelectedLotId} onValueChange={handleLotSelection}>
             <SelectTrigger>
               <SelectValue placeholder="Selecciona un lote" />
             </SelectTrigger>
@@ -116,8 +122,8 @@ const SimplePolygonControls = ({
           {!isDrawing ? (
             <div className="space-y-2">
               <Button
-                onClick={() => selectedLotId && onStartDrawing(selectedLotId)}
-                disabled={!selectedLotId}
+                onClick={() => internalSelectedLotId && onStartDrawing(internalSelectedLotId)}
+                disabled={!internalSelectedLotId}
                 className={`w-full ${
                   hasPolygon 
                     ? 'bg-amber-500 hover:bg-amber-600' 
@@ -130,7 +136,7 @@ const SimplePolygonControls = ({
               
               {hasPolygon && (
                 <Button
-                  onClick={() => onDeletePolygon(selectedLotId)}
+                  onClick={() => onDeletePolygon(internalSelectedLotId)}
                   variant="destructive"
                   className="w-full"
                 >

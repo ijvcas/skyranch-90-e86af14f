@@ -22,11 +22,9 @@ const CleanGoogleMapWithDrawing = ({ lots, onLotSelect }: CleanGoogleMapWithDraw
     getLotColor
   } = useMapPolygonDrawing({ lots, onLotSelect });
 
-  const handleLotSelect = (lotId: string) => {
-    // Don't change selection while drawing
-    if (!isDrawing) {
-      onLotSelect(lotId);
-    }
+  const handleLotSelectForDrawing = (lotId: string) => {
+    // This is for selecting a lot to draw - don't navigate
+    // The actual selection is handled internally by the hook
   };
 
   return (
@@ -55,7 +53,7 @@ const CleanGoogleMapWithDrawing = ({ lots, onLotSelect }: CleanGoogleMapWithDraw
           onStartDrawing={startDrawing}
           onStopDrawing={stopDrawing}
           onDeletePolygon={deletePolygon}
-          onLotSelect={handleLotSelect}
+          onLotSelect={handleLotSelectForDrawing}
           getLotColor={getLotColor}
         />
       )}
