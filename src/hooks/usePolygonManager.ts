@@ -30,6 +30,7 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
   
   const mapRef = useRef<google.maps.Map | null>(null);
   const drawingManagerRef = useRef<google.maps.drawing.DrawingManager | null>(null);
+  const polygonCompleteListenerRef = useRef<google.maps.MapsEventListener | null>(null);
 
   // Get color based on lot status with enhanced color scheme
   const getLotColor = useCallback((lot: Lot) => {
@@ -44,6 +45,8 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
   // Initialize drawing manager
   const initializeDrawingManager = useCallback((map: google.maps.Map) => {
     if (drawingManagerRef.current) return drawingManagerRef.current;
+
+    console.log('Creating new drawing manager...');
 
     const drawingManager = new google.maps.drawing.DrawingManager({
       drawingMode: null,
@@ -61,20 +64,91 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     drawingManager.setMap(map);
     drawingManagerRef.current = drawingManager;
 
-    // Handle polygon completion
-    drawingManager.addListener('polygoncomplete', (polygon: google.maps.Polygon) => {
-      if (drawingState.currentLotId) {
-        completePolygon(drawingState.currentLotId, polygon);
-      }
+    console.log('Drawing manager created and attached to map');
+    return drawingManager;
+  }, []);
+
+  // Handle polygon completion
+  const handlePolygonComplete = useCallback((polygon: google.maps.Polygon) => {
+    if (!drawingState.currentLotId) {
+      console.log('No current lot selected, removing polygon');
+      polygon.setMap(null);
+      return;
+    }
+
+    const lot = lots.find(l => l.id === drawingState.currentLotId);
+    if (!lot) {
+      console.log('Lot not found, removing polygon');
+      polygon.setMap(null);
+      return;
+    }
+
+    console.log('Polygon completed for lot:', lot.name);
+
+    // Remove existing polygon for this lot
+    const existingIndex = polygons.findIndex(p => p.lotId === drawingState.currentLotId);
+    if (existingIndex !== -1) {
+      polygons[existingIndex].polygon.setMap(null);
+    }
+
+    // Get coordinates
+    const path = polygon.getPath();
+    const coordinates = path.getArray().map(point => ({
+      lat: point.lat(),
+      lng: point.lng()
+    }));
+
+    // Set the correct color
+    const color = getLotColor(lot);
+    polygon.setOptions({
+      fillColor: color,
+      strokeColor: color
     });
 
-    return drawingManager;
-  }, [drawingState.currentLotId]);
+    // Create polygon data
+    const polygonData: PolygonData = {
+      lotId: drawingState.currentLotId,
+      polygon,
+      color,
+      coordinates
+    };
+
+    // Add click listener for lot selection
+    polygon.addListener('click', () => {
+      console.log('Polygon clicked for lot:', lot.id);
+      onLotSelect(lot.id);
+    });
+
+    // Update state
+    setPolygons(prev => {
+      const filtered = prev.filter(p => p.lotId !== drawingState.currentLotId);
+      const updated = [...filtered, polygonData];
+      savePolygonsToStorage(updated);
+      return updated;
+    });
+
+    // Reset drawing state
+    setDrawingState({
+      isActive: false,
+      currentLotId: null,
+      mode: 'complete'
+    });
+
+    // Disable drawing mode
+    if (drawingManagerRef.current) {
+      drawingManagerRef.current.setDrawingMode(null);
+    }
+
+    console.log('Polygon creation completed successfully');
+  }, [drawingState.currentLotId, lots, polygons, getLotColor, onLotSelect]);
 
   // Start drawing for a lot
   const startDrawing = useCallback((lotId: string) => {
     const lot = lots.find(l => l.id === lotId);
-    if (!lot || !drawingManagerRef.current) return;
+    if (!lot || !drawingManagerRef.current) {
+      console.log('Cannot start drawing - missing lot or drawing manager');
+      return;
+    }
 
     console.log('Starting polygon drawing for lot:', lot.name);
     
@@ -85,6 +159,8 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     });
 
     const color = getLotColor(lot);
+    
+    // Update polygon options
     drawingManagerRef.current.setOptions({
       polygonOptions: {
         fillColor: color,
@@ -98,61 +174,19 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       }
     });
 
+    // Remove existing polygon complete listener
+    if (polygonCompleteListenerRef.current) {
+      google.maps.event.removeListener(polygonCompleteListenerRef.current);
+    }
+
+    // Add new polygon complete listener
+    polygonCompleteListenerRef.current = drawingManagerRef.current.addListener('polygoncomplete', handlePolygonComplete);
+
+    // Enable drawing mode
     drawingManagerRef.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-  }, [lots, getLotColor]);
-
-  // Complete polygon drawing
-  const completePolygon = useCallback((lotId: string, polygon: google.maps.Polygon) => {
-    const lot = lots.find(l => l.id === lotId);
-    if (!lot) return;
-
-    console.log('Completing polygon for lot:', lot.name);
-
-    // Remove existing polygon for this lot
-    const existingIndex = polygons.findIndex(p => p.lotId === lotId);
-    if (existingIndex !== -1) {
-      polygons[existingIndex].polygon.setMap(null);
-    }
-
-    // Get coordinates
-    const path = polygon.getPath();
-    const coordinates = path.getArray().map(point => ({
-      lat: point.lat(),
-      lng: point.lng()
-    }));
-
-    // Create polygon data
-    const polygonData: PolygonData = {
-      lotId,
-      polygon,
-      color: getLotColor(lot),
-      coordinates
-    };
-
-    // Add click listener for lot selection
-    polygon.addListener('click', () => {
-      onLotSelect(lotId);
-    });
-
-    // Update state
-    setPolygons(prev => {
-      const filtered = prev.filter(p => p.lotId !== lotId);
-      return [...filtered, polygonData];
-    });
-
-    setDrawingState({
-      isActive: false,
-      currentLotId: null,
-      mode: 'complete'
-    });
-
-    if (drawingManagerRef.current) {
-      drawingManagerRef.current.setDrawingMode(null);
-    }
-
-    // Save to localStorage
-    savePolygonsToStorage([...polygons.filter(p => p.lotId !== lotId), polygonData]);
-  }, [lots, polygons, getLotColor, onLotSelect]);
+    
+    console.log('Drawing mode enabled, ready to draw on map');
+  }, [lots, getLotColor, handlePolygonComplete]);
 
   // Cancel drawing
   const cancelDrawing = useCallback(() => {
@@ -167,10 +201,17 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     if (drawingManagerRef.current) {
       drawingManagerRef.current.setDrawingMode(null);
     }
+
+    // Remove polygon complete listener
+    if (polygonCompleteListenerRef.current) {
+      google.maps.event.removeListener(polygonCompleteListenerRef.current);
+      polygonCompleteListenerRef.current = null;
+    }
   }, []);
 
   // Delete polygon
   const deletePolygon = useCallback((lotId: string) => {
+    console.log('Deleting polygon for lot:', lotId);
     const polygonIndex = polygons.findIndex(p => p.lotId === lotId);
     if (polygonIndex !== -1) {
       polygons[polygonIndex].polygon.setMap(null);
@@ -188,6 +229,7 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       coordinates: p.coordinates
     }));
     localStorage.setItem('lotPolygons', JSON.stringify(dataToSave));
+    console.log('Polygons saved to localStorage:', dataToSave.length);
   }, []);
 
   // Load polygons from localStorage
@@ -227,6 +269,7 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       });
 
       setPolygons(loadedPolygons);
+      console.log('Loaded polygons from storage:', loadedPolygons.length);
     } catch (error) {
       console.error('Error loading saved polygons:', error);
     }
@@ -234,6 +277,7 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
 
   // Initialize with map
   const initializeWithMap = useCallback((map: google.maps.Map) => {
+    console.log('Initializing polygon manager with map');
     mapRef.current = map;
     initializeDrawingManager(map);
     loadPolygonsFromStorage(map);
@@ -255,6 +299,15 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       }
     });
   }, [lots, polygons, getLotColor]);
+
+  // Cleanup listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (polygonCompleteListenerRef.current) {
+        google.maps.event.removeListener(polygonCompleteListenerRef.current);
+      }
+    };
+  }, []);
 
   return {
     polygons,
