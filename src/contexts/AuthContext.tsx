@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -142,9 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🔑 Sending password reset for:', email);
     
     // Use the correct Lovable project URL instead of localhost
-    const redirectUrl = window.location.hostname === 'localhost' 
-      ? 'https://ahwhtxygyzoadsmdrwwg.lovableproject.com/reset-password'
-      : window.location.origin + '/reset-password';
+    const redirectUrl = 'https://ahwhtxygyzoadsmdrwwg.lovableproject.com/reset-password';
     
     console.log('📧 Using redirect URL:', redirectUrl);
     
@@ -184,11 +183,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // First, clear any corrupted sessions
       await clearCorruptedSession();
       
-      // Attempt to sign in with a temporary approach
-      const { data: { user: foundUser }, error: findError } = await supabase.auth.admin.getUserByEmail(email);
+      // Use listUsers to find the user by email
+      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
       
-      if (findError || !foundUser) {
-        console.error('❌ User not found:', findError);
+      if (listError) {
+        console.error('❌ Error listing users:', listError);
+        return { error: { message: 'Error al buscar usuarios' } };
+      }
+      
+      const foundUser = users.find(u => u.email === email);
+      
+      if (!foundUser) {
+        console.error('❌ User not found');
         return { error: { message: 'Usuario no encontrado' } };
       }
       
