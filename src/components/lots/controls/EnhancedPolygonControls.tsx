@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Square, Edit, Trash2, Circle, X, ChevronDown, ChevronUp, Minimize2, BarChart3 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Square, Edit, Trash2, Circle, X, ChevronDown, ChevronUp, Minimize2, BarChart3, Palette } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
 import { usePolygonUtils } from '@/hooks/polygon/usePolygonUtils';
 
@@ -37,17 +38,28 @@ const EnhancedPolygonControls = ({
 }: EnhancedPolygonControlsProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [selectedColor, setSelectedColor] = useState<string>('');
   const { formatArea } = usePolygonUtils();
   
   const selectedLot = lots.find(l => l.id === selectedLotId);
   const polygonData = polygons.find(p => p.lotId === selectedLotId);
   const hasPolygon = !!polygonData;
 
+  // Color options for different lot statuses
+  const colorOptions = [
+    { value: 'active', label: 'En Uso', color: '#10b981' },
+    { value: 'resting', label: 'Descanso', color: '#f59e0b' },
+    { value: 'breeding', label: 'Reproducción', color: '#8b5cf6' },
+    { value: 'maintenance', label: 'Mantenimiento', color: '#ef4444' },
+    { value: 'property', label: 'Propiedad', color: '#ffffff' }
+  ];
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'active': return 'Activo';
       case 'resting': return 'Descanso';
       case 'maintenance': return 'Mantenimiento';
+      case 'breeding': return 'Reproducción';
       default: return status;
     }
   };
@@ -57,13 +69,21 @@ const EnhancedPolygonControls = ({
       case 'active': return 'bg-emerald-100 text-emerald-800';
       case 'resting': return 'bg-amber-100 text-amber-800';
       case 'maintenance': return 'bg-red-100 text-red-800';
+      case 'breeding': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleStartDrawing = () => {
+    if (selectedLotId && selectedColor) {
+      // Pass the selected color to the drawing manager
+      onStartDrawing(selectedLotId);
     }
   };
 
   if (isMinimized) {
     return (
-      <div className="absolute bottom-4 left-4 z-50">
+      <div className="absolute bottom-4 left-4 z-[1000]">
         <Button
           onClick={() => setIsMinimized(false)}
           variant="outline"
@@ -78,7 +98,7 @@ const EnhancedPolygonControls = ({
   }
 
   return (
-    <Card className="absolute bottom-4 left-4 w-80 z-50 shadow-lg bg-white/95 backdrop-blur-sm">
+    <Card className="absolute top-4 right-4 w-80 z-[1000] shadow-lg bg-white/95 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center justify-between">
           <div className="flex items-center">
@@ -115,7 +135,7 @@ const EnhancedPolygonControls = ({
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un lote" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white z-[1001]">
                 {lots.map((lot) => (
                   <SelectItem key={lot.id} value={lot.id}>
                     <div className="flex items-center justify-between w-full">
@@ -136,6 +156,40 @@ const EnhancedPolygonControls = ({
             </Select>
           </div>
 
+          {/* Color Selector */}
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <Palette className="w-4 h-4 mr-2 text-gray-600" />
+              <label className="text-sm font-medium">Color del Polígono</label>
+            </div>
+            <RadioGroup 
+              value={selectedColor} 
+              onValueChange={setSelectedColor}
+              className="grid grid-cols-1 gap-2"
+            >
+              {colorOptions.map((option) => (
+                <div key={option.value} className="flex items-center space-x-3 p-2 rounded-lg border hover:bg-gray-50">
+                  <RadioGroupItem value={option.value} id={option.value} />
+                  <div className="flex items-center flex-1">
+                    <div 
+                      className="w-4 h-4 rounded border mr-3"
+                      style={{ 
+                        backgroundColor: option.color,
+                        border: option.color === '#ffffff' ? '1px solid #d1d5db' : 'none'
+                      }}
+                    />
+                    <label 
+                      htmlFor={option.value} 
+                      className="text-sm font-medium cursor-pointer flex-1"
+                    >
+                      {option.label}
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+
           {/* Selected Lot Info */}
           {selectedLot && (
             <div className="p-3 bg-gray-50 rounded-lg border">
@@ -146,16 +200,18 @@ const EnhancedPolygonControls = ({
                 </Badge>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Circle 
-                    className="w-3 h-3 mr-2" 
-                    style={{ 
-                      fill: getLotColor(selectedLot), 
-                      color: getLotColor(selectedLot)
-                    }} 
-                  />
-                  <span>Color del polígono</span>
-                </div>
+                {selectedColor && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <div 
+                      className="w-3 h-3 rounded mr-2"
+                      style={{ 
+                        backgroundColor: colorOptions.find(c => c.value === selectedColor)?.color,
+                        border: selectedColor === 'property' ? '1px solid #d1d5db' : 'none'
+                      }}
+                    />
+                    <span>Color seleccionado: {colorOptions.find(c => c.value === selectedColor)?.label}</span>
+                  </div>
+                )}
                 {polygonData?.areaHectares && (
                   <div className="flex items-center text-sm text-green-700 font-medium">
                     <BarChart3 className="w-3 h-3 mr-2" />
@@ -171,8 +227,8 @@ const EnhancedPolygonControls = ({
             {!isDrawing ? (
               <div className="space-y-2">
                 <Button
-                  onClick={() => selectedLotId && onStartDrawing(selectedLotId)}
-                  disabled={!selectedLotId}
+                  onClick={handleStartDrawing}
+                  disabled={!selectedLotId || !selectedColor}
                   className={`w-full ${
                     hasPolygon 
                       ? 'bg-amber-500 hover:bg-amber-600' 
@@ -182,6 +238,12 @@ const EnhancedPolygonControls = ({
                   <Edit className="w-4 h-4 mr-2" />
                   {hasPolygon ? 'Redibujar Polígono' : 'Dibujar Polígono'}
                 </Button>
+                
+                {!selectedColor && selectedLotId && (
+                  <p className="text-xs text-amber-600 text-center">
+                    Selecciona un color para continuar
+                  </p>
+                )}
                 
                 {hasPolygon && (
                   <Button

@@ -8,8 +8,18 @@ interface UseDrawingManagerOptions {
   onPolygonComplete: (polygon: google.maps.Polygon, selectedLotId: string) => void;
 }
 
+// Color mapping for different statuses
+const COLOR_MAP = {
+  active: '#10b981',     // En Uso - Green
+  resting: '#f59e0b',    // Descanso - Amber
+  breeding: '#8b5cf6',   // Reproducción - Purple
+  maintenance: '#ef4444', // Mantenimiento - Red
+  property: '#ffffff'     // Propiedad - White
+};
+
 export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseDrawingManagerOptions) => {
   const [selectedLotId, setSelectedLotId] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
   const [isDrawing, setIsDrawing] = useState(false);
   const drawingManager = useRef<google.maps.drawing.DrawingManager | null>(null);
   const polygonCompleteListener = useRef<google.maps.MapsEventListener | null>(null);
@@ -34,7 +44,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     console.log('Drawing manager initialized');
   }, []);
 
-  const startDrawing = useCallback((lotId: string) => {
+  const startDrawing = useCallback((lotId: string, colorType?: string) => {
     if (!drawingManager.current || !lotId) {
       console.log('Cannot start drawing - missing requirements');
       return;
@@ -49,9 +59,11 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     console.log('Starting drawing for lot:', lot.name, 'with ID:', lotId);
     
     setSelectedLotId(lotId);
+    setSelectedColor(colorType || 'active');
     setIsDrawing(true);
 
-    const color = getLotColor(lot);
+    // Use the selected color or default to lot's current color
+    const color = colorType ? COLOR_MAP[colorType as keyof typeof COLOR_MAP] || getLotColor(lot) : getLotColor(lot);
     
     // Remove existing listener
     if (polygonCompleteListener.current) {
@@ -63,19 +75,19 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
       drawingManager.current, 
       'polygoncomplete', 
       (polygon: google.maps.Polygon) => {
-        console.log('Polygon completed for lot:', lotId);
+        console.log('Polygon completed for lot:', lotId, 'with color:', color);
         onPolygonComplete(polygon, lotId);
         stopDrawing();
       }
     );
 
-    // Update polygon options
+    // Update polygon options with selected color
     drawingManager.current.setOptions({
       polygonOptions: {
         fillColor: color,
-        strokeColor: color,
-        fillOpacity: 0.35,
-        strokeWeight: 2,
+        strokeColor: color === '#ffffff' ? '#000000' : color, // Black stroke for white polygons
+        fillOpacity: color === '#ffffff' ? 0.8 : 0.35, // Higher opacity for white
+        strokeWeight: color === '#ffffff' ? 3 : 2, // Thicker stroke for white
         clickable: true,
         editable: true,
       }
@@ -90,7 +102,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
       mapDiv.style.cursor = 'crosshair';
     }
     
-    console.log('Drawing mode activated for lot:', lotId);
+    console.log('Drawing mode activated for lot:', lotId, 'with color:', color);
   }, [lots, getLotColor, onPolygonComplete]);
 
   const stopDrawing = useCallback(() => {
@@ -111,11 +123,13 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     }
     
     setIsDrawing(false);
+    setSelectedColor('');
     console.log('Drawing mode deactivated');
   }, []);
 
   return {
     selectedLotId,
+    selectedColor,
     isDrawing,
     initializeDrawingManager,
     startDrawing,

@@ -22,6 +22,11 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     getLotColor
   } = useSimplePolygonDrawing({ lots, onLotSelect });
 
+  const handleStartDrawing = (lotId: string) => {
+    console.log('Starting drawing for lot:', lotId);
+    startDrawing(lotId);
+  };
+
   return (
     <div className="relative w-full h-[48rem] rounded-lg overflow-hidden bg-gray-100">
       {/* Loading overlay */}
@@ -49,7 +54,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
             color: p.color,
             areaHectares: p.areaHectares 
           }))}
-          onStartDrawing={startDrawing}
+          onStartDrawing={handleStartDrawing}
           onStopDrawing={stopDrawing}
           onDeletePolygon={deletePolygon}
           getLotColor={getLotColor}
