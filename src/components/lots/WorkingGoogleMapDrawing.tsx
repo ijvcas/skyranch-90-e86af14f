@@ -22,9 +22,9 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     getLotColor
   } = useSimplePolygonDrawing({ lots, onLotSelect });
 
-  const handleStartDrawing = (lotId: string) => {
-    console.log('Starting drawing for lot:', lotId);
-    startDrawing(lotId);
+  const handleStartDrawing = (lotId: string, colorType: string) => {
+    console.log('Starting drawing for lot:', lotId, 'with color type:', colorType);
+    startDrawing(lotId, colorType);
   };
 
   return (
@@ -52,6 +52,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
           polygons={polygons.map(p => ({ 
             lotId: p.lotId, 
             color: p.color,
+            colorType: p.colorType,
             areaHectares: p.areaHectares 
           }))}
           onStartDrawing={handleStartDrawing}

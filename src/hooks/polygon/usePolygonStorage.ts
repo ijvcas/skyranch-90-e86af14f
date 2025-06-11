@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 interface StoredPolygonData {
   lotId: string;
   color: string;
+  colorType: string;
   coordinates: { lat: number; lng: number }[];
   areaHectares?: number;
 }
@@ -13,6 +14,7 @@ export const usePolygonStorage = () => {
     const dataToSave = polygonData.map(p => ({
       lotId: p.lotId,
       color: p.color,
+      colorType: p.colorType,
       coordinates: p.coordinates,
       areaHectares: p.areaHectares
     }));
