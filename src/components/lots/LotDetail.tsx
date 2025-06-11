@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,10 +11,10 @@ import AnimalAssignmentForm from './AnimalAssignmentForm';
 
 interface LotDetailProps {
   lot: Lot;
-  onBack: () => void;
+  onClose: () => void;
 }
 
-const LotDetail = ({ lot, onBack }: LotDetailProps) => {
+const LotDetail = ({ lot, onClose }: LotDetailProps) => {
   const { loadAssignments, assignments, removeAnimal } = useLotStore();
   const { animals, loadAnimals } = useAnimalStore();
   const [showEditForm, setShowEditForm] = useState(false);
@@ -63,7 +62,7 @@ const LotDetail = ({ lot, onBack }: LotDetailProps) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={onBack}>
+          <Button variant="outline" size="sm" onClick={onClose}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver
           </Button>
@@ -141,7 +140,7 @@ const LotDetail = ({ lot, onBack }: LotDetailProps) => {
               {lot.sizeHectares && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Tamaño</span>
-                  <span className="text-sm">{lot.sizeHectares} hectáreas</span>
+                  <span className="text-sm">{lot.sizeHectares.toFixed(2)} hectáreas</span>
                 </div>
               )}
               

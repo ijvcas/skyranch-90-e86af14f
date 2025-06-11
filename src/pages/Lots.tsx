@@ -162,7 +162,10 @@ const Lots = () => {
           <DialogHeader>
             <DialogTitle>Crear Nuevo Lote</DialogTitle>
           </DialogHeader>
-          <LotForm onSuccess={handleFormSubmit} />
+          <LotForm 
+            onClose={() => setShowCreateForm(false)}
+            onSuccess={handleFormSubmit} 
+          />
         </DialogContent>
       </Dialog>
       
