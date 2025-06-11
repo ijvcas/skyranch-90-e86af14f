@@ -19,11 +19,23 @@ interface LotsOverviewProps {
 }
 
 const LotsOverview = ({ lots, isLoading, onLotSelect, onCreateLot, onDeleteLot, polygonData }: LotsOverviewProps) => {
+  // Merge polygon data with lots for display
+  const enhancedLots = lots.map(lot => {
+    const polygon = polygonData?.find(p => p.lotId === lot.id);
+    if (polygon && polygon.areaHectares && (!lot.sizeHectares || polygon.areaHectares !== lot.sizeHectares)) {
+      return {
+        ...lot,
+        calculatedAreaHectares: polygon.areaHectares
+      };
+    }
+    return lot;
+  });
+
   return (
     <div className="space-y-6">
-      <LotStatistics lots={lots} polygonData={polygonData} />
+      <LotStatistics lots={enhancedLots} polygonData={polygonData} />
       <LotsGrid 
-        lots={lots}
+        lots={enhancedLots}
         isLoading={isLoading}
         onLotSelect={onLotSelect}
         onCreateLot={onCreateLot}

@@ -4,6 +4,7 @@ import { type Lot } from '@/stores/lotStore';
 import { useSimplePolygonDrawing } from '@/hooks/useSimplePolygonDrawing';
 import SimplifiedPolygonControls from './controls/SimplifiedPolygonControls';
 import MapLotLabelsControl from './controls/MapLotLabelsControl';
+import { toast } from 'sonner';
 
 interface WorkingGoogleMapDrawingProps {
   lots: Lot[];
@@ -29,8 +30,21 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
   
   const [showLabels, setShowLabels] = useState(true);
   const [showPropertyName, setShowPropertyName] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const labelsRef = useRef<{[key: string]: google.maps.Marker}>({});
   const propertyLabelRef = useRef<google.maps.Marker | null>(null);
+
+  // Detect mobile devices
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Create or update lot labels on the map
   useEffect(() => {
@@ -147,6 +161,17 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     };
   }, []);
 
+  // Handle polygon deletions - show toast message
+  const handleDeletePolygon = async (lotId: string) => {
+    try {
+      await deletePolygon(lotId);
+      toast.success('Polígono eliminado correctamente');
+    } catch (error) {
+      console.error('Error deleting polygon:', error);
+      toast.error('Error al eliminar el polígono');
+    }
+  };
+
   return (
     <div className="relative w-full h-[48rem] rounded-lg overflow-hidden bg-gray-100">
       {/* Loading overlay */}
@@ -160,8 +185,21 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
         </div>
       )}
       
-      {/* Map container */}
-      <div ref={mapRef} className="w-full h-full" />
+      {/* Map container with mobile optimizations */}
+      <div 
+        ref={mapRef} 
+        className="w-full h-full" 
+        style={{ touchAction: isMobile ? 'manipulation' : 'auto' }}
+      />
+      
+      {/* Mobile notice */}
+      {isMapReady && isMobile && (
+        <div className="absolute top-2 left-2 right-2 bg-white p-2 rounded-md shadow-md z-10 text-sm text-center">
+          <p className="font-medium text-gray-700">
+            Usa dos dedos para mover el mapa y pellizcar para zoom
+          </p>
+        </div>
+      )}
       
       {/* Controls overlay */}
       {isMapReady && (
@@ -177,7 +215,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
             }))}
             onStartDrawing={startDrawing}
             onStopDrawing={stopDrawing}
-            onDeletePolygon={deletePolygon}
+            onDeletePolygon={handleDeletePolygon}
             getLotColor={getLotColor}
           />
           

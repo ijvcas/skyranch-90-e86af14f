@@ -1,153 +1,194 @@
 
 import React, { useEffect, useState } from 'react';
+import { useLotStore, type Lot } from '@/stores/lotStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Calendar } from 'lucide-react';
-import { useLotStore } from '@/stores/lotStore';
-import LotForm from '@/components/lots/LotForm';
 import LotDetail from '@/components/lots/LotDetail';
+import LotForm from '@/components/lots/LotForm';
 import LotMapView from '@/components/lots/LotMapView';
-import LotAnalytics from '@/components/lots/LotAnalytics';
 import LotsOverview from '@/components/lots/LotsOverview';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogClose
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getPolygonDataForLots, syncAllLotAreasWithPolygons } from '@/services/lotPolygonService';
 
 const Lots = () => {
-  const { lots, isLoading, loadLots, deleteLot } = useLotStore();
-  const [showLotForm, setShowLotForm] = useState(false);
+  const { lots, loadLots, deleteLot, isLoading, setSelectedLot } = useLotStore();
+  const [activeTab, setActiveTab] = useState('overview');
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [polygonData, setPolygonData] = useState<Array<{lotId: string; areaHectares?: number}>>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [lotToDelete, setLotToDelete] = useState<string | null>(null);
+  const navigate = useNavigate();
 
+  // Load lots and polygon data
   useEffect(() => {
     loadLots();
-    // Load polygon data from localStorage
-    const saved = localStorage.getItem('lotPolygons');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        setPolygonData(data.map((item: any) => ({
-          lotId: item.lotId,
-          areaHectares: item.areaHectares
-        })));
-      } catch (error) {
-        console.error('Error loading polygon data:', error);
+    loadPolygonData();
+    
+    // Sync polygon areas with lot sizes to ensure consistency
+    syncAllLotAreasWithPolygons().then(success => {
+      if (success) {
+        console.log('Successfully synchronized all lot areas with polygons');
       }
-    }
+    });
   }, [loadLots]);
 
-  const handleDeleteLot = async (lotId: string) => {
+  const loadPolygonData = async () => {
     try {
-      const success = await deleteLot(lotId);
+      const data = await getPolygonDataForLots();
+      setPolygonData(data);
+    } catch (error) {
+      console.error('Error loading polygon data:', error);
+    }
+  };
+
+  const handleLotSelect = (lotId: string) => {
+    const lot = lots.find(l => l.id === lotId);
+    if (lot) {
+      setSelectedLotId(lotId);
+      setActiveTab('detail');
+      setSelectedLot(lot);
+    }
+  };
+
+  const handleCreateLot = () => {
+    setShowCreateForm(true);
+  };
+
+  const handleDeleteLot = (lotId: string) => {
+    setLotToDelete(lotId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteLot = async () => {
+    if (lotToDelete) {
+      const success = await deleteLot(lotToDelete);
       if (success) {
         toast.success('Lote eliminado correctamente');
-        // Remove polygon data for this lot
-        const saved = localStorage.getItem('lotPolygons');
-        if (saved) {
-          try {
-            const data = JSON.parse(saved);
-            const filteredData = data.filter((item: any) => item.lotId !== lotId);
-            localStorage.setItem('lotPolygons', JSON.stringify(filteredData));
-            setPolygonData(filteredData.map((item: any) => ({
-              lotId: item.lotId,
-              areaHectares: item.areaHectares
-            })));
-          } catch (error) {
-            console.error('Error updating polygon data:', error);
-          }
+        setShowDeleteDialog(false);
+        setLotToDelete(null);
+        
+        // If we were viewing the deleted lot, go back to overview
+        if (selectedLotId === lotToDelete) {
+          setSelectedLotId(null);
+          setActiveTab('overview');
         }
       } else {
         toast.error('Error al eliminar el lote');
       }
-    } catch (error) {
-      console.error('Error deleting lot:', error);
-      toast.error('Error al eliminar el lote');
     }
   };
 
-  if (selectedLotId) {
-    const selectedLot = lots.find(l => l.id === selectedLotId);
-    if (selectedLot) {
-      return (
-        <LotDetail 
-          lot={selectedLot} 
-          onBack={() => setSelectedLotId(null)} 
-        />
-      );
+  const handleFormSubmit = () => {
+    setShowCreateForm(false);
+    loadLots();
+    toast.success('Lote creado correctamente');
+  };
+
+  // Reload polygon data when active tab changes to overview or map
+  useEffect(() => {
+    if (activeTab === 'overview' || activeTab === 'map') {
+      loadPolygonData();
     }
-  }
+  }, [activeTab]);
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-16 md:mt-16">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Lotes</h1>
-          <p className="text-gray-600 mt-2">Administra los lotes donde pastan tus animales</p>
+          <h1 className="text-2xl font-bold tracking-tight">Gestión de Lotes</h1>
+          <p className="text-gray-500">Administra los lotes de tu finca</p>
         </div>
-        
-        <Dialog open={showLotForm} onOpenChange={setShowLotForm}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Nuevo Lote
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Lote</DialogTitle>
-            </DialogHeader>
-            <LotForm onClose={() => setShowLotForm(false)} />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={handleCreateLot} className="mt-4 md:mt-0">
+          Crear Lote
+        </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="map">Mapa</TabsTrigger>
-          <TabsTrigger value="analytics">Análisis</TabsTrigger>
-          <TabsTrigger value="rotations">Rotaciones</TabsTrigger>
+          {selectedLotId && <TabsTrigger value="detail">Detalle</TabsTrigger>}
         </TabsList>
-
+        
         <TabsContent value="overview">
-          <LotsOverview
+          <LotsOverview 
             lots={lots}
             isLoading={isLoading}
-            onLotSelect={setSelectedLotId}
-            onCreateLot={() => setShowLotForm(true)}
+            onLotSelect={handleLotSelect}
+            onCreateLot={handleCreateLot}
             onDeleteLot={handleDeleteLot}
             polygonData={polygonData}
           />
         </TabsContent>
-
+        
         <TabsContent value="map">
-          <LotMapView lots={lots} onLotSelect={setSelectedLotId} />
+          <LotMapView 
+            lots={lots}
+            onLotSelect={handleLotSelect}
+          />
         </TabsContent>
-
-        <TabsContent value="analytics">
-          <LotAnalytics lots={lots} />
-        </TabsContent>
-
-        <TabsContent value="rotations">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Calendar className="w-5 h-5 mr-2" />
-                Gestión de Rotaciones
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>Funcionalidad de rotaciones próximamente</p>
-                <p className="text-sm mt-2">
-                  Podrás planificar y gestionar las rotaciones de animales entre lotes
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        
+        <TabsContent value="detail">
+          {selectedLotId && (
+            <LotDetail 
+              lotId={selectedLotId}
+              onClose={() => {
+                setActiveTab('overview');
+                setSelectedLotId(null);
+              }}
+            />
+          )}
         </TabsContent>
       </Tabs>
+
+      {/* Create Lot Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Lote</DialogTitle>
+          </DialogHeader>
+          <LotForm onSubmit={handleFormSubmit} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
+          </DialogHeader>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Advertencia</AlertTitle>
+            <AlertDescription>
+              ¿Estás seguro de que deseas eliminar este lote? Esta acción no se puede deshacer.
+            </AlertDescription>
+          </Alert>
+          <div className="flex justify-end gap-2 mt-4">
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteLot}
+            >
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { loadGoogleMapsAPI } from './polygon/useGoogleMapsLoader';
 import { usePolygonStorage } from './polygon/usePolygonStorage';
 import { usePolygonManager } from './polygon/usePolygonManager';
 import { useDrawingManager } from './polygon/useDrawingManager';
+import { syncPolygonAreasWithLots } from '@/services/polygonService';
 
 interface UseSimplePolygonDrawingOptions {
   lots: Lot[];
@@ -33,7 +34,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
   // Storage hooks - updated to use database
   const { loadPolygonsFromStorage } = usePolygonStorage();
 
-  // Polygon manager - remove savePolygonsToStorage param since it's handled internally now
+  // Polygon manager
   const {
     polygons,
     handlePolygonComplete,
@@ -45,7 +46,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
     getLotColor
   });
 
-  // Drawing manager (updated to not use color type)
+  // Drawing manager
   const {
     selectedLotId,
     isDrawing,
@@ -76,6 +77,8 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
           zoomControl: true,
           streetViewControl: false,
           fullscreenControl: true,
+          gestureHandling: 'greedy', // Improves mobile handling
+          disableDefaultUI: false,
         });
 
         mapInstance.current = map;
@@ -90,9 +93,12 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
           // Load saved polygons from database
           console.log('Loading polygons from database...');
           const savedData = await loadPolygonsFromStorage();
-          if (savedData.length > 0) {
-            loadSavedPolygons(map, savedData);
+          if (savedData && savedData.length > 0) {
+            await loadSavedPolygons(map, savedData);
           }
+          
+          // Ensure polygon areas are synced with lots
+          await syncPolygonAreasWithLots();
           
           console.log('Drawing system initialized successfully with database storage');
         });

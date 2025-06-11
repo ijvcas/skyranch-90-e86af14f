@@ -20,8 +20,8 @@ interface UsePolygonManagerOptions {
 
 export const usePolygonManager = ({ lots, onLotSelect, getLotColor }: UsePolygonManagerOptions) => {
   const [polygons, setPolygons] = useState<PolygonData[]>([]);
-  const { calculatePolygonArea } = usePolygonUtils();
-  const { savePolygonsToStorage, deletePolygonFromStorage } = usePolygonStorage();
+  const { calculatePolygonArea, formatArea } = usePolygonUtils();
+  const { savePolygonsToStorage, deletePolygonFromStorage, loadPolygonsFromStorage } = usePolygonStorage();
 
   const handlePolygonComplete = useCallback(async (polygon: google.maps.Polygon, selectedLotId: string) => {
     console.log('handlePolygonComplete called with selectedLotId:', selectedLotId);
@@ -126,47 +126,69 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor }: UsePolygon
     // If no savedData provided, load from database via storage hook
     let dataToLoad = savedData;
     if (!dataToLoad) {
-      const { loadPolygonsFromStorage } = usePolygonStorage();
       dataToLoad = await loadPolygonsFromStorage();
+    }
+
+    console.log('Loading saved polygons:', dataToLoad);
+
+    if (!dataToLoad || !dataToLoad.length) {
+      console.log('No polygon data to load');
+      return;
     }
 
     dataToLoad.forEach((item: any) => {
       const lot = lots.find(l => l.id === item.lotId);
-      if (lot && item.coordinates) {
-        // Use current lot status color
-        const color = getLotColor(lot);
-        
-        const polygon = new google.maps.Polygon({
-          paths: item.coordinates,
-          fillColor: color,
-          strokeColor: color === '#f3f4f6' ? '#9ca3af' : color,
-          fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35,
-          strokeWeight: color === '#f3f4f6' ? 3 : 2,
-          clickable: true,
-          editable: true,
-        });
+      if (lot && item.coordinates && Array.isArray(item.coordinates)) {
+        try {
+          // Use current lot status color
+          const color = getLotColor(lot);
+          
+          // Ensure coordinates are properly formed
+          const validCoordinates = item.coordinates.filter((coord: any) => 
+            coord && typeof coord.lat === 'number' && typeof coord.lng === 'number'
+          );
+          
+          if (validCoordinates.length < 3) {
+            console.warn('Invalid polygon coordinates for lot:', lot.id, 'Not enough valid points');
+            return;
+          }
+          
+          const polygon = new google.maps.Polygon({
+            paths: validCoordinates,
+            fillColor: color,
+            strokeColor: color === '#f3f4f6' ? '#9ca3af' : color,
+            fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35,
+            strokeWeight: color === '#f3f4f6' ? 3 : 2,
+            clickable: true,
+            editable: true,
+          });
 
-        polygon.setMap(map);
-        
-        // Add click listener for lot selection
-        polygon.addListener('click', () => onLotSelect(lot.id));
-        
-        // Calculate area if not stored or recalculate for accuracy
-        const areaHectares = item.areaHectares || calculatePolygonArea(polygon);
-        
-        loadedPolygons.push({
-          lotId: item.lotId,
-          polygon,
-          color,
-          coordinates: item.coordinates,
-          areaHectares
-        });
+          polygon.setMap(map);
+          
+          // Add click listener for lot selection
+          polygon.addListener('click', () => onLotSelect(lot.id));
+          
+          // Calculate area if not stored or recalculate for accuracy
+          const areaHectares = item.areaHectares || calculatePolygonArea(polygon);
+          
+          loadedPolygons.push({
+            lotId: item.lotId,
+            polygon,
+            color,
+            coordinates: validCoordinates,
+            areaHectares
+          });
+        } catch (error) {
+          console.error('Error creating polygon for lot:', lot.id, error);
+        }
+      } else {
+        console.warn('Invalid polygon data or missing lot:', item);
       }
     });
 
     console.log('Loaded polygons from database:', loadedPolygons);
     setPolygons(loadedPolygons);
-  }, [lots, getLotColor, onLotSelect, calculatePolygonArea]);
+  }, [lots, getLotColor, onLotSelect, calculatePolygonArea, loadPolygonsFromStorage]);
 
   return {
     polygons,

@@ -16,7 +16,7 @@ export const saveLotPolygon = async (
   areaHectares?: number
 ): Promise<boolean> => {
   try {
-    console.log('Saving polygon to database for lot:', lotId);
+    console.log('Saving polygon to database for lot:', lotId, 'with area:', areaHectares);
     
     // First, delete any existing polygon for this lot
     await deleteLotPolygon(lotId);
@@ -34,7 +34,21 @@ export const saveLotPolygon = async (
       return false;
     }
 
-    console.log('Polygon saved successfully');
+    // Update the lot's size_hectares to match the polygon area
+    if (areaHectares) {
+      const { error: lotUpdateError } = await supabase
+        .from('lots')
+        .update({ size_hectares: areaHectares })
+        .eq('id', lotId);
+
+      if (lotUpdateError) {
+        console.error('Error updating lot size:', lotUpdateError);
+      } else {
+        console.log('Updated lot size_hectares to:', areaHectares);
+      }
+    }
+
+    console.log('Polygon saved successfully with area sync');
     return true;
   } catch (error) {
     console.error('Unexpected error saving polygon:', error);
@@ -56,8 +70,39 @@ export const getLotPolygons = async (): Promise<LotPolygon[]> => {
       return [];
     }
 
-    console.log('Loaded polygons from database:', data?.length || 0);
-    return data || [];
+    console.log('Raw polygon data from database:', data);
+
+    // Fix type conversion issue - ensure coordinates are properly parsed
+    const polygons: LotPolygon[] = (data || []).map(item => {
+      let coordinates: { lat: number; lng: number }[] = [];
+      
+      try {
+        // Handle different coordinate data formats
+        if (typeof item.coordinates === 'string') {
+          coordinates = JSON.parse(item.coordinates);
+        } else if (Array.isArray(item.coordinates)) {
+          coordinates = item.coordinates;
+        } else if (typeof item.coordinates === 'object') {
+          // If it's already an object, ensure it has the right structure
+          coordinates = Array.isArray(item.coordinates) ? item.coordinates : [];
+        }
+      } catch (e) {
+        console.error('Error parsing coordinates for polygon:', item.id, e);
+        coordinates = [];
+      }
+
+      return {
+        id: item.id,
+        lot_id: item.lot_id,
+        coordinates: coordinates,
+        area_hectares: item.area_hectares,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      };
+    });
+
+    console.log('Processed polygons:', polygons.length);
+    return polygons;
   } catch (error) {
     console.error('Unexpected error loading polygons:', error);
     return [];
@@ -110,5 +155,87 @@ export const migrateLocalStoragePolygons = async (): Promise<void> => {
     console.log('Migration completed and localStorage cleared');
   } catch (error) {
     console.error('Error during migration:', error);
+  }
+};
+
+// New function to sync polygon areas with lot size_hectares fields
+export const syncPolygonAreasWithLots = async (): Promise<boolean> => {
+  try {
+    console.log('Starting synchronization of polygon areas with lot sizes');
+    
+    // Get all polygons
+    const polygons = await getLotPolygons();
+    
+    for (const polygon of polygons) {
+      if (polygon.lot_id && polygon.area_hectares) {
+        // Update each lot's size_hectares to match its polygon area
+        const { error } = await supabase
+          .from('lots')
+          .update({ size_hectares: polygon.area_hectares })
+          .eq('id', polygon.lot_id);
+        
+        if (error) {
+          console.error(`Error updating size for lot ${polygon.lot_id}:`, error);
+        } else {
+          console.log(`Synchronized lot ${polygon.lot_id} with area ${polygon.area_hectares} ha`);
+        }
+      }
+    }
+    
+    console.log('Polygon area synchronization completed');
+    return true;
+  } catch (error) {
+    console.error('Error during polygon area synchronization:', error);
+    return false;
+  }
+};
+
+// Get a single lot polygon by lot ID
+export const getLotPolygonByLotId = async (lotId: string): Promise<LotPolygon | null> => {
+  try {
+    console.log('Fetching polygon for lot:', lotId);
+    
+    const { data, error } = await supabase
+      .from('lot_polygons')
+      .select('*')
+      .eq('lot_id', lotId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching polygon:', error);
+      return null;
+    }
+    
+    if (!data) {
+      console.log('No polygon found for lot:', lotId);
+      return null;
+    }
+
+    // Handle coordinate parsing
+    let coordinates: { lat: number; lng: number }[] = [];
+    
+    try {
+      if (typeof data.coordinates === 'string') {
+        coordinates = JSON.parse(data.coordinates);
+      } else if (Array.isArray(data.coordinates)) {
+        coordinates = data.coordinates;
+      } else if (typeof data.coordinates === 'object') {
+        coordinates = Array.isArray(data.coordinates) ? data.coordinates : [];
+      }
+    } catch (e) {
+      console.error('Error parsing coordinates:', e);
+    }
+
+    return {
+      id: data.id,
+      lot_id: data.lot_id,
+      coordinates: coordinates,
+      area_hectares: data.area_hectares,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+  } catch (error) {
+    console.error('Unexpected error fetching polygon:', error);
+    return null;
   }
 };

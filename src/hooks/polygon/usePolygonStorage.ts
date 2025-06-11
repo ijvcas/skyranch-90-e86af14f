@@ -1,6 +1,12 @@
 
 import { useCallback } from 'react';
-import { saveLotPolygon, getLotPolygons, deleteLotPolygon, migrateLocalStoragePolygons } from '@/services/polygonService';
+import { 
+  saveLotPolygon, 
+  getLotPolygons, 
+  deleteLotPolygon, 
+  migrateLocalStoragePolygons, 
+  syncPolygonAreasWithLots 
+} from '@/services/polygonService';
 
 export const usePolygonStorage = () => {
   const savePolygonsToStorage = useCallback(async (polygons: any[]) => {
@@ -11,6 +17,9 @@ export const usePolygonStorage = () => {
         await saveLotPolygon(polygon.lotId, polygon.coordinates, polygon.areaHectares);
       }
     }
+
+    // Sync polygon areas with lot sizes after saving
+    await syncPolygonAreasWithLots();
   }, []);
 
   const loadPolygonsFromStorage = useCallback(async () => {

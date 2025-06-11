@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { type Lot } from '@/stores/lotStore';
+import { toast } from 'sonner';
 
 interface UseDrawingManagerOptions {
   lots: Lot[];
@@ -37,12 +38,14 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
   const startDrawing = useCallback((lotId: string) => {
     if (!drawingManager.current || !lotId) {
       console.log('Cannot start drawing - missing requirements:', { lotId });
+      toast.error('Error al iniciar el dibujo');
       return;
     }
 
     const lot = lots.find(l => l.id === lotId);
     if (!lot) {
       console.log('Lot not found:', lotId);
+      toast.error('Lote no encontrado');
       return;
     }
 
@@ -68,6 +71,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
         console.log('Polygon completed for lot:', lotId, 'with color:', color);
         onPolygonComplete(polygon, lotId);
         stopDrawing();
+        toast.success(`Polígono creado para lote: ${lot.name}`);
       }
     );
 
@@ -93,6 +97,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     }
     
     console.log('Drawing mode activated for lot:', lotId, 'with color:', color);
+    toast.info(`Dibuja el polígono para: ${lot.name}`);
   }, [lots, getLotColor, onPolygonComplete]);
 
   const stopDrawing = useCallback(() => {
