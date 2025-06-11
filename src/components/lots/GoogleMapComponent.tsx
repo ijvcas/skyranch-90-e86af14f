@@ -52,13 +52,18 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
     const initializeMap = async () => {
       console.log('Starting map initialization...');
       
+      // Wait for the DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       if (!mapRef.current) {
-        console.log('Map container not available');
+        console.log('Map container not available, retrying...');
+        setError('Map container not ready');
         return;
       }
 
       try {
         setError('');
+        setIsLoading(true);
         console.log('Creating Google Maps loader...');
         
         const loader = new Loader({
@@ -68,8 +73,14 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
         });
 
         console.log('Loading Google Maps API...');
-        await loader.load();
-        console.log('Google Maps API loaded successfully');
+        const google = await loader.load();
+        console.log('Google Maps API loaded successfully', google);
+
+        if (!mapRef.current) {
+          console.log('Map container lost during loading');
+          setError('Map container lost during initialization');
+          return;
+        }
 
         console.log('Creating map instance...');
         const mapInstance = new google.maps.Map(mapRef.current, {
@@ -145,8 +156,20 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
       }
     };
 
-    initializeMap();
-  }, []);
+    // Only initialize if we have the ref
+    if (mapRef.current) {
+      initializeMap();
+    } else {
+      // Retry after a short delay if ref is not ready
+      const timer = setTimeout(() => {
+        if (mapRef.current) {
+          initializeMap();
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mapRef.current]);
 
   // Load saved polygons from localStorage
   useEffect(() => {
@@ -299,7 +322,11 @@ const GoogleMapComponent = ({ lots, onLotSelect }: GoogleMapComponentProps) => {
           <p className="text-red-600 font-medium">Error al cargar el mapa</p>
           <p className="text-gray-600 text-sm mt-1">{error}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => {
+              setError('');
+              setIsLoading(true);
+              window.location.reload();
+            }} 
             className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Reintentar
