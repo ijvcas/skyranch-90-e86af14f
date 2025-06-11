@@ -20,10 +20,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !loading) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +45,6 @@ const Login = () => {
           title: "Bienvenido",
           description: "Sesión iniciada correctamente.",
         });
-        navigate('/dashboard');
       }
     } catch (error) {
       toast({
@@ -71,7 +70,7 @@ const Login = () => {
               <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center animate-pulse">
                 <Users className="w-10 h-10 text-white" />
               </div>
-              <p className="text-lg text-gray-600">Iniciando SkyRanch...</p>
+              <p className="text-lg text-gray-600">Cargando SkyRanch...</p>
             </div>
           </CardContent>
         </Card>
