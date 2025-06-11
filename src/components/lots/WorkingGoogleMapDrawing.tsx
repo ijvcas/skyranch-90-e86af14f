@@ -1,13 +1,17 @@
 
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useSimplePolygonDrawing } from '@/hooks/useSimplePolygonDrawing';
-import EnhancedPolygonControls from './controls/EnhancedPolygonControls';
+import SimplifiedPolygonControls from './controls/SimplifiedPolygonControls';
+import MapLotLabelsControl from './controls/MapLotLabelsControl';
 
 interface WorkingGoogleMapDrawingProps {
   lots: Lot[];
   onLotSelect: (lotId: string) => void;
 }
+
+const SKYRANCH_CENTER = { lat: 40.31764444, lng: -4.47409722 };
+const SKYRANCH_NAME = "SkyRanch";
 
 const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingProps) => {
   const {
@@ -21,6 +25,138 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     deletePolygon,
     getLotColor
   } = useSimplePolygonDrawing({ lots, onLotSelect });
+  
+  const [showLabels, setShowLabels] = useState(true);
+  const [showPropertyName, setShowPropertyName] = useState(true);
+  const labelsRef = useRef<{[key: string]: google.maps.Marker}>({});
+  const propertyLabelRef = useRef<google.maps.Marker | null>(null);
+
+  // Create or update lot labels on the map
+  useEffect(() => {
+    if (!isMapReady) return;
+    
+    const map = mapRef.current?.querySelector('div')?.firstChild as HTMLElement;
+    if (!map) return;
+    
+    const googleMap = (window as any).google?.maps?.Map?.getMap(map);
+    if (!googleMap) return;
+
+    // Clear existing labels if toggled off
+    if (!showLabels) {
+      Object.values(labelsRef.current).forEach(label => {
+        label.setMap(null);
+      });
+      labelsRef.current = {};
+      return;
+    }
+
+    // Create or update lot labels
+    lots.forEach(lot => {
+      // Skip if no polygon
+      const lotPolygon = polygons.find(p => p.lotId === lot.id);
+      if (!lotPolygon) return;
+      
+      // Calculate centroid of polygon
+      const path = lotPolygon.polygon.getPath();
+      let lat = 0, lng = 0;
+      
+      for (let i = 0; i < path.getLength(); i++) {
+        lat += path.getAt(i).lat();
+        lng += path.getAt(i).lng();
+      }
+      
+      lat /= path.getLength();
+      lng /= path.getLength();
+      
+      // Create or update label
+      if (labelsRef.current[lot.id]) {
+        labelsRef.current[lot.id].setPosition({ lat, lng });
+      } else {
+        const label = new google.maps.Marker({
+          position: { lat, lng },
+          map: googleMap,
+          label: {
+            text: lot.name,
+            color: '#ffffff',
+            fontSize: '12px',
+            fontWeight: '700'
+          },
+          icon: {
+            path: 'M 0,0 C 0,0 0,0 0,0 Z', // Empty path - just the label
+            scale: 1,
+          },
+          clickable: true
+        });
+        
+        label.addListener('click', () => {
+          onLotSelect(lot.id);
+        });
+        
+        labelsRef.current[lot.id] = label;
+      }
+    });
+    
+    // Remove labels for deleted polygons
+    Object.keys(labelsRef.current).forEach(lotId => {
+      if (!polygons.find(p => p.lotId === lotId)) {
+        labelsRef.current[lotId].setMap(null);
+        delete labelsRef.current[lotId];
+      }
+    });
+    
+  }, [isMapReady, lots, polygons, showLabels, onLotSelect]);
+  
+  // Create or update property name label
+  useEffect(() => {
+    if (!isMapReady) return;
+    
+    const map = mapRef.current?.querySelector('div')?.firstChild as HTMLElement;
+    if (!map) return;
+    
+    const googleMap = (window as any).google?.maps?.Map?.getMap(map);
+    if (!googleMap) return;
+    
+    if (!showPropertyName) {
+      if (propertyLabelRef.current) {
+        propertyLabelRef.current.setMap(null);
+        propertyLabelRef.current = null;
+      }
+      return;
+    }
+    
+    if (!propertyLabelRef.current) {
+      propertyLabelRef.current = new google.maps.Marker({
+        position: SKYRANCH_CENTER,
+        map: googleMap,
+        label: {
+          text: SKYRANCH_NAME,
+          color: '#ffffff',
+          fontSize: '16px',
+          fontWeight: 'bold'
+        },
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 0, // Makes the icon invisible
+        }
+      });
+    } else {
+      propertyLabelRef.current.setMap(googleMap);
+    }
+    
+  }, [isMapReady, showPropertyName]);
+  
+  // Cleanup labels on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(labelsRef.current).forEach(label => {
+        label.setMap(null);
+      });
+      
+      if (propertyLabelRef.current) {
+        propertyLabelRef.current.setMap(null);
+      }
+    };
+  }, []);
 
   return (
     <div className="relative w-full h-[48rem] rounded-lg overflow-hidden bg-gray-100">
@@ -38,23 +174,31 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
       
-      {/* Enhanced Controls overlay */}
+      {/* Controls overlay */}
       {isMapReady && (
-        <EnhancedPolygonControls
-          lots={lots}
-          selectedLotId={selectedLotId}
-          isDrawing={isDrawing}
-          polygons={polygons.map(p => ({ 
-            lotId: p.lotId, 
-            color: p.color,
-            colorType: p.colorType,
-            areaHectares: p.areaHectares 
-          }))}
-          onStartDrawing={startDrawing}
-          onStopDrawing={stopDrawing}
-          onDeletePolygon={deletePolygon}
-          getLotColor={getLotColor}
-        />
+        <>
+          <SimplifiedPolygonControls
+            lots={lots}
+            selectedLotId={selectedLotId}
+            isDrawing={isDrawing}
+            polygons={polygons.map(p => ({ 
+              lotId: p.lotId, 
+              color: p.color,
+              areaHectares: p.areaHectares 
+            }))}
+            onStartDrawing={startDrawing}
+            onStopDrawing={stopDrawing}
+            onDeletePolygon={deletePolygon}
+            getLotColor={getLotColor}
+          />
+          
+          <MapLotLabelsControl
+            showLabels={showLabels}
+            onToggleLabels={setShowLabels}
+            showPropertyName={showPropertyName}
+            onTogglePropertyName={setShowPropertyName}
+          />
+        </>
       )}
     </div>
   );

@@ -31,7 +31,18 @@ const LotCard = ({ lot, onLotClick, onDeleteLot, polygonArea }: LotCardProps) =>
       case 'active': return 'bg-green-100 text-green-800';
       case 'resting': return 'bg-yellow-100 text-yellow-800';
       case 'maintenance': return 'bg-red-100 text-red-800';
+      case 'property': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'Activo';
+      case 'resting': return 'Descanso';
+      case 'maintenance': return 'Mantenimiento';
+      case 'property': return 'Propiedad';
+      default: return status;
     }
   };
 
@@ -80,8 +91,7 @@ const LotCard = ({ lot, onLotClick, onDeleteLot, polygonArea }: LotCardProps) =>
             </div>
             <div className="flex items-center space-x-2">
               <Badge className={getStatusColor(lot.status)}>
-                {lot.status === 'active' ? 'Activo' : 
-                 lot.status === 'resting' ? 'Descanso' : 'Mantenimiento'}
+                {getStatusLabel(lot.status)}
               </Badge>
               {onDeleteLot && (
                 <Button

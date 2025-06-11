@@ -7,7 +7,6 @@ interface PolygonData {
   lotId: string;
   polygon: google.maps.Polygon;
   color: string;
-  colorType: string;
   coordinates: { lat: number; lng: number }[];
   areaHectares?: number;
 }
@@ -19,21 +18,12 @@ interface UsePolygonManagerOptions {
   savePolygonsToStorage: (polygons: PolygonData[]) => void;
 }
 
-// Color mapping for different statuses
-const COLOR_MAP = {
-  active: '#10b981',     // En Uso - Green
-  resting: '#f59e0b',    // Descanso - Amber
-  breeding: '#8b5cf6',   // Reproducción - Purple
-  maintenance: '#ef4444', // Mantenimiento - Red
-  property: '#ffffff'     // Propiedad - White
-};
-
 export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygonsToStorage }: UsePolygonManagerOptions) => {
   const [polygons, setPolygons] = useState<PolygonData[]>([]);
   const { calculatePolygonArea } = usePolygonUtils();
 
-  const handlePolygonComplete = useCallback((polygon: google.maps.Polygon, selectedLotId: string, selectedColor: string) => {
-    console.log('handlePolygonComplete called with selectedLotId:', selectedLotId, 'colorType:', selectedColor);
+  const handlePolygonComplete = useCallback((polygon: google.maps.Polygon, selectedLotId: string) => {
+    console.log('handlePolygonComplete called with selectedLotId:', selectedLotId);
     
     if (!selectedLotId) {
       console.log('No lot selected, removing polygon');
@@ -61,16 +51,16 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
     const areaHectares = calculatePolygonArea(polygon);
     console.log('Calculated area:', areaHectares, 'hectares');
 
-    // Get the color from the color map
-    const color = COLOR_MAP[selectedColor as keyof typeof COLOR_MAP];
-    console.log('Setting polygon color to:', color, 'for type:', selectedColor);
+    // Get the color from the lot status
+    const color = getLotColor(lot);
+    console.log('Setting polygon color to:', color, 'for lot status:', lot.status);
 
     // Set polygon style with the selected color
     polygon.setOptions({
       fillColor: color,
-      strokeColor: color === '#ffffff' ? '#000000' : color,
-      fillOpacity: color === '#ffffff' ? 0.8 : 0.35,
-      strokeWeight: color === '#ffffff' ? 3 : 2,
+      strokeColor: color === '#f3f4f6' ? '#9ca3af' : color,
+      fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35,
+      strokeWeight: color === '#f3f4f6' ? 3 : 2,
       clickable: true,
       editable: true,
     });
@@ -96,7 +86,6 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
       lotId: selectedLotId,
       polygon,
       color,
-      colorType: selectedColor,
       coordinates,
       areaHectares
     };
@@ -110,7 +99,7 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
       savePolygonsToStorage(updated);
       return updated;
     });
-  }, [lots, onLotSelect, savePolygonsToStorage, calculatePolygonArea]);
+  }, [lots, onLotSelect, savePolygonsToStorage, calculatePolygonArea, getLotColor]);
 
   const deletePolygon = useCallback((lotId: string) => {
     console.log('Deleting polygon for lot:', lotId);
@@ -131,16 +120,15 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
     savedData.forEach((item: any) => {
       const lot = lots.find(l => l.id === item.lotId);
       if (lot && item.coordinates) {
-        // Use saved color type or default to active
-        const colorType = item.colorType || 'active';
-        const color = COLOR_MAP[colorType as keyof typeof COLOR_MAP] || getLotColor(lot);
+        // Use current lot status color
+        const color = getLotColor(lot);
         
         const polygon = new google.maps.Polygon({
           paths: item.coordinates,
           fillColor: color,
-          strokeColor: color === '#ffffff' ? '#000000' : color,
-          fillOpacity: color === '#ffffff' ? 0.8 : 0.35,
-          strokeWeight: color === '#ffffff' ? 3 : 2,
+          strokeColor: color === '#f3f4f6' ? '#9ca3af' : color,
+          fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35,
+          strokeWeight: color === '#f3f4f6' ? 3 : 2,
           clickable: true,
           editable: true,
         });
@@ -157,7 +145,6 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
           lotId: item.lotId,
           polygon,
           color,
-          colorType,
           coordinates: item.coordinates,
           areaHectares
         });

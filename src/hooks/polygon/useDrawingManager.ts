@@ -5,21 +5,11 @@ import { type Lot } from '@/stores/lotStore';
 interface UseDrawingManagerOptions {
   lots: Lot[];
   getLotColor: (lot: Lot) => string;
-  onPolygonComplete: (polygon: google.maps.Polygon, selectedLotId: string, selectedColor: string) => void;
+  onPolygonComplete: (polygon: google.maps.Polygon, selectedLotId: string) => void;
 }
-
-// Color mapping for different statuses
-const COLOR_MAP = {
-  active: '#10b981',     // En Uso - Green
-  resting: '#f59e0b',    // Descanso - Amber
-  breeding: '#8b5cf6',   // Reproducción - Purple
-  maintenance: '#ef4444', // Mantenimiento - Red
-  property: '#ffffff'     // Propiedad - White
-};
 
 export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseDrawingManagerOptions) => {
   const [selectedLotId, setSelectedLotId] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState<string>('');
   const [isDrawing, setIsDrawing] = useState(false);
   const drawingManager = useRef<google.maps.drawing.DrawingManager | null>(null);
   const polygonCompleteListener = useRef<google.maps.MapsEventListener | null>(null);
@@ -44,9 +34,9 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     console.log('Drawing manager initialized');
   }, []);
 
-  const startDrawing = useCallback((lotId: string, colorType: string) => {
-    if (!drawingManager.current || !lotId || !colorType) {
-      console.log('Cannot start drawing - missing requirements:', { lotId, colorType });
+  const startDrawing = useCallback((lotId: string) => {
+    if (!drawingManager.current || !lotId) {
+      console.log('Cannot start drawing - missing requirements:', { lotId });
       return;
     }
 
@@ -56,15 +46,14 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
       return;
     }
 
-    console.log('Starting drawing for lot:', lot.name, 'with color type:', colorType);
+    console.log('Starting drawing for lot:', lot.name);
     
     setSelectedLotId(lotId);
-    setSelectedColor(colorType);
     setIsDrawing(true);
 
-    // Get the color from the color map
-    const color = COLOR_MAP[colorType as keyof typeof COLOR_MAP];
-    console.log('Using color:', color, 'for type:', colorType);
+    // Get the color from the lot status
+    const color = getLotColor(lot);
+    console.log('Using color:', color, 'for lot status:', lot.status);
 
     // Remove existing listener
     if (polygonCompleteListener.current) {
@@ -77,7 +66,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
       'polygoncomplete', 
       (polygon: google.maps.Polygon) => {
         console.log('Polygon completed for lot:', lotId, 'with color:', color);
-        onPolygonComplete(polygon, lotId, colorType);
+        onPolygonComplete(polygon, lotId);
         stopDrawing();
       }
     );
@@ -86,9 +75,9 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     drawingManager.current.setOptions({
       polygonOptions: {
         fillColor: color,
-        strokeColor: color === '#ffffff' ? '#000000' : color, // Black stroke for white polygons
-        fillOpacity: color === '#ffffff' ? 0.8 : 0.35, // Higher opacity for white
-        strokeWeight: color === '#ffffff' ? 3 : 2, // Thicker stroke for white
+        strokeColor: color === '#f3f4f6' ? '#9ca3af' : color, // Gray stroke for light gray polygons
+        fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35, // Higher opacity for light gray
+        strokeWeight: color === '#f3f4f6' ? 3 : 2, // Thicker stroke for light gray
         clickable: true,
         editable: true,
       }
@@ -104,7 +93,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     }
     
     console.log('Drawing mode activated for lot:', lotId, 'with color:', color);
-  }, [lots, onPolygonComplete]);
+  }, [lots, getLotColor, onPolygonComplete]);
 
   const stopDrawing = useCallback(() => {
     if (drawingManager.current) {
@@ -124,13 +113,11 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     }
     
     setIsDrawing(false);
-    setSelectedColor('');
     console.log('Drawing mode deactivated');
   }, []);
 
   return {
     selectedLotId,
-    selectedColor,
     isDrawing,
     initializeDrawingManager,
     startDrawing,

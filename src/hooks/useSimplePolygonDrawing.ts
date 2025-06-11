@@ -19,12 +19,13 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
 
-  // Get lot color based on status
+  // Get lot color based on status including new "property" status
   const getLotColor = useCallback((lot: Lot) => {
     switch (lot.status) {
       case 'active': return '#10b981';
       case 'resting': return '#f59e0b'; 
       case 'maintenance': return '#ef4444';
+      case 'property': return '#f3f4f6'; // Very light grey
       default: return '#6b7280';
     }
   }, []);
@@ -45,7 +46,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
     savePolygonsToStorage
   });
 
-  // Drawing manager
+  // Drawing manager (updated to not use color type)
   const {
     selectedLotId,
     isDrawing,

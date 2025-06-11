@@ -1,46 +1,49 @@
 
 import { useCallback } from 'react';
 
-interface StoredPolygonData {
-  lotId: string;
-  color: string;
-  colorType: string;
-  coordinates: { lat: number; lng: number }[];
-  areaHectares?: number;
-}
-
 export const usePolygonStorage = () => {
-  const savePolygonsToStorage = useCallback((polygonData: any[]) => {
-    const dataToSave = polygonData.map(p => ({
+  const savePolygonsToStorage = useCallback((polygons: any[]) => {
+    const dataToSave = polygons.map(p => ({
       lotId: p.lotId,
       color: p.color,
-      colorType: p.colorType,
       coordinates: p.coordinates,
       areaHectares: p.areaHectares
     }));
-    console.log('Saving polygons to storage:', dataToSave);
-    localStorage.setItem('lotPolygons', JSON.stringify(dataToSave));
+    
+    try {
+      localStorage.setItem('lotPolygons', JSON.stringify(dataToSave));
+      console.log('Saved polygon data to localStorage:', dataToSave.length);
+    } catch (error) {
+      console.error('Error saving polygon data to localStorage:', error);
+    }
   }, []);
 
-  const loadPolygonsFromStorage = useCallback((): StoredPolygonData[] => {
-    const saved = localStorage.getItem('lotPolygons');
-    if (!saved) {
-      console.log('No saved polygons found');
-      return [];
-    }
-
+  const loadPolygonsFromStorage = useCallback(() => {
     try {
-      const data = JSON.parse(saved);
-      console.log('Loading saved polygons:', data);
-      return data;
+      const saved = localStorage.getItem('lotPolygons');
+      if (saved) {
+        const data = JSON.parse(saved);
+        console.log('Loaded polygon data from localStorage:', data.length);
+        return data;
+      }
     } catch (error) {
-      console.error('Error loading saved polygons:', error);
-      return [];
+      console.error('Error loading polygon data from localStorage:', error);
+    }
+    return [];
+  }, []);
+
+  const clearPolygonsFromStorage = useCallback(() => {
+    try {
+      localStorage.removeItem('lotPolygons');
+      console.log('Cleared polygon data from localStorage');
+    } catch (error) {
+      console.error('Error clearing polygon data from localStorage:', error);
     }
   }, []);
 
   return {
     savePolygonsToStorage,
-    loadPolygonsFromStorage
+    loadPolygonsFromStorage,
+    clearPolygonsFromStorage
   };
 };

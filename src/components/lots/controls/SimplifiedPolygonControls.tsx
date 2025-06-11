@@ -1,0 +1,239 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Square, Edit, Trash2, Circle, X, ChevronDown, ChevronUp, Minimize2, BarChart3, MapPin } from 'lucide-react';
+import { type Lot } from '@/stores/lotStore';
+import { usePolygonUtils } from '@/hooks/polygon/usePolygonUtils';
+
+interface PolygonData {
+  lotId: string;
+  color: string;
+  areaHectares?: number;
+}
+
+interface SimplifiedPolygonControlsProps {
+  lots: Lot[];
+  selectedLotId: string;
+  isDrawing: boolean;
+  polygons: PolygonData[];
+  onStartDrawing: (lotId: string) => void;
+  onStopDrawing: () => void;
+  onDeletePolygon: (lotId: string) => void;
+  getLotColor: (lot: Lot) => string;
+}
+
+const SimplifiedPolygonControls = ({
+  lots,
+  selectedLotId,
+  isDrawing,
+  polygons,
+  onStartDrawing,
+  onStopDrawing,
+  onDeletePolygon,
+  getLotColor
+}: SimplifiedPolygonControlsProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [currentLotId, setCurrentLotId] = useState<string>('');
+  const { formatArea } = usePolygonUtils();
+  
+  const selectedLot = lots.find(l => l.id === currentLotId);
+  const polygonData = polygons.find(p => p.lotId === currentLotId);
+  const hasPolygon = !!polygonData;
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'Activo';
+      case 'resting': return 'Descanso';
+      case 'maintenance': return 'Mantenimiento';
+      case 'property': return 'Propiedad';
+      default: return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-emerald-100 text-emerald-800';
+      case 'resting': return 'bg-amber-100 text-amber-800';
+      case 'maintenance': return 'bg-red-100 text-red-800';
+      case 'property': return 'bg-gray-100 text-gray-600';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isMinimized) {
+    return (
+      <div className="absolute bottom-4 left-4 z-20">
+        <Button
+          onClick={() => setIsMinimized(false)}
+          variant="outline"
+          size="sm"
+          className="bg-white/95 shadow-lg"
+        >
+          <Square className="w-4 h-4 mr-2 text-green-600" />
+          Dibujar Polígonos
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Card className="absolute bottom-4 left-4 w-80 z-20 shadow-lg bg-white/95 backdrop-blur-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center justify-between">
+          <div className="flex items-center">
+            <Square className="w-5 h-5 mr-2 text-green-600" />
+            Dibujar Polígonos
+          </div>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-6 w-6 p-0"
+            >
+              {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMinimized(true)}
+              className="h-6 w-6 p-0"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      
+      {!isCollapsed && (
+        <CardContent className="space-y-4">
+          {/* Step 1: Lot Selector */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              1. Seleccionar Lote
+            </label>
+            <Select value={currentLotId} onValueChange={setCurrentLotId} disabled={isDrawing}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un lote" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {lots.map((lot) => (
+                  <SelectItem key={lot.id} value={lot.id}>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <Circle 
+                          className="w-3 h-3 mr-2" 
+                          style={{ fill: getLotColor(lot), color: getLotColor(lot) }}
+                        />
+                        <span>{lot.name}</span>
+                      </div>
+                      <Badge className={`ml-2 text-xs ${getStatusColor(lot.status)}`}>
+                        {getStatusLabel(lot.status)}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Step 2: Selected Lot Info */}
+          {selectedLot && (
+            <div className="p-3 bg-gray-50 rounded-lg border">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium">{selectedLot.name}</h4>
+                <Badge className={`${getStatusColor(selectedLot.status)} text-xs`}>
+                  {getStatusLabel(selectedLot.status)}
+                </Badge>
+              </div>
+              {polygonData?.areaHectares && (
+                <div className="flex items-center text-sm text-green-700 font-medium">
+                  <BarChart3 className="w-3 h-3 mr-2" />
+                  <span>Área: {formatArea(polygonData.areaHectares)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Drawing Controls */}
+          <div className="space-y-3">
+            {!isDrawing ? (
+              <div className="space-y-2">
+                <Button
+                  onClick={() => currentLotId && onStartDrawing(currentLotId)}
+                  disabled={!currentLotId}
+                  className={`w-full ${
+                    hasPolygon 
+                      ? 'bg-amber-500 hover:bg-amber-600' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  {hasPolygon ? '2. Redibujar Polígono' : '2. Dibujar Polígono'}
+                </Button>
+                
+                {hasPolygon && (
+                  <Button
+                    onClick={() => onDeletePolygon(currentLotId)}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Eliminar Polígono
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center mb-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-500 mr-2 animate-pulse"></div>
+                    <p className="text-sm font-medium text-blue-800">
+                      Modo Dibujo Activo
+                    </p>
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    Haz clic en el mapa para crear puntos del polígono. 
+                    Cierra el polígono haciendo clic en el primer punto.
+                  </p>
+                </div>
+                
+                <Button
+                  onClick={onStopDrawing}
+                  variant="outline"
+                  className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancelar Dibujo
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Stats */}
+          <div className="pt-3 border-t space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Polígonos dibujados:</span>
+              <span className="font-medium text-green-600">{polygons.length}</span>
+            </div>
+            {polygons.length > 0 && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Área total:</span>
+                <span className="font-medium text-green-600">
+                  {formatArea(polygons.reduce((sum, p) => sum + (p.areaHectares || 0), 0))}
+                </span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+};
+
+export default SimplifiedPolygonControls;
