@@ -421,6 +421,41 @@ export type Database = {
           },
         ]
       }
+      lot_polygons: {
+        Row: {
+          area_hectares: number | null
+          coordinates: Json
+          created_at: string | null
+          id: string
+          lot_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          area_hectares?: number | null
+          coordinates: Json
+          created_at?: string | null
+          id?: string
+          lot_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          area_hectares?: number | null
+          coordinates?: Json
+          created_at?: string | null
+          id?: string
+          lot_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lot_polygons_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lot_rotations: {
         Row: {
           animals_moved: number | null
@@ -490,7 +525,7 @@ export type Database = {
           size_hectares: number | null
           status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           capacity?: number | null
@@ -506,7 +541,7 @@ export type Database = {
           size_hectares?: number | null
           status?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           capacity?: number | null
@@ -522,7 +557,7 @@ export type Database = {
           size_hectares?: number | null
           status?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

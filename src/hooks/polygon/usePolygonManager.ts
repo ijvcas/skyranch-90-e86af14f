@@ -16,7 +16,6 @@ interface UsePolygonManagerOptions {
   lots: Lot[];
   onLotSelect: (lotId: string) => void;
   getLotColor: (lot: Lot) => string;
-  savePolygonsToStorage: (polygons: PolygonData[]) => void;
 }
 
 export const usePolygonManager = ({ lots, onLotSelect, getLotColor }: UsePolygonManagerOptions) => {
