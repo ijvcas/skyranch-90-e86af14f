@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { type Lot } from '@/stores/lotStore';
 
@@ -47,31 +48,25 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
 
     const mapDiv = mapRef.current.getDiv();
     
-    // Apply crosshair cursor with !important
-    const style = document.createElement('style');
-    style.innerHTML = `
-      .crosshair-cursor * {
+    // Create and inject styles for crosshair cursor
+    let styleElement = document.getElementById('polygon-crosshair-style');
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = 'polygon-crosshair-style';
+      document.head.appendChild(styleElement);
+    }
+    
+    styleElement.innerHTML = `
+      .crosshair-mode * {
         cursor: crosshair !important;
       }
-      .crosshair-cursor canvas {
-        cursor: crosshair !important;
-      }
-      .crosshair-cursor div {
+      .crosshair-mode {
         cursor: crosshair !important;
       }
     `;
-    document.head.appendChild(style);
     
-    mapDiv.classList.add('crosshair-cursor');
-    mapDiv.style.cursor = 'crosshair !important';
-    
-    // Force cursor on all child elements
-    const allElements = mapDiv.querySelectorAll('*');
-    allElements.forEach((element: any) => {
-      element.style.cursor = 'crosshair !important';
-    });
-
-    console.log('Crosshair cursor forced on map');
+    mapDiv.classList.add('crosshair-mode');
+    console.log('Crosshair cursor applied');
   }, []);
 
   // Remove crosshair cursor from map
@@ -79,29 +74,23 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     if (!mapRef.current) return;
 
     const mapDiv = mapRef.current.getDiv();
-    mapDiv.classList.remove('crosshair-cursor');
-    mapDiv.style.cursor = '';
+    mapDiv.classList.remove('crosshair-mode');
     
-    // Remove forced cursor from all child elements
-    const allElements = mapDiv.querySelectorAll('*');
-    allElements.forEach((element: any) => {
-      element.style.cursor = '';
-    });
-
     // Remove the style element
-    const styleElements = document.querySelectorAll('style');
-    styleElements.forEach(style => {
-      if (style.innerHTML.includes('crosshair-cursor')) {
-        style.remove();
-      }
-    });
+    const styleElement = document.getElementById('polygon-crosshair-style');
+    if (styleElement) {
+      styleElement.remove();
+    }
 
-    console.log('Crosshair cursor removed from map');
+    console.log('Crosshair cursor removed');
   }, []);
 
   // Initialize drawing manager
   const initializeDrawingManager = useCallback((map: google.maps.Map) => {
-    if (drawingManagerRef.current) return drawingManagerRef.current;
+    if (drawingManagerRef.current) {
+      console.log('Drawing manager already exists');
+      return drawingManagerRef.current;
+    }
 
     console.log('Creating new drawing manager...');
 
@@ -121,13 +110,13 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     drawingManager.setMap(map);
     drawingManagerRef.current = drawingManager;
 
-    console.log('Drawing manager created and attached to map');
+    console.log('Drawing manager created and set on map');
     return drawingManager;
   }, []);
 
   // Handle polygon completion
   const handlePolygonComplete = useCallback((polygon: google.maps.Polygon) => {
-    console.log('Polygon complete event triggered');
+    console.log('Polygon completed');
     
     if (!drawingState.currentLotId) {
       console.log('No current lot selected, removing polygon');
@@ -142,7 +131,7 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       return;
     }
 
-    console.log('Polygon completed for lot:', lot.name);
+    console.log('Processing completed polygon for lot:', lot.name);
 
     // Remove existing polygon for this lot
     const existingIndex = polygons.findIndex(p => p.lotId === drawingState.currentLotId);
@@ -225,7 +214,7 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
 
     const color = getLotColor(lot);
     
-    // Update polygon options
+    // Update polygon options for this drawing session
     drawingManagerRef.current.setOptions({
       polygonOptions: {
         fillColor: color,
@@ -247,15 +236,16 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     // Add new polygon complete listener
     polygonCompleteListenerRef.current = drawingManagerRef.current.addListener('polygoncomplete', handlePolygonComplete);
 
-    // Enable drawing mode
+    // Enable polygon drawing mode
+    console.log('Enabling drawing mode...');
     drawingManagerRef.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     
-    // Force crosshair cursor
+    // Apply crosshair cursor after a short delay
     setTimeout(() => {
       setCrosshairCursor();
+      console.log('Drawing mode and crosshair cursor enabled');
     }, 100);
 
-    console.log('Drawing mode enabled with crosshair cursor');
   }, [lots, getLotColor, handlePolygonComplete, setCrosshairCursor]);
 
   // Cancel drawing
@@ -351,8 +341,13 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
   const initializeWithMap = useCallback((map: google.maps.Map) => {
     console.log('Initializing polygon manager with map');
     mapRef.current = map;
-    initializeDrawingManager(map);
-    loadPolygonsFromStorage(map);
+    
+    // Wait for map to be fully ready before initializing drawing manager
+    google.maps.event.addListenerOnce(map, 'idle', () => {
+      console.log('Map is idle, initializing drawing manager');
+      initializeDrawingManager(map);
+      loadPolygonsFromStorage(map);
+    });
   }, [initializeDrawingManager, loadPolygonsFromStorage]);
 
   // Update polygon colors when lot status changes
