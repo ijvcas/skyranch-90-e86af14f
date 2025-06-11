@@ -19,14 +19,14 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
 
-  // Get lot color based on status with more translucent colors
+  // Get lot color based on status including new "property" status
   const getLotColor = useCallback((lot: Lot) => {
     switch (lot.status) {
-      case 'active': return 'rgba(16, 185, 129, 0.6)'; // More translucent green
-      case 'resting': return 'rgba(245, 158, 11, 0.6)'; // More translucent amber
-      case 'maintenance': return 'rgba(239, 68, 68, 0.6)'; // More translucent red
-      case 'property': return 'rgba(243, 244, 246, 0.8)'; // More translucent light grey
-      default: return 'rgba(107, 114, 128, 0.6)'; // More translucent gray
+      case 'active': return '#10b981';
+      case 'resting': return '#f59e0b'; 
+      case 'maintenance': return '#ef4444';
+      case 'property': return '#f3f4f6'; // Very light grey
+      default: return '#6b7280';
     }
   }, []);
 
