@@ -121,7 +121,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
 
           // Handle polygon completion
           google.maps.event.addListener(drawing, 'polygoncomplete', (polygon: google.maps.Polygon) => {
-            console.log('Polygon completed!');
+            console.log('Polygon completed for lot:', selectedLotId);
             handlePolygonComplete(polygon);
           });
 
@@ -140,25 +140,31 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
 
   // Handle polygon completion
   const handlePolygonComplete = useCallback((polygon: google.maps.Polygon) => {
+    console.log('handlePolygonComplete called with selectedLotId:', selectedLotId);
+    
     if (!selectedLotId) {
+      console.log('No lot selected, removing polygon');
       polygon.setMap(null);
       return;
     }
 
     const lot = lots.find(l => l.id === selectedLotId);
     if (!lot) {
+      console.log('Lot not found, removing polygon');
       polygon.setMap(null);
       return;
     }
 
-    // Remove existing polygon for this lot
-    setPolygons(prev => {
-      const existing = prev.find(p => p.lotId === selectedLotId);
-      if (existing) {
-        existing.polygon.setMap(null);
-      }
-      return prev.filter(p => p.lotId !== selectedLotId);
-    });
+    console.log('Processing polygon for lot:', lot.name);
+
+    // Get coordinates first
+    const path = polygon.getPath();
+    const coordinates = path.getArray().map(point => ({
+      lat: point.lat(),
+      lng: point.lng()
+    }));
+
+    console.log('Polygon coordinates:', coordinates);
 
     // Set polygon style
     const color = getLotColor(lot);
@@ -171,15 +177,19 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
 
     // Add click listener
     polygon.addListener('click', () => {
+      console.log('Polygon clicked for lot:', lot.id);
       onLotSelect(lot.id);
     });
 
-    // Get coordinates
-    const path = polygon.getPath();
-    const coordinates = path.getArray().map(point => ({
-      lat: point.lat(),
-      lng: point.lng()
-    }));
+    // Remove existing polygon for this lot first
+    setPolygons(prev => {
+      const existing = prev.find(p => p.lotId === selectedLotId);
+      if (existing) {
+        console.log('Removing existing polygon for lot:', selectedLotId);
+        existing.polygon.setMap(null);
+      }
+      return prev.filter(p => p.lotId !== selectedLotId);
+    });
 
     // Create polygon data
     const polygonData: PolygonData = {
@@ -189,9 +199,12 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
       coordinates
     };
 
-    // Update state
+    console.log('Adding new polygon data:', polygonData);
+
+    // Update state and save
     setPolygons(prev => {
       const updated = [...prev, polygonData];
+      console.log('Updated polygons array:', updated);
       savePolygonsToStorage(updated);
       return updated;
     });
@@ -207,7 +220,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
     const lot = lots.find(l => l.id === lotId);
     if (!lot) return;
 
-    console.log('Starting drawing for lot:', lot.name);
+    console.log('Starting drawing for lot:', lot.name, 'with ID:', lotId);
     
     setSelectedLotId(lotId);
     setIsDrawing(true);
@@ -226,9 +239,9 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
       }
     });
 
-    // Enable polygon drawing mode - this should show the crosshair cursor
+    // Enable polygon drawing mode
     drawingManager.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    console.log('Drawing mode activated - crosshair cursor should appear');
+    console.log('Drawing mode activated for lot:', lotId);
   }, [lots, getLotColor]);
 
   // Stop drawing
@@ -243,6 +256,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
 
   // Delete polygon
   const deletePolygon = useCallback((lotId: string) => {
+    console.log('Deleting polygon for lot:', lotId);
     setPolygons(prev => {
       const polygonData = prev.find(p => p.lotId === lotId);
       if (polygonData) {
@@ -261,16 +275,21 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
       color: p.color,
       coordinates: p.coordinates
     }));
+    console.log('Saving polygons to storage:', dataToSave);
     localStorage.setItem('lotPolygons', JSON.stringify(dataToSave));
   }, []);
 
   // Load from localStorage
   const loadSavedPolygons = useCallback((map: google.maps.Map) => {
     const saved = localStorage.getItem('lotPolygons');
-    if (!saved) return;
+    if (!saved) {
+      console.log('No saved polygons found');
+      return;
+    }
 
     try {
       const data = JSON.parse(saved);
+      console.log('Loading saved polygons:', data);
       const loadedPolygons: PolygonData[] = [];
 
       data.forEach((item: any) => {
@@ -298,6 +317,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
         }
       });
 
+      console.log('Loaded polygons:', loadedPolygons);
       setPolygons(loadedPolygons);
     } catch (error) {
       console.error('Error loading saved polygons:', error);
