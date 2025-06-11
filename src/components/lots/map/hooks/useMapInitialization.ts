@@ -22,7 +22,7 @@ export const useMapInitialization = (lots: Lot[]) => {
   const [mapRotation, setMapRotation] = useState(0);
   
   // Use the separated hooks
-  const { apiKey: storedApiKey, showApiKeyInput, setApiKey } = useApiKeyStorage();
+  const { setApiKey } = useApiKeyStorage();
   const { lotPolygons, savePolygons } = usePolygonStorage();
   const { addSkyRanchLabel, renderLotPolygons, togglePolygonsVisibility, toggleLabelsVisibility } = useMapRenderer(lots);
   const { 
@@ -33,34 +33,26 @@ export const useMapInitialization = (lots: Lot[]) => {
     setPolygonColor 
   } = usePolygonOperations(lots, lotPolygons, savePolygons);
 
-  // Force use the override API key
-  const finalApiKey = FORCE_API_KEY || storedApiKey;
-  const shouldShowInput = !finalApiKey;
+  console.log('🗺️ useMapInitialization render - Force loading with API key');
 
-  console.log('🗺️ useMapInitialization state:');
-  console.log('  - Force API Key:', !!FORCE_API_KEY);
-  console.log('  - Stored API Key:', !!storedApiKey);
-  console.log('  - Final API Key:', !!finalApiKey);
-  console.log('  - Should show input:', shouldShowInput);
-  console.log('  - Loading:', isLoading);
-  console.log('  - Container exists:', !!mapContainer.current);
-
-  // Initialize map function
+  // Initialize map function - simplified to always use force key
   const initializeMap = useCallback(async () => {
-    console.log('🗺️ Starting forced map initialization');
-    console.log('🗺️ Container ref:', !!mapContainer.current);
-    console.log('🗺️ Final API key:', !!finalApiKey);
+    console.log('🗺️ Starting FORCED map initialization');
+    console.log('🗺️ Container ref current:', !!mapContainer.current);
 
-    if (!finalApiKey) {
-      console.error('❌ No API key available for initialization');
-      setError('API key requerida');
-      setIsLoading(false);
+    if (!mapContainer.current) {
+      console.error('❌ Map container not available for initialization');
+      setTimeout(() => {
+        if (mapContainer.current && !map.current) {
+          console.log('🔄 Retrying initialization with available container');
+          initializeMap();
+        }
+      }, 100);
       return;
     }
 
-    if (!mapContainer.current) {
-      console.error('❌ Map container not available');
-      setError('Contenedor del mapa no disponible');
+    if (map.current) {
+      console.log('✅ Map already initialized, skipping');
       setIsLoading(false);
       return;
     }
@@ -69,10 +61,10 @@ export const useMapInitialization = (lots: Lot[]) => {
     setError(null);
 
     try {
-      console.log('🔑 Loading Google Maps API with force key');
+      console.log('🔑 Loading Google Maps API with FORCE key');
       
       const loader = new Loader({
-        apiKey: finalApiKey,
+        apiKey: FORCE_API_KEY,
         version: 'weekly',
         libraries: ['geometry', 'drawing', 'places']
       });
@@ -83,12 +75,14 @@ export const useMapInitialization = (lots: Lot[]) => {
         throw new Error('Google Maps geometry library failed to load');
       }
       
-      console.log('🌍 Creating map instance');
+      console.log('🌍 Creating map instance with container:', mapContainer.current);
       
       map.current = new google.maps.Map(mapContainer.current, {
         ...GOOGLE_MAPS_CONFIG,
         center: SKYRANCH_CENTER
       });
+
+      console.log('✅ Map instance created successfully');
 
       // Wait for map to be ready
       await new Promise<void>((resolve) => {
@@ -98,7 +92,7 @@ export const useMapInitialization = (lots: Lot[]) => {
         });
       });
 
-      console.log('✅ Map created successfully');
+      console.log('✅ Map is ready and idle');
       
       // Setup rotation listener
       map.current.addListener('heading_changed', () => {
@@ -130,38 +124,46 @@ export const useMapInitialization = (lots: Lot[]) => {
         variant: "destructive"
       });
     }
-  }, [finalApiKey, initializeDrawingManager, addSkyRanchLabel, renderLotPolygons, lotPolygons, toast]);
+  }, [initializeDrawingManager, addSkyRanchLabel, renderLotPolygons, lotPolygons, toast]);
 
-  // Effect to initialize map - force initialization with container and API key
+  // Single effect to handle initialization when container is ready
   useEffect(() => {
-    console.log('🔄 Effect triggered:');
-    console.log('  - Final API key exists:', !!finalApiKey);
+    console.log('🔄 Main initialization effect triggered');
     console.log('  - Container exists:', !!mapContainer.current);
     console.log('  - Map exists:', !!map.current);
     
-    // Force initialization if we have API key and container but no map
-    if (finalApiKey && mapContainer.current && !map.current) {
-      console.log('🚀 Force initializing map now!');
+    // Force immediate initialization if container is ready
+    if (mapContainer.current && !map.current) {
+      console.log('🚀 Container ready - force initializing map immediately!');
       initializeMap();
     }
-  }, [finalApiKey, initializeMap]);
+  }, []); // Empty dependency array - run once on mount
 
-  // Additional effect to handle container ref changes
+  // Additional effect to handle container ref changes with delay
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.log('🔄 Delayed check:');
+    const checkContainer = () => {
+      console.log('🔄 Delayed container check:');
       console.log('  - Container exists:', !!mapContainer.current);
-      console.log('  - API key exists:', !!finalApiKey);
       console.log('  - Map exists:', !!map.current);
       
-      if (finalApiKey && mapContainer.current && !map.current) {
+      if (mapContainer.current && !map.current) {
         console.log('🚀 Delayed initialization trigger');
         initializeMap();
       }
-    }, 100);
+    };
 
-    return () => clearTimeout(timeoutId);
-  }, [finalApiKey, initializeMap]);
+    // Check immediately and with small delays
+    checkContainer();
+    const timeoutId1 = setTimeout(checkContainer, 50);
+    const timeoutId2 = setTimeout(checkContainer, 200);
+    const timeoutId3 = setTimeout(checkContainer, 500);
+
+    return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
+    };
+  }, [initializeMap]);
 
   // Effect to re-render polygons when lots change
   useEffect(() => {
@@ -184,8 +186,8 @@ export const useMapInitialization = (lots: Lot[]) => {
     map,
     isLoading,
     error,
-    apiKey: finalApiKey,
-    showApiKeyInput: shouldShowInput,
+    apiKey: FORCE_API_KEY,
+    showApiKeyInput: false, // Never show input
     lotPolygons,
     mapRotation,
     setApiKey,

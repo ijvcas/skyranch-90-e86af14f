@@ -3,13 +3,13 @@ import React from 'react';
 import { useGoogleMapsInitialization } from './map/useGoogleMapsInitialization';
 import { MapControls } from './map/MapControls';
 import { PolygonDrawer } from './map/PolygonDrawer';
-import { ApiKeySetup } from './map/ApiKeySetup';
 import { MapLoadingState } from './map/MapLoadingState';
 import { MapErrorState } from './map/MapErrorState';
 import { SkyRanchLabel } from './map/SkyRanchLabel';
 import { FullscreenToggle } from './map/FullscreenToggle';
 import { useMapState } from './map/hooks/useMapState';
 import { useLotSelection } from './map/hooks/useLotSelection';
+import { usePolygonHandlers } from './map/hooks/usePolygonHandlers';
 import { type Lot } from '@/stores/lotStore';
 
 interface LotSatelliteMapProps {
@@ -40,10 +40,8 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     mapContainer,
     isLoading,
     error,
-    showApiKeyInput,
     lotPolygons,
     mapRotation,
-    setApiKey,
     resetMapRotation,
     startDrawingPolygon,
     saveCurrentPolygon,
@@ -54,20 +52,11 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   } = useGoogleMapsInitialization(lots);
 
   console.log('🎯 LotSatelliteMap render state:');
-  console.log('  - Show API key input:', showApiKeyInput);
   console.log('  - Is loading:', isLoading);
   console.log('  - Error:', error);
+  console.log('  - Container ref attached:', !!mapContainer);
 
-  // Force skip API key input since we have a hardcoded key
-  if (showApiKeyInput && !error) {
-    console.log('⚠️ API key input would show, but we have force key - continuing to load');
-  }
-
-  // Only show API key setup if there's an actual error and no loading
-  if (showApiKeyInput && error && !isLoading) {
-    return <ApiKeySetup onApiKeySubmit={setApiKey} />;
-  }
-
+  // Force skip API key input - we have hardcoded key
   if (isLoading) {
     console.log('🔄 Showing loading state');
     return <MapLoadingState />;
@@ -80,42 +69,21 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
   console.log('✅ Rendering map component');
 
-  // Polygon handlers
-  const handleStartDrawing = () => {
-    if (selectedLot) {
-      console.log('Starting drawing for lot:', selectedLot.id);
-      setIsDrawing(true);
-      startDrawingPolygon(selectedLot.id);
-    }
-  };
-
-  const handleSavePolygon = () => {
-    if (selectedLot) {
-      console.log('Saving polygon for lot:', selectedLot.id);
-      saveCurrentPolygon(selectedLot.id, () => {
-        setIsDrawing(false);
-      });
-    }
-  };
-
-  const handleDeletePolygon = () => {
-    if (selectedLot) {
-      console.log('Deleting polygon for lot:', selectedLot.id);
-      deletePolygonForLot(selectedLot.id);
-    }
-  };
-
-  const handleColorChange = (color: string) => {
-    if (selectedLot) {
-      console.log('Changing color for lot:', selectedLot.id, 'to:', color);
-      setPolygonColor(selectedLot.id, color);
-    }
-  };
-
-  const handleCancelDrawing = () => {
-    console.log('Cancelling drawing');
-    setIsDrawing(false);
-  };
+  // Use the polygon handlers hook
+  const {
+    handleStartDrawing,
+    handleSavePolygon,
+    handleDeletePolygon,
+    handleColorChange,
+    handleCancelDrawing
+  } = usePolygonHandlers({
+    selectedLot,
+    setIsDrawing,
+    startDrawingPolygon,
+    saveCurrentPolygon,
+    deletePolygonForLot,
+    setPolygonColor
+  });
 
   // Check if selected lot has a polygon
   const hasPolygon = selectedLot ? lotPolygons.some(p => p.lotId === selectedLot.id) : false;
@@ -126,7 +94,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
 
   return (
     <div className={`relative w-full h-full ${isFullscreen ? 'bg-black' : ''}`}>
-      {/* Map Container */}
+      {/* Map Container - This ref MUST match the one from the hook */}
       <div ref={mapContainer} className="w-full h-full rounded-lg" />
 
       {/* SkyRanch Label - Top Center, Draggable */}
