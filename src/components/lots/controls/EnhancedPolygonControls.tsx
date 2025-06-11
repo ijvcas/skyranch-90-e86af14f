@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Square, Edit, Trash2, Circle, X, ChevronDown, ChevronUp, Minimize2, BarChart3, Palette } from 'lucide-react';
+import { Square, Edit, Trash2, Circle, X, ChevronDown, ChevronUp, Minimize2, BarChart3, Palette, MapPin } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
 import { usePolygonUtils } from '@/hooks/polygon/usePolygonUtils';
 
 interface PolygonData {
   lotId: string;
   color: string;
+  colorType: string;
   areaHectares?: number;
 }
 
@@ -20,7 +21,7 @@ interface EnhancedPolygonControlsProps {
   selectedLotId: string;
   isDrawing: boolean;
   polygons: PolygonData[];
-  onStartDrawing: (lotId: string) => void;
+  onStartDrawing: (lotId: string, colorType: string) => void;
   onStopDrawing: () => void;
   onDeletePolygon: (lotId: string) => void;
   getLotColor: (lot: Lot) => string;
@@ -38,11 +39,12 @@ const EnhancedPolygonControls = ({
 }: EnhancedPolygonControlsProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [currentLotId, setCurrentLotId] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const { formatArea } = usePolygonUtils();
   
-  const selectedLot = lots.find(l => l.id === selectedLotId);
-  const polygonData = polygons.find(p => p.lotId === selectedLotId);
+  const selectedLot = lots.find(l => l.id === currentLotId);
+  const polygonData = polygons.find(p => p.lotId === currentLotId);
   const hasPolygon = !!polygonData;
 
   // Color options for different lot statuses
@@ -75,9 +77,8 @@ const EnhancedPolygonControls = ({
   };
 
   const handleStartDrawing = () => {
-    if (selectedLotId && selectedColor) {
-      // Pass the selected color to the drawing manager
-      onStartDrawing(selectedLotId);
+    if (currentLotId && selectedColor) {
+      onStartDrawing(currentLotId, selectedColor);
     }
   };
 
@@ -91,14 +92,14 @@ const EnhancedPolygonControls = ({
           className="bg-white/95 shadow-lg"
         >
           <Square className="w-4 h-4 mr-2 text-green-600" />
-          Controles
+          Dibujar Polígonos
         </Button>
       </div>
     );
   }
 
   return (
-    <Card className="absolute top-4 right-4 w-80 z-[1000] shadow-lg bg-white/95 backdrop-blur-sm">
+    <Card className="absolute bottom-4 left-4 w-80 z-[1000] shadow-lg bg-white/95 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center justify-between">
           <div className="flex items-center">
@@ -128,10 +129,13 @@ const EnhancedPolygonControls = ({
       
       {!isCollapsed && (
         <CardContent className="space-y-4">
-          {/* Lot Selector */}
+          {/* Step 1: Lot Selector */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Seleccionar Lote</label>
-            <Select value={selectedLotId} onValueChange={onStartDrawing}>
+            <label className="text-sm font-medium flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              1. Seleccionar Lote
+            </label>
+            <Select value={currentLotId} onValueChange={setCurrentLotId} disabled={isDrawing}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un lote" />
               </SelectTrigger>
@@ -156,41 +160,44 @@ const EnhancedPolygonControls = ({
             </Select>
           </div>
 
-          {/* Color Selector */}
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <Palette className="w-4 h-4 mr-2 text-gray-600" />
-              <label className="text-sm font-medium">Color del Polígono</label>
-            </div>
-            <RadioGroup 
-              value={selectedColor} 
-              onValueChange={setSelectedColor}
-              className="grid grid-cols-1 gap-2"
-            >
-              {colorOptions.map((option) => (
-                <div key={option.value} className="flex items-center space-x-3 p-2 rounded-lg border hover:bg-gray-50">
-                  <RadioGroupItem value={option.value} id={option.value} />
-                  <div className="flex items-center flex-1">
-                    <div 
-                      className="w-4 h-4 rounded border mr-3"
-                      style={{ 
-                        backgroundColor: option.color,
-                        border: option.color === '#ffffff' ? '1px solid #d1d5db' : 'none'
-                      }}
-                    />
-                    <label 
-                      htmlFor={option.value} 
-                      className="text-sm font-medium cursor-pointer flex-1"
-                    >
-                      {option.label}
-                    </label>
+          {/* Step 2: Color Selector */}
+          {currentLotId && (
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <Palette className="w-4 h-4 mr-2 text-gray-600" />
+                <label className="text-sm font-medium">2. Color del Polígono</label>
+              </div>
+              <RadioGroup 
+                value={selectedColor} 
+                onValueChange={setSelectedColor}
+                className="grid grid-cols-1 gap-2"
+                disabled={isDrawing}
+              >
+                {colorOptions.map((option) => (
+                  <div key={option.value} className="flex items-center space-x-3 p-2 rounded-lg border hover:bg-gray-50">
+                    <RadioGroupItem value={option.value} id={option.value} disabled={isDrawing} />
+                    <div className="flex items-center flex-1">
+                      <div 
+                        className="w-4 h-4 rounded border mr-3"
+                        style={{ 
+                          backgroundColor: option.color,
+                          border: option.color === '#ffffff' ? '1px solid #d1d5db' : 'none'
+                        }}
+                      />
+                      <label 
+                        htmlFor={option.value} 
+                        className="text-sm font-medium cursor-pointer flex-1"
+                      >
+                        {option.label}
+                      </label>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
 
-          {/* Selected Lot Info */}
+          {/* Step 3: Selected Lot Info */}
           {selectedLot && (
             <div className="p-3 bg-gray-50 rounded-lg border">
               <div className="flex items-center justify-between mb-2">
@@ -209,7 +216,7 @@ const EnhancedPolygonControls = ({
                         border: selectedColor === 'property' ? '1px solid #d1d5db' : 'none'
                       }}
                     />
-                    <span>Color seleccionado: {colorOptions.find(c => c.value === selectedColor)?.label}</span>
+                    <span>Color: {colorOptions.find(c => c.value === selectedColor)?.label}</span>
                   </div>
                 )}
                 {polygonData?.areaHectares && (
@@ -222,13 +229,13 @@ const EnhancedPolygonControls = ({
             </div>
           )}
 
-          {/* Drawing Controls */}
+          {/* Step 4: Drawing Controls */}
           <div className="space-y-3">
             {!isDrawing ? (
               <div className="space-y-2">
                 <Button
                   onClick={handleStartDrawing}
-                  disabled={!selectedLotId || !selectedColor}
+                  disabled={!currentLotId || !selectedColor}
                   className={`w-full ${
                     hasPolygon 
                       ? 'bg-amber-500 hover:bg-amber-600' 
@@ -236,10 +243,10 @@ const EnhancedPolygonControls = ({
                   }`}
                 >
                   <Edit className="w-4 h-4 mr-2" />
-                  {hasPolygon ? 'Redibujar Polígono' : 'Dibujar Polígono'}
+                  {hasPolygon ? '3. Redibujar Polígono' : '3. Dibujar Polígono'}
                 </Button>
                 
-                {!selectedColor && selectedLotId && (
+                {!selectedColor && currentLotId && (
                   <p className="text-xs text-amber-600 text-center">
                     Selecciona un color para continuar
                   </p>
@@ -247,7 +254,7 @@ const EnhancedPolygonControls = ({
                 
                 {hasPolygon && (
                   <Button
-                    onClick={() => onDeletePolygon(selectedLotId)}
+                    onClick={() => onDeletePolygon(currentLotId)}
                     variant="destructive"
                     className="w-full"
                   >

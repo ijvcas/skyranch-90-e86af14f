@@ -15,10 +15,11 @@ interface LotsGridProps {
   isLoading: boolean;
   onLotSelect: (lotId: string) => void;
   onCreateLot: () => void;
+  onDeleteLot?: (lotId: string) => void;
   polygonData?: PolygonData[];
 }
 
-const LotsGrid = ({ lots, isLoading, onLotSelect, onCreateLot, polygonData = [] }: LotsGridProps) => {
+const LotsGrid = ({ lots, isLoading, onLotSelect, onCreateLot, onDeleteLot, polygonData = [] }: LotsGridProps) => {
   if (isLoading) {
     return (
       <div className="col-span-full text-center py-8">
@@ -48,6 +49,7 @@ const LotsGrid = ({ lots, isLoading, onLotSelect, onCreateLot, polygonData = [] 
             key={lot.id} 
             lot={lot} 
             onLotClick={onLotSelect}
+            onDeleteLot={onDeleteLot}
             polygonArea={polygon?.areaHectares}
           />
         );

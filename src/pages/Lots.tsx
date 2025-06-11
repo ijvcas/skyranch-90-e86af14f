@@ -11,9 +11,10 @@ import LotMapView from '@/components/lots/LotMapView';
 import LotAnalytics from '@/components/lots/LotAnalytics';
 import LotsOverview from '@/components/lots/LotsOverview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 const Lots = () => {
-  const { lots, isLoading, loadLots } = useLotStore();
+  const { lots, isLoading, loadLots, deleteLot } = useLotStore();
   const [showLotForm, setShowLotForm] = useState(false);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [polygonData, setPolygonData] = useState<Array<{lotId: string; areaHectares?: number}>>([]);
@@ -34,6 +35,35 @@ const Lots = () => {
       }
     }
   }, [loadLots]);
+
+  const handleDeleteLot = async (lotId: string) => {
+    try {
+      const success = await deleteLot(lotId);
+      if (success) {
+        toast.success('Lote eliminado correctamente');
+        // Remove polygon data for this lot
+        const saved = localStorage.getItem('lotPolygons');
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            const filteredData = data.filter((item: any) => item.lotId !== lotId);
+            localStorage.setItem('lotPolygons', JSON.stringify(filteredData));
+            setPolygonData(filteredData.map((item: any) => ({
+              lotId: item.lotId,
+              areaHectares: item.areaHectares
+            })));
+          } catch (error) {
+            console.error('Error updating polygon data:', error);
+          }
+        }
+      } else {
+        toast.error('Error al eliminar el lote');
+      }
+    } catch (error) {
+      console.error('Error deleting lot:', error);
+      toast.error('Error al eliminar el lote');
+    }
+  };
 
   if (selectedLotId) {
     const selectedLot = lots.find(l => l.id === selectedLotId);
@@ -85,6 +115,7 @@ const Lots = () => {
             isLoading={isLoading}
             onLotSelect={setSelectedLotId}
             onCreateLot={() => setShowLotForm(true)}
+            onDeleteLot={handleDeleteLot}
             polygonData={polygonData}
           />
         </TabsContent>

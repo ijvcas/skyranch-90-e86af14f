@@ -14,10 +14,11 @@ interface LotsOverviewProps {
   isLoading: boolean;
   onLotSelect: (lotId: string) => void;
   onCreateLot: () => void;
+  onDeleteLot?: (lotId: string) => void;
   polygonData?: PolygonData[];
 }
 
-const LotsOverview = ({ lots, isLoading, onLotSelect, onCreateLot, polygonData }: LotsOverviewProps) => {
+const LotsOverview = ({ lots, isLoading, onLotSelect, onCreateLot, onDeleteLot, polygonData }: LotsOverviewProps) => {
   return (
     <div className="space-y-6">
       <LotStatistics lots={lots} polygonData={polygonData} />
@@ -26,6 +27,7 @@ const LotsOverview = ({ lots, isLoading, onLotSelect, onCreateLot, polygonData }
         isLoading={isLoading}
         onLotSelect={onLotSelect}
         onCreateLot={onCreateLot}
+        onDeleteLot={onDeleteLot}
         polygonData={polygonData}
       />
     </div>
