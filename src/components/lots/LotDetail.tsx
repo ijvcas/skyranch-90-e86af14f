@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,7 +105,14 @@ const LotDetail = ({ lot, onClose }: LotDetailProps) => {
               <DialogHeader>
                 <DialogTitle>Editar Lote</DialogTitle>
               </DialogHeader>
-              <LotForm lot={lot} onClose={() => setShowEditForm(false)} />
+              <LotForm 
+                lot={lot} 
+                onClose={() => setShowEditForm(false)}
+                onSuccess={() => {
+                  setShowEditForm(false);
+                  // Trigger a reload of lot data if needed
+                }}
+              />
             </DialogContent>
           </Dialog>
         </div>
