@@ -1,6 +1,6 @@
 
 import React from 'react';
-import LotSatelliteMap from './LotSatelliteMap';
+import GoogleMapComponent from './GoogleMapComponent';
 import { type Lot } from '@/stores/lotStore';
 
 interface LotMapViewProps {
@@ -9,7 +9,11 @@ interface LotMapViewProps {
 }
 
 const LotMapView = ({ lots, onLotSelect }: LotMapViewProps) => {
-  return <LotSatelliteMap lots={lots} onLotSelect={onLotSelect} />;
+  return (
+    <div className="w-full">
+      <GoogleMapComponent lots={lots} onLotSelect={onLotSelect} />
+    </div>
+  );
 };
 
 export default LotMapView;
