@@ -6,44 +6,11 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://ahwhtxygyzoadsmdrwwg.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFod2h0eHlneXpvYWRzbWRyd3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMjIxNzMsImV4cCI6MjA2NDY5ODE3M30.rffEqABIU3U7e7qdPXLvNMQfqU2sNIJHrfP_A_5GrlI";
 
-// Create the client with enhanced error handling and single instance protection
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
     flowType: 'pkce'
-  },
-  global: {
-    headers: {
-      'x-my-custom-header': 'skyranch-app',
-    },
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 2
-    }
   }
-});
-
-// Add connection health check with better error handling
-export const checkSupabaseConnection = async (): Promise<boolean> => {
-  try {
-    const { error } = await supabase.from('animals').select('count', { count: 'exact', head: true });
-    if (error) {
-      console.error('Supabase connection check failed:', error);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error('Supabase connection check failed:', error);
-    return false;
-  }
-};
-
-// Initialize connection check on module load
-checkSupabaseConnection().then(isConnected => {
-  console.log('Supabase connection status:', isConnected ? 'Connected' : 'Failed');
-}).catch(error => {
-  console.error('Error checking Supabase connection:', error);
 });

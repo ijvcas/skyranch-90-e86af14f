@@ -6,36 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Users, AlertCircle } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, user, loading, error } = useAuth();
+  const { signIn, user, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
-
-  // Show auth context errors
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error de autenticación",
-        description: error,
-        variant: "destructive"
-      });
-    }
-  }, [error, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +33,6 @@ const Login = () => {
       const { error } = await signIn(formData.email, formData.password);
       
       if (error) {
-        console.error('Login error:', error);
         toast({
           title: "Error de inicio de sesión",
           description: error.message === 'Invalid login credentials' 
@@ -61,7 +48,6 @@ const Login = () => {
         navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
       toast({
         title: "Error",
         description: "Ocurrió un error inesperado. Intenta de nuevo.",
@@ -76,10 +62,9 @@ const Login = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Show loading screen while auth is initializing
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-2xl">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-4">
@@ -94,33 +79,8 @@ const Login = () => {
     );
   }
 
-  // Show error screen if there's a persistent auth error
-  if (error && !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
-        <Card className="w-full max-w-md shadow-2xl">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center">
-                <AlertCircle className="w-10 h-10 text-white" />
-              </div>
-              <p className="text-lg text-gray-600 text-center">Error de conexión</p>
-              <p className="text-sm text-gray-500 text-center">{error}</p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Reintentar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center pb-6">
           <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -134,12 +94,11 @@ const Login = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
               <Input
                 id="email"
-                name="login-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
@@ -147,9 +106,6 @@ const Login = () => {
                 required
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
-                autoComplete="username"
-                data-1p-ignore
-                data-lpignore="true"
               />
             </div>
             
@@ -157,7 +113,6 @@ const Login = () => {
               <Label htmlFor="password" className="text-base font-medium">Contraseña</Label>
               <Input
                 id="password"
-                name="login-password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
@@ -165,9 +120,6 @@ const Login = () => {
                 required
                 className="mt-2 h-12 text-base"
                 disabled={isLoading}
-                autoComplete="current-password"
-                data-1p-ignore
-                data-lpignore="true"
               />
             </div>
 

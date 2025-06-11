@@ -35,68 +35,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          console.error('Error getting initial session:', sessionError);
-          setError('Failed to initialize authentication');
-        } else if (mounted) {
+        if (mounted) {
           setSession(initialSession);
           setUser(initialSession?.user ?? null);
-          setError(null);
+          setLoading(false);
         }
       } catch (error) {
-        console.error('Unexpected error in auth initialization:', error);
+        console.error('Auth initialization error:', error);
         if (mounted) {
           setError('Authentication initialization failed');
-        }
-      } finally {
-        if (mounted) {
           setLoading(false);
         }
       }
     };
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        try {
-          console.log('Auth state changed:', event, session?.user?.email);
-          
-          if (mounted) {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setError(null);
-          }
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setError(null);
+        }
 
-          // Sync user to app_users table when they sign in
-          if (event === 'SIGNED_IN' && session?.user && mounted) {
-            setTimeout(async () => {
-              try {
-                const { data: profile } = await supabase
-                  .from('profiles')
-                  .select('*')
-                  .eq('id', session.user.id)
-                  .single();
+        if (event === 'SIGNED_IN' && session?.user && mounted) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
 
-                if (profile && profile.email) {
-                  console.log('Syncing user after sign in:', profile.email);
-                  await syncUserToAppUsers(
-                    profile.id, 
-                    profile.email, 
-                    profile.full_name || profile.email
-                  );
-                }
-              } catch (error) {
-                console.error('Error syncing user on sign in:', error);
-              }
-            }, 0);
-          }
-        } catch (error) {
-          console.error('Error in auth state change handler:', error);
-          if (mounted) {
-            setError('Authentication state update failed');
+            if (profile && profile.email) {
+              await syncUserToAppUsers(
+                profile.id, 
+                profile.email, 
+                profile.full_name || profile.email
+              );
+            }
+          } catch (error) {
+            console.error('Error syncing user on sign in:', error);
           }
         }
       }
@@ -113,13 +94,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
       setError(null);
-      const redirectUrl = `${window.location.origin}/dashboard`;
-      
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName || email
           }
