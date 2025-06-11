@@ -58,19 +58,23 @@ const ElegantGoogleMap = ({ lots, onLotSelect }: ElegantGoogleMapProps) => {
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
       
-      {/* Elegant controls overlay */}
+      {/* Elegant controls overlay - positioned within the map container */}
       {isMapReady && (
-        <ElegantPolygonControls
-          lots={lots}
-          selectedLotId={selectedLotId}
-          drawingState={drawingState}
-          polygons={polygons.map(p => ({ lotId: p.lotId, color: p.color }))}
-          onStartDrawing={startDrawing}
-          onCancelDrawing={cancelDrawing}
-          onDeletePolygon={deletePolygon}
-          onLotSelect={handleLotSelectForDrawing}
-          getLotColor={getLotColor}
-        />
+        <div className="absolute inset-0 pointer-events-none z-20">
+          <div className="pointer-events-auto">
+            <ElegantPolygonControls
+              lots={lots}
+              selectedLotId={selectedLotId}
+              drawingState={drawingState}
+              polygons={polygons.map(p => ({ lotId: p.lotId, color: p.color }))}
+              onStartDrawing={startDrawing}
+              onCancelDrawing={cancelDrawing}
+              onDeletePolygon={deletePolygon}
+              onLotSelect={handleLotSelectForDrawing}
+              getLotColor={getLotColor}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

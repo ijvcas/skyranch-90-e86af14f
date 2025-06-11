@@ -70,6 +70,8 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
 
   // Handle polygon completion
   const handlePolygonComplete = useCallback((polygon: google.maps.Polygon) => {
+    console.log('Polygon complete event triggered');
+    
     if (!drawingState.currentLotId) {
       console.log('No current lot selected, removing polygon');
       polygon.setMap(null);
@@ -127,16 +129,21 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
       return updated;
     });
 
-    // Reset drawing state
+    // Reset drawing state and disable drawing mode
     setDrawingState({
       isActive: false,
       currentLotId: null,
       mode: 'complete'
     });
 
-    // Disable drawing mode
+    // Disable drawing mode and restore normal cursor
     if (drawingManagerRef.current) {
       drawingManagerRef.current.setDrawingMode(null);
+      // Reset map cursor
+      if (mapRef.current) {
+        const mapDiv = mapRef.current.getDiv();
+        mapDiv.style.cursor = '';
+      }
     }
 
     console.log('Polygon creation completed successfully');
@@ -145,8 +152,12 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
   // Start drawing for a lot
   const startDrawing = useCallback((lotId: string) => {
     const lot = lots.find(l => l.id === lotId);
-    if (!lot || !drawingManagerRef.current) {
-      console.log('Cannot start drawing - missing lot or drawing manager');
+    if (!lot || !drawingManagerRef.current || !mapRef.current) {
+      console.log('Cannot start drawing - missing requirements', {
+        hasLot: !!lot,
+        hasDrawingManager: !!drawingManagerRef.current,
+        hasMap: !!mapRef.current
+      });
       return;
     }
 
@@ -182,10 +193,22 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
     // Add new polygon complete listener
     polygonCompleteListenerRef.current = drawingManagerRef.current.addListener('polygoncomplete', handlePolygonComplete);
 
-    // Enable drawing mode
+    // Enable drawing mode with crosshair cursor
     drawingManagerRef.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     
-    console.log('Drawing mode enabled, ready to draw on map');
+    // Force crosshair cursor on map
+    const mapDiv = mapRef.current.getDiv();
+    mapDiv.style.cursor = 'crosshair !important';
+    
+    // Additional cursor override for the map canvas
+    setTimeout(() => {
+      const mapCanvas = mapDiv.querySelector('canvas');
+      if (mapCanvas) {
+        mapCanvas.style.cursor = 'crosshair !important';
+      }
+    }, 100);
+
+    console.log('Drawing mode enabled with crosshair cursor');
   }, [lots, getLotColor, handlePolygonComplete]);
 
   // Cancel drawing
@@ -200,6 +223,16 @@ export const usePolygonManager = ({ lots, onLotSelect }: UsePolygonManagerOption
 
     if (drawingManagerRef.current) {
       drawingManagerRef.current.setDrawingMode(null);
+    }
+
+    // Reset cursor
+    if (mapRef.current) {
+      const mapDiv = mapRef.current.getDiv();
+      mapDiv.style.cursor = '';
+      const mapCanvas = mapDiv.querySelector('canvas');
+      if (mapCanvas) {
+        mapCanvas.style.cursor = '';
+      }
     }
 
     // Remove polygon complete listener

@@ -70,7 +70,7 @@ const ElegantPolygonControls = ({
     document.body.style.userSelect = 'none';
   };
 
-  // Handle mouse move for dragging
+  // Handle mouse move for dragging - ensure controls stay within map bounds
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
@@ -78,14 +78,30 @@ const ElegantPolygonControls = ({
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-      // Keep within viewport bounds
-      const maxX = window.innerWidth - 320; // Control width
-      const maxY = window.innerHeight - 400; // Control height
-      
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
-      });
+      // Get the map container bounds to keep controls within map
+      const mapContainer = document.querySelector('[class*="w-full h-\\[48rem\\]"]') as HTMLElement;
+      if (mapContainer) {
+        const mapRect = mapContainer.getBoundingClientRect();
+        const controlWidth = 320; // Control width
+        const controlHeight = 400; // Estimated control height
+        
+        const maxX = mapRect.width - controlWidth;
+        const maxY = mapRect.height - controlHeight;
+        
+        setPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY))
+        });
+      } else {
+        // Fallback to viewport bounds
+        const maxX = window.innerWidth - 320;
+        const maxY = window.innerHeight - 400;
+        
+        setPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY))
+        });
+      }
     };
 
     const handleMouseUp = () => {
@@ -125,10 +141,10 @@ const ElegantPolygonControls = ({
   if (!isVisible) {
     return (
       <>
-        {/* Floating show button */}
+        {/* Floating show button - positioned relative to map */}
         <Button
           onClick={() => setIsVisible(true)}
-          className="fixed top-4 left-4 z-30 bg-white shadow-lg hover:shadow-xl transition-shadow border"
+          className="absolute top-4 left-4 z-30 bg-white shadow-lg hover:shadow-xl transition-shadow border"
           variant="outline"
           size="sm"
         >
@@ -136,9 +152,9 @@ const ElegantPolygonControls = ({
           Mostrar Controles
         </Button>
         
-        {/* Polygon mini-list */}
+        {/* Polygon mini-list - positioned relative to map */}
         {polygons.length > 0 && (
-          <div className="fixed bottom-4 right-4 z-30">
+          <div className="absolute bottom-4 right-4 z-30">
             <Card className="w-48 shadow-lg">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center">
@@ -170,7 +186,7 @@ const ElegantPolygonControls = ({
   return (
     <Card 
       ref={controlRef}
-      className={`fixed w-80 z-30 shadow-2xl transition-all duration-300 border-2 ${
+      className={`absolute w-80 z-30 shadow-2xl transition-all duration-300 border-2 ${
         isDragging ? 'cursor-grabbing shadow-3xl scale-105' : 'cursor-grab'
       } ${drawingState.isActive ? 'border-blue-400 bg-blue-50/80' : 'border-gray-200 bg-white/95'}`}
       style={{
@@ -343,3 +359,5 @@ const ElegantPolygonControls = ({
 };
 
 export default ElegantPolygonControls;
+
+</edits_to_apply>
