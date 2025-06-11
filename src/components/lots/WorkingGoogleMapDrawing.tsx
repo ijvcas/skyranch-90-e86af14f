@@ -2,7 +2,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useSimplePolygonDrawing } from '@/hooks/useSimplePolygonDrawing';
+import { useMobileOptimizations } from '@/hooks/useMobileOptimizations';
 import SimplifiedPolygonControls from './controls/SimplifiedPolygonControls';
+import MobileControlPanel from './controls/MobileControlPanel';
 import MapLotLabelsControl from './controls/MapLotLabelsControl';
 
 interface WorkingGoogleMapDrawingProps {
@@ -26,6 +28,8 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     deletePolygon,
     getLotColor
   } = useSimplePolygonDrawing({ lots, onLotSelect });
+  
+  const { isMobile, getMapHeight, getControlPosition } = useMobileOptimizations();
   
   const [showLabels, setShowLabels] = useState(true);
   const [showPropertyName, setShowPropertyName] = useState(true);
@@ -63,7 +67,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       lat /= path.getLength();
       lng /= path.getLength();
       
-      // Create or update label
+      // Create or update label with mobile-optimized styling
       if (labelsRef.current[lot.id]) {
         labelsRef.current[lot.id].setPosition({ lat, lng });
       } else {
@@ -73,7 +77,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
           label: {
             text: lot.name,
             color: '#ffffff',
-            fontSize: '12px',
+            fontSize: isMobile ? '14px' : '12px', // Larger text on mobile
             fontWeight: '700'
           },
           icon: {
@@ -99,7 +103,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       }
     });
     
-  }, [isMapReady, mapInstance, lots, polygons, showLabels, onLotSelect]);
+  }, [isMapReady, mapInstance, lots, polygons, showLabels, onLotSelect, isMobile]);
   
   // Create or update property name label
   useEffect(() => {
@@ -120,7 +124,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
         label: {
           text: SKYRANCH_NAME,
           color: '#ffffff',
-          fontSize: '16px',
+          fontSize: isMobile ? '18px' : '16px', // Larger text on mobile
           fontWeight: 'bold'
         },
         icon: {
@@ -132,7 +136,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       propertyLabelRef.current.setMap(mapInstance);
     }
     
-  }, [isMapReady, mapInstance, showPropertyName]);
+  }, [isMapReady, mapInstance, showPropertyName, isMobile]);
   
   // Cleanup labels on unmount
   useEffect(() => {
@@ -148,7 +152,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
   }, []);
 
   return (
-    <div className="relative w-full h-[48rem] rounded-lg overflow-hidden bg-gray-100">
+    <div className="relative w-full rounded-lg overflow-hidden bg-gray-100" style={{ height: getMapHeight() }}>
       {/* Loading overlay */}
       {!isMapReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
@@ -163,30 +167,54 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
       
-      {/* Controls overlay */}
+      {/* Controls overlay - Desktop vs Mobile */}
       {isMapReady && (
         <>
-          <SimplifiedPolygonControls
-            lots={lots}
-            selectedLotId={selectedLotId}
-            isDrawing={isDrawing}
-            polygons={polygons.map(p => ({ 
-              lotId: p.lotId, 
-              color: p.color,
-              areaHectares: p.areaHectares 
-            }))}
-            onStartDrawing={startDrawing}
-            onStopDrawing={stopDrawing}
-            onDeletePolygon={deletePolygon}
-            getLotColor={getLotColor}
-          />
-          
-          <MapLotLabelsControl
-            showLabels={showLabels}
-            onToggleLabels={setShowLabels}
-            showPropertyName={showPropertyName}
-            onTogglePropertyName={setShowPropertyName}
-          />
+          {isMobile ? (
+            <MobileControlPanel
+              lots={lots}
+              selectedLotId={selectedLotId}
+              isDrawing={isDrawing}
+              polygons={polygons.map(p => ({ 
+                lotId: p.lotId, 
+                color: p.color,
+                areaHectares: p.areaHectares 
+              }))}
+              onStartDrawing={startDrawing}
+              onStopDrawing={stopDrawing}
+              onDeletePolygon={deletePolygon}
+              getLotColor={getLotColor}
+              onLotSelect={onLotSelect}
+              showLabels={showLabels}
+              onToggleLabels={setShowLabels}
+              showPropertyName={showPropertyName}
+              onTogglePropertyName={setShowPropertyName}
+            />
+          ) : (
+            <>
+              <SimplifiedPolygonControls
+                lots={lots}
+                selectedLotId={selectedLotId}
+                isDrawing={isDrawing}
+                polygons={polygons.map(p => ({ 
+                  lotId: p.lotId, 
+                  color: p.color,
+                  areaHectares: p.areaHectares 
+                }))}
+                onStartDrawing={startDrawing}
+                onStopDrawing={stopDrawing}
+                onDeletePolygon={deletePolygon}
+                getLotColor={getLotColor}
+              />
+              
+              <MapLotLabelsControl
+                showLabels={showLabels}
+                onToggleLabels={setShowLabels}
+                showPropertyName={showPropertyName}
+                onTogglePropertyName={setShowPropertyName}
+              />
+            </>
+          )}
         </>
       )}
     </div>
