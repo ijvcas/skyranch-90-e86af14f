@@ -9,11 +9,10 @@ import { toast } from 'sonner';
 
 interface LotFormProps {
   onClose: () => void;
-  onSuccess?: () => void;
   lot?: any;
 }
 
-const LotForm = ({ onClose, onSuccess, lot }: LotFormProps) => {
+const LotForm = ({ onClose, lot }: LotFormProps) => {
   const { addLot, updateLot } = useLotStore();
   const isEditing = !!lot;
 
@@ -52,7 +51,6 @@ const LotForm = ({ onClose, onSuccess, lot }: LotFormProps) => {
 
       if (success) {
         toast.success(isEditing ? 'Lote actualizado exitosamente' : 'Lote creado exitosamente');
-        if (onSuccess) onSuccess();
         onClose();
       } else {
         toast.error('Error al guardar el lote');

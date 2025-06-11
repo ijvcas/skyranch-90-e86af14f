@@ -12,10 +12,10 @@ import AnimalAssignmentForm from './AnimalAssignmentForm';
 
 interface LotDetailProps {
   lot: Lot;
-  onClose: () => void;
+  onBack: () => void;
 }
 
-const LotDetail = ({ lot, onClose }: LotDetailProps) => {
+const LotDetail = ({ lot, onBack }: LotDetailProps) => {
   const { loadAssignments, assignments, removeAnimal } = useLotStore();
   const { animals, loadAnimals } = useAnimalStore();
   const [showEditForm, setShowEditForm] = useState(false);
@@ -63,7 +63,7 @@ const LotDetail = ({ lot, onClose }: LotDetailProps) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={onBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver
           </Button>
@@ -105,14 +105,7 @@ const LotDetail = ({ lot, onClose }: LotDetailProps) => {
               <DialogHeader>
                 <DialogTitle>Editar Lote</DialogTitle>
               </DialogHeader>
-              <LotForm 
-                lot={lot} 
-                onClose={() => setShowEditForm(false)}
-                onSuccess={() => {
-                  setShowEditForm(false);
-                  // Trigger a reload of lot data if needed
-                }}
-              />
+              <LotForm lot={lot} onClose={() => setShowEditForm(false)} />
             </DialogContent>
           </Dialog>
         </div>
@@ -148,7 +141,7 @@ const LotDetail = ({ lot, onClose }: LotDetailProps) => {
               {lot.sizeHectares && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Tamaño</span>
-                  <span className="text-sm">{lot.sizeHectares.toFixed(2)} hectáreas</span>
+                  <span className="text-sm">{lot.sizeHectares} hectáreas</span>
                 </div>
               )}
               

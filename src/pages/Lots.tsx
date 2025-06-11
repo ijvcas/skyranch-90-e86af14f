@@ -103,9 +103,6 @@ const Lots = () => {
     }
   }, [activeTab]);
 
-  // Get the selected lot object
-  const selectedLot = selectedLotId ? lots.find(l => l.id === selectedLotId) : null;
-
   return (
     <div className="container mx-auto py-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
@@ -144,9 +141,9 @@ const Lots = () => {
         </TabsContent>
         
         <TabsContent value="detail">
-          {selectedLot && (
+          {selectedLotId && (
             <LotDetail 
-              lot={selectedLot}
+              lotId={selectedLotId}
               onClose={() => {
                 setActiveTab('overview');
                 setSelectedLotId(null);
@@ -162,10 +159,7 @@ const Lots = () => {
           <DialogHeader>
             <DialogTitle>Crear Nuevo Lote</DialogTitle>
           </DialogHeader>
-          <LotForm 
-            onClose={() => setShowCreateForm(false)}
-            onSuccess={handleFormSubmit} 
-          />
+          <LotForm onSubmit={handleFormSubmit} />
         </DialogContent>
       </Dialog>
       

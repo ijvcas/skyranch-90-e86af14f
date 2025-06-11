@@ -15,10 +15,6 @@ interface LotStatisticsProps {
 }
 
 const LotStatistics = ({ lots, polygonData = [] }: LotStatisticsProps) => {
-  // Console log for debugging mobile deployment
-  console.log('LotStatistics component loaded - Mobile deployment check:', new Date().toISOString());
-  console.log('Build version: v2.0 - Fixed mobile issues');
-  
   const totalAnimals = lots.reduce((sum, lot) => sum + (lot.currentAnimals || 0), 0);
   const totalCapacity = lots.reduce((sum, lot) => sum + (lot.capacity || 0), 0);
   const activeLots = lots.filter(l => l.status === 'active').length;
@@ -28,8 +24,7 @@ const LotStatistics = ({ lots, polygonData = [] }: LotStatisticsProps) => {
     if (areaHectares < 0.01) {
       return `${(areaHectares * 10000).toFixed(0)} m²`;
     }
-    // Fixed: Always use 2 decimals for consistency
-    return `${areaHectares.toFixed(2)} ha`;
+    return `${areaHectares.toFixed(1)} ha`;
   };
 
   return (

@@ -10,46 +10,6 @@ export interface LotPolygon {
   updated_at: string;
 }
 
-// Type guard to validate coordinate objects
-const isValidCoordinate = (coord: any): coord is { lat: number; lng: number } => {
-  return coord && 
-    typeof coord === 'object' && 
-    typeof coord.lat === 'number' && 
-    typeof coord.lng === 'number' &&
-    !isNaN(coord.lat) && 
-    !isNaN(coord.lng);
-};
-
-// Safe coordinate conversion with type validation
-const parseCoordinates = (rawCoordinates: any): { lat: number; lng: number }[] => {
-  try {
-    let coordinates: any = rawCoordinates;
-    
-    // Handle string JSON
-    if (typeof coordinates === 'string') {
-      coordinates = JSON.parse(coordinates);
-    }
-    
-    // Ensure it's an array
-    if (!Array.isArray(coordinates)) {
-      console.error('Coordinates is not an array:', typeof coordinates);
-      return [];
-    }
-    
-    // Filter and validate each coordinate
-    const validCoordinates = coordinates.filter(isValidCoordinate);
-    
-    if (validCoordinates.length !== coordinates.length) {
-      console.warn(`Filtered out ${coordinates.length - validCoordinates.length} invalid coordinates`);
-    }
-    
-    return validCoordinates;
-  } catch (error) {
-    console.error('Error parsing coordinates:', error);
-    return [];
-  }
-};
-
 export const saveLotPolygon = async (
   lotId: string, 
   coordinates: { lat: number; lng: number }[], 
@@ -57,12 +17,6 @@ export const saveLotPolygon = async (
 ): Promise<boolean> => {
   try {
     console.log('Saving polygon to database for lot:', lotId, 'with area:', areaHectares);
-    
-    // Validate coordinates before saving
-    if (!Array.isArray(coordinates) || coordinates.length < 3) {
-      console.error('Invalid coordinates for polygon save:', coordinates);
-      return false;
-    }
     
     // First, delete any existing polygon for this lot
     await deleteLotPolygon(lotId);
@@ -72,7 +26,7 @@ export const saveLotPolygon = async (
       .insert({
         lot_id: lotId,
         coordinates: coordinates,
-        area_hectares: areaHectares ? Number(Number(areaHectares).toFixed(4)) : null
+        area_hectares: areaHectares
       });
 
     if (error) {
@@ -82,16 +36,15 @@ export const saveLotPolygon = async (
 
     // Update the lot's size_hectares to match the polygon area
     if (areaHectares) {
-      const formattedArea = Number(Number(areaHectares).toFixed(4));
       const { error: lotUpdateError } = await supabase
         .from('lots')
-        .update({ size_hectares: formattedArea })
+        .update({ size_hectares: areaHectares })
         .eq('id', lotId);
 
       if (lotUpdateError) {
         console.error('Error updating lot size:', lotUpdateError);
       } else {
-        console.log('Updated lot size_hectares to:', formattedArea);
+        console.log('Updated lot size_hectares to:', areaHectares);
       }
     }
 
@@ -119,19 +72,34 @@ export const getLotPolygons = async (): Promise<LotPolygon[]> => {
 
     console.log('Raw polygon data from database:', data);
 
-    // Process and validate polygon data
+    // Fix type conversion issue - ensure coordinates are properly parsed
     const polygons: LotPolygon[] = (data || []).map(item => {
-      const coordinates = parseCoordinates(item.coordinates);
+      let coordinates: { lat: number; lng: number }[] = [];
       
+      try {
+        // Handle different coordinate data formats
+        if (typeof item.coordinates === 'string') {
+          coordinates = JSON.parse(item.coordinates);
+        } else if (Array.isArray(item.coordinates)) {
+          coordinates = item.coordinates;
+        } else if (typeof item.coordinates === 'object') {
+          // If it's already an object, ensure it has the right structure
+          coordinates = Array.isArray(item.coordinates) ? item.coordinates : [];
+        }
+      } catch (e) {
+        console.error('Error parsing coordinates for polygon:', item.id, e);
+        coordinates = [];
+      }
+
       return {
         id: item.id,
         lot_id: item.lot_id,
         coordinates: coordinates,
-        area_hectares: item.area_hectares ? Number(Number(item.area_hectares).toFixed(4)) : undefined,
+        area_hectares: item.area_hectares,
         created_at: item.created_at,
         updated_at: item.updated_at
       };
-    }).filter(polygon => polygon.coordinates.length >= 3); // Only include valid polygons
+    });
 
     console.log('Processed polygons:', polygons.length);
     return polygons;
@@ -200,19 +168,16 @@ export const syncPolygonAreasWithLots = async (): Promise<boolean> => {
     
     for (const polygon of polygons) {
       if (polygon.lot_id && polygon.area_hectares) {
-        // Format area to 4 decimal places for consistency
-        const formattedArea = Number(Number(polygon.area_hectares).toFixed(4));
-        
         // Update each lot's size_hectares to match its polygon area
         const { error } = await supabase
           .from('lots')
-          .update({ size_hectares: formattedArea })
+          .update({ size_hectares: polygon.area_hectares })
           .eq('id', polygon.lot_id);
         
         if (error) {
           console.error(`Error updating size for lot ${polygon.lot_id}:`, error);
         } else {
-          console.log(`Synchronized lot ${polygon.lot_id} with area ${formattedArea} ha`);
+          console.log(`Synchronized lot ${polygon.lot_id} with area ${polygon.area_hectares} ha`);
         }
       }
     }
@@ -246,19 +211,26 @@ export const getLotPolygonByLotId = async (lotId: string): Promise<LotPolygon | 
       return null;
     }
 
-    // Parse coordinates safely
-    const coordinates = parseCoordinates(data.coordinates);
+    // Handle coordinate parsing
+    let coordinates: { lat: number; lng: number }[] = [];
     
-    if (coordinates.length < 3) {
-      console.error('Invalid polygon coordinates for lot:', lotId);
-      return null;
+    try {
+      if (typeof data.coordinates === 'string') {
+        coordinates = JSON.parse(data.coordinates);
+      } else if (Array.isArray(data.coordinates)) {
+        coordinates = data.coordinates;
+      } else if (typeof data.coordinates === 'object') {
+        coordinates = Array.isArray(data.coordinates) ? data.coordinates : [];
+      }
+    } catch (e) {
+      console.error('Error parsing coordinates:', e);
     }
 
     return {
       id: data.id,
       lot_id: data.lot_id,
       coordinates: coordinates,
-      area_hectares: data.area_hectares ? Number(Number(data.area_hectares).toFixed(4)) : undefined,
+      area_hectares: data.area_hectares,
       created_at: data.created_at,
       updated_at: data.updated_at
     };
