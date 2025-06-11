@@ -1,6 +1,6 @@
 
 import React from 'react';
-import ElegantGoogleMap from './ElegantGoogleMap';
+import NewGoogleMapWithDrawing from './NewGoogleMapWithDrawing';
 import { type Lot } from '@/stores/lotStore';
 
 interface LotMapViewProps {
@@ -16,17 +16,17 @@ const LotMapView = ({ lots, onLotSelect }: LotMapViewProps) => {
           Mapa de Lotes con Control de Polígonos
         </h2>
         <p className="text-gray-600">
-          Dibuja polígonos para cada lote con colores dinámicos según su estado
+          Dibuja polígonos para cada lote usando las herramientas de Google Maps
         </p>
       </div>
       
-      <ElegantGoogleMap lots={lots} onLotSelect={onLotSelect} />
+      <NewGoogleMapWithDrawing lots={lots} onLotSelect={onLotSelect} />
       
       <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border">
         <h3 className="font-semibold text-gray-800 mb-2">Instrucciones:</h3>
         <ul className="text-sm text-gray-700 space-y-1">
           <li>• <strong>Selecciona un lote</strong> del dropdown para comenzar</li>
-          <li>• <strong>Haz clic en "Dibujar Polígono"</strong> para activar el modo de dibujo</li>
+          <li>• <strong>Haz clic en "Dibujar Polígono"</strong> para activar las herramientas de Google Maps</li>
           <li>• <strong>Haz clic en el mapa</strong> para crear puntos del polígono</li>
           <li>• <strong>Cierra el polígono</strong> haciendo clic en el primer punto</li>
           <li>• Los colores cambian automáticamente según el estado del lote:</li>
