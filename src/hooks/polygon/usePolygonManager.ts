@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { usePolygonUtils } from './usePolygonUtils';
+import { usePolygonStorage } from './usePolygonStorage';
 
 interface PolygonData {
   lotId: string;
@@ -18,11 +19,12 @@ interface UsePolygonManagerOptions {
   savePolygonsToStorage: (polygons: PolygonData[]) => void;
 }
 
-export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygonsToStorage }: UsePolygonManagerOptions) => {
+export const usePolygonManager = ({ lots, onLotSelect, getLotColor }: UsePolygonManagerOptions) => {
   const [polygons, setPolygons] = useState<PolygonData[]>([]);
   const { calculatePolygonArea } = usePolygonUtils();
+  const { savePolygonsToStorage, deletePolygonFromStorage } = usePolygonStorage();
 
-  const handlePolygonComplete = useCallback((polygon: google.maps.Polygon, selectedLotId: string) => {
+  const handlePolygonComplete = useCallback(async (polygon: google.maps.Polygon, selectedLotId: string) => {
     console.log('handlePolygonComplete called with selectedLotId:', selectedLotId);
     
     if (!selectedLotId) {
@@ -92,32 +94,44 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
 
     console.log('Adding new polygon data:', polygonData);
 
-    // Update state and save
+    // Save to database immediately
+    await savePolygonsToStorage([polygonData]);
+
+    // Update state
     setPolygons(prev => {
       const updated = [...prev, polygonData];
       console.log('Updated polygons array:', updated);
-      savePolygonsToStorage(updated);
       return updated;
     });
   }, [lots, onLotSelect, savePolygonsToStorage, calculatePolygonArea, getLotColor]);
 
-  const deletePolygon = useCallback((lotId: string) => {
+  const deletePolygon = useCallback(async (lotId: string) => {
     console.log('Deleting polygon for lot:', lotId);
+    
+    // Delete from database
+    await deletePolygonFromStorage(lotId);
+    
+    // Update local state
     setPolygons(prev => {
       const polygonData = prev.find(p => p.lotId === lotId);
       if (polygonData) {
         polygonData.polygon.setMap(null);
       }
-      const updated = prev.filter(p => p.lotId !== lotId);
-      savePolygonsToStorage(updated);
-      return updated;
+      return prev.filter(p => p.lotId !== lotId);
     });
-  }, [savePolygonsToStorage]);
+  }, [deletePolygonFromStorage]);
 
-  const loadSavedPolygons = useCallback((map: google.maps.Map, savedData: any[]) => {
+  const loadSavedPolygons = useCallback(async (map: google.maps.Map, savedData?: any[]) => {
     const loadedPolygons: PolygonData[] = [];
 
-    savedData.forEach((item: any) => {
+    // If no savedData provided, load from database via storage hook
+    let dataToLoad = savedData;
+    if (!dataToLoad) {
+      const { loadPolygonsFromStorage } = usePolygonStorage();
+      dataToLoad = await loadPolygonsFromStorage();
+    }
+
+    dataToLoad.forEach((item: any) => {
       const lot = lots.find(l => l.id === item.lotId);
       if (lot && item.coordinates) {
         // Use current lot status color
@@ -151,7 +165,7 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
       }
     });
 
-    console.log('Loaded polygons:', loadedPolygons);
+    console.log('Loaded polygons from database:', loadedPolygons);
     setPolygons(loadedPolygons);
   }, [lots, getLotColor, onLotSelect, calculatePolygonArea]);
 

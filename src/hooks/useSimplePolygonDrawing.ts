@@ -30,10 +30,10 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
     }
   }, []);
 
-  // Storage hooks
-  const { savePolygonsToStorage, loadPolygonsFromStorage } = usePolygonStorage();
+  // Storage hooks - updated to use database
+  const { loadPolygonsFromStorage } = usePolygonStorage();
 
-  // Polygon manager
+  // Polygon manager - remove savePolygonsToStorage param since it's handled internally now
   const {
     polygons,
     handlePolygonComplete,
@@ -42,8 +42,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
   } = usePolygonManager({
     lots,
     onLotSelect,
-    getLotColor,
-    savePolygonsToStorage
+    getLotColor
   });
 
   // Drawing manager (updated to not use color type)
@@ -82,19 +81,20 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
         mapInstance.current = map;
 
         // Wait for map to be fully loaded
-        google.maps.event.addListenerOnce(map, 'idle', () => {
+        google.maps.event.addListenerOnce(map, 'idle', async () => {
           console.log('Map is ready, initializing drawing manager...');
           
           initializeDrawingManager(map);
           setIsMapReady(true);
           
-          // Load saved polygons
-          const savedData = loadPolygonsFromStorage();
+          // Load saved polygons from database
+          console.log('Loading polygons from database...');
+          const savedData = await loadPolygonsFromStorage();
           if (savedData.length > 0) {
             loadSavedPolygons(map, savedData);
           }
           
-          console.log('Drawing system initialized successfully');
+          console.log('Drawing system initialized successfully with database storage');
         });
 
       } catch (error) {

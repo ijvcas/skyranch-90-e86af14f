@@ -1,10 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Lot, LotAssignment, LotRotation } from '@/stores/lotStore';
 
 export const getAllLots = async (): Promise<Lot[]> => {
   try {
-    console.log('🔍 Fetching all lots...');
+    console.log('🔍 Fetching all lots (shared across all users)...');
     const { data, error } = await supabase
       .from('lots')
       .select(`
@@ -22,7 +21,7 @@ export const getAllLots = async (): Promise<Lot[]> => {
       return [];
     }
 
-    console.log('✅ Successfully fetched lots:', data?.length || 0);
+    console.log('✅ Successfully fetched shared lots:', data?.length || 0);
     
     // Transform data and count current animals
     return (data || []).map(lot => ({
@@ -81,17 +80,12 @@ export const getLot = async (id: string): Promise<Lot | null> => {
 
 export const addLot = async (lot: Omit<Lot, 'id'>): Promise<boolean> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('Creating shared lot (visible to all users):', lot.name);
     
-    if (!user) {
-      console.error('No authenticated user');
-      return false;
-    }
-
+    // Remove user_id requirement - lots are now shared across all users
     const { error } = await supabase
       .from('lots')
       .insert({
-        user_id: user.id,
         name: lot.name,
         description: lot.description,
         size_hectares: lot.sizeHectares,
@@ -105,11 +99,11 @@ export const addLot = async (lot: Omit<Lot, 'id'>): Promise<boolean> => {
       });
 
     if (error) {
-      console.error('Error adding lot:', error);
+      console.error('Error adding shared lot:', error);
       return false;
     }
 
-    console.log('✅ Lot added successfully');
+    console.log('✅ Shared lot added successfully');
     return true;
   } catch (error) {
     console.error('Unexpected error in addLot:', error);
