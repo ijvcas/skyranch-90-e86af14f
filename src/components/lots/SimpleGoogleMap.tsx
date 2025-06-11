@@ -15,7 +15,7 @@ const SimpleGoogleMap = ({ lots, onLotSelect }: SimpleGoogleMapProps) => {
   const { selectedLotId, isDrawing, setSelectedLotId, startDrawing, cancelDrawing, finishDrawing } = useMapDrawing();
   const { lotPolygons, addPolygon, deletePolygon, loadSavedPolygons } = useMapPolygons({ lots, onLotSelect });
   
-  const { mapRef, drawingManager, resetView } = useGoogleMap({
+  const { mapRef, drawingManager } = useGoogleMap({
     onMapReady: (map, drawing) => {
       // Handle polygon completion
       drawing.addListener('polygoncomplete', (polygon: google.maps.Polygon) => {
@@ -42,7 +42,7 @@ const SimpleGoogleMap = ({ lots, onLotSelect }: SimpleGoogleMapProps) => {
   };
 
   return (
-    <div className="relative w-full h-96 rounded-lg overflow-hidden">
+    <div className="relative w-full h-[48rem] rounded-lg overflow-hidden">
       <div ref={mapRef} className="w-full h-full z-10" />
       
       <MapDrawingControls
@@ -52,7 +52,6 @@ const SimpleGoogleMap = ({ lots, onLotSelect }: SimpleGoogleMapProps) => {
         lotPolygons={lotPolygons}
         onStartDrawing={handleStartDrawing}
         onDeletePolygon={deletePolygon}
-        onResetView={resetView}
         onCancelDrawing={handleCancelDrawing}
         onLotSelect={setSelectedLotId}
       />

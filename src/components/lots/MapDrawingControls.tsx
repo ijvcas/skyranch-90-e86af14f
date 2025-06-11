@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Square, Move } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
@@ -17,7 +16,6 @@ interface MapDrawingControlsProps {
   lotPolygons: Array<{ lotId: string; polygon: google.maps.Polygon; color: string }>;
   onStartDrawing: (lotId: string) => void;
   onDeletePolygon: (lotId: string) => void;
-  onResetView: () => void;
   onCancelDrawing: () => void;
   onLotSelect: (lotId: string) => void;
 }
@@ -29,7 +27,6 @@ const MapDrawingControls = ({
   lotPolygons,
   onStartDrawing,
   onDeletePolygon,
-  onResetView,
   onCancelDrawing,
   onLotSelect
 }: MapDrawingControlsProps) => {
@@ -84,17 +81,6 @@ const MapDrawingControls = ({
             onDeletePolygon={onDeletePolygon}
             onCancelDrawing={onCancelDrawing}
           />
-
-          <div className="pt-2 border-t">
-            <Button
-              onClick={onResetView}
-              variant="outline"
-              size="sm"
-              className="w-full"
-            >
-              Centrar en SkyRanch
-            </Button>
-          </div>
         </CardContent>
       </Card>
 

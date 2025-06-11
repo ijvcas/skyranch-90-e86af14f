@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBo7e7hBrnCCtJDSaftXEFHP4qi-KiKXzI';
-const SKYRANCH_CENTER = { lat: 40.32311111, lng: -4.47409722 };
+const SKYRANCH_CENTER = { lat: 40.31764444, lng: -4.47409722 };
 
 interface UseGoogleMapOptions {
   onMapReady?: (map: google.maps.Map, drawingManager: google.maps.drawing.DrawingManager) => void;
@@ -70,15 +70,9 @@ export const useGoogleMap = ({ onMapReady }: UseGoogleMapOptions = {}) => {
     initMap();
   }, [onMapReady]);
 
-  const resetView = () => {
-    mapInstance.current?.setCenter(SKYRANCH_CENTER);
-    mapInstance.current?.setZoom(16);
-  };
-
   return {
     mapRef,
     mapInstance: mapInstance.current,
-    drawingManager: drawingManager.current,
-    resetView
+    drawingManager: drawingManager.current
   };
 };
