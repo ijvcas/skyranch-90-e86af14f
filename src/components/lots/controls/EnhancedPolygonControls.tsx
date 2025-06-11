@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Square, Edit, Trash2, Circle, X, ChevronDown, ChevronUp, Move, Minimize2, BarChart3 } from 'lucide-react';
+import { Square, Edit, Trash2, Circle, X, ChevronDown, ChevronUp, Minimize2, BarChart3 } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
 import { usePolygonUtils } from '@/hooks/polygon/usePolygonUtils';
 
@@ -35,18 +35,13 @@ const EnhancedPolygonControls = ({
   onDeletePolygon,
   getLotColor
 }: EnhancedPolygonControlsProps) => {
-  const [internalSelectedLotId, setInternalSelectedLotId] = useState<string>(selectedLotId || '');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const { formatArea } = usePolygonUtils();
   
-  const selectedLot = lots.find(l => l.id === internalSelectedLotId);
-  const polygonData = polygons.find(p => p.lotId === internalSelectedLotId);
+  const selectedLot = lots.find(l => l.id === selectedLotId);
+  const polygonData = polygons.find(p => p.lotId === selectedLotId);
   const hasPolygon = !!polygonData;
-
-  const handleLotSelection = (lotId: string) => {
-    setInternalSelectedLotId(lotId);
-  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -68,7 +63,7 @@ const EnhancedPolygonControls = ({
 
   if (isMinimized) {
     return (
-      <div className="absolute top-4 left-4 z-30">
+      <div className="absolute bottom-4 left-4 z-50">
         <Button
           onClick={() => setIsMinimized(false)}
           variant="outline"
@@ -83,7 +78,7 @@ const EnhancedPolygonControls = ({
   }
 
   return (
-    <Card className="absolute top-4 left-4 w-80 z-30 shadow-lg bg-white/95">
+    <Card className="absolute bottom-4 left-4 w-80 z-50 shadow-lg bg-white/95 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center justify-between">
           <div className="flex items-center">
@@ -116,7 +111,7 @@ const EnhancedPolygonControls = ({
           {/* Lot Selector */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Seleccionar Lote</label>
-            <Select value={internalSelectedLotId} onValueChange={handleLotSelection}>
+            <Select value={selectedLotId} onValueChange={onStartDrawing}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un lote" />
               </SelectTrigger>
@@ -176,8 +171,8 @@ const EnhancedPolygonControls = ({
             {!isDrawing ? (
               <div className="space-y-2">
                 <Button
-                  onClick={() => internalSelectedLotId && onStartDrawing(internalSelectedLotId)}
-                  disabled={!internalSelectedLotId}
+                  onClick={() => selectedLotId && onStartDrawing(selectedLotId)}
+                  disabled={!selectedLotId}
                   className={`w-full ${
                     hasPolygon 
                       ? 'bg-amber-500 hover:bg-amber-600' 
@@ -190,7 +185,7 @@ const EnhancedPolygonControls = ({
                 
                 {hasPolygon && (
                   <Button
-                    onClick={() => onDeletePolygon(internalSelectedLotId)}
+                    onClick={() => onDeletePolygon(selectedLotId)}
                     variant="destructive"
                     className="w-full"
                   >

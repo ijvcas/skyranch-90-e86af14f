@@ -12,6 +12,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
   const [selectedLotId, setSelectedLotId] = useState<string>('');
   const [isDrawing, setIsDrawing] = useState(false);
   const drawingManager = useRef<google.maps.drawing.DrawingManager | null>(null);
+  const polygonCompleteListener = useRef<google.maps.MapsEventListener | null>(null);
 
   const initializeDrawingManager = useCallback((map: google.maps.Map) => {
     console.log('Creating drawing manager...');
@@ -30,21 +31,20 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     drawing.setMap(map);
     drawingManager.current = drawing;
 
-    // Handle polygon completion
-    google.maps.event.addListener(drawing, 'polygoncomplete', (polygon: google.maps.Polygon) => {
-      console.log('Polygon completed for lot:', selectedLotId);
-      onPolygonComplete(polygon, selectedLotId);
-      stopDrawing();
-    });
-
     console.log('Drawing manager initialized');
-  }, [selectedLotId, onPolygonComplete]);
+  }, []);
 
   const startDrawing = useCallback((lotId: string) => {
-    if (!drawingManager.current || !lotId) return;
+    if (!drawingManager.current || !lotId) {
+      console.log('Cannot start drawing - missing requirements');
+      return;
+    }
 
     const lot = lots.find(l => l.id === lotId);
-    if (!lot) return;
+    if (!lot) {
+      console.log('Lot not found:', lotId);
+      return;
+    }
 
     console.log('Starting drawing for lot:', lot.name, 'with ID:', lotId);
     
@@ -53,6 +53,22 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
 
     const color = getLotColor(lot);
     
+    // Remove existing listener
+    if (polygonCompleteListener.current) {
+      google.maps.event.removeListener(polygonCompleteListener.current);
+    }
+
+    // Add new polygon complete listener
+    polygonCompleteListener.current = google.maps.event.addListener(
+      drawingManager.current, 
+      'polygoncomplete', 
+      (polygon: google.maps.Polygon) => {
+        console.log('Polygon completed for lot:', lotId);
+        onPolygonComplete(polygon, lotId);
+        stopDrawing();
+      }
+    );
+
     // Update polygon options
     drawingManager.current.setOptions({
       polygonOptions: {
@@ -67,15 +83,34 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
 
     // Enable polygon drawing mode
     drawingManager.current.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    
+    // Add crosshair cursor
+    const mapDiv = (drawingManager.current.getMap() as google.maps.Map)?.getDiv();
+    if (mapDiv) {
+      mapDiv.style.cursor = 'crosshair';
+    }
+    
     console.log('Drawing mode activated for lot:', lotId);
-  }, [lots, getLotColor]);
+  }, [lots, getLotColor, onPolygonComplete]);
 
   const stopDrawing = useCallback(() => {
     if (drawingManager.current) {
       drawingManager.current.setDrawingMode(null);
+      
+      // Remove crosshair cursor
+      const mapDiv = (drawingManager.current.getMap() as google.maps.Map)?.getDiv();
+      if (mapDiv) {
+        mapDiv.style.cursor = '';
+      }
     }
+    
+    // Remove polygon complete listener
+    if (polygonCompleteListener.current) {
+      google.maps.event.removeListener(polygonCompleteListener.current);
+      polygonCompleteListener.current = null;
+    }
+    
     setIsDrawing(false);
-    setSelectedLotId('');
     console.log('Drawing mode deactivated');
   }, []);
 

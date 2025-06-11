@@ -40,7 +40,7 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
 
     console.log('Processing polygon for lot:', lot.name);
 
-    // Get coordinates first
+    // Get coordinates
     const path = polygon.getPath();
     const coordinates = path.getArray().map(point => ({
       lat: point.lat(),
@@ -128,7 +128,7 @@ export const usePolygonManager = ({ lots, onLotSelect, getLotColor, savePolygons
         polygon.setMap(map);
         polygon.addListener('click', () => onLotSelect(lot.id));
         
-        // Calculate area if not stored
+        // Calculate area if not stored or recalculate for accuracy
         const areaHectares = item.areaHectares || calculatePolygonArea(polygon);
         
         loadedPolygons.push({
