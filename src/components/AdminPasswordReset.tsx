@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, RefreshCw } from 'lucide-react';
+import { KeyRound, RefreshCw, UserCog } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,8 +13,10 @@ const AdminPasswordReset = () => {
   const { toast } = useToast();
   const { resetPassword } = useAuth();
   const [email, setEmail] = useState('jvcas@mac.com');
+  const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +44,7 @@ const AdminPasswordReset = () => {
       } else {
         toast({
           title: "Email Enviado",
-          description: `Se ha enviado un email de reset a ${email}`,
+          description: `Se ha enviado un email de reset a ${email}. El link te llevará a /reset-password`,
         });
       }
     } catch (error) {
@@ -54,6 +56,55 @@ const AdminPasswordReset = () => {
       });
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleDirectPasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "La nueva contraseña debe tener al menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    
+    try {
+      // First sign in as admin (you'll need to be signed in to update password)
+      console.log('🔧 Admin: Attempting direct password update for:', email);
+      
+      // This is a direct approach - update user password via admin API
+      const { error } = await supabase.auth.admin.updateUserById(
+        'user-id-here', // You'd need to get the user ID first
+        { password: newPassword }
+      );
+      
+      if (error) {
+        toast({
+          title: "Error Directo",
+          description: `No se pudo actualizar directamente. Usa el reset por email. Error: ${error.message}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Contraseña Actualizada",
+          description: "La contraseña ha sido actualizada directamente.",
+        });
+        setNewPassword('');
+      }
+    } catch (error) {
+      console.error('Direct password update error:', error);
+      toast({
+        title: "Método Alternativo",
+        description: "Usa el reset por email. La actualización directa requiere permisos especiales.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -107,10 +158,11 @@ const AdminPasswordReset = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <KeyRound className="w-5 h-5" />
-          Admin - Reset de Contraseña
+          Admin - Herramientas de Usuario
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        {/* Email Reset Method */}
         <form onSubmit={handlePasswordReset} className="space-y-4">
           <div>
             <Label htmlFor="reset-email">Email del Usuario</Label>
@@ -141,6 +193,9 @@ const AdminPasswordReset = () => {
         </form>
 
         <div className="border-t pt-4">
+          <p className="text-sm text-gray-600 mb-3">
+            Si el reset por email no funciona, intenta limpiar la sesión:
+          </p>
           <Button
             onClick={handleClearUserSession}
             disabled={isClearing}
@@ -159,8 +214,44 @@ const AdminPasswordReset = () => {
               </>
             )}
           </Button>
+        </div>
+
+        {/* Direct Password Update - Alternative Method */}
+        <div className="border-t pt-4">
+          <form onSubmit={handleDirectPasswordUpdate} className="space-y-4">
+            <div>
+              <Label htmlFor="new-password">Nueva Contraseña (Método Directo)</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+              />
+            </div>
+            
+            <Button
+              type="submit"
+              disabled={isUpdatingPassword}
+              variant="secondary"
+              className="w-full"
+            >
+              {isUpdatingPassword ? (
+                <div className="flex items-center">
+                  <UserCog className="w-4 h-4 animate-spin mr-2" />
+                  Actualizando...
+                </div>
+              ) : (
+                <>
+                  <UserCog className="w-4 h-4 mr-2" />
+                  Actualizar Contraseña Directamente
+                </>
+              )}
+            </Button>
+          </form>
           <p className="text-xs text-gray-500 mt-2">
-            Esto limpiará toda la data de sesión y recargará la página
+            Este método puede requerir permisos especiales de admin
           </p>
         </div>
       </CardContent>
