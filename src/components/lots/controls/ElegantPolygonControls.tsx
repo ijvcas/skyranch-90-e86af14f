@@ -359,5 +359,3 @@ const ElegantPolygonControls = ({
 };
 
 export default ElegantPolygonControls;
-
-</edits_to_apply>
