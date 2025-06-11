@@ -2,6 +2,7 @@
 import { useState } from 'react';
 
 const API_KEY_STORAGE_KEY = 'skyranch_google_maps_api_key';
+const FORCE_API_KEY = 'AIzaSyBo7e7hBrnCCtJDSaftXEFHP4qi-KiKXzI'; // Direct override
 
 const safeLocalStorage = {
   getItem: (key: string): string | null => {
@@ -24,15 +25,35 @@ const safeLocalStorage = {
 };
 
 export const useApiKeyStorage = () => {
-  const [apiKey, setApiKeyState] = useState<string>(() => 
-    safeLocalStorage.getItem(API_KEY_STORAGE_KEY) || ''
-  );
-  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => 
-    !safeLocalStorage.getItem(API_KEY_STORAGE_KEY)
-  );
+  console.log('🔑 useApiKeyStorage: Initializing with force override');
+  
+  // Force set the API key immediately
+  const [apiKey, setApiKeyState] = useState<string>(() => {
+    console.log('🔑 Getting initial API key...');
+    
+    // First try to use the force key
+    if (FORCE_API_KEY) {
+      console.log('🔑 Using force API key');
+      // Also save it to localStorage for persistence
+      safeLocalStorage.setItem(API_KEY_STORAGE_KEY, FORCE_API_KEY);
+      return FORCE_API_KEY;
+    }
+    
+    // Fallback to stored key
+    const stored = safeLocalStorage.getItem(API_KEY_STORAGE_KEY);
+    console.log('🔑 Stored API key exists:', !!stored);
+    return stored || '';
+  });
+
+  // Never show API key input since we have a force key
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => {
+    const hasKey = !!apiKey || !!FORCE_API_KEY;
+    console.log('🔑 Show API key input:', !hasKey);
+    return !hasKey;
+  });
 
   const setApiKey = (key: string) => {
-    console.log('💾 Saving API key');
+    console.log('💾 Setting API key:', key ? 'provided' : 'empty');
     const trimmedKey = key.trim();
     if (!trimmedKey) {
       console.error('❌ Empty API key provided');
@@ -50,6 +71,8 @@ export const useApiKeyStorage = () => {
     console.error('❌ Failed to save API key to localStorage');
     return false;
   };
+
+  console.log('🔑 useApiKeyStorage state - API Key exists:', !!apiKey, 'Show input:', showApiKeyInput);
 
   return {
     apiKey,

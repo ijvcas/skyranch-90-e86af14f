@@ -53,6 +53,33 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     toggleLabelsVisibility
   } = useGoogleMapsInitialization(lots);
 
+  console.log('🎯 LotSatelliteMap render state:');
+  console.log('  - Show API key input:', showApiKeyInput);
+  console.log('  - Is loading:', isLoading);
+  console.log('  - Error:', error);
+
+  // Force skip API key input since we have a hardcoded key
+  if (showApiKeyInput && !error) {
+    console.log('⚠️ API key input would show, but we have force key - continuing to load');
+  }
+
+  // Only show API key setup if there's an actual error and no loading
+  if (showApiKeyInput && error && !isLoading) {
+    return <ApiKeySetup onApiKeySubmit={setApiKey} />;
+  }
+
+  if (isLoading) {
+    console.log('🔄 Showing loading state');
+    return <MapLoadingState />;
+  }
+
+  if (error) {
+    console.log('❌ Showing error state:', error);
+    return <MapErrorState error={error} />;
+  }
+
+  console.log('✅ Rendering map component');
+
   // Polygon handlers
   const handleStartDrawing = () => {
     if (selectedLot) {
@@ -96,18 +123,6 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
   // Get current color for selected lot
   const currentPolygon = selectedLot ? lotPolygons.find(p => p.lotId === selectedLot.id) : null;
   const currentColor = currentPolygon?.color || '#10b981';
-
-  if (showApiKeyInput) {
-    return <ApiKeySetup onApiKeySubmit={setApiKey} />;
-  }
-
-  if (isLoading) {
-    return <MapLoadingState />;
-  }
-
-  if (error) {
-    return <MapErrorState error={error} />;
-  }
 
   return (
     <div className={`relative w-full h-full ${isFullscreen ? 'bg-black' : ''}`}>
