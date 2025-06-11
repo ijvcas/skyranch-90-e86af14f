@@ -17,12 +17,14 @@ const loadGoogleMapsAPI = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // If already loaded, resolve immediately
     if (isGoogleMapsLoaded && window.google?.maps?.drawing) {
+      console.log('Google Maps API already loaded');
       resolve();
       return;
     }
 
     // If currently loading, add to callback queue
     if (isGoogleMapsLoading) {
+      console.log('Google Maps API is loading, adding to queue');
       loadingCallbacks.push(resolve);
       return;
     }
@@ -30,9 +32,11 @@ const loadGoogleMapsAPI = (): Promise<void> => {
     // Check if script already exists
     const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
     if (existingScript) {
+      console.log('Google Maps script exists, waiting for drawing library...');
       // Wait for the drawing library to be available
       const checkDrawing = () => {
         if (window.google?.maps?.drawing) {
+          console.log('Drawing library is now available');
           isGoogleMapsLoaded = true;
           resolve();
         } else {
@@ -43,14 +47,16 @@ const loadGoogleMapsAPI = (): Promise<void> => {
       return;
     }
 
+    console.log('Loading Google Maps API...');
     isGoogleMapsLoading = true;
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=drawing&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=drawing&callback=initGoogleMaps`;
     script.async = true;
     
     // Create global callback for Google Maps
-    (window as any).initMap = () => {
+    (window as any).initGoogleMaps = () => {
+      console.log('Google Maps API callback executed');
       isGoogleMapsLoaded = true;
       isGoogleMapsLoading = false;
       resolve();
@@ -61,6 +67,7 @@ const loadGoogleMapsAPI = (): Promise<void> => {
     };
 
     script.onerror = () => {
+      console.error('Failed to load Google Maps script');
       isGoogleMapsLoading = false;
       reject(new Error('Failed to load Google Maps API'));
     };
@@ -76,12 +83,16 @@ export const useGoogleMap = ({ onMapReady }: UseGoogleMapOptions = {}) => {
 
   useEffect(() => {
     const initMap = async () => {
-      if (!mapRef.current) return;
+      if (!mapRef.current) {
+        console.log('Map container not ready');
+        return;
+      }
 
       try {
+        console.log('Starting map initialization...');
         await loadGoogleMapsAPI();
         
-        console.log('Google Maps API loaded, initializing map...');
+        console.log('Google Maps API loaded, creating map...');
 
         // Create map
         const map = new google.maps.Map(mapRef.current, {
@@ -106,18 +117,20 @@ export const useGoogleMap = ({ onMapReady }: UseGoogleMapOptions = {}) => {
         mapInstance.current = map;
         console.log('Map created successfully');
 
-        // Wait for map to be fully loaded
-        map.addListener('idle', () => {
+        // Wait for map to be fully loaded before creating drawing manager
+        const onMapIdle = () => {
           if (!drawingManager.current) {
-            console.log('Creating drawing manager...');
+            console.log('Map is idle, creating drawing manager...');
             
-            // Create drawing manager
+            // Create drawing manager with explicit options
             const drawing = new google.maps.drawing.DrawingManager({
               drawingMode: null,
               drawingControl: false,
               polygonOptions: {
                 fillOpacity: 0.3,
+                fillColor: '#FF0000',
                 strokeWeight: 2,
+                strokeColor: '#FF0000',
                 editable: true,
                 draggable: false,
                 clickable: true,
@@ -128,14 +141,30 @@ export const useGoogleMap = ({ onMapReady }: UseGoogleMapOptions = {}) => {
               },
             });
 
+            console.log('Setting drawing manager on map...');
             drawing.setMap(map);
             drawingManager.current = drawing;
+            
+            // Add event listeners to verify drawing manager is working
+            drawing.addListener('drawingmode_changed', () => {
+              console.log('Drawing mode changed to:', drawing.getDrawingMode());
+            });
+
             console.log('Drawing manager created and attached to map');
 
+            // Remove the idle listener to prevent multiple calls
+            google.maps.event.removeListener(idleListener);
+
             // Notify that map is ready
-            onMapReady?.(map, drawing);
+            if (onMapReady) {
+              console.log('Calling onMapReady callback');
+              onMapReady(map, drawing);
+            }
           }
-        });
+        };
+
+        // Add idle listener
+        const idleListener = map.addListener('idle', onMapIdle);
 
       } catch (error) {
         console.error('Error initializing Google Maps:', error);
