@@ -80,9 +80,15 @@ export const getLot = async (id: string): Promise<Lot | null> => {
 
 export const addLot = async (lot: Omit<Lot, 'id'>): Promise<boolean> => {
   try {
-    console.log('Creating shared lot (visible to all users):', lot.name);
+    const { data: { user } } = await supabase.auth.getUser();
     
-    // Remove user_id requirement - lots are now shared across all users
+    if (!user) {
+      console.error('No authenticated user');
+      return false;
+    }
+
+    console.log('Creating lot for user:', user.id);
+    
     const { error } = await supabase
       .from('lots')
       .insert({
@@ -96,14 +102,15 @@ export const addLot = async (lot: Omit<Lot, 'id'>): Promise<boolean> => {
         last_rotation_date: lot.lastRotationDate,
         next_rotation_date: lot.nextRotationDate,
         grass_condition: lot.grassCondition,
+        user_id: user.id, // Required until SQL script is run
       });
 
     if (error) {
-      console.error('Error adding shared lot:', error);
+      console.error('Error adding lot:', error);
       return false;
     }
 
-    console.log('✅ Shared lot added successfully');
+    console.log('✅ Lot added successfully');
     return true;
   } catch (error) {
     console.error('Unexpected error in addLot:', error);
