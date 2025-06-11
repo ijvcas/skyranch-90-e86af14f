@@ -1,6 +1,6 @@
 
 import React from 'react';
-import NewGoogleMapWithDrawing from './NewGoogleMapWithDrawing';
+import CleanGoogleMapWithDrawing from './CleanGoogleMapWithDrawing';
 import { type Lot } from '@/stores/lotStore';
 
 interface LotMapViewProps {
@@ -20,7 +20,7 @@ const LotMapView = ({ lots, onLotSelect }: LotMapViewProps) => {
         </p>
       </div>
       
-      <NewGoogleMapWithDrawing lots={lots} onLotSelect={onLotSelect} />
+      <CleanGoogleMapWithDrawing lots={lots} onLotSelect={onLotSelect} />
       
       <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border">
         <h3 className="font-semibold text-gray-800 mb-2">Instrucciones:</h3>
