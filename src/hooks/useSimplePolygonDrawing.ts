@@ -107,6 +107,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
 
   return {
     mapRef,
+    mapInstance: mapInstance.current,
     isMapReady,
     polygons,
     selectedLotId,

@@ -16,6 +16,7 @@ const SKYRANCH_NAME = "SkyRanch";
 const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingProps) => {
   const {
     mapRef,
+    mapInstance,
     isMapReady,
     polygons,
     selectedLotId,
@@ -33,13 +34,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
 
   // Create or update lot labels on the map
   useEffect(() => {
-    if (!isMapReady) return;
-    
-    const map = mapRef.current?.querySelector('div')?.firstChild as HTMLElement;
-    if (!map) return;
-    
-    const googleMap = (window as any).google?.maps?.Map?.getMap(map);
-    if (!googleMap) return;
+    if (!isMapReady || !mapInstance) return;
 
     // Clear existing labels if toggled off
     if (!showLabels) {
@@ -74,7 +69,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       } else {
         const label = new google.maps.Marker({
           position: { lat, lng },
-          map: googleMap,
+          map: mapInstance,
           label: {
             text: lot.name,
             color: '#ffffff',
@@ -104,17 +99,11 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       }
     });
     
-  }, [isMapReady, lots, polygons, showLabels, onLotSelect]);
+  }, [isMapReady, mapInstance, lots, polygons, showLabels, onLotSelect]);
   
   // Create or update property name label
   useEffect(() => {
-    if (!isMapReady) return;
-    
-    const map = mapRef.current?.querySelector('div')?.firstChild as HTMLElement;
-    if (!map) return;
-    
-    const googleMap = (window as any).google?.maps?.Map?.getMap(map);
-    if (!googleMap) return;
+    if (!isMapReady || !mapInstance) return;
     
     if (!showPropertyName) {
       if (propertyLabelRef.current) {
@@ -127,7 +116,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     if (!propertyLabelRef.current) {
       propertyLabelRef.current = new google.maps.Marker({
         position: SKYRANCH_CENTER,
-        map: googleMap,
+        map: mapInstance,
         label: {
           text: SKYRANCH_NAME,
           color: '#ffffff',
@@ -140,10 +129,10 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
         }
       });
     } else {
-      propertyLabelRef.current.setMap(googleMap);
+      propertyLabelRef.current.setMap(mapInstance);
     }
     
-  }, [isMapReady, showPropertyName]);
+  }, [isMapReady, mapInstance, showPropertyName]);
   
   // Cleanup labels on unmount
   useEffect(() => {
