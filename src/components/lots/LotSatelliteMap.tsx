@@ -10,7 +10,6 @@ import { SkyRanchLabel } from './map/SkyRanchLabel';
 import { FullscreenToggle } from './map/FullscreenToggle';
 import { useMapState } from './map/hooks/useMapState';
 import { useLotSelection } from './map/hooks/useLotSelection';
-import { usePolygonHandlers } from './map/hooks/usePolygonHandlers';
 import { type Lot } from '@/stores/lotStore';
 
 interface LotSatelliteMapProps {
@@ -42,6 +41,7 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     isLoading,
     error,
     showApiKeyInput,
+    lotPolygons,
     mapRotation,
     setApiKey,
     resetMapRotation,
@@ -53,26 +53,49 @@ const LotSatelliteMap = ({ lots, onLotSelect }: LotSatelliteMapProps) => {
     toggleLabelsVisibility
   } = useGoogleMapsInitialization(lots);
 
-  const {
-    handleStartDrawing,
-    handleSavePolygon,
-    handleDeletePolygon,
-    handleColorChange,
-    handleCancelDrawing
-  } = usePolygonHandlers({
-    selectedLot,
-    setIsDrawing,
-    startDrawingPolygon,
-    saveCurrentPolygon,
-    deletePolygonForLot,
-    setPolygonColor
-  });
+  // Polygon handlers
+  const handleStartDrawing = () => {
+    if (selectedLot) {
+      console.log('Starting drawing for lot:', selectedLot.id);
+      setIsDrawing(true);
+      startDrawingPolygon(selectedLot.id);
+    }
+  };
 
-  // Check if selected lot has a polygon (placeholder logic)
-  const hasPolygon = selectedLot ? false : false; // TODO: Implement polygon existence check
+  const handleSavePolygon = () => {
+    if (selectedLot) {
+      console.log('Saving polygon for lot:', selectedLot.id);
+      saveCurrentPolygon(selectedLot.id, () => {
+        setIsDrawing(false);
+      });
+    }
+  };
 
-  // Get current color for selected lot (placeholder logic)
-  const currentColor = selectedLot ? '#10b981' : '#6b7280'; // TODO: Implement color retrieval
+  const handleDeletePolygon = () => {
+    if (selectedLot) {
+      console.log('Deleting polygon for lot:', selectedLot.id);
+      deletePolygonForLot(selectedLot.id);
+    }
+  };
+
+  const handleColorChange = (color: string) => {
+    if (selectedLot) {
+      console.log('Changing color for lot:', selectedLot.id, 'to:', color);
+      setPolygonColor(selectedLot.id, color);
+    }
+  };
+
+  const handleCancelDrawing = () => {
+    console.log('Cancelling drawing');
+    setIsDrawing(false);
+  };
+
+  // Check if selected lot has a polygon
+  const hasPolygon = selectedLot ? lotPolygons.some(p => p.lotId === selectedLot.id) : false;
+
+  // Get current color for selected lot
+  const currentPolygon = selectedLot ? lotPolygons.find(p => p.lotId === selectedLot.id) : null;
+  const currentColor = currentPolygon?.color || '#10b981';
 
   if (showApiKeyInput) {
     return <ApiKeySetup onApiKeySubmit={setApiKey} />;
