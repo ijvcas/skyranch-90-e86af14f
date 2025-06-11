@@ -8,6 +8,58 @@ interface UseGoogleMapOptions {
   onMapReady?: (map: google.maps.Map, drawingManager: google.maps.drawing.DrawingManager) => void;
 }
 
+// Global flag to prevent multiple API loads
+let isGoogleMapsLoaded = false;
+let isGoogleMapsLoading = false;
+const loadingCallbacks: (() => void)[] = [];
+
+const loadGoogleMapsAPI = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // If already loaded, resolve immediately
+    if (isGoogleMapsLoaded && window.google?.maps) {
+      resolve();
+      return;
+    }
+
+    // If currently loading, add to callback queue
+    if (isGoogleMapsLoading) {
+      loadingCallbacks.push(resolve);
+      return;
+    }
+
+    // Check if script already exists
+    const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+    if (existingScript) {
+      isGoogleMapsLoaded = true;
+      resolve();
+      return;
+    }
+
+    isGoogleMapsLoading = true;
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=drawing&loading=async`;
+    script.async = true;
+    
+    script.onload = () => {
+      isGoogleMapsLoaded = true;
+      isGoogleMapsLoading = false;
+      resolve();
+      
+      // Execute all pending callbacks
+      loadingCallbacks.forEach(callback => callback());
+      loadingCallbacks.length = 0;
+    };
+
+    script.onerror = () => {
+      isGoogleMapsLoading = false;
+      reject(new Error('Failed to load Google Maps API'));
+    };
+
+    document.head.appendChild(script);
+  });
+};
+
 export const useGoogleMap = ({ onMapReady }: UseGoogleMapOptions = {}) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
@@ -17,14 +69,11 @@ export const useGoogleMap = ({ onMapReady }: UseGoogleMapOptions = {}) => {
     const initMap = async () => {
       if (!mapRef.current) return;
 
-      // Load Google Maps API
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=drawing`;
-      script.async = true;
-      
-      script.onload = () => {
+      try {
+        await loadGoogleMapsAPI();
+
         // Create map
-        const map = new google.maps.Map(mapRef.current!, {
+        const map = new google.maps.Map(mapRef.current, {
           center: SKYRANCH_CENTER,
           zoom: 16,
           mapTypeId: google.maps.MapTypeId.SATELLITE,
@@ -62,9 +111,9 @@ export const useGoogleMap = ({ onMapReady }: UseGoogleMapOptions = {}) => {
 
         // Notify that map is ready
         onMapReady?.(map, drawing);
-      };
-
-      document.head.appendChild(script);
+      } catch (error) {
+        console.error('Error initializing Google Maps:', error);
+      }
     };
 
     initMap();
