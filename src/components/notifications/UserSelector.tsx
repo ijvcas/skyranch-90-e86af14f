@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
-import { getAllUsers } from '@/stores/userStore';
+import { getActiveUsers } from '@/stores/userStore';
 
 interface UserSelectorProps {
   selectedUserIds: string[];
@@ -12,7 +12,7 @@ interface UserSelectorProps {
 }
 
 const UserSelector = ({ selectedUserIds, onUserSelectionChange }: UserSelectorProps) => {
-  const users = getAllUsers().filter(user => user.isActive);
+  const users = getActiveUsers();
 
   const handleUserToggle = (userId: string, checked: boolean) => {
     if (checked) {

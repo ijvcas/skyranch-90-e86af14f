@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar as CalendarIcon, Bell, MapPin, DollarSign } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Bell, MapPin, DollarSign, Edit } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getCalendarEvents, addCalendarEvent, CalendarEvent } from '@/services/calendarService';
+import { getCalendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, CalendarEvent } from '@/services/calendarService';
 import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
 import UserSelector from '@/components/notifications/UserSelector';
+import EventEditDialog from '@/components/calendar/EventEditDialog';
 import { useNotifications } from '@/hooks/useNotifications';
 
 const CalendarPage = () => {
@@ -24,12 +26,16 @@ const CalendarPage = () => {
   const { addNotification } = useNotifications();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedEventForEdit, setSelectedEventForEdit] = useState<CalendarEvent | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
     eventType: 'appointment' as CalendarEvent['eventType'],
     animalId: '',
+    eventDate: '',
     allDay: false,
     veterinarian: '',
     location: '',
@@ -47,6 +53,16 @@ const CalendarPage = () => {
     queryFn: getAllAnimals
   });
 
+  // Update event date when selected date changes
+  useEffect(() => {
+    if (selectedDate) {
+      setNewEvent(prev => ({
+        ...prev,
+        eventDate: selectedDate.toISOString().split('T')[0]
+      }));
+    }
+  }, [selectedDate]);
+
   const eventsForSelectedDate = events.filter(event => {
     if (!selectedDate) return false;
     const eventDate = new Date(event.eventDate);
@@ -54,7 +70,7 @@ const CalendarPage = () => {
   });
 
   const handleCreateEvent = async () => {
-    if (!newEvent.title || !selectedDate) {
+    if (!newEvent.title || !newEvent.eventDate || isSubmitting) {
       toast({
         title: "Error",
         description: "Por favor completa los campos requeridos",
@@ -63,9 +79,11 @@ const CalendarPage = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     const eventData = {
       ...newEvent,
-      eventDate: selectedDate.toISOString(),
+      eventDate: new Date(newEvent.eventDate).toISOString(),
       status: 'scheduled' as const,
       allDay: newEvent.allDay,
       recurring: false,
@@ -79,9 +97,10 @@ const CalendarPage = () => {
       if (selectedUserIds.length > 0) {
         selectedUserIds.forEach(userId => {
           addNotification(
+            userId,
             'general',
             `Nuevo Evento: ${newEvent.title}`,
-            `Se ha programado un evento para ${selectedDate.toLocaleDateString('es-ES')}`,
+            `Se ha programado un evento para ${new Date(newEvent.eventDate).toLocaleDateString('es-ES')}. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`,
             {
               priority: 'medium',
               actionRequired: false
@@ -102,6 +121,7 @@ const CalendarPage = () => {
         description: '',
         eventType: 'appointment',
         animalId: '',
+        eventDate: selectedDate?.toISOString().split('T')[0] || '',
         allDay: false,
         veterinarian: '',
         location: '',
@@ -112,6 +132,64 @@ const CalendarPage = () => {
       toast({
         title: "Error",
         description: "No se pudo crear el evento",
+        variant: "destructive"
+      });
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleEditEvent = (event: CalendarEvent) => {
+    setSelectedEventForEdit(event);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEditedEvent = async (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
+    if (!selectedEventForEdit) return;
+
+    const success = await updateCalendarEvent(selectedEventForEdit.id, eventData);
+    if (success) {
+      // Send notifications to selected users
+      if (selectedUserIds.length > 0) {
+        selectedUserIds.forEach(userId => {
+          addNotification(
+            userId,
+            'general',
+            `Evento Actualizado: ${eventData.title || selectedEventForEdit.title}`,
+            `Se ha actualizado un evento. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`,
+            {
+              priority: 'medium',
+              actionRequired: false
+            }
+          );
+        });
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Evento actualizado correctamente"
+      });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el evento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    const success = await deleteCalendarEvent(eventId);
+    if (success) {
+      toast({
+        title: "Éxito",
+        description: "Evento eliminado correctamente"
+      });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el evento",
         variant: "destructive"
       });
     }
@@ -201,6 +279,16 @@ const CalendarPage = () => {
                         value={newEvent.title}
                         onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
                         placeholder="Título del evento"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="event-date">Fecha *</Label>
+                      <Input
+                        id="event-date"
+                        type="date"
+                        value={newEvent.eventDate}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, eventDate: e.target.value }))}
                       />
                     </div>
 
@@ -296,8 +384,12 @@ const CalendarPage = () => {
                   </div>
                 </div>
 
-                <Button onClick={handleCreateEvent} className="w-full mt-4">
-                  Crear Evento
+                <Button 
+                  onClick={handleCreateEvent} 
+                  className="w-full mt-4"
+                  disabled={isSubmitting || !newEvent.title || !newEvent.eventDate}
+                >
+                  {isSubmitting ? 'Creando...' : 'Crear Evento'}
                 </Button>
               </DialogContent>
             </Dialog>
@@ -342,9 +434,19 @@ const CalendarPage = () => {
                     <div key={event.id} className="p-3 border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-semibold">{event.title}</h4>
-                        <Badge className={getEventTypeColor(event.eventType)}>
-                          {getEventTypeLabel(event.eventType)}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Badge className={getEventTypeColor(event.eventType)}>
+                            {getEventTypeLabel(event.eventType)}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditEvent(event)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                       {event.description && (
                         <p className="text-sm text-gray-600 mb-2">{event.description}</p>
@@ -396,9 +498,19 @@ const CalendarPage = () => {
                   <div key={event.id} className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-semibold">{event.title}</h4>
-                      <Badge className={getEventTypeColor(event.eventType)}>
-                        {getEventTypeLabel(event.eventType)}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getEventTypeColor(event.eventType)}>
+                          {getEventTypeLabel(event.eventType)}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditEvent(event)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-600">
                       {new Date(event.eventDate).toLocaleDateString('es-ES')}
@@ -413,6 +525,18 @@ const CalendarPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Event Edit Dialog */}
+        <EventEditDialog
+          event={selectedEventForEdit}
+          isOpen={isEditDialogOpen}
+          onClose={() => {
+            setIsEditDialogOpen(false);
+            setSelectedEventForEdit(null);
+          }}
+          onSave={handleSaveEditedEvent}
+          onDelete={handleDeleteEvent}
+        />
       </div>
     </div>
   );

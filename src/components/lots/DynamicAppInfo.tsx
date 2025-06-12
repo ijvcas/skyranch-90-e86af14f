@@ -14,26 +14,26 @@ interface BuildInfo {
 
 const DynamicAppInfo = () => {
   const [buildInfo, setBuildInfo] = useState<BuildInfo>({
-    version: 'v2.2.0',
+    version: 'v2.3.0',
     buildTime: new Date().toISOString(),
-    lastChange: 'Implementadas notificaciones de eventos, controles de visibilidad de lotes y ordenamiento alfabético',
+    lastChange: 'Corregidos controles de mapa, selector de usuarios real, edición de eventos, prevención de duplicados y fecha en formularios',
     buildStatus: 'success',
     environment: import.meta.env.MODE === 'production' ? 'production' : 'development'
   });
 
   useEffect(() => {
     // Log build information for debugging
-    console.log('Build version: v2.2.0 - Event notifications, lot visibility controls, and alphabetical sorting implemented');
+    console.log('Build version: v2.3.0 - Map controls fixed, real user selector, event editing, duplicate prevention, and form date field');
     console.log('Build environment:', import.meta.env.MODE);
     console.log('Build time:', new Date().toISOString());
     
-    // Simulate checking for updates every 30 seconds
+    // Update build time every minute to show activity
     const interval = setInterval(() => {
       setBuildInfo(prev => ({
         ...prev,
         buildTime: new Date().toISOString()
       }));
-    }, 30000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
