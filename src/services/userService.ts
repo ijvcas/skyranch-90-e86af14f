@@ -18,6 +18,7 @@ export interface AppUser {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: 'admin' | 'manager' | 'worker';
   created_at: string;
   is_active: boolean;
@@ -30,6 +31,29 @@ interface AuthUser {
   raw_user_meta_data?: any;
   created_at: string;
 }
+
+// Phone number validation helper
+export const validatePhoneNumber = (phone: string): boolean => {
+  if (!phone) return true; // Phone is optional
+  // Basic phone validation - allows formats like +1234567890, (123) 456-7890, 123-456-7890
+  const phoneRegex = /^[\+]?[\d\s\-\(\)]{10,15}$/;
+  return phoneRegex.test(phone.replace(/\s/g, ''));
+};
+
+// Format phone number for display
+export const formatPhoneNumber = (phone: string): string => {
+  if (!phone) return '';
+  // Remove all non-digits
+  const digits = phone.replace(/\D/g, '');
+  
+  // Format as (XXX) XXX-XXXX for US numbers
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  
+  // Return original for international or other formats
+  return phone;
+};
 
 export const getAllUsers = async (): Promise<AppUser[]> => {
   console.log('🔍 Starting getAllUsers - fetching all users...');
@@ -137,6 +161,7 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     appUsers.forEach(user => {
       allUsers.push({
         ...user,
+        phone: user.phone || '',
         role: user.role as 'admin' | 'manager' | 'worker' // Use the actual role from database
       });
     });
@@ -146,22 +171,24 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
   return allUsers;
 };
 
-export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string): Promise<void> => {
+export const syncUserToAppUsers = async (profileId: string, email: string, fullName: string, phone?: string): Promise<void> => {
   console.log(`🔄 Attempting to sync user: ${email} (ID: ${profileId})`);
   
   // Check if user already exists in app_users
   const { data: existingUser } = await supabase
     .from('app_users')
-    .select('role')
+    .select('role, phone')
     .eq('id', profileId)
     .single();
 
   // Determine role - only set to admin for new users if they have admin emails
   let role: 'admin' | 'manager' | 'worker';
+  let userPhone = phone;
   
   if (existingUser) {
-    // User exists, keep their current role
+    // User exists, keep their current role and phone
     role = existingUser.role as 'admin' | 'manager' | 'worker';
+    userPhone = userPhone || existingUser.phone || '';
     console.log(`✅ User ${email} already exists with role: ${role}, keeping existing role`);
   } else {
     // New user - set default role based on email
@@ -178,6 +205,7 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
       id: profileId,
       name: fullName || email,
       email: email,
+      phone: userPhone || '',
       role: role,
       is_active: true
     }], {
@@ -193,11 +221,17 @@ export const syncUserToAppUsers = async (profileId: string, email: string, fullN
 
 export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'created_by'>): Promise<AppUser> => {
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Validate phone number if provided
+  if (userData.phone && !validatePhoneNumber(userData.phone)) {
+    throw new Error('Invalid phone number format');
+  }
   
   const { data, error } = await supabase
     .from('app_users')
     .insert([{
       ...userData,
+      phone: userData.phone ? formatPhoneNumber(userData.phone) : null,
       created_by: user?.id
     }])
     .select()
@@ -210,16 +244,28 @@ export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'cre
 
   return {
     ...data,
+    phone: data.phone || '',
     role: data.role as 'admin' | 'manager' | 'worker'
   };
 };
 
 export const updateUser = async (id: string, updates: Partial<AppUser>): Promise<AppUser> => {
   console.log(`🔄 Updating user ${id} with:`, updates);
+
+  // Validate phone number if being updated
+  if (updates.phone !== undefined && updates.phone && !validatePhoneNumber(updates.phone)) {
+    throw new Error('Invalid phone number format');
+  }
+
+  // Format phone number if provided
+  const updateData = {
+    ...updates,
+    phone: updates.phone ? formatPhoneNumber(updates.phone) : updates.phone
+  };
   
   const { data, error } = await supabase
     .from('app_users')
-    .update(updates)
+    .update(updateData)
     .eq('id', id)
     .select()
     .single();
@@ -232,6 +278,7 @@ export const updateUser = async (id: string, updates: Partial<AppUser>): Promise
   console.log(`✅ User updated successfully:`, data);
   return {
     ...data,
+    phone: data.phone || '',
     role: data.role as 'admin' | 'manager' | 'worker'
   };
 };
@@ -350,6 +397,7 @@ export const toggleUserStatus = async (id: string): Promise<AppUser> => {
 
   return {
     ...data,
+    phone: data.phone || '',
     role: data.role as 'admin' | 'manager' | 'worker'
   };
 };
@@ -393,6 +441,7 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     console.log(`✅ Found current user in app_users: ${appUser.email} with role: ${appUser.role}`);
     return {
       ...appUser,
+      phone: appUser.phone || '',
       role: appUser.role as 'admin' | 'manager' | 'worker'
     };
   }

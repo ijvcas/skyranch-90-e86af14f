@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +34,7 @@ export const useCalendarEvents = () => {
         selectedUserIds.forEach(userId => {
           addNotification(
             userId,
-            'general' as const,
+            'general',
             `Nuevo Evento: ${eventData.title}`,
             `Se ha programado un evento para ${new Date(eventData.eventDate).toLocaleDateString('es-ES')}. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`
           );
@@ -63,7 +64,7 @@ export const useCalendarEvents = () => {
         selectedUserIds.forEach(userId => {
           addNotification(
             userId,
-            'general' as const,
+            'general',
             `Evento Actualizado: ${eventData.title}`,
             `Se ha actualizado un evento. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`
           );

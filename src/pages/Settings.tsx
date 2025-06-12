@@ -5,6 +5,8 @@ import { Settings as SettingsIcon, Smartphone, Globe, Database } from 'lucide-re
 import DynamicAppInfo from '@/components/lots/DynamicAppInfo';
 import AuthenticationStatusCard from '@/components/lots/AuthenticationStatusCard';
 import UserManagement from '@/components/UserManagement';
+import NotificationPreferences from '@/components/NotificationPreferences';
+import TimezoneSettings from '@/components/TimezoneSettings';
 
 const Settings = () => {
   return (
@@ -18,12 +20,18 @@ const Settings = () => {
         {/* User Management Section */}
         <UserManagement />
         
+        {/* Notification Preferences Section */}
+        <NotificationPreferences />
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Dynamic App Info */}
           <DynamicAppInfo />
           
           {/* Authentication Status */}
           <AuthenticationStatusCard />
+          
+          {/* Timezone Settings */}
+          <TimezoneSettings />
           
           {/* Platform Status */}
           <Card>
