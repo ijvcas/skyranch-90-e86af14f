@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { updateBreedingRecord, BreedingRecord } from '@/services/breedingService';
 import { getAllAnimals } from '@/services/animalService';
+import { calculateExpectedDueDate, getSpeciesDisplayName } from '@/services/gestationService';
+import { Calendar, Info } from 'lucide-react';
 
 interface BreedingEditFormProps {
   record: BreedingRecord;
@@ -38,6 +40,9 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
     status: record.status
   });
 
+  const [isDateAutoCalculated, setIsDateAutoCalculated] = useState(false);
+  const [motherSpecies, setMotherSpecies] = useState<string>('');
+
   const { data: animals = [] } = useQuery({
     queryKey: ['animals'],
     queryFn: getAllAnimals
@@ -62,6 +67,24 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
       });
     }
   });
+
+  // Auto-calculate expected due date when mother and breeding date are selected
+  useEffect(() => {
+    if (formData.motherId && formData.breedingDate) {
+      const selectedMother = animals.find(animal => animal.id === formData.motherId);
+      if (selectedMother?.species) {
+        const calculatedDate = calculateExpectedDueDate(formData.breedingDate, selectedMother.species);
+        if (calculatedDate && calculatedDate !== formData.expectedDueDate) {
+          // Only auto-update if the current expected date is empty or matches previous calculation
+          if (!formData.expectedDueDate || isDateAutoCalculated) {
+            setFormData(prev => ({ ...prev, expectedDueDate: calculatedDate }));
+            setIsDateAutoCalculated(true);
+          }
+        }
+        setMotherSpecies(selectedMother.species);
+      }
+    }
+  }, [formData.motherId, formData.breedingDate, animals]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +121,29 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Reset auto-calculation flag if user manually changes expected due date
+    if (field === 'expectedDueDate') {
+      setIsDateAutoCalculated(false);
+    }
+  };
+
+  const handleRecalculateDate = () => {
+    if (formData.motherId && formData.breedingDate) {
+      const selectedMother = animals.find(animal => animal.id === formData.motherId);
+      if (selectedMother?.species) {
+        const calculatedDate = calculateExpectedDueDate(formData.breedingDate, selectedMother.species);
+        if (calculatedDate) {
+          setFormData(prev => ({ ...prev, expectedDueDate: calculatedDate }));
+          setIsDateAutoCalculated(true);
+          setMotherSpecies(selectedMother.species);
+          toast({
+            title: "Fecha Recalculada",
+            description: `Fecha esperada de parto actualizada basada en ${getSpeciesDisplayName(selectedMother.species)}`,
+          });
+        }
+      }
+    }
   };
 
   return (
@@ -117,7 +163,7 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
                 <SelectContent>
                   {animals.filter(animal => animal.gender === 'hembra').map(animal => (
                     <SelectItem key={animal.id} value={animal.id}>
-                      {animal.name} (#{animal.tag})
+                      {animal.name} (#{animal.tag}) - {animal.species}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -132,7 +178,7 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
                 <SelectContent>
                   {animals.filter(animal => animal.gender === 'macho').map(animal => (
                     <SelectItem key={animal.id} value={animal.id}>
-                      {animal.name} (#{animal.tag})
+                      {animal.name} (#{animal.tag}) - {animal.species}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -168,13 +214,41 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="expectedDueDate">Fecha Esperada de Parto</Label>
-              <Input
-                id="expectedDueDate"
-                type="date"
-                value={formData.expectedDueDate}
-                onChange={(e) => handleInputChange('expectedDueDate', e.target.value)}
-              />
+              <Label htmlFor="expectedDueDate" className="flex items-center gap-2">
+                Fecha Esperada de Parto
+                {isDateAutoCalculated && (
+                  <div className="flex items-center gap-1 text-xs text-green-600">
+                    <Calendar className="w-3 h-3" />
+                    Auto-calculado
+                  </div>
+                )}
+              </Label>
+              <div className="space-y-2">
+                <Input
+                  id="expectedDueDate"
+                  type="date"
+                  value={formData.expectedDueDate}
+                  onChange={(e) => handleInputChange('expectedDueDate', e.target.value)}
+                />
+                {formData.motherId && formData.breedingDate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRecalculateDate}
+                    className="w-full text-xs"
+                  >
+                    <Calendar className="w-3 h-3 mr-1" />
+                    Recalcular según especie
+                  </Button>
+                )}
+              </div>
+              {isDateAutoCalculated && motherSpecies && (
+                <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                  <Info className="w-3 h-3" />
+                  <span>Basado en {getSpeciesDisplayName(motherSpecies)}</span>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="actualBirthDate">Fecha Real de Parto</Label>
