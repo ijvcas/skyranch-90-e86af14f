@@ -14,16 +14,16 @@ interface BuildInfo {
 
 const DynamicAppInfo = () => {
   const [buildInfo, setBuildInfo] = useState<BuildInfo>({
-    version: 'v2.1.0',
+    version: 'v2.2.0',
     buildTime: new Date().toISOString(),
-    lastChange: 'Fixed authentication and polygon calculation issues',
+    lastChange: 'Implementadas notificaciones de eventos, controles de visibilidad de lotes y ordenamiento alfabético',
     buildStatus: 'success',
     environment: import.meta.env.MODE === 'production' ? 'production' : 'development'
   });
 
   useEffect(() => {
     // Log build information for debugging
-    console.log('Build version: v2.1.0 - Authentication and polygon fixes applied');
+    console.log('Build version: v2.2.0 - Event notifications, lot visibility controls, and alphabetical sorting implemented');
     console.log('Build environment:', import.meta.env.MODE);
     console.log('Build time:', new Date().toISOString());
     

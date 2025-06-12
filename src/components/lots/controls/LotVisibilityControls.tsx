@@ -37,7 +37,7 @@ const LotVisibilityControls = ({
   };
 
   return (
-    <div className="absolute top-4 right-4 z-30 w-64">
+    <div className="absolute top-4 left-4 z-30 w-64">
       <Card className="shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center text-sm">
