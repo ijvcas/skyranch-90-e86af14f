@@ -30,24 +30,41 @@ const UserManagement = () => {
     toggleStatusMutation
   } = useUserManagement();
 
-  // Fetch users from Supabase with automatic refetching
+  // Fetch users from Supabase with aggressive refetching
   const { data: users = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['app-users'],
     queryFn: getAllUsers,
-    refetchInterval: 30000, // Refetch every 30 seconds to catch new users
+    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
     queryFn: getCurrentUser,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
-  // Force refresh on component mount
+  // Force refresh on component mount and when navigating to settings
   useEffect(() => {
     console.log('UserManagement component mounted, forcing refresh...');
+    queryClient.invalidateQueries({ queryKey: ['app-users'] });
+    queryClient.invalidateQueries({ queryKey: ['current-user'] });
     refetch();
-  }, [refetch]);
+  }, [refetch, queryClient]);
+
+  // Auto-refresh after user operations
+  useEffect(() => {
+    if (!addUserMutation.isPending && addUserMutation.isSuccess) {
+      setTimeout(() => {
+        console.log('Auto-refreshing after user addition...');
+        queryClient.invalidateQueries({ queryKey: ['app-users'] });
+        refetch();
+      }, 1000);
+    }
+  }, [addUserMutation.isPending, addUserMutation.isSuccess, queryClient, refetch]);
 
   const handleDeleteUser = (id: string, userName: string) => {
     if (currentUser?.id === id) {
@@ -59,7 +76,7 @@ const UserManagement = () => {
       return;
     }
 
-    if (window.confirm(`¿Estás seguro de eliminar a ${userName}?\n\nNota: El usuario será eliminado de la aplicación, pero permanecerá en el sistema de autenticación. La eliminación completa requiere privilegios de administrador del servidor.`)) {
+    if (window.confirm(`¿Estás seguro de eliminar a ${userName}?\n\nNota: El usuario será eliminado de la aplicación.`)) {
       deleteUserMutation.mutate(id);
     }
   };
@@ -81,9 +98,10 @@ const UserManagement = () => {
     console.log('Manual refresh triggered');
     toast({
       title: "Sincronizando",
-      description: "Actualizando lista de usuarios desde todos los sistemas...",
+      description: "Actualizando lista de usuarios...",
     });
     queryClient.invalidateQueries({ queryKey: ['app-users'] });
+    queryClient.invalidateQueries({ queryKey: ['current-user'] });
     refetch();
   };
 

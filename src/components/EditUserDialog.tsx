@@ -34,20 +34,22 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] h-[90vh] flex flex-col">
         <UserEditDialogHeader />
 
-        <ScrollArea className="flex-1 pr-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <UserEditForm
-              formData={formData}
-              onInputChange={handleInputChange}
-              phoneError={phoneError}
-              setPhoneError={setPhoneError}
-              isDisabled={updateMutation.isPending}
-              isAdminUser={isAdminUser}
-            />
-          </form>
+        <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
+          <div className="pr-6 pb-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <UserEditForm
+                formData={formData}
+                onInputChange={handleInputChange}
+                phoneError={phoneError}
+                setPhoneError={setPhoneError}
+                isDisabled={updateMutation.isPending}
+                isAdminUser={isAdminUser}
+              />
+            </form>
+          </div>
         </ScrollArea>
 
         <UserEditDialogFooter

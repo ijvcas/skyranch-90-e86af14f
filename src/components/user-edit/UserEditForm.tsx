@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { validatePhoneNumber, type AppUser } from '@/services/userService';
+import { type AppUser } from '@/services/userService';
 import NotificationPreferencesForm from './NotificationPreferencesForm';
 
 interface UserEditFormProps {
@@ -35,16 +35,6 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
   isDisabled,
   isAdminUser
 }) => {
-  const handlePhoneChange = (value: string) => {
-    onInputChange('phone', value);
-    
-    if (value && !validatePhoneNumber(value)) {
-      setPhoneError('Formato de teléfono inválido. Use formatos como +1234567890, (123) 456-7890, o 123-456-7890');
-    } else {
-      setPhoneError('');
-    }
-  };
-
   const handleNotificationPreferenceChange = (field: string, value: boolean) => {
     onInputChange('notificationPreferences', {
       ...formData.notificationPreferences,
@@ -81,21 +71,18 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="phone">Teléfono</Label>
+        {/* Phone field temporarily disabled - database schema needs to be updated */}
+        <div className="space-y-2 opacity-50">
+          <Label htmlFor="phone">Teléfono (Próximamente)</Label>
           <Input
             id="phone"
             type="tel"
             value={formData.phone}
-            onChange={(e) => handlePhoneChange(e.target.value)}
-            placeholder="+1 (555) 123-4567"
-            disabled={isDisabled}
+            placeholder="Función en desarrollo"
+            disabled={true}
           />
-          {phoneError && (
-            <p className="text-sm text-red-600">{phoneError}</p>
-          )}
           <p className="text-xs text-gray-500">
-            Formatos válidos: +1234567890, (123) 456-7890, 123-456-7890
+            La funcionalidad de teléfono estará disponible próximamente.
           </p>
         </div>
 

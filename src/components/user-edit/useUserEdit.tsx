@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateUser, validatePhoneNumber, type AppUser } from '@/services/userService';
+import { updateUser, type AppUser } from '@/services/userService';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseUserEditProps {
@@ -71,19 +71,13 @@ export const useUserEdit = ({ user, onClose }: UseUserEditProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Final phone validation
-    if (formData.phone && !validatePhoneNumber(formData.phone)) {
-      setPhoneError('Formato de teléfono inválido');
-      return;
-    }
-
     // Prevent editing admin users' roles
     const isAdminUser = user.email === 'juan.casanova@skyranch.com' || user.email === 'jvcas@mac.com';
     
+    // Don't include phone in update data since field doesn't exist in schema
     const updateData: Partial<AppUser> = {
       name: formData.name,
       email: formData.email,
-      phone: formData.phone,
       role: isAdminUser ? user.role : formData.role,
       is_active: formData.is_active
     };
