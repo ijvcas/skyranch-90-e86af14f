@@ -131,7 +131,7 @@ export const toggleUserStatus = async (userId: string): Promise<AppUser> => {
     return {
       ...data,
       role: data.role as 'admin' | 'manager' | 'worker',
-      phone: data.phone || '', // Default to empty string if phone doesn't exist
+      phone: (data as any).phone || '', // Type assertion for phone field
     };
   } catch (error) {
     console.error('❌ Error in toggleUserStatus:', error);

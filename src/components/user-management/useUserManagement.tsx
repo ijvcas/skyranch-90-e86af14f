@@ -14,7 +14,12 @@ export const useUserManagement = () => {
     email: '',
     phone: '',
     role: 'worker' as AppUser['role'],
-    is_active: true
+    is_active: true,
+    notificationPreferences: {
+      email: true,
+      push: true,
+      inApp: true
+    }
   });
 
   // Mutations for user operations
@@ -22,7 +27,18 @@ export const useUserManagement = () => {
     mutationFn: addUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['app-users'] });
-      setNewUser({ name: '', email: '', phone: '', role: 'worker', is_active: true });
+      setNewUser({ 
+        name: '', 
+        email: '', 
+        phone: '', 
+        role: 'worker', 
+        is_active: true,
+        notificationPreferences: {
+          email: true,
+          push: true,
+          inApp: true
+        }
+      });
       setShowAddForm(false);
       toast({
         title: "Usuario Agregado",

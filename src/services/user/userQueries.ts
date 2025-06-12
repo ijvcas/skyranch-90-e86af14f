@@ -23,7 +23,7 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
     return users?.map(user => ({
       ...user,
       role: user.role as 'admin' | 'manager' | 'worker',
-      phone: user.phone || '',
+      phone: (user as any).phone || '', // Type assertion for phone field
     })) || [];
   } catch (error) {
     console.error('❌ Error in getAllUsers:', error);
@@ -60,7 +60,7 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
     return {
       ...appUser,
       role: appUser.role as 'admin' | 'manager' | 'worker',
-      phone: appUser.phone || '', // Default to empty string if phone doesn't exist
+      phone: (appUser as any).phone || '', // Type assertion for phone field
     };
   } catch (error) {
     console.error('❌ Error getting current user:', error);

@@ -18,7 +18,12 @@ export const useUserEdit = ({ user, onClose }: UseUserEditProps) => {
     email: user.email,
     phone: user.phone || '',
     role: user.role,
-    is_active: user.is_active
+    is_active: user.is_active,
+    notificationPreferences: {
+      email: true,
+      push: true,
+      inApp: true
+    }
   });
 
   const [phoneError, setPhoneError] = useState('');
@@ -29,7 +34,12 @@ export const useUserEdit = ({ user, onClose }: UseUserEditProps) => {
       email: user.email,
       phone: user.phone || '',
       role: user.role,
-      is_active: user.is_active
+      is_active: user.is_active,
+      notificationPreferences: {
+        email: true,
+        push: true,
+        inApp: true
+      }
     });
     setPhoneError('');
   }, [user]);

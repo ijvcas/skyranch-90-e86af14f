@@ -8,8 +8,22 @@ import { useQuery } from '@tanstack/react-query';
 import { getAllUsers, getCurrentUser, type AppUser } from '@/services/userService';
 import { Shield, User, Settings } from 'lucide-react';
 
+interface ModulePermissions {
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
+interface UserPermissions {
+  animals: ModulePermissions;
+  lots: ModulePermissions;
+  reports: ModulePermissions;
+  users: ModulePermissions;
+}
+
 const PermissionsManager = () => {
-  const [permissions, setPermissions] = useState<Record<string, Record<string, boolean>>>({});
+  const [permissions, setPermissions] = useState<Record<string, UserPermissions>>({});
 
   const { data: users = [] } = useQuery({
     queryKey: ['app-users'],
@@ -22,7 +36,7 @@ const PermissionsManager = () => {
   });
 
   // Default permissions structure
-  const defaultPermissions = {
+  const defaultPermissions: UserPermissions = {
     animals: {
       view: true,
       create: false,
@@ -51,7 +65,7 @@ const PermissionsManager = () => {
 
   // Initialize permissions based on user roles
   useEffect(() => {
-    const initialPermissions: Record<string, Record<string, boolean>> = {};
+    const initialPermissions: Record<string, UserPermissions> = {};
     
     users.forEach(user => {
       if (user.role === 'admin') {
@@ -84,7 +98,7 @@ const PermissionsManager = () => {
     setPermissions(initialPermissions);
   }, [users]);
 
-  const updatePermission = (userId: string, module: string, action: string, value: boolean) => {
+  const updatePermission = (userId: string, module: keyof UserPermissions, action: keyof ModulePermissions, value: boolean) => {
     setPermissions(prev => ({
       ...prev,
       [userId]: {
@@ -156,8 +170,8 @@ const PermissionsManager = () => {
                             {action.charAt(0).toUpperCase() + action.slice(1)}
                           </label>
                           <Switch
-                            checked={permissions[user.id]?.[module]?.[action] ?? defaultValue}
-                            onCheckedChange={(value) => updatePermission(user.id, module, action, value)}
+                            checked={permissions[user.id]?.[module as keyof UserPermissions]?.[action as keyof ModulePermissions] ?? defaultValue}
+                            onCheckedChange={(value) => updatePermission(user.id, module as keyof UserPermissions, action as keyof ModulePermissions, value)}
                             disabled={user.role === 'admin'} // Admins always have all permissions
                           />
                         </div>

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { type AppUser } from '@/services/userService';
+import NotificationPreferencesForm from '../user-edit/NotificationPreferencesForm';
 
 interface AddUserFormProps {
   newUser: {
@@ -14,6 +15,11 @@ interface AddUserFormProps {
     phone: string;
     role: AppUser['role'];
     is_active: boolean;
+    notificationPreferences: {
+      email: boolean;
+      push: boolean;
+      inApp: boolean;
+    };
   };
   onUserChange: (user: any) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -28,61 +34,83 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
   onCancel,
   isLoading
 }) => {
+  const handleNotificationPreferenceChange = (field: string, value: boolean) => {
+    onUserChange({
+      ...newUser,
+      notificationPreferences: {
+        ...newUser.notificationPreferences,
+        [field]: value
+      }
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Agregar Nuevo Usuario</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Nombre Completo</Label>
-              <Input
-                id="name"
-                value={newUser.name}
-                onChange={(e) => onUserChange({...newUser, name: e.target.value})}
-                placeholder="Juan Pérez"
-                required
-              />
+        <form onSubmit={onSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nombre Completo</Label>
+                <Input
+                  id="name"
+                  value={newUser.name}
+                  onChange={(e) => onUserChange({...newUser, name: e.target.value})}
+                  placeholder="Juan Pérez"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Correo Electrónico</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => onUserChange({...newUser, email: e.target.value})}
+                  placeholder="juan@granja.com"
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="email">Correo Electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                value={newUser.email}
-                onChange={(e) => onUserChange({...newUser, email: e.target.value})}
-                placeholder="juan@granja.com"
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={newUser.phone}
+                  onChange={(e) => onUserChange({...newUser, phone: e.target.value})}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              <div>
+                <Label htmlFor="role">Rol</Label>
+                <Select value={newUser.role} onValueChange={(value) => onUserChange({...newUser, role: value as AppUser['role']})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="worker">Trabajador</SelectItem>
+                    <SelectItem value="manager">Gerente</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="phone">Teléfono</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={newUser.phone}
-                onChange={(e) => onUserChange({...newUser, phone: e.target.value})}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
-            <div>
-              <Label htmlFor="role">Rol</Label>
-              <Select value={newUser.role} onValueChange={(value) => onUserChange({...newUser, role: value as AppUser['role']})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="worker">Trabajador</SelectItem>
-                  <SelectItem value="manager">Gerente</SelectItem>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+
+          {/* Notification Preferences */}
+          <NotificationPreferencesForm
+            preferences={newUser.notificationPreferences}
+            onPreferencesChange={handleNotificationPreferenceChange}
+            userEmail={newUser.email}
+            isDisabled={isLoading}
+          />
+
           <div className="flex gap-3">
             <Button type="submit" disabled={isLoading}>
               {isLoading ? 'Agregando...' : 'Agregar Usuario'}
