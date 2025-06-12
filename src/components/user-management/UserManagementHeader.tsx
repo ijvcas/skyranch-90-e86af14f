@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Users, UserPlus, RefreshCw, Sync } from 'lucide-react';
+import { Users, UserPlus, RefreshCw, RefreshCcw } from 'lucide-react';
 
 interface UserManagementHeaderProps {
   isFetching: boolean;
@@ -35,7 +35,7 @@ const UserManagementHeader: React.FC<UserManagementHeaderProps> = ({
           className="flex items-center gap-2"
           disabled={isSyncing}
         >
-          <Sync className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          <RefreshCcw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
           {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
         </Button>
         <Button
