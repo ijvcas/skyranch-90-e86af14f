@@ -5,7 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
 import { CalendarEvent } from '@/services/calendarService';
-import { Animal } from '@/services/animalService';
+
+interface Animal {
+  id: string;
+  name: string;
+}
 
 interface UpcomingEventsProps {
   events: CalendarEvent[];
