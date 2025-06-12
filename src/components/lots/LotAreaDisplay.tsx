@@ -24,32 +24,18 @@ const LotAreaDisplay = ({ lot, calculatedArea }: LotAreaDisplayProps) => {
     
   return (
     <div className="text-sm space-y-1">
-      {/* Show stored area if available */}
-      {hasStoredArea && (
+      {/* Show only one area display - prioritize calculated area if available */}
+      {hasCalculatedArea ? (
         <div className="flex items-center justify-between">
-          <span className="text-gray-500">Tamaño registrado:</span>
-          <span className="font-medium text-gray-600">{formatArea(lot.sizeHectares)}</span>
-        </div>
-      )}
-      
-      {/* Show calculated area if available */}
-      {hasCalculatedArea && (!areasMatch || !hasStoredArea) && (
-        <div className="flex items-center justify-between">
-          <span className="text-gray-500">Área calculada:</span>
+          <span className="text-gray-500">Área:</span>
           <span className={calculatedAreaStyle}>{formatArea(calculatedArea)}</span>
         </div>
-      )}
-      
-      {/* Show message when areas match exactly */}
-      {areasMatch && (
+      ) : hasStoredArea ? (
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Área:</span>
           <span className="font-medium text-gray-600">{formatArea(lot.sizeHectares)}</span>
         </div>
-      )}
-      
-      {/* Show "no area" message when neither are available */}
-      {!hasCalculatedArea && !hasStoredArea && (
+      ) : (
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Área:</span>
           <span className="text-gray-400 italic">No definida</span>
