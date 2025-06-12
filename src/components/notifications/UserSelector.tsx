@@ -4,7 +4,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
-import { getActiveUsers } from '@/stores/userStore';
+import { useQuery } from '@tanstack/react-query';
+import { getAllUsers } from '@/services/userService';
 
 interface UserSelectorProps {
   selectedUserIds: string[];
@@ -12,7 +13,11 @@ interface UserSelectorProps {
 }
 
 const UserSelector = ({ selectedUserIds, onUserSelectionChange }: UserSelectorProps) => {
-  const users = getActiveUsers();
+  // Fetch real users from Supabase
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['app-users'],
+    queryFn: getAllUsers
+  });
 
   const handleUserToggle = (userId: string, checked: boolean) => {
     if (checked) {
@@ -29,6 +34,22 @@ const UserSelector = ({ selectedUserIds, onUserSelectionChange }: UserSelectorPr
   const handleSelectNone = () => {
     onUserSelectionChange([]);
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-sm">
+            <Users className="w-4 h-4 mr-2" />
+            Notificar Usuarios
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-gray-500">Cargando usuarios...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -58,7 +79,7 @@ const UserSelector = ({ selectedUserIds, onUserSelectionChange }: UserSelectorPr
         </div>
         
         <div className="space-y-2 max-h-40 overflow-y-auto">
-          {users.map(user => (
+          {users.filter(user => user.is_active).map(user => (
             <div key={user.id} className="flex items-center space-x-2">
               <Checkbox
                 id={`user-${user.id}`}
@@ -78,6 +99,12 @@ const UserSelector = ({ selectedUserIds, onUserSelectionChange }: UserSelectorPr
         {selectedUserIds.length > 0 && (
           <p className="text-xs text-gray-500">
             {selectedUserIds.length} usuario(s) seleccionado(s)
+          </p>
+        )}
+        
+        {users.length === 0 && (
+          <p className="text-xs text-gray-500">
+            No hay usuarios registrados. Puede agregar usuarios desde la página de Configuración.
           </p>
         )}
       </CardContent>
