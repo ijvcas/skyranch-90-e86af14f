@@ -1,141 +1,39 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar as CalendarIcon, Bell, MapPin, DollarSign, Edit } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getCalendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, CalendarEvent } from '@/services/calendarService';
+import { Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
-import { useToast } from '@/hooks/use-toast';
-import UserSelector from '@/components/notifications/UserSelector';
+import EventForm from '@/components/calendar/EventForm';
+import EventList from '@/components/calendar/EventList';
+import UpcomingEvents from '@/components/calendar/UpcomingEvents';
 import EventEditDialog from '@/components/calendar/EventEditDialog';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useCalendarEvents } from '@/hooks/useCalendarEvents';
+import { CalendarEvent } from '@/services/calendarService';
 
 const CalendarPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEventForEdit, setSelectedEventForEdit] = useState<CalendarEvent | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newEvent, setNewEvent] = useState({
-    title: '',
-    description: '',
-    eventType: 'appointment' as CalendarEvent['eventType'],
-    animalId: '',
-    eventDate: '',
-    allDay: false,
-    veterinarian: '',
-    location: '',
-    cost: '',
-    notes: ''
-  });
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['calendar-events'],
-    queryFn: getCalendarEvents
-  });
+  const { events, createEvent, updateEvent, deleteEvent, isSubmitting } = useCalendarEvents();
 
   const { data: animals = [] } = useQuery({
     queryKey: ['animals'],
     queryFn: getAllAnimals
   });
 
-  // Update event date when selected date changes
-  useEffect(() => {
-    if (selectedDate) {
-      setNewEvent(prev => ({
-        ...prev,
-        eventDate: selectedDate.toISOString().split('T')[0]
-      }));
-    }
-  }, [selectedDate]);
-
-  const eventsForSelectedDate = events.filter(event => {
-    if (!selectedDate) return false;
-    const eventDate = new Date(event.eventDate);
-    return eventDate.toDateString() === selectedDate.toDateString();
-  });
-
-  const handleCreateEvent = async () => {
-    if (!newEvent.title || !newEvent.eventDate || isSubmitting) {
-      toast({
-        title: "Error",
-        description: "Por favor completa los campos requeridos",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const eventData = {
-      ...newEvent,
-      eventDate: new Date(newEvent.eventDate).toISOString(),
-      status: 'scheduled' as const,
-      allDay: newEvent.allDay,
-      recurring: false,
-      reminderMinutes: 60,
-      cost: newEvent.cost ? parseFloat(newEvent.cost) : undefined
-    };
-
-    const success = await addCalendarEvent(eventData);
-    if (success) {
-      // Send notifications to selected users
-      if (selectedUserIds.length > 0) {
-        selectedUserIds.forEach(userId => {
-          addNotification(
-            userId,
-            'general',
-            `Nuevo Evento: ${newEvent.title}`,
-            `Se ha programado un evento para ${new Date(newEvent.eventDate).toLocaleDateString('es-ES')}. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`,
-            {
-              priority: 'medium',
-              actionRequired: false
-            }
-          );
-        });
-      }
-
-      toast({
-        title: "Éxito",
-        description: "Evento creado correctamente"
-      });
-      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
-      setIsDialogOpen(false);
-      setSelectedUserIds([]);
-      setNewEvent({
-        title: '',
-        description: '',
-        eventType: 'appointment',
-        animalId: '',
-        eventDate: selectedDate?.toISOString().split('T')[0] || '',
-        allDay: false,
-        veterinarian: '',
-        location: '',
-        cost: '',
-        notes: ''
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "No se pudo crear el evento",
-        variant: "destructive"
-      });
-    }
-    setIsSubmitting(false);
+  const handleCreateEvent = async (eventData: any, selectedUserIds: string[]) => {
+    await createEvent(eventData, selectedUserIds);
+    setIsDialogOpen(false);
+    setSelectedUserIds([]);
   };
 
   const handleEditEvent = (event: CalendarEvent) => {
@@ -145,92 +43,11 @@ const CalendarPage = () => {
 
   const handleSaveEditedEvent = async (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
     if (!selectedEventForEdit) return;
-
-    const success = await updateCalendarEvent(selectedEventForEdit.id, eventData);
-    if (success) {
-      // Send notifications to selected users
-      if (selectedUserIds.length > 0) {
-        selectedUserIds.forEach(userId => {
-          addNotification(
-            userId,
-            'general',
-            `Evento Actualizado: ${eventData.title || selectedEventForEdit.title}`,
-            `Se ha actualizado un evento. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`,
-            {
-              priority: 'medium',
-              actionRequired: false
-            }
-          );
-        });
-      }
-
-      toast({
-        title: "Éxito",
-        description: "Evento actualizado correctamente"
-      });
-      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
-    } else {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el evento",
-        variant: "destructive"
-      });
-    }
+    await updateEvent(selectedEventForEdit.id, eventData, selectedUserIds);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    const success = await deleteCalendarEvent(eventId);
-    if (success) {
-      toast({
-        title: "Éxito",
-        description: "Evento eliminado correctamente"
-      });
-      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
-    } else {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el evento",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const getEventTypeColor = (type: string) => {
-    switch (type) {
-      case 'vaccination':
-        return 'bg-blue-100 text-blue-800';
-      case 'checkup':
-        return 'bg-green-100 text-green-800';
-      case 'breeding':
-        return 'bg-pink-100 text-pink-800';
-      case 'treatment':
-        return 'bg-red-100 text-red-800';
-      case 'feeding':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getEventTypeLabel = (type: string) => {
-    switch (type) {
-      case 'vaccination':
-        return 'Vacunación';
-      case 'checkup':
-        return 'Revisión';
-      case 'breeding':
-        return 'Reproducción';
-      case 'treatment':
-        return 'Tratamiento';
-      case 'feeding':
-        return 'Alimentación';
-      case 'appointment':
-        return 'Cita';
-      case 'reminder':
-        return 'Recordatorio';
-      default:
-        return type;
-    }
+    await deleteEvent(eventId);
   };
 
   return (
@@ -270,127 +87,13 @@ const CalendarPage = () => {
                 <DialogHeader>
                   <DialogTitle>Crear Nuevo Evento</DialogTitle>
                 </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="title">Título *</Label>
-                      <Input
-                        id="title"
-                        value={newEvent.title}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Título del evento"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="event-date">Fecha *</Label>
-                      <Input
-                        id="event-date"
-                        type="date"
-                        value={newEvent.eventDate}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, eventDate: e.target.value }))}
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Tipo de Evento</Label>
-                      <Select 
-                        value={newEvent.eventType} 
-                        onValueChange={(value: CalendarEvent['eventType']) => 
-                          setNewEvent(prev => ({ ...prev, eventType: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="vaccination">Vacunación</SelectItem>
-                          <SelectItem value="checkup">Revisión</SelectItem>
-                          <SelectItem value="breeding">Reproducción</SelectItem>
-                          <SelectItem value="treatment">Tratamiento</SelectItem>
-                          <SelectItem value="feeding">Alimentación</SelectItem>
-                          <SelectItem value="appointment">Cita</SelectItem>
-                          <SelectItem value="reminder">Recordatorio</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Animal (Opcional)</Label>
-                      <Select 
-                        value={newEvent.animalId} 
-                        onValueChange={(value) => setNewEvent(prev => ({ ...prev, animalId: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar animal" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {animals.map(animal => (
-                            <SelectItem key={animal.id} value={animal.id}>
-                              {animal.name} (#{animal.tag})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="veterinarian">Veterinario</Label>
-                      <Input
-                        id="veterinarian"
-                        value={newEvent.veterinarian}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, veterinarian: e.target.value }))}
-                        placeholder="Nombre del veterinario"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="location">Ubicación</Label>
-                      <Input
-                        id="location"
-                        value={newEvent.location}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-                        placeholder="Ubicación del evento"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="cost">Costo</Label>
-                      <Input
-                        id="cost"
-                        type="number"
-                        value={newEvent.cost}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, cost: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="description">Descripción</Label>
-                      <Textarea
-                        id="description"
-                        value={newEvent.description}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Detalles adicionales"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <UserSelector
-                      selectedUserIds={selectedUserIds}
-                      onUserSelectionChange={setSelectedUserIds}
-                    />
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleCreateEvent} 
-                  className="w-full mt-4"
-                  disabled={isSubmitting || !newEvent.title || !newEvent.eventDate}
-                >
-                  {isSubmitting ? 'Creando...' : 'Crear Evento'}
-                </Button>
+                <EventForm
+                  selectedDate={selectedDate}
+                  selectedUserIds={selectedUserIds}
+                  onUserSelectionChange={setSelectedUserIds}
+                  onSubmit={handleCreateEvent}
+                  isSubmitting={isSubmitting}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -428,103 +131,23 @@ const CalendarPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {eventsForSelectedDate.length > 0 ? (
-                <div className="space-y-3">
-                  {eventsForSelectedDate.map(event => (
-                    <div key={event.id} className="p-3 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold">{event.title}</h4>
-                        <div className="flex items-center space-x-2">
-                          <Badge className={getEventTypeColor(event.eventType)}>
-                            {getEventTypeLabel(event.eventType)}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditEvent(event)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      {event.description && (
-                        <p className="text-sm text-gray-600 mb-2">{event.description}</p>
-                      )}
-                      <div className="space-y-1 text-xs text-gray-500">
-                        {event.veterinarian && (
-                          <div className="flex items-center">
-                            <Bell className="w-3 h-3 mr-1" />
-                            {event.veterinarian}
-                          </div>
-                        )}
-                        {event.location && (
-                          <div className="flex items-center">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            {event.location}
-                          </div>
-                        )}
-                        {event.cost && (
-                          <div className="flex items-center">
-                            <DollarSign className="w-3 h-3 mr-1" />
-                            ${event.cost}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  <CalendarIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                  <p>No hay eventos para esta fecha</p>
-                </div>
-              )}
+              <EventList
+                events={events}
+                selectedDate={selectedDate}
+                onEditEvent={handleEditEvent}
+              />
             </CardContent>
           </Card>
         </div>
 
         {/* Upcoming Events */}
-        <Card className="mt-6 shadow-lg">
-          <CardHeader>
-            <CardTitle>Próximos Eventos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {events
-                .filter(event => new Date(event.eventDate) >= new Date())
-                .slice(0, 6)
-                .map(event => (
-                  <div key={event.id} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">{event.title}</h4>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getEventTypeColor(event.eventType)}>
-                          {getEventTypeLabel(event.eventType)}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditEvent(event)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {new Date(event.eventDate).toLocaleDateString('es-ES')}
-                    </p>
-                    {event.animalId && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Animal: {animals.find(a => a.id === event.animalId)?.name || 'N/A'}
-                      </p>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mt-6">
+          <UpcomingEvents
+            events={events}
+            animals={animals}
+            onEditEvent={handleEditEvent}
+          />
+        </div>
 
         {/* Event Edit Dialog */}
         <EventEditDialog
