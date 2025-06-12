@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface LotPolygon {
@@ -77,14 +76,24 @@ export const getLotPolygons = async (): Promise<LotPolygon[]> => {
       let coordinates: { lat: number; lng: number }[] = [];
       
       try {
-        // Handle different coordinate data formats
+        // Handle different coordinate data formats with proper type casting
         if (typeof item.coordinates === 'string') {
           coordinates = JSON.parse(item.coordinates);
         } else if (Array.isArray(item.coordinates)) {
-          coordinates = item.coordinates;
-        } else if (typeof item.coordinates === 'object') {
+          // Cast the coordinates properly
+          coordinates = (item.coordinates as unknown[]).map((coord: any) => ({
+            lat: Number(coord.lat),
+            lng: Number(coord.lng)
+          }));
+        } else if (typeof item.coordinates === 'object' && item.coordinates !== null) {
           // If it's already an object, ensure it has the right structure
-          coordinates = Array.isArray(item.coordinates) ? item.coordinates : [];
+          const coordArray = item.coordinates as any;
+          if (Array.isArray(coordArray)) {
+            coordinates = coordArray.map((coord: any) => ({
+              lat: Number(coord.lat),
+              lng: Number(coord.lng)
+            }));
+          }
         }
       } catch (e) {
         console.error('Error parsing coordinates for polygon:', item.id, e);
@@ -211,16 +220,25 @@ export const getLotPolygonByLotId = async (lotId: string): Promise<LotPolygon | 
       return null;
     }
 
-    // Handle coordinate parsing
+    // Handle coordinate parsing with proper type casting
     let coordinates: { lat: number; lng: number }[] = [];
     
     try {
       if (typeof data.coordinates === 'string') {
         coordinates = JSON.parse(data.coordinates);
       } else if (Array.isArray(data.coordinates)) {
-        coordinates = data.coordinates;
-      } else if (typeof data.coordinates === 'object') {
-        coordinates = Array.isArray(data.coordinates) ? data.coordinates : [];
+        coordinates = (data.coordinates as unknown[]).map((coord: any) => ({
+          lat: Number(coord.lat),
+          lng: Number(coord.lng)
+        }));
+      } else if (typeof data.coordinates === 'object' && data.coordinates !== null) {
+        const coordArray = data.coordinates as any;
+        if (Array.isArray(coordArray)) {
+          coordinates = coordArray.map((coord: any) => ({
+            lat: Number(coord.lat),
+            lng: Number(coord.lng)
+          }));
+        }
       }
     } catch (e) {
       console.error('Error parsing coordinates:', e);

@@ -24,7 +24,7 @@ import { getPolygonDataForLots, syncAllLotAreasWithPolygons } from '@/services/l
 const Lots = () => {
   const { lots, loadLots, deleteLot, isLoading, setSelectedLot } = useLotStore();
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
+  const [selectedLot, setSelectedLotState] = useState<Lot | null>(null);
   const [polygonData, setPolygonData] = useState<Array<{lotId: string; areaHectares?: number}>>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -56,7 +56,7 @@ const Lots = () => {
   const handleLotSelect = (lotId: string) => {
     const lot = lots.find(l => l.id === lotId);
     if (lot) {
-      setSelectedLotId(lotId);
+      setSelectedLotState(lot);
       setActiveTab('detail');
       setSelectedLot(lot);
     }
@@ -80,8 +80,8 @@ const Lots = () => {
         setLotToDelete(null);
         
         // If we were viewing the deleted lot, go back to overview
-        if (selectedLotId === lotToDelete) {
-          setSelectedLotId(null);
+        if (selectedLot?.id === lotToDelete) {
+          setSelectedLotState(null);
           setActiveTab('overview');
         }
       } else {
@@ -90,10 +90,10 @@ const Lots = () => {
     }
   };
 
-  const handleFormSubmit = () => {
+  const handleFormClose = () => {
     setShowCreateForm(false);
     loadLots();
-    toast.success('Lote creado correctamente');
+    loadPolygonData();
   };
 
   // Reload polygon data when active tab changes to overview or map
@@ -119,7 +119,7 @@ const Lots = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="map">Mapa</TabsTrigger>
-          {selectedLotId && <TabsTrigger value="detail">Detalle</TabsTrigger>}
+          {selectedLot && <TabsTrigger value="detail">Detalle</TabsTrigger>}
         </TabsList>
         
         <TabsContent value="overview">
@@ -141,12 +141,12 @@ const Lots = () => {
         </TabsContent>
         
         <TabsContent value="detail">
-          {selectedLotId && (
+          {selectedLot && (
             <LotDetail 
-              lotId={selectedLotId}
-              onClose={() => {
+              lot={selectedLot}
+              onBack={() => {
                 setActiveTab('overview');
-                setSelectedLotId(null);
+                setSelectedLotState(null);
               }}
             />
           )}
@@ -159,7 +159,7 @@ const Lots = () => {
           <DialogHeader>
             <DialogTitle>Crear Nuevo Lote</DialogTitle>
           </DialogHeader>
-          <LotForm onSubmit={handleFormSubmit} />
+          <LotForm onClose={handleFormClose} />
         </DialogContent>
       </Dialog>
       

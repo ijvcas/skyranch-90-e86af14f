@@ -13,11 +13,17 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic'
   },
+  android: {
+    allowMixedContent: true
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: "#16a34a",
       showSpinner: false
+    },
+    CapacitorHttp: {
+      enabled: true
     }
   }
 };
