@@ -6,7 +6,7 @@ import { Save, X } from 'lucide-react';
 
 interface UserEditDialogFooterProps {
   onCancel: () => void;
-  onSubmit: () => void;
+  onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
   hasError: boolean;
 }

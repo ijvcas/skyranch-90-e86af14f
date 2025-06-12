@@ -61,7 +61,7 @@ export const getAllUsers = async (): Promise<AppUser[]> => {
 
     console.log('✅ Successfully fetched users:', users?.length || 0);
     
-    // Map the data with proper typing
+    // Map the data with proper typing and handle missing phone field
     return users?.map(user => ({
       ...user,
       role: user.role as 'admin' | 'manager' | 'worker',
@@ -101,6 +101,7 @@ export const getCurrentUser = async (): Promise<AppUser | null> => {
 
     return {
       ...appUser,
+      role: appUser.role as 'admin' | 'manager' | 'worker',
       phone: appUser.phone || '', // Default to empty string if phone doesn't exist
     };
   } catch (error) {
@@ -237,6 +238,7 @@ export const toggleUserStatus = async (userId: string): Promise<AppUser> => {
     console.log('✅ User status toggled successfully');
     return {
       ...data,
+      role: data.role as 'admin' | 'manager' | 'worker',
       phone: data.phone || '', // Default to empty string if phone doesn't exist
     };
   } catch (error) {
