@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,13 +14,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCalendarEvents, addCalendarEvent, CalendarEvent } from '@/services/calendarService';
 import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
+import UserSelector from '@/components/notifications/UserSelector';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const CalendarPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { addNotification } = useNotifications();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -72,12 +75,28 @@ const CalendarPage = () => {
 
     const success = await addCalendarEvent(eventData);
     if (success) {
+      // Send notifications to selected users
+      if (selectedUserIds.length > 0) {
+        selectedUserIds.forEach(userId => {
+          addNotification(
+            'general',
+            `Nuevo Evento: ${newEvent.title}`,
+            `Se ha programado un evento para ${selectedDate.toLocaleDateString('es-ES')}`,
+            {
+              priority: 'medium',
+              actionRequired: false
+            }
+          );
+        });
+      }
+
       toast({
         title: "Éxito",
         description: "Evento creado correctamente"
       });
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       setIsDialogOpen(false);
+      setSelectedUserIds([]);
       setNewEvent({
         title: '',
         description: '',
@@ -169,108 +188,117 @@ const CalendarPage = () => {
                   Nuevo Evento
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Crear Nuevo Evento</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="title">Título *</Label>
+                      <Input
+                        id="title"
+                        value={newEvent.title}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Título del evento"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Tipo de Evento</Label>
+                      <Select 
+                        value={newEvent.eventType} 
+                        onValueChange={(value: CalendarEvent['eventType']) => 
+                          setNewEvent(prev => ({ ...prev, eventType: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="vaccination">Vacunación</SelectItem>
+                          <SelectItem value="checkup">Revisión</SelectItem>
+                          <SelectItem value="breeding">Reproducción</SelectItem>
+                          <SelectItem value="treatment">Tratamiento</SelectItem>
+                          <SelectItem value="feeding">Alimentación</SelectItem>
+                          <SelectItem value="appointment">Cita</SelectItem>
+                          <SelectItem value="reminder">Recordatorio</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Animal (Opcional)</Label>
+                      <Select 
+                        value={newEvent.animalId} 
+                        onValueChange={(value) => setNewEvent(prev => ({ ...prev, animalId: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar animal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {animals.map(animal => (
+                            <SelectItem key={animal.id} value={animal.id}>
+                              {animal.name} (#{animal.tag})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="veterinarian">Veterinario</Label>
+                      <Input
+                        id="veterinarian"
+                        value={newEvent.veterinarian}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, veterinarian: e.target.value }))}
+                        placeholder="Nombre del veterinario"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="location">Ubicación</Label>
+                      <Input
+                        id="location"
+                        value={newEvent.location}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
+                        placeholder="Ubicación del evento"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="cost">Costo</Label>
+                      <Input
+                        id="cost"
+                        type="number"
+                        value={newEvent.cost}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, cost: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description">Descripción</Label>
+                      <Textarea
+                        id="description"
+                        value={newEvent.description}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Detalles adicionales"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <Label htmlFor="title">Título *</Label>
-                    <Input
-                      id="title"
-                      value={newEvent.title}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Título del evento"
+                    <UserSelector
+                      selectedUserIds={selectedUserIds}
+                      onUserSelectionChange={setSelectedUserIds}
                     />
                   </div>
-
-                  <div>
-                    <Label>Tipo de Evento</Label>
-                    <Select 
-                      value={newEvent.eventType} 
-                      onValueChange={(value: CalendarEvent['eventType']) => 
-                        setNewEvent(prev => ({ ...prev, eventType: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="vaccination">Vacunación</SelectItem>
-                        <SelectItem value="checkup">Revisión</SelectItem>
-                        <SelectItem value="breeding">Reproducción</SelectItem>
-                        <SelectItem value="treatment">Tratamiento</SelectItem>
-                        <SelectItem value="feeding">Alimentación</SelectItem>
-                        <SelectItem value="appointment">Cita</SelectItem>
-                        <SelectItem value="reminder">Recordatorio</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Animal (Opcional)</Label>
-                    <Select 
-                      value={newEvent.animalId} 
-                      onValueChange={(value) => setNewEvent(prev => ({ ...prev, animalId: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar animal" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {animals.map(animal => (
-                          <SelectItem key={animal.id} value={animal.id}>
-                            {animal.name} (#{animal.tag})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="veterinarian">Veterinario</Label>
-                    <Input
-                      id="veterinarian"
-                      value={newEvent.veterinarian}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, veterinarian: e.target.value }))}
-                      placeholder="Nombre del veterinario"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="location">Ubicación</Label>
-                    <Input
-                      id="location"
-                      value={newEvent.location}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
-                      placeholder="Ubicación del evento"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cost">Costo</Label>
-                    <Input
-                      id="cost"
-                      type="number"
-                      value={newEvent.cost}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, cost: e.target.value }))}
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="description">Descripción</Label>
-                    <Textarea
-                      id="description"
-                      value={newEvent.description}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Detalles adicionales"
-                    />
-                  </div>
-
-                  <Button onClick={handleCreateEvent} className="w-full">
-                    Crear Evento
-                  </Button>
                 </div>
+
+                <Button onClick={handleCreateEvent} className="w-full mt-4">
+                  Crear Evento
+                </Button>
               </DialogContent>
             </Dialog>
           </div>
