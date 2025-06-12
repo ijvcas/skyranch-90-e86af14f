@@ -190,6 +190,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          phone: string | null
           role: string
         }
         Insert: {
@@ -199,6 +200,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          phone?: string | null
           role: string
         }
         Update: {
@@ -208,6 +210,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          phone?: string | null
           role?: string
         }
         Relationships: []
@@ -679,6 +682,10 @@ export type Database = {
           raw_user_meta_data: Json
           created_at: string
         }[]
+      }
+      sync_auth_users_to_app_users: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

@@ -14,12 +14,13 @@ export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'cre
       throw new Error('No authenticated user');
     }
 
-    // Insert into app_users table (without phone for now since it doesn't exist in schema)
+    // Insert into app_users table with phone
     const { data, error } = await supabase
       .from('app_users')
       .insert([{
         name: userData.name,
         email: userData.email,
+        phone: userData.phone || '',
         role: userData.role,
         is_active: userData.is_active,
         created_by: currentUser.id
@@ -40,15 +41,16 @@ export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'cre
   }
 };
 
-// Update user information (without phone field for now)
+// Update user information including phone
 export const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
   try {
     console.log('📝 Updating user:', userId, updates);
 
-    // Prepare update data - excluding phone since it doesn't exist in schema
+    // Prepare update data including phone
     const updateData: any = {};
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.email !== undefined) updateData.email = updates.email;
+    if (updates.phone !== undefined) updateData.phone = updates.phone;
     if (updates.role !== undefined) updateData.role = updates.role;
     if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
 
@@ -131,7 +133,7 @@ export const toggleUserStatus = async (userId: string): Promise<AppUser> => {
     return {
       ...data,
       role: data.role as 'admin' | 'manager' | 'worker',
-      phone: '', // Default empty phone since field doesn't exist in schema
+      phone: data.phone || '',
     };
   } catch (error) {
     console.error('❌ Error in toggleUserStatus:', error);

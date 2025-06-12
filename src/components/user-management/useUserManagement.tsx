@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addUser, deleteUser, toggleUserStatus, type AppUser } from '@/services/userService';
+import { addUser, deleteUser, toggleUserStatus, syncAuthUsersToAppUsers, type AppUser } from '@/services/userService';
 import { useToast } from '@/hooks/use-toast';
 
 export const useUserManagement = () => {
@@ -97,6 +97,25 @@ export const useUserManagement = () => {
     }
   });
 
+  const syncUsersMutation = useMutation({
+    mutationFn: syncAuthUsersToAppUsers,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app-users'] });
+      toast({
+        title: "Usuarios Sincronizados",
+        description: "Los usuarios de autenticación se han sincronizado correctamente.",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error syncing users:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo sincronizar los usuarios",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -113,14 +132,21 @@ export const useUserManagement = () => {
     addUserMutation.mutate(newUser);
   };
 
+  const handleSyncUsers = () => {
+    console.log('🔄 Manual sync triggered');
+    syncUsersMutation.mutate();
+  };
+
   return {
     showAddForm,
     setShowAddForm,
     newUser,
     setNewUser,
     handleAddUser,
+    handleSyncUsers,
     addUserMutation,
     deleteUserMutation,
-    toggleStatusMutation
+    toggleStatusMutation,
+    syncUsersMutation
   };
 };

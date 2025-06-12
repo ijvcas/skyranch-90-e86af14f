@@ -1,18 +1,22 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Users, UserPlus, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, RefreshCw, Sync } from 'lucide-react';
 
 interface UserManagementHeaderProps {
   isFetching: boolean;
   onRefresh: () => void;
   onToggleAddForm: () => void;
+  onSyncUsers: () => void;
+  isSyncing: boolean;
 }
 
 const UserManagementHeader: React.FC<UserManagementHeaderProps> = ({
   isFetching,
   onRefresh,
-  onToggleAddForm
+  onToggleAddForm,
+  onSyncUsers,
+  isSyncing
 }) => {
   return (
     <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
@@ -25,6 +29,16 @@ const UserManagementHeader: React.FC<UserManagementHeaderProps> = ({
       </div>
       <div className="flex gap-2">
         <Button
+          onClick={onSyncUsers}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          disabled={isSyncing}
+        >
+          <Sync className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+        </Button>
+        <Button
           onClick={onRefresh}
           variant="outline"
           size="sm"
@@ -32,7 +46,7 @@ const UserManagementHeader: React.FC<UserManagementHeaderProps> = ({
           disabled={isFetching}
         >
           <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
-          {isFetching ? 'Sincronizando...' : 'Actualizar'}
+          {isFetching ? 'Actualizando...' : 'Actualizar'}
         </Button>
         <Button
           onClick={onToggleAddForm}

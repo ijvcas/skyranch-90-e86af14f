@@ -25,9 +25,11 @@ const UserManagement = () => {
     newUser,
     setNewUser,
     handleAddUser,
+    handleSyncUsers,
     addUserMutation,
     deleteUserMutation,
-    toggleStatusMutation
+    toggleStatusMutation,
+    syncUsersMutation
   } = useUserManagement();
 
   // Fetch users from Supabase with aggressive refetching
@@ -97,7 +99,7 @@ const UserManagement = () => {
   const handleRefresh = () => {
     console.log('Manual refresh triggered');
     toast({
-      title: "Sincronizando",
+      title: "Actualizando",
       description: "Actualizando lista de usuarios...",
     });
     queryClient.invalidateQueries({ queryKey: ['app-users'] });
@@ -122,6 +124,8 @@ const UserManagement = () => {
         isFetching={isFetching}
         onRefresh={handleRefresh}
         onToggleAddForm={() => setShowAddForm(!showAddForm)}
+        onSyncUsers={handleSyncUsers}
+        isSyncing={syncUsersMutation.isPending}
       />
 
       {showAddForm && (

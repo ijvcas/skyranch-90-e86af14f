@@ -44,6 +44,11 @@ const UsersTable: React.FC<UsersTableProps> = ({
     return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  const formatPhone = (phone: string) => {
+    if (!phone) return 'No registrado';
+    return phone;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -71,7 +76,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-gray-600">{user.phone || 'No registrado'}</span>
+                  <span className="text-sm text-gray-600">{formatPhone(user.phone)}</span>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>

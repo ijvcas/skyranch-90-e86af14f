@@ -71,19 +71,19 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
           />
         </div>
 
-        {/* Phone field temporarily disabled - database schema needs to be updated */}
-        <div className="space-y-2 opacity-50">
-          <Label htmlFor="phone">Teléfono (Próximamente)</Label>
+        <div className="space-y-2">
+          <Label htmlFor="phone">Teléfono</Label>
           <Input
             id="phone"
             type="tel"
             value={formData.phone}
-            placeholder="Función en desarrollo"
-            disabled={true}
+            onChange={(e) => onInputChange('phone', e.target.value)}
+            placeholder="+1 (555) 123-4567"
+            disabled={isDisabled}
           />
-          <p className="text-xs text-gray-500">
-            La funcionalidad de teléfono estará disponible próximamente.
-          </p>
+          {phoneError && (
+            <p className="text-sm text-red-600">{phoneError}</p>
+          )}
         </div>
 
         <div className="space-y-2">

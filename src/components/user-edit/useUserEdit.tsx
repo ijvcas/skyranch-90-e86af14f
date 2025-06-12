@@ -66,18 +66,38 @@ export const useUserEdit = ({ user, onClose }: UseUserEditProps) => {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear phone error when user starts typing
+    if (field === 'phone') {
+      setPhoneError('');
+    }
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    if (!phone) return true; // Phone is optional
+    
+    // Basic phone validation - adjust regex as needed
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate phone number
+    if (formData.phone && !validatePhone(formData.phone)) {
+      setPhoneError('Formato de teléfono inválido');
+      return;
+    }
+    
     // Prevent editing admin users' roles
     const isAdminUser = user.email === 'juan.casanova@skyranch.com' || user.email === 'jvcas@mac.com';
     
-    // Don't include phone in update data since field doesn't exist in schema
+    // Include phone in update data
     const updateData: Partial<AppUser> = {
       name: formData.name,
       email: formData.email,
+      phone: formData.phone,
       role: isAdminUser ? user.role : formData.role,
       is_active: formData.is_active
     };
