@@ -31,8 +31,8 @@ const MapDrawingControls = ({
   onCancelDrawing,
   onLotSelect
 }: MapDrawingControlsProps) => {
-  const [isVisible, setIsVisible] = useState(true);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isVisible, setIsVisible] = useState(false); // Changed to false - start minimized
+  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
   
   const { position, dragRef, handleMouseDown, isDragging } = useDraggable({
     x: 16,
@@ -42,13 +42,26 @@ const MapDrawingControls = ({
   const selectedLot = lots.find(l => l.id === selectedLotId);
   const hasPolygon = lotPolygons.some(lp => lp.lotId === selectedLotId);
 
-  if (!isVisible) return <PolygonList lots={lots} lotPolygons={lotPolygons} onDeletePolygon={onDeletePolygon} />;
+  if (!isVisible) return (
+    <>
+      <PolygonList lots={lots} lotPolygons={lotPolygons} onDeletePolygon={onDeletePolygon} />
+      <Button
+        onClick={() => setIsVisible(true)}
+        className="absolute top-4 left-4 z-20"
+        variant="outline"
+        size="sm"
+      >
+        <Square className="w-4 h-4 mr-2" />
+        Control de Polígonos
+      </Button>
+    </>
+  );
 
   return (
     <>
       <Card 
         ref={dragRef}
-        className={`absolute w-80 z-20 shadow-lg ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`absolute w-80 z-20 shadow-lg bg-white/95 backdrop-blur-sm ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         style={{
           left: `${position.x}px`,
           bottom: `${window.innerHeight - position.y - 400}px`,
@@ -116,17 +129,6 @@ const MapDrawingControls = ({
         lotPolygons={lotPolygons}
         onDeletePolygon={onDeletePolygon}
       />
-
-      {!isVisible && (
-        <Button
-          onClick={() => setIsVisible(true)}
-          className="absolute top-4 left-4 z-20"
-          variant="outline"
-        >
-          <Square className="w-4 h-4 mr-2" />
-          Mostrar Controles
-        </Button>
-      )}
     </>
   );
 };

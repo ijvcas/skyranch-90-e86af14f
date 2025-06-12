@@ -37,7 +37,7 @@ const LotVisibilityControls = ({
 
   if (isMinimized) {
     return (
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 -translate-x-32 z-30">
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 -translate-x-40 z-30">
         <Button
           onClick={() => setIsMinimized(false)}
           variant="outline"
@@ -52,7 +52,7 @@ const LotVisibilityControls = ({
   }
 
   return (
-    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 -translate-x-32 z-30 w-64">
+    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 -translate-x-40 z-30 w-64">
       <Card className="shadow-lg bg-white/95 backdrop-blur-sm">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center text-sm justify-between">

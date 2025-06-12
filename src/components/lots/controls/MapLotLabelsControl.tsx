@@ -24,7 +24,7 @@ const MapLotLabelsControl = ({
 
   if (isMinimized) {
     return (
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 translate-x-32 z-20">
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 translate-x-40 z-20">
         <Button
           onClick={() => setIsMinimized(false)}
           variant="outline"
@@ -39,7 +39,7 @@ const MapLotLabelsControl = ({
   }
 
   return (
-    <Card className="absolute top-4 left-1/2 transform -translate-x-1/2 translate-x-32 w-64 z-20 shadow-lg bg-white/95 backdrop-blur-sm">
+    <Card className="absolute top-4 left-1/2 transform -translate-x-1/2 translate-x-40 w-64 z-20 shadow-lg bg-white/95 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center justify-between">
           <div className="flex items-center">
