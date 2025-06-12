@@ -88,6 +88,7 @@ export const useUserEdit = ({ user, onClose }: UseUserEditProps) => {
       is_active: formData.is_active
     };
 
+    console.log('📝 Updating user with data:', updateData);
     updateMutation.mutate(updateData);
   };
 

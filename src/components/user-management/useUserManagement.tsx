@@ -27,6 +27,7 @@ export const useUserManagement = () => {
     mutationFn: addUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['app-users'] });
+      const userName = newUser.name;
       setNewUser({ 
         name: '', 
         email: '', 
@@ -42,14 +43,14 @@ export const useUserManagement = () => {
       setShowAddForm(false);
       toast({
         title: "Usuario Agregado",
-        description: `${newUser.name} ha sido agregado exitosamente`,
+        description: `${userName} ha sido agregado exitosamente`,
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error adding user:', error);
       toast({
         title: "Error",
-        description: "No se pudo agregar el usuario",
+        description: error.message || "No se pudo agregar el usuario",
         variant: "destructive"
       });
     }
@@ -108,6 +109,7 @@ export const useUserManagement = () => {
       return;
     }
 
+    console.log('📝 Adding user with data:', newUser);
     addUserMutation.mutate(newUser);
   };
 

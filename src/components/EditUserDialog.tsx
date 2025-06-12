@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { type AppUser } from '@/services/userService';
 import UserEditDialogHeader from './user-edit/UserEditDialogHeader';
 import UserEditForm from './user-edit/UserEditForm';
@@ -33,26 +34,28 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <UserEditDialogHeader />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <UserEditForm
-            formData={formData}
-            onInputChange={handleInputChange}
-            phoneError={phoneError}
-            setPhoneError={setPhoneError}
-            isDisabled={updateMutation.isPending}
-            isAdminUser={isAdminUser}
-          />
+        <ScrollArea className="flex-1 pr-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <UserEditForm
+              formData={formData}
+              onInputChange={handleInputChange}
+              phoneError={phoneError}
+              setPhoneError={setPhoneError}
+              isDisabled={updateMutation.isPending}
+              isAdminUser={isAdminUser}
+            />
+          </form>
+        </ScrollArea>
 
-          <UserEditDialogFooter
-            onCancel={() => onOpenChange(false)}
-            onSubmit={handleSubmit}
-            isLoading={updateMutation.isPending}
-            hasError={!!phoneError}
-          />
-        </form>
+        <UserEditDialogFooter
+          onCancel={() => onOpenChange(false)}
+          onSubmit={handleSubmit}
+          isLoading={updateMutation.isPending}
+          hasError={!!phoneError}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -11,7 +11,7 @@ export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'cre
     
     if (!currentUser) {
       console.error('❌ No authenticated user to perform this operation');
-      return false;
+      throw new Error('No authenticated user');
     }
 
     // Insert into app_users table
@@ -30,14 +30,14 @@ export const addUser = async (userData: Omit<AppUser, 'id' | 'created_at' | 'cre
 
     if (error) {
       console.error('❌ Error adding user to app_users:', error);
-      return false;
+      throw new Error(`Error adding user: ${error.message}`);
     }
 
     console.log('✅ User added successfully:', data);
     return true;
   } catch (error) {
     console.error('❌ Error in addUser:', error);
-    return false;
+    throw error;
   }
 };
 
@@ -61,14 +61,14 @@ export const updateUser = async (userId: string, updates: Partial<AppUser>): Pro
 
     if (error) {
       console.error('❌ Error updating user:', error);
-      return false;
+      throw new Error(`Error updating user: ${error.message}`);
     }
 
     console.log('✅ User updated successfully');
     return true;
   } catch (error) {
     console.error('❌ Error in updateUser:', error);
-    return false;
+    throw error;
   }
 };
 
@@ -131,7 +131,7 @@ export const toggleUserStatus = async (userId: string): Promise<AppUser> => {
     return {
       ...data,
       role: data.role as 'admin' | 'manager' | 'worker',
-      phone: (data as any).phone || '', // Type assertion for phone field
+      phone: data.phone || '', // Handle null phone values
     };
   } catch (error) {
     console.error('❌ Error in toggleUserStatus:', error);
