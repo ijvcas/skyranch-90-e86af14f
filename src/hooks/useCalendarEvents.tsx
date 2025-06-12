@@ -12,6 +12,7 @@ import {
   CalendarEvent 
 } from '@/services/calendarService';
 import { notificationService } from '@/services/notifications/notificationService';
+import { pushService } from '@/services/notifications/pushService';
 
 export const useCalendarEvents = () => {
   const { toast } = useToast();
@@ -28,6 +29,67 @@ export const useCalendarEvents = () => {
     queryFn: getAllUsers
   });
 
+  const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false) => {
+    if (selectedUserIds.length === 0) return;
+
+    const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
+    const actionText = isUpdate ? "actualizado" : "creado";
+    const notificationTitle = `Evento ${actionText}: ${eventTitle}`;
+    const notificationBody = `Se ha ${actionText} el evento "${eventTitle}" programado para ${new Date(eventDate).toLocaleDateString('es-ES')}.`;
+
+    // Check notification permission status
+    const permissionStatus = pushService.getPermissionStatus();
+    console.log(`📱 Current notification permission: ${permissionStatus}`);
+
+    let notificationsSent = 0;
+    let notificationsFailed = 0;
+
+    for (const user of selectedUsers) {
+      try {
+        console.log(`📢 Sending notification to ${user.email} for event: ${eventTitle}`);
+        
+        // Send comprehensive notification (email + push)
+        await notificationService.sendNotification(
+          user.id,
+          user.email,
+          notificationTitle,
+          notificationBody
+        );
+
+        notificationsSent++;
+        
+      } catch (error) {
+        console.error(`❌ Error sending notification to ${user.email}:`, error);
+        notificationsFailed++;
+      }
+    }
+
+    // Show summary toast
+    if (notificationsSent > 0) {
+      toast({
+        title: "Notificaciones enviadas",
+        description: `Se enviaron ${notificationsSent} notificación(es) correctamente${notificationsFailed > 0 ? `. ${notificationsFailed} fallaron.` : '.'}`,
+      });
+    }
+
+    if (notificationsFailed > 0 && notificationsSent === 0) {
+      toast({
+        title: "Error de notificaciones",
+        description: `No se pudieron enviar las notificaciones (${notificationsFailed} fallos)`,
+        variant: "destructive"
+      });
+    }
+
+    // Show permission warning if needed
+    if (permissionStatus !== 'granted' && pushService.isSupported()) {
+      toast({
+        title: "Permisos de notificación",
+        description: "Para recibir notificaciones push, permite las notificaciones en tu navegador",
+        variant: "destructive"
+      });
+    }
+  };
+
   const createEvent = async (eventData: any, selectedUserIds: string[]) => {
     if (isSubmitting) return;
     
@@ -35,36 +97,8 @@ export const useCalendarEvents = () => {
 
     const eventId = await addCalendarEvent(eventData, selectedUserIds);
     if (eventId) {
-      // Send real notifications to selected users
-      if (selectedUserIds.length > 0) {
-        const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
-        
-        for (const user of selectedUsers) {
-          try {
-            console.log(`Sending notification to ${user.email} for event: ${eventData.title}`);
-            
-            // Send comprehensive notification (email + push)
-            await notificationService.sendNotification(
-              user.id,
-              user.email,
-              `Nuevo Evento: ${eventData.title}`,
-              `Se ha creado un nuevo evento "${eventData.title}" programado para ${new Date(eventData.eventDate).toLocaleDateString('es-ES')}.`
-            );
-
-            toast({
-              title: "Notificación enviada",
-              description: `Notificación enviada a ${user.email}`,
-            });
-          } catch (error) {
-            console.error(`Error sending notification to ${user.email}:`, error);
-            toast({
-              title: "Error de notificación",
-              description: `No se pudo enviar notificación a ${user.email}`,
-              variant: "destructive"
-            });
-          }
-        }
-      }
+      // Send notifications
+      await sendNotificationsToUsers(selectedUserIds, eventData.title, eventData.eventDate, false);
 
       toast({
         title: "Éxito",
@@ -84,36 +118,8 @@ export const useCalendarEvents = () => {
   const updateEvent = async (eventId: string, eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
     const success = await updateCalendarEvent(eventId, eventData, selectedUserIds);
     if (success) {
-      // Send real notifications to selected users
-      if (selectedUserIds.length > 0) {
-        const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
-        
-        for (const user of selectedUsers) {
-          try {
-            console.log(`Sending update notification to ${user.email} for event: ${eventData.title}`);
-            
-            // Send comprehensive notification (email + push)
-            await notificationService.sendNotification(
-              user.id,
-              user.email,
-              `Evento Actualizado: ${eventData.title}`,
-              `El evento "${eventData.title}" ha sido actualizado. Revisa los detalles en el calendario.`
-            );
-
-            toast({
-              title: "Notificación enviada",
-              description: `Notificación de actualización enviada a ${user.email}`,
-            });
-          } catch (error) {
-            console.error(`Error sending notification to ${user.email}:`, error);
-            toast({
-              title: "Error de notificación",
-              description: `No se pudo enviar notificación a ${user.email}`,
-              variant: "destructive"
-            });
-          }
-        }
-      }
+      // Send notifications
+      await sendNotificationsToUsers(selectedUserIds, eventData.title || 'Evento', eventData.eventDate || '', true);
 
       toast({
         title: "Éxito",
