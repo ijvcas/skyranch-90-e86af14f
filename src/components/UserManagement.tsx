@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Users, UserPlus, UserMinus, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Users, UserPlus, UserMinus, RefreshCw, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -17,14 +18,17 @@ import {
   getCurrentUser,
   type AppUser
 } from '@/services/userService';
+import EditUserDialog from './EditUserDialog';
 
 const UserManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
+    phone: '',
     role: 'worker' as AppUser['role'],
     is_active: true
   });
@@ -53,7 +57,7 @@ const UserManagement = () => {
     mutationFn: addUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['app-users'] });
-      setNewUser({ name: '', email: '', role: 'worker', is_active: true });
+      setNewUser({ name: '', email: '', phone: '', role: 'worker', is_active: true });
       setShowAddForm(false);
       toast({
         title: "Usuario Agregado",
@@ -268,18 +272,30 @@ const UserManagement = () => {
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="role">Rol</Label>
-                <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value as AppUser['role']})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="worker">Trabajador</SelectItem>
-                    <SelectItem value="manager">Gerente</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="phone">Teléfono</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="role">Rol</Label>
+                  <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value as AppUser['role']})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="worker">Trabajador</SelectItem>
+                      <SelectItem value="manager">Gerente</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex gap-3">
                 <Button type="submit" disabled={addUserMutation.isPending}>
@@ -304,6 +320,7 @@ const UserManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Usuario</TableHead>
+                <TableHead>Teléfono</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Fecha Registro</TableHead>
@@ -318,6 +335,9 @@ const UserManagement = () => {
                       <div className="font-medium">{user.name}</div>
                       <div className="text-sm text-gray-500">{user.email}</div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-gray-600">{user.phone || 'No registrado'}</span>
                   </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
@@ -340,15 +360,25 @@ const UserManagement = () => {
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      onClick={() => handleDeleteUser(user.id, user.name)}
-                      variant="ghost"
-                      size="sm"
-                      disabled={currentUser?.id === user.id || deleteUserMutation.isPending}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <UserMinus className="w-4 h-4" />
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={() => setEditingUser(user)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteUser(user.id, user.name)}
+                        variant="ghost"
+                        size="sm"
+                        disabled={currentUser?.id === user.id || deleteUserMutation.isPending}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -356,6 +386,15 @@ const UserManagement = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit User Dialog */}
+      {editingUser && (
+        <EditUserDialog
+          user={editingUser}
+          isOpen={!!editingUser}
+          onOpenChange={(open) => !open && setEditingUser(null)}
+        />
+      )}
     </div>
   );
 };

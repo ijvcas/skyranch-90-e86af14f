@@ -102,30 +102,20 @@ class NotificationService {
     }
   }
 
-  // Get user notification preferences
+  // Get user notification preferences (stored in localStorage for now)
   async getUserPreferences(userId: string): Promise<NotificationPreferences> {
     try {
-      const { data, error } = await supabase
-        .from('notification_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error || !data) {
-        // Return default preferences if none exist
-        return {
-          userId,
-          email: true,
-          push: true,
-          inApp: true
-        };
+      const storedPrefs = localStorage.getItem(`notification_prefs_${userId}`);
+      if (storedPrefs) {
+        return JSON.parse(storedPrefs);
       }
-
+      
+      // Return default preferences if none exist
       return {
-        userId: data.user_id,
-        email: data.email,
-        push: data.push,
-        inApp: data.in_app
+        userId,
+        email: true,
+        push: true,
+        inApp: true
       };
     } catch (error) {
       console.error('Error getting user preferences:', error);
@@ -138,25 +128,10 @@ class NotificationService {
     }
   }
 
-  // Save user notification preferences
+  // Save user notification preferences (stored in localStorage for now)
   async saveUserPreferences(preferences: NotificationPreferences): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('notification_preferences')
-        .upsert([{
-          user_id: preferences.userId,
-          email: preferences.email,
-          push: preferences.push,
-          in_app: preferences.inApp
-        }], {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        console.error('Error saving preferences:', error);
-        return false;
-      }
-
+      localStorage.setItem(`notification_prefs_${preferences.userId}`, JSON.stringify(preferences));
       return true;
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -164,19 +139,14 @@ class NotificationService {
     }
   }
 
-  // Log notification delivery
+  // Log notification delivery (console logging for now)
   async logNotification(log: Omit<NotificationLog, 'id' | 'createdAt'>): Promise<void> {
     try {
-      await supabase
-        .from('notification_logs')
-        .insert([{
-          user_id: log.userId,
-          type: log.type,
-          status: log.status,
-          message: log.message,
-          sent_at: log.sentAt,
-          error: log.error
-        }]);
+      console.log('📝 Notification log:', {
+        ...log,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Error logging notification:', error);
     }
