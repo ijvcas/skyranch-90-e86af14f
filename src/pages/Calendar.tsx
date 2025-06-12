@@ -23,7 +23,7 @@ const CalendarPage = () => {
   const [selectedEventForEdit, setSelectedEventForEdit] = useState<CalendarEvent | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  const { events, createEvent, updateEvent, deleteEvent, isSubmitting } = useCalendarEvents();
+  const { events, createEvent, updateEvent, deleteEvent, getNotificationUsers, isSubmitting } = useCalendarEvents();
 
   const { data: animals = [] } = useQuery({
     queryKey: ['animals'],
@@ -36,18 +36,27 @@ const CalendarPage = () => {
     setSelectedUserIds([]);
   };
 
-  const handleEditEvent = (event: CalendarEvent) => {
+  const handleEditEvent = async (event: CalendarEvent) => {
     setSelectedEventForEdit(event);
+    // Load the selected users for this event
+    const notificationUsers = await getNotificationUsers(event.id);
+    setSelectedUserIds(notificationUsers);
     setIsEditDialogOpen(true);
   };
 
   const handleSaveEditedEvent = async (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
     if (!selectedEventForEdit) return;
     await updateEvent(selectedEventForEdit.id, eventData, selectedUserIds);
+    setIsEditDialogOpen(false);
+    setSelectedEventForEdit(null);
+    setSelectedUserIds([]);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
     await deleteEvent(eventId);
+    setIsEditDialogOpen(false);
+    setSelectedEventForEdit(null);
+    setSelectedUserIds([]);
   };
 
   return (
@@ -156,9 +165,12 @@ const CalendarPage = () => {
           onClose={() => {
             setIsEditDialogOpen(false);
             setSelectedEventForEdit(null);
+            setSelectedUserIds([]);
           }}
           onSave={handleSaveEditedEvent}
           onDelete={handleDeleteEvent}
+          selectedUserIds={selectedUserIds}
+          onUserSelectionChange={setSelectedUserIds}
         />
       </div>
     </div>

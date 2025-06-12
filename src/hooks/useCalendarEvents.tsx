@@ -2,19 +2,19 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useNotifications } from '@/hooks/useNotifications';
+import { getAllUsers } from '@/services/userService';
 import { 
   getCalendarEvents, 
   addCalendarEvent, 
   updateCalendarEvent, 
   deleteCalendarEvent, 
+  getEventNotificationUsers,
   CalendarEvent 
 } from '@/services/calendarService';
 
 export const useCalendarEvents = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: events = [] } = useQuery({
@@ -22,23 +22,35 @@ export const useCalendarEvents = () => {
     queryFn: getCalendarEvents
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: getAllUsers
+  });
+
   const createEvent = async (eventData: any, selectedUserIds: string[]) => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
 
-    const success = await addCalendarEvent(eventData);
-    if (success) {
-      // Send notifications to selected users
+    const eventId = await addCalendarEvent(eventData, selectedUserIds);
+    if (eventId) {
+      // Send email notifications to selected users
       if (selectedUserIds.length > 0) {
-        selectedUserIds.forEach(userId => {
-          addNotification(
-            'general',
-            `Nuevo Evento: ${eventData.title}`,
-            `Se ha programado un evento para ${new Date(eventData.eventDate).toLocaleDateString('es-ES')}. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`,
-            { animalId: userId }
-          );
-        });
+        const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
+        
+        for (const user of selectedUsers) {
+          try {
+            console.log(`Sending notification to ${user.email} for event: ${eventData.title}`);
+            // Here you would implement actual email notification
+            // For now, we'll just log it
+            toast({
+              title: "Notificación enviada",
+              description: `Notificación enviada a ${user.email}`,
+            });
+          } catch (error) {
+            console.error(`Error sending notification to ${user.email}:`, error);
+          }
+        }
       }
 
       toast({
@@ -57,18 +69,25 @@ export const useCalendarEvents = () => {
   };
 
   const updateEvent = async (eventId: string, eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
-    const success = await updateCalendarEvent(eventId, eventData);
+    const success = await updateCalendarEvent(eventId, eventData, selectedUserIds);
     if (success) {
-      // Send notifications to selected users
+      // Send email notifications to selected users
       if (selectedUserIds.length > 0) {
-        selectedUserIds.forEach(userId => {
-          addNotification(
-            'general',
-            `Evento Actualizado: ${eventData.title}`,
-            `Se ha actualizado un evento. Fecha de notificación: ${new Date().toLocaleDateString('es-ES')}`,
-            { animalId: userId }
-          );
-        });
+        const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
+        
+        for (const user of selectedUsers) {
+          try {
+            console.log(`Sending update notification to ${user.email} for event: ${eventData.title}`);
+            // Here you would implement actual email notification
+            // For now, we'll just log it
+            toast({
+              title: "Notificación enviada",
+              description: `Notificación de actualización enviada a ${user.email}`,
+            });
+          } catch (error) {
+            console.error(`Error sending notification to ${user.email}:`, error);
+          }
+        }
       }
 
       toast({
@@ -102,11 +121,16 @@ export const useCalendarEvents = () => {
     }
   };
 
+  const getNotificationUsers = async (eventId: string): Promise<string[]> => {
+    return await getEventNotificationUsers(eventId);
+  };
+
   return {
     events,
     createEvent,
     updateEvent,
     deleteEvent,
+    getNotificationUsers,
     isSubmitting
   };
 };

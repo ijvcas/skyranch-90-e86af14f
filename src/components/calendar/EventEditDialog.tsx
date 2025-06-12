@@ -17,11 +17,20 @@ interface EventEditDialogProps {
   onClose: () => void;
   onSave: (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => void;
   onDelete: (eventId: string) => void;
+  selectedUserIds: string[];
+  onUserSelectionChange: (userIds: string[]) => void;
 }
 
-const EventEditDialog = ({ event, isOpen, onClose, onSave, onDelete }: EventEditDialogProps) => {
+const EventEditDialog = ({ 
+  event, 
+  isOpen, 
+  onClose, 
+  onSave, 
+  onDelete, 
+  selectedUserIds, 
+  onUserSelectionChange 
+}: EventEditDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [editedEvent, setEditedEvent] = useState({
     title: '',
     description: '',
@@ -68,27 +77,11 @@ const EventEditDialog = ({ event, isOpen, onClose, onSave, onDelete }: EventEdit
 
     await onSave(eventData, selectedUserIds);
     setIsSubmitting(false);
-    setSelectedUserIds([]);
-    onClose();
   };
 
   const handleDelete = () => {
     if (!event || isSubmitting) return;
     onDelete(event.id);
-    onClose();
-  };
-
-  const getEventTypeLabel = (type: string) => {
-    switch (type) {
-      case 'vaccination': return 'Vacunación';
-      case 'checkup': return 'Revisión';
-      case 'breeding': return 'Reproducción';
-      case 'treatment': return 'Tratamiento';
-      case 'feeding': return 'Alimentación';
-      case 'appointment': return 'Cita';
-      case 'reminder': return 'Recordatorio';
-      default: return type;
-    }
   };
 
   if (!event) return null;
@@ -208,7 +201,7 @@ const EventEditDialog = ({ event, isOpen, onClose, onSave, onDelete }: EventEdit
           <div>
             <UserSelector
               selectedUserIds={selectedUserIds}
-              onUserSelectionChange={setSelectedUserIds}
+              onUserSelectionChange={onUserSelectionChange}
             />
           </div>
         </div>

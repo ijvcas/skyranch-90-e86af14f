@@ -57,15 +57,32 @@ export const getCalendarEvents = async (): Promise<CalendarEvent[]> => {
   }));
 };
 
-export const addCalendarEvent = async (event: Omit<CalendarEvent, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
+export const getEventNotificationUsers = async (eventId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('event_notifications')
+    .select('user_id')
+    .eq('event_id', eventId);
+
+  if (error) {
+    console.error('Error fetching event notification users:', error);
+    return [];
+  }
+
+  return data?.map(item => item.user_id) || [];
+};
+
+export const addCalendarEvent = async (
+  event: Omit<CalendarEvent, 'id' | 'userId' | 'createdAt' | 'updatedAt'>,
+  selectedUserIds: string[]
+): Promise<string | null> => {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
     console.error('No authenticated user');
-    return false;
+    return null;
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('calendar_events')
     .insert({
       user_id: user.id,
@@ -84,17 +101,41 @@ export const addCalendarEvent = async (event: Omit<CalendarEvent, 'id' | 'userId
       location: event.location || null,
       cost: event.cost || null,
       notes: event.notes || null
-    });
+    })
+    .select('id')
+    .single();
 
   if (error) {
     console.error('Error adding calendar event:', error);
-    return false;
+    return null;
   }
 
-  return true;
+  const eventId = data.id;
+
+  // Add event notifications for selected users
+  if (selectedUserIds.length > 0) {
+    const notifications = selectedUserIds.map(userId => ({
+      event_id: eventId,
+      user_id: userId
+    }));
+
+    const { error: notificationError } = await supabase
+      .from('event_notifications')
+      .insert(notifications);
+
+    if (notificationError) {
+      console.error('Error adding event notifications:', notificationError);
+    }
+  }
+
+  return eventId;
 };
 
-export const updateCalendarEvent = async (id: string, updatedData: Partial<Omit<CalendarEvent, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<boolean> => {
+export const updateCalendarEvent = async (
+  id: string, 
+  updatedData: Partial<Omit<CalendarEvent, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>,
+  selectedUserIds: string[]
+): Promise<boolean> => {
   const { error } = await supabase
     .from('calendar_events')
     .update({
@@ -120,6 +161,29 @@ export const updateCalendarEvent = async (id: string, updatedData: Partial<Omit<
   if (error) {
     console.error('Error updating calendar event:', error);
     return false;
+  }
+
+  // Update event notifications
+  // First, delete existing notifications
+  await supabase
+    .from('event_notifications')
+    .delete()
+    .eq('event_id', id);
+
+  // Then, add new notifications for selected users
+  if (selectedUserIds.length > 0) {
+    const notifications = selectedUserIds.map(userId => ({
+      event_id: id,
+      user_id: userId
+    }));
+
+    const { error: notificationError } = await supabase
+      .from('event_notifications')
+      .insert(notifications);
+
+    if (notificationError) {
+      console.error('Error updating event notifications:', notificationError);
+    }
   }
 
   return true;
