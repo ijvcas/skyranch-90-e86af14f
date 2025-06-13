@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Settings as SettingsIcon, Users, Database, Shield, Smartphone } from 'lucide-react';
-import DeploymentVersionDisplay from '@/components/app-info/DeploymentVersionDisplay';
+import DatabaseVersionDisplay from '@/components/app-info/DatabaseVersionDisplay';
 import AuthenticationStatusCard from '@/components/lots/AuthenticationStatusCard';
 import UserManagement from '@/components/UserManagement';
 import PermissionsManager from '@/components/PermissionsManager';
@@ -61,8 +61,8 @@ const Settings = () => {
         {/* System Status Tab */}
         <TabsContent value="system" className="space-y-6">
           <div className="space-y-6">
-            {/* Deployment-Aware Version Display */}
-            <DeploymentVersionDisplay />
+            {/* Database-backed Version Management */}
+            <DatabaseVersionDisplay />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Authentication Status */}

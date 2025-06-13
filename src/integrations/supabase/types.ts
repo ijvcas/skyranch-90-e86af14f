@@ -215,6 +215,36 @@ export type Database = {
         }
         Relationships: []
       }
+      app_version: {
+        Row: {
+          build_number: number
+          created_at: string
+          created_by: string | null
+          id: string
+          is_current: boolean
+          notes: string | null
+          version: string
+        }
+        Insert: {
+          build_number?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          version: string
+        }
+        Update: {
+          build_number?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       breeding_records: {
         Row: {
           actual_birth_date: string | null
