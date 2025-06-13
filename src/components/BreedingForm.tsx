@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { createBreedingRecord } from '@/services/breedingService';
 import { getAllAnimals } from '@/services/animalService';
-import { calculateExpectedDueDate, getSpeciesDisplayName } from '@/services/gestationService';
+import { calculateExpectedDueDate, getSpeciesDisplayName, getGestationPeriod, calculateActualGestationDuration } from '@/services/gestationService';
 import { Calendar, Info } from 'lucide-react';
 
 interface BreedingFormProps {
@@ -26,7 +26,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
     fatherId: '',
     breedingDate: '',
     breedingMethod: 'natural' as const,
-    expectedDueDate: '',
+    actualBirthDate: '',
     pregnancyConfirmed: false,
     pregnancyConfirmationDate: '',
     pregnancyMethod: '' as 'visual' | 'ultrasound' | 'blood_test' | 'palpation' | '',
@@ -37,7 +37,6 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
     status: 'planned' as const
   });
 
-  const [isDateAutoCalculated, setIsDateAutoCalculated] = useState(false);
   const [motherSpecies, setMotherSpecies] = useState<string>('');
 
   const { data: animals = [] } = useQuery({
@@ -65,23 +64,17 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
     }
   });
 
-  // Auto-calculate expected due date when mother and breeding date are selected
+  // Update mother species when mother is selected
   useEffect(() => {
-    if (formData.motherId && formData.breedingDate) {
+    if (formData.motherId) {
       const selectedMother = animals.find(animal => animal.id === formData.motherId);
       if (selectedMother?.species) {
-        const calculatedDate = calculateExpectedDueDate(formData.breedingDate, selectedMother.species);
-        if (calculatedDate) {
-          setFormData(prev => ({ ...prev, expectedDueDate: calculatedDate }));
-          setIsDateAutoCalculated(true);
-          setMotherSpecies(selectedMother.species);
-        }
+        setMotherSpecies(selectedMother.species);
       }
     } else {
-      setIsDateAutoCalculated(false);
       setMotherSpecies('');
     }
-  }, [formData.motherId, formData.breedingDate, animals]);
+  }, [formData.motherId, animals]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +93,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
       fatherId: formData.fatherId,
       breedingDate: formData.breedingDate,
       breedingMethod: formData.breedingMethod,
-      expectedDueDate: formData.expectedDueDate || undefined,
+      actualBirthDate: formData.actualBirthDate || undefined,
       pregnancyConfirmed: formData.pregnancyConfirmed,
       pregnancyConfirmationDate: formData.pregnancyConfirmationDate || undefined,
       pregnancyMethod: formData.pregnancyMethod || undefined,
@@ -116,12 +109,15 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Reset auto-calculation flag if user manually changes expected due date
-    if (field === 'expectedDueDate') {
-      setIsDateAutoCalculated(false);
-    }
   };
+
+  // Calculate gestation duration if both dates are available
+  const gestationDuration = formData.breedingDate && formData.actualBirthDate 
+    ? calculateActualGestationDuration(formData.breedingDate, formData.actualBirthDate)
+    : null;
+
+  // Get expected gestation period for the species
+  const expectedGestationPeriod = motherSpecies ? getGestationPeriod(motherSpecies) : null;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -163,7 +159,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="breedingDate">Fecha de Apareamiento *</Label>
               <Input
@@ -187,32 +183,6 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="expectedDueDate" className="flex items-center gap-2">
-                Fecha Esperada de Parto
-                {isDateAutoCalculated && (
-                  <div className="flex items-center gap-1 text-xs text-green-600">
-                    <Calendar className="w-3 h-3" />
-                    Auto-calculado
-                  </div>
-                )}
-              </Label>
-              <Input
-                id="expectedDueDate"
-                type="date"
-                value={formData.expectedDueDate}
-                onChange={(e) => handleInputChange('expectedDueDate', e.target.value)}
-              />
-              {isDateAutoCalculated && motherSpecies && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-                  <Info className="w-3 h-3" />
-                  <span>Basado en {getSpeciesDisplayName(motherSpecies)}</span>
-                </div>
-              )}
-            </div>
             <div>
               <Label htmlFor="status">Estado</Label>
               <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
@@ -235,7 +205,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Información del Embarazo</CardTitle>
+          <CardTitle>Información del Embarazo y Parto</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -274,15 +244,45 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
             </div>
           )}
 
-          <div>
-            <Label htmlFor="offspringCount">Número de Crías</Label>
-            <Input
-              id="offspringCount"
-              type="number"
-              min="0"
-              value={formData.offspringCount}
-              onChange={(e) => handleInputChange('offspringCount', parseInt(e.target.value) || 0)}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="actualBirthDate">Fecha de Nacimiento</Label>
+              <Input
+                id="actualBirthDate"
+                type="date"
+                value={formData.actualBirthDate}
+                onChange={(e) => handleInputChange('actualBirthDate', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="gestationDuration">Duración de Gestación (días)</Label>
+              <div className="space-y-1">
+                <Input
+                  id="gestationDuration"
+                  type="number"
+                  value={gestationDuration || ''}
+                  readOnly
+                  className="bg-gray-50"
+                  placeholder={expectedGestationPeriod ? `Esperado: ${expectedGestationPeriod}` : 'Auto-calculado'}
+                />
+                {expectedGestationPeriod && !gestationDuration && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Info className="w-3 h-3" />
+                    <span>Esperado para {getSpeciesDisplayName(motherSpecies)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="offspringCount">Número de Crías</Label>
+              <Input
+                id="offspringCount"
+                type="number"
+                min="0"
+                value={formData.offspringCount}
+                onChange={(e) => handleInputChange('offspringCount', parseInt(e.target.value) || 0)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

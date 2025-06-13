@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { updateBreedingRecord, BreedingRecord } from '@/services/breedingService';
 import { getAllAnimals } from '@/services/animalService';
-import { calculateExpectedDueDate, getSpeciesDisplayName } from '@/services/gestationService';
+import { calculateExpectedDueDate, getSpeciesDisplayName, getGestationPeriod, calculateActualGestationDuration } from '@/services/gestationService';
 import { Calendar, Info } from 'lucide-react';
 
 interface BreedingEditFormProps {
@@ -40,7 +40,6 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
     status: record.status
   });
 
-  const [isDateAutoCalculated, setIsDateAutoCalculated] = useState(false);
   const [motherSpecies, setMotherSpecies] = useState<string>('');
 
   const { data: animals = [] } = useQuery({
@@ -68,23 +67,17 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
     }
   });
 
-  // Auto-calculate expected due date when mother and breeding date are selected
+  // Update mother species when mother is selected
   useEffect(() => {
-    if (formData.motherId && formData.breedingDate) {
+    if (formData.motherId) {
       const selectedMother = animals.find(animal => animal.id === formData.motherId);
       if (selectedMother?.species) {
-        const calculatedDate = calculateExpectedDueDate(formData.breedingDate, selectedMother.species);
-        if (calculatedDate && calculatedDate !== formData.expectedDueDate) {
-          // Only auto-update if the current expected date is empty or matches previous calculation
-          if (!formData.expectedDueDate || isDateAutoCalculated) {
-            setFormData(prev => ({ ...prev, expectedDueDate: calculatedDate }));
-            setIsDateAutoCalculated(true);
-          }
-        }
         setMotherSpecies(selectedMother.species);
       }
+    } else {
+      setMotherSpecies('');
     }
-  }, [formData.motherId, formData.breedingDate, animals]);
+  }, [formData.motherId, animals]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,12 +114,15 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Reset auto-calculation flag if user manually changes expected due date
-    if (field === 'expectedDueDate') {
-      setIsDateAutoCalculated(false);
-    }
   };
+
+  // Calculate gestation duration if both dates are available
+  const gestationDuration = formData.breedingDate && formData.actualBirthDate 
+    ? calculateActualGestationDuration(formData.breedingDate, formData.actualBirthDate)
+    : null;
+
+  // Get expected gestation period for the species
+  const expectedGestationPeriod = motherSpecies ? getGestationPeriod(motherSpecies) : null;
 
   const handleRecalculateDate = () => {
     if (formData.motherId && formData.breedingDate) {
@@ -135,8 +131,6 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
         const calculatedDate = calculateExpectedDueDate(formData.breedingDate, selectedMother.species);
         if (calculatedDate) {
           setFormData(prev => ({ ...prev, expectedDueDate: calculatedDate }));
-          setIsDateAutoCalculated(true);
-          setMotherSpecies(selectedMother.species);
           toast({
             title: "Fecha Recalculada",
             description: `Fecha esperada de parto actualizada basada en ${getSpeciesDisplayName(selectedMother.species)}`,
@@ -214,15 +208,7 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="expectedDueDate" className="flex items-center gap-2">
-                Fecha Esperada de Parto
-                {isDateAutoCalculated && (
-                  <div className="flex items-center gap-1 text-xs text-green-600">
-                    <Calendar className="w-3 h-3" />
-                    Auto-calculado
-                  </div>
-                )}
-              </Label>
+              <Label htmlFor="expectedDueDate">Fecha Esperada de Parto</Label>
               <div className="space-y-2">
                 <Input
                   id="expectedDueDate"
@@ -243,12 +229,6 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
                   </Button>
                 )}
               </div>
-              {isDateAutoCalculated && motherSpecies && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-                  <Info className="w-3 h-3" />
-                  <span>Basado en {getSpeciesDisplayName(motherSpecies)}</span>
-                </div>
-              )}
             </div>
             <div>
               <Label htmlFor="actualBirthDate">Fecha Real de Parto</Label>
@@ -281,7 +261,7 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
 
       <Card>
         <CardHeader>
-          <CardTitle>Información del Embarazo</CardTitle>
+          <CardTitle>Información del Embarazo y Parto</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -320,16 +300,25 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="gestationLength">Duración de Gestación (días)</Label>
-              <Input
-                id="gestationLength"
-                type="number"
-                min="0"
-                value={formData.gestationLength}
-                onChange={(e) => handleInputChange('gestationLength', e.target.value)}
-              />
+              <Label htmlFor="gestationDuration">Duración de Gestación (días)</Label>
+              <div className="space-y-1">
+                <Input
+                  id="gestationDuration"
+                  type="number"
+                  value={gestationDuration || formData.gestationLength || ''}
+                  readOnly
+                  className="bg-gray-50"
+                  placeholder={expectedGestationPeriod ? `Esperado: ${expectedGestationPeriod}` : 'Auto-calculado'}
+                />
+                {expectedGestationPeriod && !gestationDuration && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Info className="w-3 h-3" />
+                    <span>Esperado para {getSpeciesDisplayName(motherSpecies)}</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <Label htmlFor="offspringCount">Número de Crías</Label>

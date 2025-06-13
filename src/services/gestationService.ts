@@ -59,6 +59,18 @@ export const calculateExpectedDueDate = (breedingDate: string, species: string):
   return dueDate.toISOString().split('T')[0];
 };
 
+export const calculateActualGestationDuration = (breedingDate: string, birthDate: string): number | null => {
+  if (!breedingDate || !birthDate) return null;
+  
+  const breeding = new Date(breedingDate);
+  const birth = new Date(birthDate);
+  
+  const diffTime = birth.getTime() - breeding.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays > 0 ? diffDays : null;
+};
+
 export const getSpeciesDisplayName = (species: string): string => {
   const displayNames: Record<string, string> = {
     'bovino': 'Bovino (283 días)',
