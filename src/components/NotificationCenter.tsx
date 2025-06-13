@@ -98,11 +98,11 @@ const NotificationCenter = () => {
     return matchesSearch && matchesPriority && matchesType;
   });
 
-  const unreadNotifications = filteredNotifications.filter(n => !n.isRead);
-  const readNotifications = filteredNotifications.filter(n => n.isRead);
+  const unreadNotifications = filteredNotifications.filter(n => !n.read);
+  const readNotifications = filteredNotifications.filter(n => n.read);
 
   const handleNotificationClick = (notification: Notification) => {
-    if (!notification.isRead) {
+    if (!notification.read) {
       markAsRead(notification.id);
     }
   };
@@ -112,7 +112,7 @@ const NotificationCenter = () => {
       className={`
         p-4 rounded-lg border-l-4 cursor-pointer transition-colors hover:bg-gray-50
         ${getPriorityColor(notification.priority)}
-        ${notification.isRead ? 'opacity-60' : ''}
+        ${notification.read ? 'opacity-60' : ''}
       `}
       onClick={() => handleNotificationClick(notification)}
     >
@@ -122,7 +122,7 @@ const NotificationCenter = () => {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
               <h3 className={`text-sm font-medium ${
-                notification.isRead ? 'text-gray-600' : 'text-gray-900'
+                notification.read ? 'text-gray-600' : 'text-gray-900'
               }`}>
                 {notification.title}
               </h3>
@@ -135,7 +135,7 @@ const NotificationCenter = () => {
             </div>
             
             <p className={`text-sm mb-2 ${
-              notification.isRead ? 'text-gray-500' : 'text-gray-700'
+              notification.read ? 'text-gray-500' : 'text-gray-700'
             }`}>
               {notification.message}
             </p>
@@ -160,7 +160,7 @@ const NotificationCenter = () => {
               </div>
               
               <span className="text-xs text-gray-400">
-                {formatDistanceToNow(notification.createdAt, { 
+                {formatDistanceToNow(new Date(notification.created_at), { 
                   addSuffix: true, 
                   locale: es 
                 })}
@@ -170,7 +170,7 @@ const NotificationCenter = () => {
         </div>
         
         <div className="flex items-center space-x-2 ml-3">
-          {!notification.isRead && (
+          {!notification.read && (
             <Button
               variant="ghost"
               size="sm"

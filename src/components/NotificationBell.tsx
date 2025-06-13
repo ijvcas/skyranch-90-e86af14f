@@ -52,13 +52,13 @@ const NotificationBell = () => {
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    if (!notification.isRead) {
+    if (!notification.read) {
       markAsRead(notification.id);
     }
   };
 
   const recentNotifications = notifications
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 20);
 
   return (
@@ -122,7 +122,7 @@ const NotificationBell = () => {
                         className={`
                           p-3 rounded-lg border-l-4 cursor-pointer transition-colors hover:bg-gray-50
                           ${getPriorityColor(notification.priority)}
-                          ${notification.isRead ? 'opacity-60' : ''}
+                          ${notification.read ? 'opacity-60' : ''}
                         `}
                         onClick={() => handleNotificationClick(notification)}
                       >
@@ -132,7 +132,7 @@ const NotificationBell = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <h4 className={`text-sm font-medium truncate ${
-                                  notification.isRead ? 'text-gray-600' : 'text-gray-900'
+                                  notification.read ? 'text-gray-600' : 'text-gray-900'
                                 }`}>
                                   {notification.title}
                                 </h4>
@@ -142,7 +142,7 @@ const NotificationBell = () => {
                               </div>
                               
                               <p className={`text-xs mt-1 line-clamp-2 ${
-                                notification.isRead ? 'text-gray-500' : 'text-gray-700'
+                                notification.read ? 'text-gray-500' : 'text-gray-700'
                               }`}>
                                 {notification.message}
                               </p>
@@ -155,7 +155,7 @@ const NotificationBell = () => {
                               
                               <div className="flex items-center justify-between mt-2">
                                 <span className="text-xs text-gray-400">
-                                  {formatDistanceToNow(notification.createdAt, { 
+                                  {formatDistanceToNow(new Date(notification.created_at), { 
                                     addSuffix: true, 
                                     locale: es 
                                   })}
