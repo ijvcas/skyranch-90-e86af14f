@@ -83,58 +83,63 @@ const EventForm = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-6">
+      {/* Event Form Fields */}
       <div className="space-y-4">
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="title">Título *</Label>
           <Input
             id="title"
             value={newEvent.title}
             onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
             placeholder="Título del evento"
+            className="w-full"
           />
         </div>
 
-        <div>
-          <Label htmlFor="event-date">Fecha *</Label>
-          <Input
-            id="event-date"
-            type="date"
-            value={newEvent.eventDate}
-            onChange={(e) => setNewEvent(prev => ({ ...prev, eventDate: e.target.value }))}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="event-date">Fecha *</Label>
+            <Input
+              id="event-date"
+              type="date"
+              value={newEvent.eventDate}
+              onChange={(e) => setNewEvent(prev => ({ ...prev, eventDate: e.target.value }))}
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tipo de Evento</Label>
+            <Select 
+              value={newEvent.eventType} 
+              onValueChange={(value: CalendarEvent['eventType']) => 
+                setNewEvent(prev => ({ ...prev, eventType: value }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vaccination">Vacunación</SelectItem>
+                <SelectItem value="checkup">Revisión</SelectItem>
+                <SelectItem value="breeding">Reproducción</SelectItem>
+                <SelectItem value="treatment">Tratamiento</SelectItem>
+                <SelectItem value="feeding">Alimentación</SelectItem>
+                <SelectItem value="appointment">Cita</SelectItem>
+                <SelectItem value="reminder">Recordatorio</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div>
-          <Label>Tipo de Evento</Label>
-          <Select 
-            value={newEvent.eventType} 
-            onValueChange={(value: CalendarEvent['eventType']) => 
-              setNewEvent(prev => ({ ...prev, eventType: value }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="vaccination">Vacunación</SelectItem>
-              <SelectItem value="checkup">Revisión</SelectItem>
-              <SelectItem value="breeding">Reproducción</SelectItem>
-              <SelectItem value="treatment">Tratamiento</SelectItem>
-              <SelectItem value="feeding">Alimentación</SelectItem>
-              <SelectItem value="appointment">Cita</SelectItem>
-              <SelectItem value="reminder">Recordatorio</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
+        <div className="space-y-2">
           <Label>Animal (Opcional)</Label>
           <Select 
             value={newEvent.animalId} 
             onValueChange={(value) => setNewEvent(prev => ({ ...prev, animalId: value }))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar animal" />
             </SelectTrigger>
             <SelectContent>
@@ -147,58 +152,64 @@ const EventForm = ({
           </Select>
         </div>
 
-        <div>
-          <Label htmlFor="veterinarian">Veterinario</Label>
-          <Input
-            id="veterinarian"
-            value={newEvent.veterinarian}
-            onChange={(e) => setNewEvent(prev => ({ ...prev, veterinarian: e.target.value }))}
-            placeholder="Nombre del veterinario"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="veterinarian">Veterinario</Label>
+            <Input
+              id="veterinarian"
+              value={newEvent.veterinarian}
+              onChange={(e) => setNewEvent(prev => ({ ...prev, veterinarian: e.target.value }))}
+              placeholder="Nombre del veterinario"
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cost">Costo</Label>
+            <Input
+              id="cost"
+              type="number"
+              value={newEvent.cost}
+              onChange={(e) => setNewEvent(prev => ({ ...prev, cost: e.target.value }))}
+              placeholder="0.00"
+              className="w-full"
+            />
+          </div>
         </div>
 
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="location">Ubicación</Label>
           <Input
             id="location"
             value={newEvent.location}
             onChange={(e) => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
             placeholder="Ubicación del evento"
+            className="w-full"
           />
         </div>
 
-        <div>
-          <Label htmlFor="cost">Costo</Label>
-          <Input
-            id="cost"
-            type="number"
-            value={newEvent.cost}
-            onChange={(e) => setNewEvent(prev => ({ ...prev, cost: e.target.value }))}
-            placeholder="0.00"
-          />
-        </div>
-
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="description">Descripción</Label>
           <Textarea
             id="description"
             value={newEvent.description}
             onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
             placeholder="Detalles adicionales"
+            className="w-full"
           />
         </div>
       </div>
 
-      <div>
-        <UserSelector
-          selectedUserIds={selectedUserIds}
-          onUserSelectionChange={onUserSelectionChange}
-        />
-      </div>
+      {/* User Selector */}
+      <UserSelector
+        selectedUserIds={selectedUserIds}
+        onUserSelectionChange={onUserSelectionChange}
+      />
 
+      {/* Submit Button */}
       <Button 
         onClick={handleSubmit} 
-        className="w-full mt-4 col-span-2"
+        className="w-full"
         disabled={isSubmitting || !newEvent.title || !newEvent.eventDate}
       >
         {isSubmitting ? 'Creando...' : 'Crear Evento'}

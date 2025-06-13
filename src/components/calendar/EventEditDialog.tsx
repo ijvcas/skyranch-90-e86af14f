@@ -92,58 +92,64 @@ const EventEditDialog = ({
         <DialogHeader>
           <DialogTitle>Editar Evento</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <div className="space-y-6">
+          {/* Event Form Fields */}
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="edit-title">Título *</Label>
               <Input
                 id="edit-title"
                 value={editedEvent.title}
                 onChange={(e) => setEditedEvent(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Título del evento"
+                className="w-full"
               />
             </div>
 
-            <div>
-              <Label htmlFor="edit-date">Fecha *</Label>
-              <Input
-                id="edit-date"
-                type="date"
-                value={editedEvent.eventDate}
-                onChange={(e) => setEditedEvent(prev => ({ ...prev, eventDate: e.target.value }))}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">Fecha *</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editedEvent.eventDate}
+                  onChange={(e) => setEditedEvent(prev => ({ ...prev, eventDate: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tipo de Evento</Label>
+                <Select 
+                  value={editedEvent.eventType} 
+                  onValueChange={(value: CalendarEvent['eventType']) => 
+                    setEditedEvent(prev => ({ ...prev, eventType: value }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vaccination">Vacunación</SelectItem>
+                    <SelectItem value="checkup">Revisión</SelectItem>
+                    <SelectItem value="breeding">Reproducción</SelectItem>
+                    <SelectItem value="treatment">Tratamiento</SelectItem>
+                    <SelectItem value="feeding">Alimentación</SelectItem>
+                    <SelectItem value="appointment">Cita</SelectItem>
+                    <SelectItem value="reminder">Recordatorio</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div>
-              <Label>Tipo de Evento</Label>
-              <Select 
-                value={editedEvent.eventType} 
-                onValueChange={(value: CalendarEvent['eventType']) => 
-                  setEditedEvent(prev => ({ ...prev, eventType: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="vaccination">Vacunación</SelectItem>
-                  <SelectItem value="checkup">Revisión</SelectItem>
-                  <SelectItem value="breeding">Reproducción</SelectItem>
-                  <SelectItem value="treatment">Tratamiento</SelectItem>
-                  <SelectItem value="feeding">Alimentación</SelectItem>
-                  <SelectItem value="appointment">Cita</SelectItem>
-                  <SelectItem value="reminder">Recordatorio</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
+            <div className="space-y-2">
               <Label>Animal (Opcional)</Label>
               <Select 
                 value={editedEvent.animalId} 
                 onValueChange={(value) => setEditedEvent(prev => ({ ...prev, animalId: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar animal" />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,54 +162,59 @@ const EventEditDialog = ({
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="edit-veterinarian">Veterinario</Label>
-              <Input
-                id="edit-veterinarian"
-                value={editedEvent.veterinarian}
-                onChange={(e) => setEditedEvent(prev => ({ ...prev, veterinarian: e.target.value }))}
-                placeholder="Nombre del veterinario"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-veterinarian">Veterinario</Label>
+                <Input
+                  id="edit-veterinarian"
+                  value={editedEvent.veterinarian}
+                  onChange={(e) => setEditedEvent(prev => ({ ...prev, veterinarian: e.target.value }))}
+                  placeholder="Nombre del veterinario"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-cost">Costo</Label>
+                <Input
+                  id="edit-cost"
+                  type="number"
+                  value={editedEvent.cost}
+                  onChange={(e) => setEditedEvent(prev => ({ ...prev, cost: e.target.value }))}
+                  placeholder="0.00"
+                  className="w-full"
+                />
+              </div>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="edit-location">Ubicación</Label>
               <Input
                 id="edit-location"
                 value={editedEvent.location}
                 onChange={(e) => setEditedEvent(prev => ({ ...prev, location: e.target.value }))}
                 placeholder="Ubicación del evento"
+                className="w-full"
               />
             </div>
 
-            <div>
-              <Label htmlFor="edit-cost">Costo</Label>
-              <Input
-                id="edit-cost"
-                type="number"
-                value={editedEvent.cost}
-                onChange={(e) => setEditedEvent(prev => ({ ...prev, cost: e.target.value }))}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="edit-description">Descripción</Label>
               <Textarea
                 id="edit-description"
                 value={editedEvent.description}
                 onChange={(e) => setEditedEvent(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Detalles adicionales"
+                className="w-full"
               />
             </div>
           </div>
 
-          <div>
-            <UserSelector
-              selectedUserIds={selectedUserIds}
-              onUserSelectionChange={onUserSelectionChange}
-            />
-          </div>
+          {/* User Selector */}
+          <UserSelector
+            selectedUserIds={selectedUserIds}
+            onUserSelectionChange={onUserSelectionChange}
+          />
         </div>
 
         <div className="flex justify-between gap-2 mt-4">
