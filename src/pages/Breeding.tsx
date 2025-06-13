@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -116,9 +115,7 @@ const Breeding: React.FC = () => {
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Apareamiento
             </Button>
-          </DialogTrig
-
-ger>
+          </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Registrar Nuevo Apareamiento</DialogTitle>
