@@ -4,14 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Animal {
-  id: string;
-  name: string;
-  tag: string;
-  species: string;
-  gender: 'macho' | 'hembra';
-}
+import { Animal } from '@/stores/animalStore';
 
 interface BreedingBasicInfoProps {
   formData: {
