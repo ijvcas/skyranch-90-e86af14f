@@ -11,6 +11,7 @@ import {
   CalendarEvent 
 } from '@/services/calendarService';
 import { notificationService } from '@/services/notifications/notificationService';
+import { supabaseNotificationService } from '@/services/notifications/supabaseNotificationService';
 import { pushService } from '@/services/notifications/pushService';
 
 export const useCalendarEvents = () => {
@@ -47,6 +48,13 @@ export const useCalendarEvents = () => {
       description: eventDescription,
       eventDate: eventDate
     };
+
+    // Create in-app notification
+    try {
+      await supabaseNotificationService.createCalendarNotification(eventTitle, eventDate);
+    } catch (error) {
+      console.error('Error creating in-app notification:', error);
+    }
 
     // Check notification permission status
     const permissionStatus = pushService.getPermissionStatus();
@@ -100,6 +108,9 @@ export const useCalendarEvents = () => {
         variant: "destructive"
       });
     }
+
+    // Refresh notifications to show the new one
+    queryClient.invalidateQueries({ queryKey: ['real-notifications'] });
   };
 
   const createEvent = async (eventData: any, selectedUserIds: string[]) => {

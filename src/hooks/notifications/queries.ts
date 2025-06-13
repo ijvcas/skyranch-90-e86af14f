@@ -1,18 +1,7 @@
 
-import { useQuery } from '@tanstack/react-query';
-import { mockGetNotifications } from './mockApi';
+import { useRealNotificationQueries } from './realQueries';
 
 export const useNotificationQueries = () => {
-  const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: mockGetNotifications,
-  });
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  return {
-    notifications,
-    isLoading,
-    unreadCount
-  };
+  // Switch to real queries instead of mock
+  return useRealNotificationQueries();
 };

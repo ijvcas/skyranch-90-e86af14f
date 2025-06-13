@@ -600,6 +600,51 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          action_required: boolean | null
+          animal_name: string | null
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          priority: string
+          read: boolean
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_required?: boolean | null
+          animal_name?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          priority?: string
+          read?: boolean
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_required?: boolean | null
+          animal_name?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          priority?: string
+          read?: boolean
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       offspring: {
         Row: {
           animal_id: string | null
@@ -710,6 +755,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_auth_users: {
         Args: Record<PropertyKey, never>
         Returns: {
