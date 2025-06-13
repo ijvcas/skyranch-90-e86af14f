@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Save, X, Info, HelpCircle, Mail, Phone, RefreshCw, Calendar, GitBranch, Monitor } from 'lucide-react';
+import { Save, X, Info, HelpCircle, Mail, Phone, RefreshCw, Calendar, GitBranch, Monitor, Wifi, WifiOff } from 'lucide-react';
 import { Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { appInfoService, type AppInfo, type SupportInfo } from '@/services/appInfoService';
@@ -22,6 +21,8 @@ const UnifiedAppInfo = ({ isAdmin, showSupportCard = true }: UnifiedAppInfoProps
   const [supportInfo, setSupportInfo] = useState<SupportInfo>(appInfoService.getSupportInfo());
   const [isEditingSupport, setIsEditingSupport] = useState(false);
   const [tempSupportInfo, setTempSupportInfo] = useState(supportInfo);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     // Listen for automatic updates
@@ -33,14 +34,30 @@ const UnifiedAppInfo = ({ isAdmin, showSupportCard = true }: UnifiedAppInfoProps
     const handleSupportInfoUpdate = (event: CustomEvent) => {
       setSupportInfo(event.detail);
       setTempSupportInfo(event.detail);
+      console.log('🔄 Support info updated in component:', event.detail);
     };
+
+    // Listen for online/offline status
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Refresh support info when coming back online
+      if (appInfoService.supportInfoManager) {
+        appInfoService.supportInfoManager.refreshFromDatabase();
+      }
+    };
+
+    const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('app-info-updated', handleAppInfoUpdate as EventListener);
     window.addEventListener('support-info-updated', handleSupportInfoUpdate as EventListener);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
       window.removeEventListener('app-info-updated', handleAppInfoUpdate as EventListener);
       window.removeEventListener('support-info-updated', handleSupportInfoUpdate as EventListener);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -52,13 +69,46 @@ const UnifiedAppInfo = ({ isAdmin, showSupportCard = true }: UnifiedAppInfoProps
     });
   };
 
-  const handleSaveSupport = () => {
-    appInfoService.updateSupportInfo(tempSupportInfo);
-    setIsEditingSupport(false);
-    toast({
-      title: "Información actualizada",
-      description: "La información de soporte técnico ha sido actualizada.",
-    });
+  const handleRefreshSupport = async () => {
+    if (!appInfoService.supportInfoManager) return;
+    
+    setIsRefreshing(true);
+    try {
+      await appInfoService.supportInfoManager.refreshFromDatabase();
+      toast({
+        title: "Información sincronizada",
+        description: "La información de soporte se ha sincronizado desde la base de datos.",
+      });
+    } catch (error) {
+      console.error('Failed to refresh support info:', error);
+      toast({
+        title: "Error de sincronización",
+        description: "No se pudo sincronizar la información de soporte.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleSaveSupport = async () => {
+    if (!appInfoService.supportInfoManager) return;
+    
+    try {
+      await appInfoService.supportInfoManager.updateSupportInfo(tempSupportInfo);
+      setIsEditingSupport(false);
+      toast({
+        title: "Información actualizada",
+        description: "La información de soporte técnico ha sido actualizada y sincronizada.",
+      });
+    } catch (error) {
+      console.error('Failed to save support info:', error);
+      toast({
+        title: "Error al guardar",
+        description: "No se pudo guardar la información de soporte.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCancelSupportEdit = () => {
@@ -187,17 +237,44 @@ const UnifiedAppInfo = ({ isAdmin, showSupportCard = true }: UnifiedAppInfoProps
             <CardTitle className="text-lg flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-orange-600" />
               Soporte Técnico
-              {isAdmin && (
+              <div className="flex items-center gap-2 ml-auto">
+                {/* Online/Offline indicator */}
+                <div className="flex items-center gap-1 text-xs">
+                  {isOnline ? (
+                    <Wifi className="w-3 h-3 text-green-600" />
+                  ) : (
+                    <WifiOff className="w-3 h-3 text-red-600" />
+                  )}
+                  <span className={isOnline ? 'text-green-600' : 'text-red-600'}>
+                    {isOnline ? 'En línea' : 'Sin conexión'}
+                  </span>
+                </div>
+                
+                {/* Refresh button */}
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsEditingSupport(!isEditingSupport)}
-                  className="ml-auto bg-orange-50 hover:bg-orange-100"
-                  title="Editar información de soporte técnico"
+                  onClick={handleRefreshSupport}
+                  disabled={isRefreshing || !isOnline}
+                  className="bg-orange-50 hover:bg-orange-100 p-1"
+                  title="Sincronizar información de soporte"
                 >
-                  {isEditingSupport ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                  <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
                 </Button>
-              )}
+                
+                {/* Edit button */}
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingSupport(!isEditingSupport)}
+                    className="bg-orange-50 hover:bg-orange-100"
+                    title="Editar información de soporte técnico"
+                  >
+                    {isEditingSupport ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                  </Button>
+                )}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
