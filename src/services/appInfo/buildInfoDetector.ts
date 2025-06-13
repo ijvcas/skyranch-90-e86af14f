@@ -1,26 +1,13 @@
 
 import { versionService } from '../../versionService';
+import { versionManager } from '../../services/versionManager';
 import type { AppInfo } from './types';
 
 export class BuildInfoDetector {
   private buildNumber: number;
 
   constructor() {
-    this.buildNumber = this.initializeBuildNumber();
-  }
-
-  private initializeBuildNumber(): number {
-    const stored = localStorage.getItem('skyranch-build-number');
-    if (stored) {
-      const buildNum = parseInt(stored, 10);
-      const newBuildNum = buildNum + 1;
-      localStorage.setItem('skyranch-build-number', newBuildNum.toString());
-      return newBuildNum;
-    } else {
-      const initialBuild = 1;
-      localStorage.setItem('skyranch-build-number', initialBuild.toString());
-      return initialBuild;
-    }
+    this.buildNumber = versionManager.getBuildNumber();
   }
 
   public detectAppInfo(): AppInfo {
@@ -63,23 +50,14 @@ export class BuildInfoDetector {
   }
 
   private detectBuildTime(): string {
+    const versionInfo = versionManager.getCurrentVersion();
+    
     if (import.meta.env.VITE_BUILD_TIME) {
       return import.meta.env.VITE_BUILD_TIME;
     }
     
-    const metaBuildTime = document.querySelector('meta[name="build-time"]');
-    if (metaBuildTime) {
-      return metaBuildTime.getAttribute('content') || new Date().toISOString();
-    }
-    
-    const sessionStart = sessionStorage.getItem('skyranch-session-start');
-    if (sessionStart) {
-      return sessionStart;
-    }
-    
-    const currentTime = new Date().toISOString();
-    sessionStorage.setItem('skyranch-session-start', currentTime);
-    return currentTime;
+    // Use the last publish time from version manager
+    return versionInfo.lastPublishTime;
   }
 
   private detectGitInfo(): { lastChange: string; commit?: string; buildNumber?: string } {
@@ -87,14 +65,15 @@ export class BuildInfoDetector {
     
     if (!lastChange) {
       const updates = [
-        'Correcciones de PWA y controles de mapa mejorados',
         'Sistema de versionado automático implementado',
-        'Detección de entorno en tiempo real',
-        'Información de aplicación unificada',
-        'Actualizaciones automáticas del sistema'
+        'Versión auto-incremental en cada publicación',
+        'Gestión unificada de información de aplicación',
+        'Mejoras en la detección de entorno y versión',
+        'Sistema de builds numerados automáticamente',
+        'Información de versión sincronizada entre dispositivos'
       ];
       
-      const updateIndex = this.buildNumber % updates.length;
+      const updateIndex = (this.buildNumber - 1) % updates.length;
       lastChange = updates[updateIndex];
     }
     

@@ -1,13 +1,10 @@
 
+import { versionManager } from './services/versionManager';
+
 class VersionService {
   public getVersion(): string {
-    // Try to get version from environment variables first
-    if (import.meta.env.VITE_PACKAGE_VERSION && import.meta.env.VITE_PACKAGE_VERSION !== '0.0.0') {
-      return `v${import.meta.env.VITE_PACKAGE_VERSION}`;
-    }
-    
-    // Fallback to a more realistic version for SkyRanch
-    return 'v2.3.0';
+    // Use the version manager for consistent versioning
+    return versionManager.getFormattedVersion();
   }
 
   public getEnvironment(): 'development' | 'production' {
@@ -23,6 +20,14 @@ class VersionService {
     
     // Default to production
     return 'production';
+  }
+
+  public getBuildNumber(): number {
+    return versionManager.getBuildNumber();
+  }
+
+  public getPublishCount(): number {
+    return versionManager.getPublishCount();
   }
 }
 

@@ -3,9 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Info, RefreshCw, Calendar, GitBranch, Monitor } from 'lucide-react';
+import { Info, RefreshCw, Calendar, GitBranch, Monitor, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { appInfoService, type AppInfo } from '@/services/appInfoService';
+import { versionManager } from '@/services/versionManager';
 
 interface AppInfoCardProps {
   appInfo: AppInfo;
@@ -63,8 +64,23 @@ const AppInfoCard = ({ appInfo }: AppInfoCardProps) => {
       <CardContent className="space-y-4">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">Versión:</span>
-          <Badge variant="outline" className="font-mono">
+          <Badge variant="outline" className="font-mono text-lg">
             {appInfo.version}
+          </Badge>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Build:</span>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Hash className="w-3 h-3" />
+            {appInfo.buildNumber}
+          </Badge>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Publicaciones:</span>
+          <Badge variant="secondary">
+            {versionManager.getPublishCount()}
           </Badge>
         </div>
         
