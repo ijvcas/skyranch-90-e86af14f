@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from './NotificationBell';
+import PWAInstallButton from './PWAInstallButton';
 
 const HeaderWithDropdown = () => {
   const navigate = useNavigate();
@@ -97,8 +98,9 @@ const HeaderWithDropdown = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right side - just notification bell */}
-          <div className="flex items-center">
+          {/* Right side - PWA install button and notification bell */}
+          <div className="flex items-center space-x-2">
+            <PWAInstallButton />
             <NotificationBell />
           </div>
         </div>

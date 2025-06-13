@@ -7,7 +7,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
-import DashboardPWAPrompt from '@/components/DashboardPWAPrompt';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -268,9 +267,6 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
-      
-      {/* PWA Install Prompt - only shows on Dashboard */}
-      <DashboardPWAPrompt />
     </div>
   );
 };
