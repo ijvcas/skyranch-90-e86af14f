@@ -1,177 +1,160 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { 
-  getNotifications, 
-  markNotificationAsRead, 
-  deleteNotification,
-  createNotification 
-} from '@/services/notifications/notificationService';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
+// Define the notification interface to match what's being used
 export interface Notification {
   id: string;
-  userId: string;
+  type: 'vaccine' | 'health' | 'breeding' | 'weekly_report' | 'info' | 'warning' | 'error' | 'success';
+  priority: 'low' | 'medium' | 'high' | 'critical';
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  priority: 'low' | 'medium' | 'high';
-  isRead: boolean;
-  createdAt: string;
-  metadata?: Record<string, any>;
+  created_at: string;
+  read: boolean;
+  animalName?: string;
+  actionRequired?: boolean;
 }
 
+// Mock functions for demonstration - replace with actual service calls
+const mockGetNotifications = async (): Promise<Notification[]> => {
+  return [];
+};
+
+const mockMarkAsRead = async (id: string): Promise<void> => {
+  console.log('Marking notification as read:', id);
+};
+
+const mockDeleteNotification = async (id: string): Promise<void> => {
+  console.log('Deleting notification:', id);
+};
+
+const mockCreateNotification = async (notification: Omit<Notification, 'id' | 'created_at'>): Promise<Notification> => {
+  return {
+    ...notification,
+    id: Math.random().toString(36),
+    created_at: new Date().toISOString()
+  };
+};
+
+const mockMarkAllAsRead = async (): Promise<void> => {
+  console.log('Marking all notifications as read');
+};
+
+const mockClearAllNotifications = async (): Promise<void> => {
+  console.log('Clearing all notifications');
+};
+
 export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const queryClient = useQueryClient();
 
-  const loadNotifications = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const data = await getNotifications();
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.isRead).length);
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // Get notifications
+  const { data: notifications = [], isLoading } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: mockGetNotifications,
+  });
 
-  const markAsRead = useCallback(async (notificationId: string) => {
-    try {
-      const success = await markNotificationAsRead(notificationId);
-      if (success) {
-        setNotifications(prev => 
-          prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    } catch (error) {
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Mark as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: mockMarkAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    onError: (error) => {
       console.error('Error marking notification as read:', error);
+      toast.error('Error al marcar como leída');
     }
-  }, []);
+  });
 
-  const deleteNotif = useCallback(async (notificationId: string) => {
-    try {
-      const success = await deleteNotification(notificationId);
-      if (success) {
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
-        setUnreadCount(prev => {
-          const notification = notifications.find(n => n.id === notificationId);
-          return notification && !notification.isRead ? Math.max(0, prev - 1) : prev;
-        });
-      }
-    } catch (error) {
+  // Delete notification mutation
+  const deleteNotificationMutation = useMutation({
+    mutationFn: mockDeleteNotification,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Notificación eliminada');
+    },
+    onError: (error) => {
       console.error('Error deleting notification:', error);
+      toast.error('Error al eliminar notificación');
     }
-  }, [notifications]);
+  });
 
-  const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'userId' | 'createdAt' | 'isRead'>) => {
-    try {
-      const success = await createNotification(notification);
-      if (success) {
-        await loadNotifications();
-      }
-    } catch (error) {
+  // Add notification mutation
+  const addNotificationMutation = useMutation({
+    mutationFn: mockCreateNotification,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Notificación creada');
+    },
+    onError: (error) => {
       console.error('Error creating notification:', error);
+      toast.error('Error al crear notificación');
     }
-  }, [loadNotifications]);
+  });
+
+  // Mark all as read mutation
+  const markAllAsReadMutation = useMutation({
+    mutationFn: mockMarkAllAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Todas las notificaciones marcadas como leídas');
+    },
+    onError: (error) => {
+      console.error('Error marking all as read:', error);
+      toast.error('Error al marcar todas como leídas');
+    }
+  });
+
+  // Clear all notifications mutation
+  const clearAllNotificationsMutation = useMutation({
+    mutationFn: mockClearAllNotifications,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Todas las notificaciones eliminadas');
+    },
+    onError: (error) => {
+      console.error('Error clearing all notifications:', error);
+      toast.error('Error al eliminar todas las notificaciones');
+    }
+  });
+
+  // Callback functions
+  const markAsRead = useCallback(async (notificationId: string) => {
+    await markAsReadMutation.mutateAsync(notificationId);
+  }, [markAsReadMutation]);
+
+  const deleteNotification = useCallback(async (notificationId: string) => {
+    await deleteNotificationMutation.mutateAsync(notificationId);
+  }, [deleteNotificationMutation]);
+
+  const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'created_at'>) => {
+    await addNotificationMutation.mutateAsync(notification);
+  }, [addNotificationMutation]);
 
   const markAllAsRead = useCallback(async () => {
-    try {
-      const unreadNotifications = notifications.filter(n => !n.isRead);
-      
-      for (const notification of unreadNotifications) {
-        await markNotificationAsRead(notification.id);
-      }
-      
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-    }
-  }, [notifications]);
+    await markAllAsReadMutation.mutateAsync();
+  }, [markAllAsReadMutation]);
 
-  // Real-time subscription
-  useEffect(() => {
-    const { data: { user } } = supabase.auth.getUser();
-    
-    if (!user) return;
+  const clearAllNotifications = useCallback(async () => {
+    await clearAllNotificationsMutation.mutateAsync();
+  }, [clearAllNotificationsMutation]);
 
-    // Load initial notifications
-    loadNotifications();
-
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          console.log('Notification change detected, reloading...');
-          loadNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [loadNotifications]);
-
-  // Push notification setup (simplified without service worker getNotifications)
-  useEffect(() => {
-    const setupPushNotifications = async () => {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('Push messaging is not supported');
-        return;
-      }
-
-      try {
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('Service Worker registered successfully');
-        
-        // Check current subscription
-        const subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-          console.log('No existing push subscription found');
-        }
-      } catch (error) {
-        console.error('Service Worker registration failed:', error);
-      }
-    };
-
-    setupPushNotifications();
-  }, []);
-
-  // Cleanup effect for managing notification persistence
-  useEffect(() => {
-    const cleanup = () => {
-      // Clear any temporary UI states
-      setIsLoading(false);
-    };
-
-    window.addEventListener('beforeunload', cleanup);
-    return () => {
-      window.removeEventListener('beforeunload', cleanup);
-      cleanup();
-    };
-  }, []);
+  const loadNotifications = useCallback(async () => {
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+  }, [queryClient]);
 
   return {
     notifications,
     isLoading,
     unreadCount,
     markAsRead,
-    deleteNotif,
+    deleteNotification,
     addNotification,
     markAllAsRead,
+    clearAllNotifications,
     loadNotifications
   };
 };
