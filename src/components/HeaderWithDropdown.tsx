@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Home, 
   Users, 
   Calendar, 
   Settings, 
-  Download,
   FileText,
   Heart,
   Bell,
@@ -28,8 +27,6 @@ import NotificationBell from './NotificationBell';
 const HeaderWithDropdown = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
 
   const navItems = [
     { to: '/dashboard', icon: Home, label: 'Panel' },
@@ -49,40 +46,6 @@ const HeaderWithDropdown = () => {
     } catch (error) {
       console.error('Error signing out:', error);
     }
-  };
-
-  // PWA Install functionality
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    // Check if already installed
-    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
-  }, []);
-
-  const handleInstallApp = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('PWA installed');
-      setShowInstallButton(false);
-    }
-    
-    setDeferredPrompt(null);
   };
 
   return (
@@ -134,17 +97,9 @@ const HeaderWithDropdown = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right side buttons */}
-          <div className="flex items-center space-x-3">
+          {/* Right side - just notification bell */}
+          <div className="flex items-center">
             <NotificationBell />
-            <Button
-              onClick={handleInstallApp}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Instalar App</span>
-              <span className="sm:hidden">Instalar</span>
-            </Button>
           </div>
         </div>
       </div>

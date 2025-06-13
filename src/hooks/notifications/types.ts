@@ -1,12 +1,26 @@
 
+export type NotificationType = 
+  | 'vaccine' 
+  | 'health' 
+  | 'breeding' 
+  | 'weekly_report' 
+  | 'info' 
+  | 'warning' 
+  | 'error' 
+  | 'success'
+  | 'calendar'
+  | 'general';
+
+export type NotificationPriority = 'low' | 'medium' | 'high' | 'critical';
+
 export interface Notification {
   id: string;
-  type: 'vaccine' | 'health' | 'breeding' | 'weekly_report' | 'info' | 'warning' | 'error' | 'success';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  type: NotificationType;
+  priority: NotificationPriority;
   title: string;
   message: string;
-  created_at: string;
   read: boolean;
-  animalName?: string;
+  created_at: string;
   actionRequired?: boolean;
+  animalName?: string;
 }

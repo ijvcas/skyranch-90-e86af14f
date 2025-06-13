@@ -1,11 +1,11 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { NotificationType, NotificationPriority } from '@/hooks/notifications/types';
 
 export interface SupabaseNotification {
   id: string;
   user_id: string;
-  type: 'vaccine' | 'health' | 'breeding' | 'weekly_report' | 'info' | 'warning' | 'error' | 'success' | 'calendar' | 'general';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  type: NotificationType;
+  priority: NotificationPriority;
   title: string;
   message: string;
   read: boolean;
@@ -28,7 +28,7 @@ class SupabaseNotificationService {
       return [];
     }
 
-    return data || [];
+    return (data || []) as SupabaseNotification[];
   }
 
   async markAsRead(notificationId: string): Promise<void> {
