@@ -1,0 +1,53 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+
+interface DashboardHeaderProps {
+  userEmail?: string;
+  totalAnimals: number;
+  onForceRefresh: () => void;
+}
+
+const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardHeaderProps) => {
+  return (
+    <div className="mb-8 flex justify-between items-start">
+      <div>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+          Panel de Control
+        </h1>
+        <p className="text-lg text-gray-600">
+          Bienvenido, {userEmail} - SkyRanch
+        </p>
+        <div className="text-sm text-gray-500 mt-1">
+          Total de animales en el sistema: {totalAnimals}
+        </div>
+        {totalAnimals === 0 && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800">
+              No se encontraron animales. Si deberías ver animales, usa el botón "Forzar Actualización".
+            </p>
+            <Button 
+              onClick={onForceRefresh} 
+              className="mt-2 bg-blue-600 hover:bg-blue-700"
+              size="sm"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Forzar Actualización
+            </Button>
+          </div>
+        )}
+      </div>
+      <Button
+        variant="outline"
+        onClick={onForceRefresh}
+        className="flex items-center gap-2"
+      >
+        <RefreshCw className="w-4 h-4" />
+        Actualizar
+      </Button>
+    </div>
+  );
+};
+
+export default DashboardHeader;
