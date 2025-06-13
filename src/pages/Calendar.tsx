@@ -12,6 +12,7 @@ import EventForm from '@/components/calendar/EventForm';
 import EventList from '@/components/calendar/EventList';
 import UpcomingEvents from '@/components/calendar/UpcomingEvents';
 import EventEditDialog from '@/components/calendar/EventEditDialog';
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEvent } from '@/services/calendarService';
 
@@ -31,21 +32,25 @@ const CalendarPage = () => {
   });
 
   const handleCreateEvent = async (eventData: any, selectedUserIds: string[]) => {
+    console.log('📅 Creating event with selected users:', selectedUserIds);
     await createEvent(eventData, selectedUserIds);
     setIsDialogOpen(false);
     setSelectedUserIds([]);
   };
 
   const handleEditEvent = async (event: CalendarEvent) => {
+    console.log('📅 Editing event:', event.title);
     setSelectedEventForEdit(event);
     // Load the selected users for this event
     const notificationUsers = await getNotificationUsers(event.id);
+    console.log('📅 Loaded notification users for event:', notificationUsers);
     setSelectedUserIds(notificationUsers);
     setIsEditDialogOpen(true);
   };
 
   const handleSaveEditedEvent = async (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
     if (!selectedEventForEdit) return;
+    console.log('📅 Saving edited event with selected users:', selectedUserIds);
     await updateEvent(selectedEventForEdit.id, eventData, selectedUserIds);
     setIsEditDialogOpen(false);
     setSelectedEventForEdit(null);
@@ -53,6 +58,7 @@ const CalendarPage = () => {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
+    console.log('📅 Deleting event:', eventId);
     await deleteEvent(eventId);
     setIsEditDialogOpen(false);
     setSelectedEventForEdit(null);
@@ -78,6 +84,10 @@ const CalendarPage = () => {
           >
             ← Volver al Panel
           </Button>
+          
+          {/* Notification Permission Banner */}
+          <NotificationPermissionBanner />
+          
           <div className="flex flex-col md:flex-row md:items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">

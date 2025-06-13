@@ -30,8 +30,13 @@ export const useCalendarEvents = () => {
   });
 
   const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false) => {
-    if (selectedUserIds.length === 0) return;
+    if (selectedUserIds.length === 0) {
+      console.log('📢 No users selected for notification');
+      return;
+    }
 
+    console.log(`📢 Sending notifications to ${selectedUserIds.length} users for event: ${eventTitle}`);
+    
     const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
     const actionText = isUpdate ? "actualizado" : "creado";
     const notificationTitle = `Evento ${actionText}: ${eventTitle}`;
@@ -46,7 +51,7 @@ export const useCalendarEvents = () => {
 
     for (const user of selectedUsers) {
       try {
-        console.log(`📢 Sending notification to ${user.email} for event: ${eventTitle}`);
+        console.log(`📢 Sending comprehensive notification to ${user.email} for event: ${eventTitle}`);
         
         // Send comprehensive notification (email + push)
         await notificationService.sendNotification(
@@ -94,6 +99,7 @@ export const useCalendarEvents = () => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
+    console.log('📅 Creating calendar event with notification users:', selectedUserIds);
 
     const eventId = await addCalendarEvent(eventData, selectedUserIds);
     if (eventId) {
@@ -116,6 +122,8 @@ export const useCalendarEvents = () => {
   };
 
   const updateEvent = async (eventId: string, eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
+    console.log('📅 Updating calendar event with notification users:', selectedUserIds);
+    
     const success = await updateCalendarEvent(eventId, eventData, selectedUserIds);
     if (success) {
       // Send notifications
@@ -153,7 +161,9 @@ export const useCalendarEvents = () => {
   };
 
   const getNotificationUsers = async (eventId: string): Promise<string[]> => {
-    return await getEventNotificationUsers(eventId);
+    const users = await getEventNotificationUsers(eventId);
+    console.log(`📅 Retrieved notification users for event ${eventId}:`, users);
+    return users;
   };
 
   return {
