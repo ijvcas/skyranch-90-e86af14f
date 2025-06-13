@@ -2,12 +2,12 @@
 class VersionService {
   public getVersion(): string {
     // Try to get version from environment variables first
-    if (import.meta.env.VITE_PACKAGE_VERSION) {
+    if (import.meta.env.VITE_PACKAGE_VERSION && import.meta.env.VITE_PACKAGE_VERSION !== '0.0.0') {
       return `v${import.meta.env.VITE_PACKAGE_VERSION}`;
     }
     
-    // Fallback to default version
-    return 'v1.0.0';
+    // Fallback to a more realistic version for SkyRanch
+    return 'v2.3.0';
   }
 
   public getEnvironment(): 'development' | 'production' {
