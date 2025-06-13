@@ -1,5 +1,5 @@
 
-import { versionService } from '../versionService';
+import { versionService } from '../../versionService';
 import type { AppInfo } from './types';
 
 export class BuildInfoDetector {
