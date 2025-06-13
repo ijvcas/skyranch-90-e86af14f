@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +28,7 @@ export const useCalendarEvents = () => {
     queryFn: getAllUsers
   });
 
-  const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false) => {
+  const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false, eventDescription?: string) => {
     if (selectedUserIds.length === 0) {
       console.log('📢 No users selected for notification');
       return;
@@ -42,6 +41,13 @@ export const useCalendarEvents = () => {
     const notificationTitle = `Evento ${actionText}: ${eventTitle}`;
     const notificationBody = `Se ha ${actionText} el evento "${eventTitle}" programado para ${new Date(eventDate).toLocaleDateString('es-ES')}.`;
 
+    // Prepare event details for email
+    const eventDetails = {
+      title: eventTitle,
+      description: eventDescription,
+      eventDate: eventDate
+    };
+
     // Check notification permission status
     const permissionStatus = pushService.getPermissionStatus();
     console.log(`📱 Current notification permission: ${permissionStatus}`);
@@ -53,12 +59,13 @@ export const useCalendarEvents = () => {
       try {
         console.log(`📢 Sending comprehensive notification to ${user.email} for event: ${eventTitle}`);
         
-        // Send comprehensive notification (email + push)
+        // Send comprehensive notification (email + push) with event details
         await notificationService.sendNotification(
           user.id,
           user.email,
           notificationTitle,
-          notificationBody
+          notificationBody,
+          eventDetails
         );
 
         notificationsSent++;
@@ -103,8 +110,14 @@ export const useCalendarEvents = () => {
 
     const eventId = await addCalendarEvent(eventData, selectedUserIds);
     if (eventId) {
-      // Send notifications
-      await sendNotificationsToUsers(selectedUserIds, eventData.title, eventData.eventDate, false);
+      // Send notifications with event details
+      await sendNotificationsToUsers(
+        selectedUserIds, 
+        eventData.title, 
+        eventData.eventDate, 
+        false, 
+        eventData.description
+      );
 
       toast({
         title: "Éxito",
@@ -126,8 +139,14 @@ export const useCalendarEvents = () => {
     
     const success = await updateCalendarEvent(eventId, eventData, selectedUserIds);
     if (success) {
-      // Send notifications
-      await sendNotificationsToUsers(selectedUserIds, eventData.title || 'Evento', eventData.eventDate || '', true);
+      // Send notifications with event details
+      await sendNotificationsToUsers(
+        selectedUserIds, 
+        eventData.title || 'Evento', 
+        eventData.eventDate || '', 
+        true, 
+        eventData.description
+      );
 
       toast({
         title: "Éxito",

@@ -6,9 +6,14 @@ import { loggingService } from './loggingService';
 import { NotificationPreferences, NotificationTemplate, NotificationLog } from './interfaces';
 
 class NotificationService {
-  // Send email notification
-  async sendEmailNotification(to: string, subject: string, body: string): Promise<boolean> {
-    return emailService.sendEmailNotification(to, subject, body);
+  // Send email notification with optional event details
+  async sendEmailNotification(
+    to: string, 
+    subject: string, 
+    body: string, 
+    eventDetails?: { title: string; description?: string; eventDate: string }
+  ): Promise<boolean> {
+    return emailService.sendEmailNotification(to, subject, body, eventDetails);
   }
 
   // Send push notification
@@ -31,15 +36,21 @@ class NotificationService {
     return loggingService.logNotification(log);
   }
 
-  // Send comprehensive notifications based on user preferences
-  async sendNotification(userId: string, userEmail: string, title: string, message: string): Promise<void> {
+  // Send comprehensive notifications based on user preferences with event details
+  async sendNotification(
+    userId: string, 
+    userEmail: string, 
+    title: string, 
+    message: string,
+    eventDetails?: { title: string; description?: string; eventDate: string }
+  ): Promise<void> {
     console.log('📢 Starting comprehensive notification send for user:', userId);
     
     const preferences = await this.getUserPreferences(userId);
     
-    // Send email notification
+    // Send email notification with event details
     if (preferences.email && userEmail) {
-      const emailSuccess = await this.sendEmailNotification(userEmail, title, message);
+      const emailSuccess = await this.sendEmailNotification(userEmail, title, message, eventDetails);
       await this.logNotification({
         userId,
         type: 'email',
