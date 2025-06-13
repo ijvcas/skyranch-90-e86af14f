@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +107,7 @@ const BreedingDetail: React.FC<BreedingDetailProps> = ({
 
       {/* Status Badge */}
       <div className="flex items-center space-x-4">
-        <Badge className={getStatusColor(record.status)} className="text-base px-3 py-1">
+        <Badge className={`${getStatusColor(record.status)} text-base px-3 py-1`}>
           {getStatusLabel(record.status)}
         </Badge>
         <div className="flex items-center text-gray-500">

@@ -52,7 +52,6 @@ export const useNotifications = () => {
         
         if (savedNotifications) {
           const parsed = JSON.parse(savedNotifications);
-          // Convert date strings back to Date objects
           const notifications = parsed.map((n: any) => ({
             ...n,
             createdAt: new Date(n.createdAt),
@@ -66,6 +65,11 @@ export const useNotifications = () => {
         }
       } catch (error) {
         console.error('Error loading notifications:', error);
+        // Clear corrupted data
+        localStorage.removeItem('notifications');
+        localStorage.removeItem('notificationSettings');
+        setNotifications([]);
+        setSettings(DEFAULT_SETTINGS);
       } finally {
         setIsLoading(false);
       }
@@ -74,14 +78,19 @@ export const useNotifications = () => {
     loadData();
   }, []);
 
-  // Save notifications to localStorage
+  // Save notifications to localStorage with error handling
   const saveNotifications = useCallback((notifications: Notification[]) => {
     try {
       localStorage.setItem('notifications', JSON.stringify(notifications));
     } catch (error) {
       console.error('Error saving notifications:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar las notificaciones.",
+        variant: "destructive"
+      });
     }
-  }, []);
+  }, [toast]);
 
   // Save settings to localStorage
   const saveSettings = useCallback((settings: NotificationSettings) => {
@@ -90,8 +99,13 @@ export const useNotifications = () => {
       setSettings(settings);
     } catch (error) {
       console.error('Error saving notification settings:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar las configuraciones.",
+        variant: "destructive"
+      });
     }
-  }, []);
+  }, [toast]);
 
   // Add a new notification
   const addNotification = useCallback((
@@ -117,7 +131,7 @@ export const useNotifications = () => {
       return updated;
     });
 
-    // Show toast if enabled and not a scheduled notification
+    // Show toast and push notification if enabled
     if (!options.scheduledFor) {
       const priorityColors = {
         low: 'default',
@@ -132,13 +146,43 @@ export const useNotifications = () => {
         variant: priorityColors[notification.priority],
       });
 
+      // Try to send push notification if enabled
+      if (settings.pushNotifications && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          try {
+            new Notification(title, {
+              body: message,
+              icon: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
+              tag: notification.id,
+              requireInteraction: notification.priority === 'critical' || notification.priority === 'high'
+            });
+          } catch (error) {
+            console.log('Push notification failed:', error);
+          }
+        } else if (Notification.permission === 'default') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              try {
+                new Notification(title, {
+                  body: message,
+                  icon: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
+                  tag: notification.id
+                });
+              } catch (error) {
+                console.log('Push notification failed:', error);
+              }
+            }
+          });
+        }
+      }
+
       // Play sound if enabled
       if (settings.soundEnabled) {
         try {
           const audio = new Audio('/notification-sound.mp3');
           audio.volume = 0.3;
           audio.play().catch(() => {
-            // Ignore audio play errors (user interaction required)
+            // Ignore audio play errors
           });
         } catch (error) {
           console.log('Audio notification not available');
@@ -147,9 +191,9 @@ export const useNotifications = () => {
     }
 
     return notification.id;
-  }, [toast, settings.soundEnabled, saveNotifications]);
+  }, [toast, settings.soundEnabled, settings.pushNotifications, saveNotifications]);
 
-  // Mark notification as read
+  // Mark notification as read with proper state sync
   const markAsRead = useCallback((notificationId: string) => {
     setNotifications(prev => {
       const updated = prev.map(n => 
@@ -169,19 +213,37 @@ export const useNotifications = () => {
     });
   }, [saveNotifications]);
 
-  // Delete notification
+  // Delete notification with proper cleanup
   const deleteNotification = useCallback((notificationId: string) => {
     setNotifications(prev => {
       const updated = prev.filter(n => n.id !== notificationId);
       saveNotifications(updated);
       return updated;
     });
+    
+    // Also clear any browser notifications with the same tag
+    if ('Notification' in window && 'getNotifications' in window.navigator.serviceWorker) {
+      navigator.serviceWorker.getNotifications({ tag: notificationId }).then(notifications => {
+        notifications.forEach(notification => notification.close());
+      }).catch(() => {
+        // Ignore errors, service worker might not be available
+      });
+    }
   }, [saveNotifications]);
 
-  // Clear all notifications
+  // Clear all notifications with proper cleanup
   const clearAllNotifications = useCallback(() => {
     setNotifications([]);
     saveNotifications([]);
+    
+    // Clear all browser notifications
+    if ('Notification' in window && 'getNotifications' in window.navigator.serviceWorker) {
+      navigator.serviceWorker.getNotifications().then(notifications => {
+        notifications.forEach(notification => notification.close());
+      }).catch(() => {
+        // Ignore errors
+      });
+    }
   }, [saveNotifications]);
 
   // Check for health alerts
@@ -193,13 +255,12 @@ export const useNotifications = () => {
       const now = new Date();
 
       animals.forEach((animal: any) => {
-        // Check for unhealthy animals
         if (animal.healthStatus === 'sick' || animal.healthStatus === 'injured') {
           const existingAlert = notifications.find(n => 
             n.type === 'health' && 
             n.animalId === animal.id && 
             !n.isRead &&
-            n.createdAt > new Date(now.getTime() - 24 * 60 * 60 * 1000) // Within last 24 hours
+            n.createdAt > new Date(now.getTime() - 24 * 60 * 60 * 1000)
           );
 
           if (!existingAlert) {
@@ -217,14 +278,13 @@ export const useNotifications = () => {
           }
         }
 
-        // Check for overweight animals (if weight is tracked)
-        if (animal.weight && parseFloat(animal.weight) > 800) { // Example threshold
+        if (animal.weight && parseFloat(animal.weight) > 800) {
           const existingAlert = notifications.find(n => 
             n.type === 'health' && 
             n.animalId === animal.id && 
             n.message.includes('sobrepeso') &&
             !n.isRead &&
-            n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // Within last week
+            n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
           );
 
           if (!existingAlert) {
@@ -256,7 +316,6 @@ export const useNotifications = () => {
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
       animals.forEach((animal: any) => {
-        // Example: Check if animal needs annual vaccination
         const birthDate = animal.birthDate ? new Date(animal.birthDate) : null;
         if (birthDate) {
           const nextVaccineDate = new Date(birthDate);
@@ -267,7 +326,7 @@ export const useNotifications = () => {
               n.type === 'vaccine' && 
               n.animalId === animal.id && 
               !n.isRead &&
-              n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // Within last week
+              n.createdAt > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
             );
 
             if (!existingReminder) {
@@ -301,7 +360,6 @@ export const useNotifications = () => {
       const now = new Date();
       const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      // Check if we already sent a report this week
       const existingReport = notifications.find(n => 
         n.type === 'weekly_report' && 
         n.createdAt > lastWeek
@@ -344,12 +402,8 @@ export const useNotifications = () => {
       generateWeeklyReport();
     };
 
-    // Run checks immediately
     runChecks();
-
-    // Set up interval to run checks every hour
     const interval = setInterval(runChecks, 60 * 60 * 1000);
-
     return () => clearInterval(interval);
   }, [isLoading, checkHealthAlerts, checkVaccineReminders, generateWeeklyReport]);
 

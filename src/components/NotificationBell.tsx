@@ -59,7 +59,7 @@ const NotificationBell = () => {
 
   const recentNotifications = notifications
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 20); // Show last 20 notifications
+    .slice(0, 20);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -73,7 +73,7 @@ const NotificationBell = () => {
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+              className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-xs min-w-0 border-2 border-background z-50"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -81,7 +81,7 @@ const NotificationBell = () => {
         </Button>
       </PopoverTrigger>
       
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-80 p-0 z-50" align="end" sideOffset={5}>
         <Card className="border-0 shadow-lg">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -92,13 +92,13 @@ const NotificationBell = () => {
                     variant="ghost"
                     size="sm"
                     onClick={markAllAsRead}
-                    className="text-xs"
+                    className="text-xs h-7 px-2"
                   >
                     <Check className="w-3 h-3 mr-1" />
                     Marcar todas
                   </Button>
                 )}
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="text-xs">
                   {notifications.length}
                 </Badge>
               </div>
@@ -127,7 +127,7 @@ const NotificationBell = () => {
                         onClick={() => handleNotificationClick(notification)}
                       >
                         <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-2 flex-1">
+                          <div className="flex items-start space-x-2 flex-1 min-w-0">
                             {getNotificationIcon(notification.type)}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
@@ -141,7 +141,7 @@ const NotificationBell = () => {
                                 )}
                               </div>
                               
-                              <p className={`text-xs mt-1 ${
+                              <p className={`text-xs mt-1 line-clamp-2 ${
                                 notification.isRead ? 'text-gray-500' : 'text-gray-700'
                               }`}>
                                 {notification.message}
@@ -162,7 +162,7 @@ const NotificationBell = () => {
                                 </span>
                                 
                                 {notification.actionRequired && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs h-5">
                                     Acción requerida
                                   </Badge>
                                 )}
@@ -177,7 +177,7 @@ const NotificationBell = () => {
                               e.stopPropagation();
                               deleteNotification(notification.id);
                             }}
-                            className="h-6 w-6 p-0 ml-2 flex-shrink-0"
+                            className="h-6 w-6 p-0 ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
                           >
                             <X className="w-3 h-3" />
                           </Button>
