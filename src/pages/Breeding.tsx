@@ -5,19 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Heart, Calendar, TrendingUp } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getBreedingRecords, deleteBreedingRecord } from '@/services/breedingService';
+import { getBreedingRecords, deleteBreedingRecord, BreedingRecord } from '@/services/breedingService';
 import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
 import BreedingForm from '@/components/BreedingForm';
 import BreedingRecordsList from '@/components/BreedingRecordsList';
-import BreedingEditForm from '@/components/BreedingEditForm';
+import BreedingDetail from '@/components/BreedingDetail';
 import BreedingCalendarView from '@/components/BreedingCalendarView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Breeding: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [editingRecord, setEditingRecord] = useState(null);
+  const [selectedRecord, setSelectedRecord] = useState<BreedingRecord | null>(null);
   const [activeTab, setActiveTab] = useState('list');
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -40,6 +39,7 @@ const Breeding: React.FC = () => {
         title: "Registro Eliminado",
         description: "El registro de apareamiento ha sido eliminado exitosamente.",
       });
+      setSelectedRecord(null); // Go back to list view after deletion
     },
     onError: (error) => {
       console.error('Error deleting breeding record:', error);
@@ -61,14 +61,17 @@ const Breeding: React.FC = () => {
     setShowForm(false);
   };
 
-  const handleEditFormSuccess = () => {
-    setShowEditForm(false);
-    setEditingRecord(null);
+  const handleRecordClick = (record: BreedingRecord) => {
+    setSelectedRecord(record);
   };
 
-  const handleEdit = (record) => {
-    setEditingRecord(record);
-    setShowEditForm(true);
+  const handleBackToList = () => {
+    setSelectedRecord(null);
+  };
+
+  const handleEdit = (record: BreedingRecord) => {
+    // Edit functionality is now handled within BreedingDetail component
+    console.log('Edit record:', record);
   };
 
   const handleDelete = (id: string) => {
@@ -81,6 +84,21 @@ const Breeding: React.FC = () => {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If a record is selected, show the detail view
+  if (selectedRecord) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <BreedingDetail
+          record={selectedRecord}
+          animalNames={animalNames}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onBack={handleBackToList}
+        />
       </div>
     );
   }
@@ -98,7 +116,9 @@ const Breeding: React.FC = () => {
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Apareamiento
             </Button>
-          </DialogTrigger>
+          </DialogTrig
+
+ger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Registrar Nuevo Apareamiento</DialogTitle>
@@ -174,8 +194,7 @@ const Breeding: React.FC = () => {
               <BreedingRecordsList 
                 records={breedingRecords} 
                 animalNames={animalNames}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+                onRecordClick={handleRecordClick}
               />
             </CardContent>
           </Card>
@@ -214,21 +233,6 @@ const Breeding: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Edit Dialog */}
-      <Dialog open={showEditForm} onOpenChange={setShowEditForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Registro de Apareamiento</DialogTitle>
-          </DialogHeader>
-          {editingRecord && (
-            <BreedingEditForm 
-              record={editingRecord}
-              onSuccess={handleEditFormSuccess}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
