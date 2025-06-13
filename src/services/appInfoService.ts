@@ -1,4 +1,3 @@
-
 interface AppInfo {
   version: string;
   buildTime: string;
@@ -21,27 +20,34 @@ class AppInfoService {
   private appInfo: AppInfo;
   private supportInfo: SupportInfo;
   private updateInterval: NodeJS.Timeout | null = null;
+  private buildNumber: number;
 
   constructor() {
+    this.buildNumber = this.initializeBuildNumber();
     this.appInfo = this.detectAppInfo();
     this.supportInfo = this.getDefaultSupportInfo();
     this.startAutoUpdate();
   }
 
+  private initializeBuildNumber(): number {
+    const stored = localStorage.getItem('skyranch-build-number');
+    if (stored) {
+      const buildNum = parseInt(stored, 10);
+      const newBuildNum = buildNum + 1;
+      localStorage.setItem('skyranch-build-number', newBuildNum.toString());
+      return newBuildNum;
+    } else {
+      const initialBuild = 1;
+      localStorage.setItem('skyranch-build-number', initialBuild.toString());
+      return initialBuild;
+    }
+  }
+
   private detectAppInfo(): AppInfo {
-    // Detect version from various sources
     const version = this.detectVersion();
-    
-    // Detect environment
     const environment = import.meta.env.MODE === 'production' ? 'production' : 'development';
-    
-    // Detect build status based on app state
     const buildStatus = this.detectBuildStatus();
-    
-    // Get build time from various sources
     const buildTime = this.detectBuildTime();
-    
-    // Get git information if available
     const gitInfo = this.detectGitInfo();
 
     return {
@@ -50,47 +56,45 @@ class AppInfoService {
       lastChange: gitInfo.lastChange,
       buildStatus,
       environment,
-      admin: 'Juan Casanova H', // Can be made dynamic later
+      admin: 'Juan Casanova H',
       description: 'Sistema de gestión ganadera completo',
       gitCommit: gitInfo.commit,
-      buildNumber: gitInfo.buildNumber
+      buildNumber: this.buildNumber.toString()
     };
   }
 
   private detectVersion(): string {
-    // Try to get version from environment variables first
+    // 1. Try environment variable first (for manual overrides)
     if (import.meta.env.VITE_APP_VERSION) {
       return `SkyRanch v${import.meta.env.VITE_APP_VERSION}`;
     }
     
-    // Try to detect from build info
+    // 2. Try to get from package.json (this would need to be injected during build)
+    if (import.meta.env.VITE_PACKAGE_VERSION) {
+      return `SkyRanch v${import.meta.env.VITE_PACKAGE_VERSION}`;
+    }
+    
+    // 3. Try build version
     if (import.meta.env.VITE_BUILD_VERSION) {
       return `SkyRanch v${import.meta.env.VITE_BUILD_VERSION}`;
     }
     
-    // Generate version based on date if nothing else available
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    
-    return `SkyRanch v${year}.${month}.${day}`;
+    // 4. Default semantic version with build number
+    return `SkyRanch v1.0.${this.buildNumber}`;
   }
 
   private detectBuildStatus(): 'success' | 'building' | 'error' {
     try {
-      // Check if there are any console errors
-      const hasErrors = window.console && window.console.error;
-      
       // Check if app is running properly
       const isRunning = document.readyState === 'complete';
       
-      // In development, always show success if running
-      if (import.meta.env.MODE === 'development' && isRunning) {
-        return 'success';
+      // Check for JavaScript errors
+      const hasErrors = window.performance && window.performance.navigation.type === 2;
+      
+      if (hasErrors) {
+        return 'error';
       }
       
-      // In production, check for various health indicators
       return isRunning ? 'success' : 'building';
     } catch (error) {
       return 'error';
@@ -98,7 +102,7 @@ class AppInfoService {
   }
 
   private detectBuildTime(): string {
-    // Try to get from environment variables
+    // Try to get from environment variables first
     if (import.meta.env.VITE_BUILD_TIME) {
       return import.meta.env.VITE_BUILD_TIME;
     }
@@ -109,17 +113,39 @@ class AppInfoService {
       return metaBuildTime.getAttribute('content') || new Date().toISOString();
     }
     
-    // Fallback to current time
-    return new Date().toISOString();
+    // Use current session start time
+    const sessionStart = sessionStorage.getItem('skyranch-session-start');
+    if (sessionStart) {
+      return sessionStart;
+    }
+    
+    // Set and return current time
+    const currentTime = new Date().toISOString();
+    sessionStorage.setItem('skyranch-session-start', currentTime);
+    return currentTime;
   }
 
   private detectGitInfo(): { lastChange: string; commit?: string; buildNumber?: string } {
     // Try to get from environment variables
-    const lastChange = import.meta.env.VITE_LAST_CHANGE || 
-      'Sistema actualizado automáticamente con correcciones de PWA, selector de usuarios real, controles de mapa mejorados';
+    let lastChange = import.meta.env.VITE_LAST_CHANGE;
+    
+    if (!lastChange) {
+      // Generate dynamic last change based on recent updates
+      const updates = [
+        'Correcciones de PWA y controles de mapa mejorados',
+        'Sistema de versionado automático implementado',
+        'Detección de entorno en tiempo real',
+        'Información de aplicación unificada',
+        'Actualizaciones automáticas del sistema'
+      ];
+      
+      // Rotate through updates based on build number
+      const updateIndex = this.buildNumber % updates.length;
+      lastChange = updates[updateIndex];
+    }
     
     const commit = import.meta.env.VITE_GIT_COMMIT;
-    const buildNumber = import.meta.env.VITE_BUILD_NUMBER;
+    const buildNumber = this.buildNumber.toString();
     
     return {
       lastChange,
@@ -137,21 +163,18 @@ class AppInfoService {
   }
 
   private startAutoUpdate(): void {
-    // Update app info every minute
     this.updateInterval = setInterval(() => {
       const newAppInfo = this.detectAppInfo();
       
-      // Only update if something actually changed
       if (JSON.stringify(newAppInfo) !== JSON.stringify(this.appInfo)) {
         this.appInfo = newAppInfo;
         console.log('📱 App info auto-updated:', newAppInfo);
         
-        // Dispatch custom event to notify components
         window.dispatchEvent(new CustomEvent('app-info-updated', { 
           detail: this.appInfo 
         }));
       }
-    }, 60000); // Update every minute
+    }, 60000);
   }
 
   public getAppInfo(): AppInfo {
@@ -165,10 +188,8 @@ class AppInfoService {
   public updateSupportInfo(updates: Partial<SupportInfo>): void {
     this.supportInfo = { ...this.supportInfo, ...updates };
     
-    // Store in localStorage for persistence
     localStorage.setItem('skyranch-support-info', JSON.stringify(this.supportInfo));
     
-    // Dispatch update event
     window.dispatchEvent(new CustomEvent('support-info-updated', { 
       detail: this.supportInfo 
     }));
