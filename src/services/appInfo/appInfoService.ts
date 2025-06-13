@@ -6,7 +6,7 @@ import type { AppInfo, SupportInfo } from './types';
 
 class AppInfoService {
   private buildInfoDetector: BuildInfoDetector;
-  private supportInfoManager: SupportInfoManager;
+  public supportInfoManager: SupportInfoManager; // Made public to fix build errors
   private autoUpdater: AutoUpdater;
 
   constructor() {
