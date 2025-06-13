@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Download, Share, Smartphone } from 'lucide-react';
+import { X, Download, Share, Smartphone, Chrome, Info } from 'lucide-react';
 
 const DashboardPWAPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -9,6 +9,7 @@ const DashboardPWAPrompt = () => {
   const [isIOS, setIsIOS] = useState(false);
   const [isChrome, setIsChrome] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
     console.log('🔧 PWA Prompt: Initializing...');
@@ -18,7 +19,7 @@ const DashboardPWAPrompt = () => {
     setIsIOS(iOS);
     console.log('📱 iOS detected:', iOS);
 
-    // Detect Chrome/Edge (browsers that support beforeinstallprompt)
+    // Detect Chrome/Edge (browsers that support manual installation)
     const chrome = /Chrome|Chromium|Edge/.test(navigator.userAgent) && !iOS;
     setIsChrome(chrome);
     console.log('🌐 Chrome/Edge detected:', chrome);
@@ -36,12 +37,12 @@ const DashboardPWAPrompt = () => {
       return;
     }
 
-    // Check if dismissed recently (within 3 days)
+    // Check if dismissed recently (within 7 days)
     const dismissed = localStorage.getItem('pwa-prompt-dismissed');
     if (dismissed) {
       const dismissedDate = parseInt(dismissed);
-      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-      if (dismissedDate > threeDaysAgo) {
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      if (dismissedDate > sevenDaysAgo) {
         console.log('🚫 PWA prompt was dismissed recently, not showing');
         return;
       }
@@ -52,29 +53,16 @@ const DashboardPWAPrompt = () => {
       console.log('🎯 beforeinstallprompt event fired!');
       e.preventDefault();
       setDeferredPrompt(e);
-      if (chrome) {
-        setShowPrompt(true);
-        console.log('✅ Showing PWA install prompt for Chrome/Edge');
-      }
+      setShowPrompt(true);
+      console.log('✅ Automatic PWA install prompt available');
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // For Chrome browsers, also show a fallback prompt even if beforeinstallprompt doesn't fire
-    // This can happen if the criteria aren't fully met but we still want to inform users
-    if (chrome) {
-      setTimeout(() => {
-        if (!deferredPrompt && !isAlreadyInstalled) {
-          console.log('⏰ Chrome detected but no beforeinstallprompt yet, showing info prompt');
-          setShowPrompt(true);
-        }
-      }, 2000); // Wait 2 seconds for the event
-    }
-
-    // Show iOS instructions if on iOS and not standalone
-    if (iOS && !iosStandalone) {
-      console.log('🍎 iOS detected and not installed, showing iOS instructions');
+    // Show prompt for supported browsers
+    if (chrome || iOS) {
       setShowPrompt(true);
+      console.log('✅ Showing PWA install prompt for supported browser');
     }
 
     return () => {
@@ -103,6 +91,10 @@ const DashboardPWAPrompt = () => {
     setShowPrompt(false);
   };
 
+  const handleManualInstall = () => {
+    setShowInstructions(true);
+  };
+
   const handleDismiss = () => {
     console.log('🙈 PWA prompt dismissed by user');
     setShowPrompt(false);
@@ -115,20 +107,20 @@ const DashboardPWAPrompt = () => {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-40 md:left-auto md:right-4 md:max-w-md">
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
-        <div className="flex items-start justify-between mb-3">
+    <div className="fixed bottom-4 left-4 right-4 z-40 md:left-auto md:right-4 md:max-w-lg">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-5">
+        <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <img 
                 src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
                 alt="SkyRanch" 
-                className="w-8 h-8 rounded"
+                className="w-10 h-10 rounded"
               />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 text-sm">Instala SkyRanch</h3>
-              <p className="text-xs text-gray-600">Acceso rápido desde tu pantalla de inicio</p>
+              <h3 className="font-bold text-gray-900 text-base">Instala SkyRanch</h3>
+              <p className="text-sm text-gray-600">Acceso rápido desde tu pantalla de inicio</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleDismiss} className="p-1 h-auto">
@@ -137,34 +129,74 @@ const DashboardPWAPrompt = () => {
         </div>
         
         {isIOS ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-gray-700 flex items-center">
               <Share className="w-4 h-4 mr-2 text-blue-600" />
-              Toca el botón de compartir y selecciona "Añadir a pantalla de inicio"
+              Toca el botón de compartir <strong>↗</strong> y selecciona "Añadir a pantalla de inicio"
             </p>
           </div>
         ) : isChrome && deferredPrompt ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-gray-600">
               Instala la app para usarla sin conexión y con acceso directo
             </p>
             <Button 
               onClick={handleInstall}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-semibold"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Instalar App
+              <Download className="w-5 h-5 mr-2" />
+              Instalar App Ahora
             </Button>
           </div>
         ) : isChrome ? (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600 flex items-center">
-              <Smartphone className="w-4 h-4 mr-2 text-green-600" />
-              Esta aplicación se puede instalar en tu dispositivo
-            </p>
-            <p className="text-xs text-gray-500">
-              Chrome mostrará automáticamente la opción de instalación cuando esté disponible
-            </p>
+          <div className="space-y-4">
+            {!showInstructions ? (
+              <>
+                <div className="flex items-center space-x-2">
+                  <Chrome className="w-5 h-5 text-blue-600" />
+                  <p className="text-sm text-gray-700 font-medium">
+                    Esta aplicación se puede instalar en tu dispositivo
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <Button 
+                    onClick={handleManualInstall}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-semibold"
+                  >
+                    <Smartphone className="w-5 h-5 mr-2" />
+                    Ver Instrucciones de Instalación
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-blue-900">
+                        Para instalar SkyRanch en Chrome:
+                      </p>
+                      <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                        <li>Haz clic en los <strong>tres puntos (⋮)</strong> en la esquina superior derecha</li>
+                        <li>Busca la opción <strong>"Instalar SkyRanch"</strong> o <strong>"Instalar app"</strong></li>
+                        <li>Haz clic en <strong>"Instalar"</strong></li>
+                      </ol>
+                      <p className="text-xs text-blue-700 mt-2">
+                        Si no ves la opción, es posible que Chrome aún esté evaluando si la app es instalable.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setShowInstructions(false)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Entendido
+                </Button>
+              </div>
+            )}
           </div>
         ) : null}
       </div>
