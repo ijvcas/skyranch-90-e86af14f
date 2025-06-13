@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Settings as SettingsIcon, Users, Database, Shield, Smartphone } from 'lucide-react';
-import UnifiedAppInfo from '@/components/UnifiedAppInfo';
+import BuildTimeVersionDisplay from '@/components/app-info/BuildTimeVersionDisplay';
 import AuthenticationStatusCard from '@/components/lots/AuthenticationStatusCard';
 import UserManagement from '@/components/UserManagement';
 import PermissionsManager from '@/components/PermissionsManager';
@@ -61,8 +61,8 @@ const Settings = () => {
         {/* System Status Tab */}
         <TabsContent value="system" className="space-y-6">
           <div className="space-y-6">
-            {/* Unified App Info - automatically updates all fields */}
-            <UnifiedAppInfo isAdmin={true} showSupportCard={true} />
+            {/* Build-Time Version Display - replaces the old UnifiedAppInfo */}
+            <BuildTimeVersionDisplay />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Authentication Status */}
