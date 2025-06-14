@@ -2,7 +2,6 @@
 import { sendEmail, EmailData } from './emailClient';
 import { buildEmailTemplate } from './emailTemplates';
 
-// Simplified email service focused on core functionality
 const emailService = {
   sendEmail: async (
     to: string, 
@@ -10,24 +9,19 @@ const emailService = {
     body: string, 
     eventDetails?: { title: string; description?: string; eventDate: string }
   ): Promise<boolean> => {
-    console.log('📧 [EMAIL SERVICE] Starting emailService.sendEmail');
-    console.log('📧 [EMAIL SERVICE] Parameters:', {
-      to,
-      subject,
-      bodyLength: body.length,
-      hasEventDetails: !!eventDetails
-    });
+    console.log('📧 [EMAIL SERVICE] Starting sendEmail');
+    console.log('📧 [EMAIL SERVICE] To:', to);
+    console.log('📧 [EMAIL SERVICE] Subject:', subject);
 
     if (!to || !subject) {
-      throw new Error('Missing required parameters: to and subject are required');
+      throw new Error('Missing required parameters: to and subject');
     }
 
     try {
       let emailBody = body;
       
-      // Build HTML template if we have event details
       if (eventDetails) {
-        console.log('📧 [EMAIL SERVICE] Building HTML template for event details');
+        console.log('📧 [EMAIL SERVICE] Building HTML template');
         const userName = to.split('@')[0];
         const organizationName = "SkyRanch";
         
@@ -41,7 +35,6 @@ const emailService = {
           veterinarian: ''
         };
 
-        // Determine event type from subject
         let eventType = 'reminder';
         if (subject.includes('actualizado')) {
           eventType = 'updated';
@@ -52,7 +45,6 @@ const emailService = {
         }
 
         emailBody = buildEmailTemplate(eventType, eventForTemplate, userName, organizationName);
-        console.log('📧 [EMAIL SERVICE] HTML template built, length:', emailBody.length);
       }
 
       console.log('📧 [EMAIL SERVICE] Calling sendEmail...');
@@ -64,33 +56,27 @@ const emailService = {
         organizationName: "SkyRanch"
       });
       
-      console.log('📧 [EMAIL SERVICE] sendEmail result:', result);
-      
-      if (result && (result.data?.id || result.id)) {
-        console.log('✅ [EMAIL SERVICE] Email sent successfully');
-        return true;
-      }
-
-      throw new Error('Email service returned invalid response');
+      console.log('📧 [EMAIL SERVICE] Send result:', result);
+      return true;
       
     } catch (error) {
-      console.error('❌ [EMAIL SERVICE] Failed to send email:', error);
-      throw new Error(`EmailService failed: ${error.message}`);
+      console.error('❌ [EMAIL SERVICE] Failed:', error);
+      throw error;
     }
   },
 
   testEmail: async (to: string): Promise<boolean> => {
-    console.log('🧪 [EMAIL SERVICE] Testing email functionality...');
+    console.log('🧪 [EMAIL SERVICE] Testing email to:', to);
     try {
       const result = await emailService.sendEmail(
         to,
         'Test Email - SkyRanch',
         '<h1>Test Email</h1><p>This is a test email to verify the email system is working.</p>'
       );
-      console.log('🧪 [EMAIL SERVICE] Test email result:', result);
+      console.log('🧪 [EMAIL SERVICE] Test result:', result);
       return result;
     } catch (error) {
-      console.error('🧪 [EMAIL SERVICE] Test email failed:', error);
+      console.error('🧪 [EMAIL SERVICE] Test failed:', error);
       throw error;
     }
   }

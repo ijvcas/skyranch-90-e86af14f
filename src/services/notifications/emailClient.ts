@@ -9,29 +9,20 @@ export interface EmailData {
   organizationName?: string;
 }
 
-// Simplified email client focused on working functionality
 export const sendEmail = async (emailData: EmailData) => {
   try {
-    console.log('📧 [EMAIL CLIENT] Starting sendEmail function');
-    console.log('📧 [EMAIL CLIENT] Email data:', {
-      to: emailData.to,
-      subject: emailData.subject,
-      htmlLength: emailData.html.length,
-      senderName: emailData.senderName
-    });
+    console.log('📧 [EMAIL CLIENT] Sending email to:', emailData.to);
+    console.log('📧 [EMAIL CLIENT] Subject:', emailData.subject);
 
-    // Basic validation
     if (!emailData.to || !emailData.subject || !emailData.html) {
       throw new Error('Missing required email data (to, subject, or html)');
     }
 
-    // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       throw new Error('Authentication required to send emails');
     }
 
-    // Prepare clean payload - this is critical for the edge function
     const payload = {
       to: emailData.to.trim(),
       subject: emailData.subject.trim(),
@@ -40,13 +31,8 @@ export const sendEmail = async (emailData: EmailData) => {
       organizationName: emailData.organizationName || "SkyRanch"
     };
 
-    console.log('📧 [EMAIL CLIENT] Calling edge function with payload:', {
-      to: payload.to,
-      subject: payload.subject,
-      htmlLength: payload.html.length
-    });
+    console.log('📧 [EMAIL CLIENT] Calling edge function...');
     
-    // Call the edge function with proper error handling
     const { data, error } = await supabase.functions.invoke('send-email', {
       body: payload
     });
@@ -55,22 +41,18 @@ export const sendEmail = async (emailData: EmailData) => {
 
     if (error) {
       console.error('📧 [EMAIL CLIENT] Edge function error:', error);
-      throw new Error(`Email API error: ${error.message}`);
+      throw new Error(`Email sending failed: ${error.message}`);
     }
 
-    if (!data) {
-      throw new Error('Email API returned no response data');
+    if (!data || data.error) {
+      throw new Error(`Email API error: ${data?.error || 'Unknown error'}`);
     }
 
-    if (data.error) {
-      throw new Error(`Email API error: ${data.error}`);
-    }
-
-    console.log("📧 [EMAIL CLIENT] Email sent successfully:", data);
+    console.log("📧 [EMAIL CLIENT] Email sent successfully");
     return data;
     
   } catch (error) {
-    console.error("📧 [EMAIL CLIENT] Error in sendEmail:", error);
-    throw new Error(`Email client failed: ${error.message}`);
+    console.error("📧 [EMAIL CLIENT] Error:", error);
+    throw error;
   }
 };
