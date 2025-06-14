@@ -44,8 +44,23 @@ export const sendEmail = async (emailData: EmailData) => {
       throw new Error(`Email sending failed: ${error.message}`);
     }
 
-    if (!data || data.error) {
-      throw new Error(`Email API error: ${data?.error || 'Unknown error'}`);
+    if (!data) {
+      throw new Error('No response data from email service');
+    }
+
+    // Check for specific error types returned by the edge function
+    if (data.error) {
+      console.error('📧 [EMAIL CLIENT] Email service error:', data);
+      
+      if (data.error === 'domain_verification_required') {
+        throw new Error(`Domain verification required: ${data.message}`);
+      }
+      
+      if (data.error === 'resend_api_error') {
+        throw new Error(`Email API error: ${data.message}`);
+      }
+      
+      throw new Error(`Email service error: ${data.message || 'Unknown error'}`);
     }
 
     console.log("📧 [EMAIL CLIENT] Email sent successfully");

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -57,19 +56,70 @@ const handler = async (req: Request): Promise<Response> => {
       ]
     });
 
-    console.log("✅ Email sent successfully:", emailResponse);
+    console.log("📧 Resend response:", emailResponse);
 
-    return new Response(JSON.stringify(emailResponse), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+    // Check if Resend returned an error
+    if (emailResponse.error) {
+      console.error("❌ Resend API error:", emailResponse.error);
+      
+      // Check for domain verification errors
+      if (emailResponse.error.message && emailResponse.error.message.includes("verify a domain")) {
+        return new Response(
+          JSON.stringify({ 
+            error: "domain_verification_required",
+            message: "Email domain verification required. Only verified addresses can receive emails.",
+            details: emailResponse.error.message
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+      
+      // Other Resend errors
+      return new Response(
+        JSON.stringify({ 
+          error: "resend_api_error",
+          message: emailResponse.error.message || "Email service error",
+          details: emailResponse.error
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Success case
+    if (emailResponse.data) {
+      console.log("✅ Email sent successfully:", emailResponse.data);
+      return new Response(JSON.stringify(emailResponse.data), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
+
+    // Unexpected case - no data and no error
+    console.error("❌ Unexpected Resend response - no data and no error");
+    return new Response(
+      JSON.stringify({ error: "unexpected_response", message: "Unexpected email service response" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+
   } catch (error: any) {
     console.error("❌ Error in send-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: "function_error",
+        message: error.message || "Internal server error"
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

@@ -69,6 +69,7 @@ export const useCalendarNotifications = (users: any[]) => {
     let notificationsSent = 0;
     let notificationsFailed = 0;
     let emailFailures: string[] = [];
+    let domainVerificationErrors: string[] = [];
 
     for (const user of selectedUsers) {
       try {
@@ -109,8 +110,16 @@ export const useCalendarNotifications = (users: any[]) => {
           userId: user.id,
           userEmail: user.email
         });
+        
         notificationsFailed++;
-        emailFailures.push(`${user.email}: ${error.message}`);
+        
+        // Handle domain verification errors specifically
+        if (error.message.includes('Domain verification required')) {
+          domainVerificationErrors.push(user.email);
+          emailFailures.push(`${user.email}: Domain verification required`);
+        } else {
+          emailFailures.push(`${user.email}: ${error.message}`);
+        }
       }
     }
 
@@ -122,18 +131,41 @@ export const useCalendarNotifications = (users: any[]) => {
       console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Email failures:`, emailFailures);
     }
 
-    // Show summary toast
+    // Show summary toast with specific domain verification guidance
     if (notificationsSent > 0) {
+      let description = `Se enviaron ${notificationsSent} notificación(es) correctamente`;
+      if (notificationsFailed > 0) {
+        description += `. ${notificationsFailed} fallaron`;
+        if (domainVerificationErrors.length > 0) {
+          description += ` (${domainVerificationErrors.length} requieren verificación de dominio)`;
+        }
+        description += '.';
+      }
+      
       toast({
         title: "Notificaciones enviadas",
-        description: `Se enviaron ${notificationsSent} notificación(es) correctamente${notificationsFailed > 0 ? `. ${notificationsFailed} fallaron.` : '.'}`,
+        description,
       });
     }
 
     if (notificationsFailed > 0 && notificationsSent === 0) {
+      let description = `No se pudieron enviar las notificaciones (${notificationsFailed} fallos)`;
+      if (domainVerificationErrors.length > 0) {
+        description = `Las notificaciones por email requieren verificación de dominio. Solo las direcciones verificadas pueden recibir emails.`;
+      }
+      
       toast({
         title: "Error de notificaciones",
-        description: `No se pudieron enviar las notificaciones (${notificationsFailed} fallos)`,
+        description,
+        variant: "destructive"
+      });
+    }
+
+    // Show domain verification specific warning
+    if (domainVerificationErrors.length > 0) {
+      toast({
+        title: "Verificación de dominio requerida",
+        description: `Los emails a ${domainVerificationErrors.join(', ')} requieren verificación de dominio en Resend. Solo direcciones verificadas pueden recibir emails.`,
         variant: "destructive"
       });
     }
