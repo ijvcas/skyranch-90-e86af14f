@@ -30,33 +30,52 @@ const CalendarPage = () => {
 
   const handleCreateEvent = async (eventData: any, selectedUserIds: string[]) => {
     console.log('📅 Creating event with selected users:', selectedUserIds);
-    await createEvent(eventData, selectedUserIds);
-    closeCreateDialog();
+    try {
+      await createEvent(eventData, selectedUserIds);
+      closeCreateDialog();
+    } catch (error) {
+      console.error('📅 Error creating event:', error);
+      // Dialog will remain open so user can retry
+    }
   };
 
   const handleEditEvent = async (event: CalendarEvent) => {
     console.log('📅 Editing event:', event.title);
-    const notificationUsers = await getNotificationUsers(event.id);
-    console.log('📅 Loaded notification users for event:', notificationUsers);
-    openEditDialog(event, notificationUsers);
+    try {
+      const notificationUsers = await getNotificationUsers(event.id);
+      console.log('📅 Loaded notification users for event:', notificationUsers);
+      openEditDialog(event, notificationUsers);
+    } catch (error) {
+      console.error('📅 Error loading event for edit:', error);
+    }
   };
 
   const handleEventClick = (event: CalendarEvent) => {
+    console.log('📅 Event clicked:', event.title);
     openDetailDialog(event);
   };
 
   const handleSaveEditedEvent = async (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
     if (!selectedEventForEdit) return;
     console.log('📅 Saving edited event with selected users:', selectedUserIds);
-    await updateEvent(selectedEventForEdit.id, eventData, selectedUserIds);
-    closeEditDialog();
+    try {
+      await updateEvent(selectedEventForEdit.id, eventData, selectedUserIds);
+      closeEditDialog();
+    } catch (error) {
+      console.error('📅 Error updating event:', error);
+      // Dialog will remain open so user can retry
+    }
   };
 
   const handleDeleteEvent = async (eventId: string) => {
     console.log('📅 Deleting event:', eventId);
-    await deleteEvent(eventId);
-    closeEditDialog();
-    closeDetailDialog();
+    try {
+      await deleteEvent(eventId);
+      closeEditDialog();
+      closeDetailDialog();
+    } catch (error) {
+      console.error('📅 Error deleting event:', error);
+    }
   };
 
   return (

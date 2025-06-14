@@ -11,30 +11,39 @@ export const useCalendarState = () => {
   const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  const openCreateDialog = () => setIsDialogOpen(true);
+  const openCreateDialog = () => {
+    console.log('📅 Opening create dialog');
+    setIsDialogOpen(true);
+  };
+  
   const closeCreateDialog = () => {
+    console.log('📅 Closing create dialog');
     setIsDialogOpen(false);
     setSelectedUserIds([]);
   };
 
   const openEditDialog = (event: CalendarEvent, notificationUsers: string[]) => {
+    console.log('📅 Opening edit dialog for event:', event.title);
     setSelectedEventForEdit(event);
     setSelectedUserIds(notificationUsers);
     setIsEditDialogOpen(true);
   };
 
   const closeEditDialog = () => {
+    console.log('📅 Closing edit dialog');
     setIsEditDialogOpen(false);
     setSelectedEventForEdit(null);
     setSelectedUserIds([]);
   };
 
   const openDetailDialog = (event: CalendarEvent) => {
+    console.log('📅 Opening detail dialog for event:', event.title);
     setSelectedEventForDetail(event);
     setIsDetailDialogOpen(true);
   };
 
   const closeDetailDialog = () => {
+    console.log('📅 Closing detail dialog');
     setIsDetailDialogOpen(false);
     setSelectedEventForDetail(null);
   };
