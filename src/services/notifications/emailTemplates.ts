@@ -38,11 +38,28 @@ export const buildEmailTemplate = (
 
   const actionColor = eventType === 'deleted' ? '#dc2626' : '#059669';
 
-  // Simple logo using a green circle with "SR" initials
+  // SkyRanch logo with cow silhouettes on green background
   const logoSvg = `data:image/svg+xml;base64,${btoa(`
-    <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="30" cy="30" r="30" fill="#059669"/>
-      <text x="30" y="38" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SR</text>
+    <svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+      <rect width="80" height="60" rx="8" fill="#059669"/>
+      <!-- Left cow silhouette -->
+      <g transform="translate(8, 15)">
+        <path d="M2 25 C2 22, 4 20, 6 20 L8 20 C8 18, 10 16, 12 16 C14 16, 16 18, 16 20 L18 20 C20 20, 22 22, 22 25 L22 28 C22 30, 20 32, 18 32 L6 32 C4 32, 2 30, 2 28 Z" fill="white" opacity="0.9"/>
+        <circle cx="8" cy="22" r="1" fill="#059669"/>
+        <path d="M6 28 L6 34 M10 28 L10 34 M14 28 L14 34 M18 28 L18 34" stroke="white" stroke-width="1.5" opacity="0.9"/>
+        <!-- Horns -->
+        <path d="M8 16 L6 12 M12 16 L14 12" stroke="white" stroke-width="1" opacity="0.9"/>
+      </g>
+      <!-- Right cow silhouette -->
+      <g transform="translate(50, 15)">
+        <path d="M2 25 C2 22, 4 20, 6 20 L8 20 C8 18, 10 16, 12 16 C14 16, 16 18, 16 20 L18 20 C20 20, 22 22, 22 25 L22 28 C22 30, 20 32, 18 32 L6 32 C4 32, 2 30, 2 28 Z" fill="white" opacity="0.9"/>
+        <circle cx="8" cy="22" r="1" fill="#059669"/>
+        <path d="M6 28 L6 34 M10 28 L10 34 M14 28 L14 34 M18 28 L18 34" stroke="white" stroke-width="1.5" opacity="0.9"/>
+        <!-- Horns -->
+        <path d="M8 16 L6 12 M12 16 L14 12" stroke="white" stroke-width="1" opacity="0.9"/>
+      </g>
+      <!-- Center grass/ranch element -->
+      <path d="M30 45 Q35 40, 40 45 Q45 40, 50 45" stroke="white" stroke-width="2" fill="none" opacity="0.7"/>
     </svg>
   `)}`;
 
@@ -59,7 +76,7 @@ export const buildEmailTemplate = (
         
         <!-- Logo Section -->
         <div style="text-align: center; padding: 32px 24px 24px 24px; background-color: #ffffff;">
-          <img src="${logoSvg}" alt="SkyRanch Logo" style="width: 60px; height: 60px; margin-bottom: 16px;">
+          <img src="${logoSvg}" alt="SkyRanch Logo" style="width: 80px; height: 60px; margin-bottom: 16px;">
           <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 1px; color: #047857; font-family: 'Georgia', serif;">
             SKYRANCH
           </h1>
