@@ -63,8 +63,15 @@ const emailService = {
       });
       
       console.log('📧 [EMAIL SERVICE DEBUG] emailClient.sendEmail result:', result);
-      console.log('✅ [EMAIL SERVICE DEBUG] Email sent successfully through emailService');
-      return true;
+      
+      // Check if the result indicates success
+      if (result && typeof result === 'object' && !result.error) {
+        console.log('✅ [EMAIL SERVICE DEBUG] Email sent successfully through emailService');
+        return true;
+      } else {
+        console.error('❌ [EMAIL SERVICE DEBUG] Email client returned error or no data:', result);
+        throw new Error(`Email client failed: ${result?.error || 'No response data'}`);
+      }
     } catch (error) {
       console.error('❌ [EMAIL SERVICE DEBUG] Failed to send email in emailService:', error);
       console.error('❌ [EMAIL SERVICE DEBUG] Full error details:', {
@@ -75,7 +82,7 @@ const emailService = {
         subject
       });
       
-      // Don't swallow the error - re-throw it so it can be caught upstream
+      // Re-throw the error so it can be caught upstream - don't return false
       throw new Error(`EmailService failed: ${error.message}`);
     }
   },

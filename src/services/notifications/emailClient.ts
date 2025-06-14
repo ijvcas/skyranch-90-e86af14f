@@ -70,6 +70,12 @@ export const sendEmail = async (emailData: EmailData) => {
       throw new Error('Email API returned no response data');
     }
 
+    // Validate that the response indicates success
+    if (data.error) {
+      console.error('📧 [EMAIL CLIENT DEBUG] Email API returned error in data:', data.error);
+      throw new Error(`Email API error: ${data.error}`);
+    }
+
     console.log("📧 [EMAIL CLIENT DEBUG] Email sent successfully via edge function:", data);
     return data;
   } catch (error) {

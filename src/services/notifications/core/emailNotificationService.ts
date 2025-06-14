@@ -39,6 +39,7 @@ export class EmailNotificationService {
         errorMessage: error.message
       });
       
+      // Re-throw the error to ensure it propagates properly
       throw new Error(`EmailNotificationService failed: ${error.message}`);
     }
   }
