@@ -41,13 +41,17 @@ class PregnancyNotificationService {
         return;
       }
 
-      // Calculate the target date (7 days from now)
+      // Check for pregnancies due within the next 7 days (not exactly 7 days)
       const today = new Date();
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() + 7);
-      const targetDateString = targetDate.toISOString().split('T')[0];
+      const sevenDaysFromNow = new Date(today);
+      sevenDaysFromNow.setDate(today.getDate() + 7);
+      
+      const todayString = today.toISOString().split('T')[0];
+      const sevenDaysString = sevenDaysFromNow.toISOString().split('T')[0];
 
-      // Get pregnancies due in 7 days
+      console.log(`📅 Checking for pregnancies due between ${todayString} and ${sevenDaysString}`);
+
+      // Get pregnancies due within the next 7 days
       const { data: breedingRecords, error } = await supabase
         .from('breeding_records')
         .select(`
@@ -57,23 +61,35 @@ class PregnancyNotificationService {
           animals!breeding_records_mother_id_fkey(name)
         `)
         .eq('pregnancy_confirmed', true)
-        .eq('expected_due_date', targetDateString)
+        .gte('expected_due_date', todayString)
+        .lte('expected_due_date', sevenDaysString)
         .neq('status', 'birth_completed');
 
-      if (error || !breedingRecords || breedingRecords.length === 0) {
-        console.log('📋 No pregnancies due in 7 days for push notifications');
+      console.log('📋 Found breeding records for push notifications:', breedingRecords);
+
+      if (error) {
+        console.error('❌ Error fetching breeding records for push notifications:', error);
+        return;
+      }
+
+      if (!breedingRecords || breedingRecords.length === 0) {
+        console.log('📋 No pregnancies due within the next 7 days for push notifications');
         return;
       }
 
       // Send push notification for each pregnancy
       for (const record of breedingRecords) {
         const motherName = record.animals?.name || 'Animal desconocido';
-        const dueDate = new Date(record.expected_due_date).toLocaleDateString('es-ES');
+        const dueDate = new Date(record.expected_due_date);
+        const dueDateString = dueDate.toLocaleDateString('es-ES');
+        const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        console.log(`📱 Sending push notification for ${motherName}, due in ${daysUntilDue} days`);
         
         const success = await pushService.sendPushNotification(
           user.id,
           '🤰 Parto próximo',
-          `${motherName} está programada para dar a luz en 7 días (${dueDate}). Prepara el área de parto.`
+          `${motherName} está programada para dar a luz en ${daysUntilDue} días (${dueDateString}). Prepara el área de parto.`
         );
 
         if (success) {

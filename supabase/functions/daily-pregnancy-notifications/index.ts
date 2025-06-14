@@ -38,21 +38,24 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log('🔄 Starting daily pregnancy notifications check...');
 
-    // Calculate the target date (7 days from now)
+    // Calculate date range for next 7 days
     const today = new Date();
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + 7);
-    const targetDateString = targetDate.toISOString().split('T')[0];
+    const sevenDaysFromNow = new Date(today);
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+    
+    const todayString = today.toISOString().split('T')[0];
+    const sevenDaysString = sevenDaysFromNow.toISOString().split('T')[0];
 
-    console.log(`📅 Today: ${today.toISOString().split('T')[0]}`);
-    console.log(`📅 Checking for due dates on: ${targetDateString}`);
+    console.log(`📅 Today: ${todayString}`);
+    console.log(`📅 Checking for due dates between today and: ${sevenDaysString}`);
 
-    // Get confirmed pregnancies with due dates in 7 days that haven't given birth yet
+    // Get confirmed pregnancies with due dates within the next 7 days that haven't given birth yet
     const { data: breedingRecords, error: breedingError } = await supabase
       .from('breeding_records')
       .select('id, expected_due_date, mother_id, pregnancy_confirmed, status')
       .eq('pregnancy_confirmed', true)
-      .eq('expected_due_date', targetDateString)
+      .gte('expected_due_date', todayString)
+      .lte('expected_due_date', sevenDaysString)
       .neq('status', 'birth_completed');
 
     if (breedingError) {
@@ -64,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('📋 Breeding records:', breedingRecords);
 
     if (!breedingRecords || breedingRecords.length === 0) {
-      console.log('📋 No pregnancies due in 7 days');
+      console.log('📋 No pregnancies due within the next 7 days');
       
       // Let's also check what pregnancies exist in the system for debugging
       const { data: allPregnancies, error: allError } = await supabase
@@ -75,9 +78,9 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('🔍 All confirmed pregnancies in system:', allPregnancies);
       
       return new Response(JSON.stringify({ 
-        message: 'No pregnancies due in 7 days',
+        message: 'No pregnancies due within the next 7 days',
         debugInfo: {
-          targetDate: targetDateString,
+          dateRange: `${todayString} to ${sevenDaysString}`,
           allPregnancies: allPregnancies
         }
       }), {
@@ -86,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log(`🤰 Found ${breedingRecords.length} pregnancies due in 7 days`);
+    console.log(`🤰 Found ${breedingRecords.length} pregnancies due within the next 7 days`);
 
     // Get mother animal names
     const motherIds = breedingRecords.map(record => record.mother_id);
@@ -133,9 +136,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const record of breedingRecords) {
       const motherName = motherMap[record.mother_id] || 'Animal desconocido';
-      const dueDate = new Date(record.expected_due_date).toLocaleDateString('es-ES');
+      const dueDate = new Date(record.expected_due_date);
+      const dueDateString = dueDate.toLocaleDateString('es-ES');
+      const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-      console.log(`🤰 Processing pregnancy for ${motherName}, due: ${dueDate}`);
+      console.log(`🤰 Processing pregnancy for ${motherName}, due in ${daysUntilDue} days (${dueDateString})`);
 
       for (const user of users) {
         try {
@@ -147,7 +152,7 @@ const handler = async (req: Request): Promise<Response> => {
               type: 'breeding',
               priority: 'high',
               title: '🤰 Parto próximo',
-              message: `${motherName} está programada para dar a luz en 7 días (${dueDate}). Prepara el área de parto y mantén atención veterinaria disponible.`,
+              message: `${motherName} está programada para dar a luz en ${daysUntilDue} días (${dueDateString}). Prepara el área de parto y mantén atención veterinaria disponible.`,
               read: false,
               action_required: true,
               animal_name: motherName
@@ -174,7 +179,7 @@ const handler = async (req: Request): Promise<Response> => {
       pregnancies_checked: breedingRecords.length,
       notifications_sent: notificationsSent,
       notifications_failed: notificationsFailed,
-      target_date: targetDateString
+      date_range: `${todayString} to ${sevenDaysString}`
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
