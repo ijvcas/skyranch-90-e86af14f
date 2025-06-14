@@ -64,7 +64,11 @@ export class EmailService {
                 </p>
               </div>
             </div>
-          `
+          `,
+          // Add sender metadata for better email client recognition
+          senderName: 'SkyRanch - Sistema de Gestión Ganadera',
+          organizationName: 'SkyRanch',
+          logoUrl: 'https://lovable-uploads.s3.amazonaws.com/b035d3c5-cdbb-4f85-b72b-f93369240315.png'
         }
       });
 
