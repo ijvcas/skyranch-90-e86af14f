@@ -13,11 +13,13 @@ import {
 import { notificationService } from '@/services/notifications/notificationService';
 import { supabaseNotificationService } from '@/services/notifications/supabaseNotificationService';
 import { pushService } from '@/services/notifications/pushService';
+import { useBreedingNotifications } from '@/hooks/useBreedingNotifications';
 
 export const useCalendarEvents = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { setupPregnancyNotifications } = useBreedingNotifications();
 
   const { data: events = [] } = useQuery({
     queryKey: ['calendar-events'],
@@ -129,6 +131,18 @@ export const useCalendarEvents = () => {
         false, 
         eventData.description
       );
+
+      // Check if this is a breeding-related event and setup pregnancy notifications
+      if (eventData.eventType === 'breeding' && eventData.animalId) {
+        console.log('🤰 Setting up pregnancy notifications for breeding event');
+        // Note: In a real scenario, you'd need to link this to a breeding record
+        // For now, we'll trigger a general check
+        try {
+          await setupPregnancyNotifications(eventId);
+        } catch (error) {
+          console.error('Error setting up pregnancy notifications:', error);
+        }
+      }
 
       toast({
         title: "Éxito",
