@@ -12,6 +12,7 @@ import EventForm from '@/components/calendar/EventForm';
 import EventList from '@/components/calendar/EventList';
 import UpcomingEvents from '@/components/calendar/UpcomingEvents';
 import EventEditDialog from '@/components/calendar/EventEditDialog';
+import EventDetailDialog from '@/components/calendar/EventDetailDialog';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEvent } from '@/services/calendarService';
@@ -21,7 +22,9 @@ const CalendarPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedEventForEdit, setSelectedEventForEdit] = useState<CalendarEvent | null>(null);
+  const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const { events, createEvent, updateEvent, deleteEvent, getNotificationUsers, isSubmitting } = useCalendarEvents();
@@ -48,6 +51,11 @@ const CalendarPage = () => {
     setIsEditDialogOpen(true);
   };
 
+  const handleEventClick = (event: CalendarEvent) => {
+    setSelectedEventForDetail(event);
+    setIsDetailDialogOpen(true);
+  };
+
   const handleSaveEditedEvent = async (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
     if (!selectedEventForEdit) return;
     console.log('📅 Saving edited event with selected users:', selectedUserIds);
@@ -63,6 +71,8 @@ const CalendarPage = () => {
     setIsEditDialogOpen(false);
     setSelectedEventForEdit(null);
     setSelectedUserIds([]);
+    setIsDetailDialogOpen(false);
+    setSelectedEventForDetail(null);
   };
 
   return (
@@ -164,9 +174,22 @@ const CalendarPage = () => {
           <UpcomingEvents
             events={events}
             animals={animals}
-            onEditEvent={handleEditEvent}
+            onEventClick={handleEventClick}
           />
         </div>
+
+        {/* Event Detail Dialog */}
+        <EventDetailDialog
+          event={selectedEventForDetail}
+          isOpen={isDetailDialogOpen}
+          onClose={() => {
+            setIsDetailDialogOpen(false);
+            setSelectedEventForDetail(null);
+          }}
+          onEdit={handleEditEvent}
+          onDelete={handleDeleteEvent}
+          animals={animals}
+        />
 
         {/* Event Edit Dialog */}
         <EventEditDialog

@@ -2,8 +2,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
 import { CalendarEvent } from '@/services/calendarService';
 
 interface Animal {
@@ -14,10 +12,10 @@ interface Animal {
 interface UpcomingEventsProps {
   events: CalendarEvent[];
   animals: Animal[];
-  onEditEvent: (event: CalendarEvent) => void;
+  onEventClick: (event: CalendarEvent) => void;
 }
 
-const UpcomingEvents = ({ events, animals, onEditEvent }: UpcomingEventsProps) => {
+const UpcomingEvents = ({ events, animals, onEventClick }: UpcomingEventsProps) => {
   const getEventTypeColor = (type: string) => {
     switch (type) {
       case 'vaccination':
@@ -68,31 +66,28 @@ const UpcomingEvents = ({ events, animals, onEditEvent }: UpcomingEventsProps) =
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {upcomingEvents.map(event => (
-            <div key={event.id} className="p-4 border rounded-lg">
+            <div 
+              key={event.id} 
+              className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-200"
+              onClick={() => onEventClick(event)}
+            >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold">{event.title}</h4>
-                <div className="flex items-center space-x-2">
-                  <Badge className={getEventTypeColor(event.eventType)}>
-                    {getEventTypeLabel(event.eventType)}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEditEvent(event)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                </div>
+                <h4 className="font-semibold text-sm truncate">{event.title}</h4>
+                <Badge className={`${getEventTypeColor(event.eventType)} text-xs`}>
+                  {getEventTypeLabel(event.eventType)}
+                </Badge>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 mb-1">
                 {new Date(event.eventDate).toLocaleDateString('es-ES')}
               </p>
               {event.animalId && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500">
                   Animal: {animals.find(a => a.id === event.animalId)?.name || 'N/A'}
                 </p>
               )}
+              <div className="mt-2 text-xs text-blue-600 hover:text-blue-800">
+                Click para ver detalles →
+              </div>
             </div>
           ))}
         </div>
