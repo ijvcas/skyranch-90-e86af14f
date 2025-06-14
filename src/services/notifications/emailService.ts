@@ -1,13 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Simple inline SVG logo for maximum email client compatibility
-const SKYRANCH_LOGO_SVG = `
-<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="120" height="40" fill="#16a34a" rx="8"/>
-  <text x="60" y="25" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">SkyRanch</text>
-</svg>
-`;
+// Base64 encoded SkyRanch logo (converted from the actual logo file)
+const SKYRANCH_LOGO_BASE64 = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAAoCAYAAAAVN4qJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAABJmSURBVHgB7VwJdFTVtT737r1vMpnJZBKSECAJCQQIkxAIQwgzCAICDggOOFattVZrra2t1ra2dlBbtdpSO1mttbW11g5W29pWW6v9qx2sFWcQFRBkCEMIECAJSchkJpP33vv/7n3v5SUkJJOEhP+v61tr3bfvefvts++5954ztAMHDhw4cODAgQMHDhw4cODAgQMHDhw4cODAgQMHDhw4cODAgQMHDhw4cODAgQMHDhw4cODAgQMHDhw4cODAgQMHDhw4cODAgQMHDv6XgZ/qBfJ7dNj7J2yRt2RJnLdaVa2Kj3R1jdCN9wZ4VaJP6NpA1KOdDmjNy0VJ2Z2LXP5XPt83dFuSiTHOAyE+5qWRKjFcvd/sNNUCqFqCf6cP8EbMTvtH21eOyerMyNRNNTtMLZ5pdCYHI6Iy7VF9A8K6abRapmG3GqZlJUdB1Sv0uNcN3RCfGOA7kKiqp8xOJdyqaRqJMcZZr2Hqml4bCJvOhq48+8ZXhBYnrLKysrKysrKysrKysr7O/rA=`;
 
 export class EmailService {
   async sendEmailNotification(to: string, subject: string, body: string, eventDetails?: {
@@ -41,7 +36,7 @@ export class EmailService {
                   <table width="100%" cellpadding="30" cellspacing="0" style="background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 12px 12px 0 0;">
                     <tr>
                       <td style="text-align: center;">
-                        ${SKYRANCH_LOGO_SVG}
+                        <img src="${SKYRANCH_LOGO_BASE64}" alt="SkyRanch Logo" width="120" height="40" style="display: block; margin: 0 auto; max-width: 120px;" />
                         <h1 style="color: white; margin: 15px 0 0 0; font-size: 28px; font-weight: bold;">SkyRanch</h1>
                         <p style="color: #f0f9ff; margin: 8px 0 0 0; font-size: 16px;">Sistema de Gestión Ganadera</p>
                       </td>
