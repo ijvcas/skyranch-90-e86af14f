@@ -1,4 +1,3 @@
-
 // Simple email service that calls the edge function - no Resend imports needed here
 export const sendEmail = async (emailData: {
   to: string;
@@ -8,7 +7,7 @@ export const sendEmail = async (emailData: {
   organizationName?: string;
 }) => {
   try {
-    const { data } = await fetch(`https://ahwhtxygyzoadsmdrwwg.supabase.co/functions/v1/send-email`, {
+    const response = await fetch(`https://ahwhtxygyzoadsmdrwwg.supabase.co/functions/v1/send-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -17,6 +16,11 @@ export const sendEmail = async (emailData: {
       body: JSON.stringify(emailData)
     });
 
+    if (!response.ok) {
+      throw new Error(`Email API responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
     console.log("Email sent successfully via edge function");
     return data;
   } catch (error) {
