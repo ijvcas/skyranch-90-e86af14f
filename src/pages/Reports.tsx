@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
+import PageLayout from '@/components/ui/page-layout';
 import ReportsDashboard from '@/components/ReportsDashboard';
 
 const Reports: React.FC = () => {
   return (
-    <div className="page-with-logo">
+    <PageLayout>
       <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center space-x-2">
           <BarChart3 className="w-8 h-8 text-blue-500" />
@@ -15,7 +15,7 @@ const Reports: React.FC = () => {
 
         <ReportsDashboard />
       </div>
-    </div>
+    </PageLayout>
   );
 };
 
