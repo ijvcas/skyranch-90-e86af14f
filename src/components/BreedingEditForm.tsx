@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +30,6 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
     pregnancyConfirmed: record.pregnancyConfirmed,
     pregnancyConfirmationDate: record.pregnancyConfirmationDate || '',
     pregnancyMethod: (record.pregnancyMethod || '') as 'visual' | 'ultrasound' | 'blood_test' | 'palpation' | '',
-    gestationLength: record.gestationLength || '',
     offspringCount: record.offspringCount,
     breedingNotes: record.breedingNotes || '',
     veterinarian: record.veterinarian || '',
@@ -98,7 +98,6 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
       pregnancyConfirmed: formData.pregnancyConfirmed,
       pregnancyConfirmationDate: formData.pregnancyConfirmationDate || undefined,
       pregnancyMethod: formData.pregnancyMethod || undefined,
-      gestationLength: formData.gestationLength ? parseInt(formData.gestationLength.toString()) : undefined,
       offspringCount: formData.offspringCount,
       breedingNotes: formData.breedingNotes || undefined,
       veterinarian: formData.veterinarian || undefined,

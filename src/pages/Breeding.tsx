@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Heart, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Heart, Calendar, TrendingUp, Bell } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBreedingRecords, deleteBreedingRecord, BreedingRecord } from '@/services/breedingService';
 import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
+import { useBreedingNotifications } from '@/hooks/useBreedingNotifications';
 import BreedingForm from '@/components/BreedingForm';
 import BreedingRecordsList from '@/components/BreedingRecordsList';
 import BreedingDetail from '@/components/BreedingDetail';
@@ -20,6 +21,7 @@ const Breeding: React.FC = () => {
   const [activeTab, setActiveTab] = useState('list');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { triggerNotificationCheck } = useBreedingNotifications();
 
   const { data: breedingRecords = [], isLoading: isLoadingRecords } = useQuery({
     queryKey: ['breeding-records'],
@@ -39,7 +41,7 @@ const Breeding: React.FC = () => {
         title: "Registro Eliminado",
         description: "El registro de apareamiento ha sido eliminado exitosamente.",
       });
-      setSelectedRecord(null); // Go back to list view after deletion
+      setSelectedRecord(null);
     },
     onError: (error) => {
       console.error('Error deleting breeding record:', error);
@@ -70,7 +72,6 @@ const Breeding: React.FC = () => {
   };
 
   const handleEdit = (record: BreedingRecord) => {
-    // Edit functionality is now handled within BreedingDetail component
     console.log('Edit record:', record);
   };
 
@@ -78,6 +79,11 @@ const Breeding: React.FC = () => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este registro de apareamiento?')) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleTestNotifications = async () => {
+    console.log('🔔 Testing pregnancy notifications manually...');
+    await triggerNotificationCheck();
   };
 
   if (isLoadingRecords) {
@@ -113,20 +119,26 @@ const Breeding: React.FC = () => {
             <Heart className="w-8 h-8 text-red-500" />
             <h1 className="text-3xl font-bold">Gestión de Apareamientos</h1>
           </div>
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Apareamiento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Registrar Nuevo Apareamiento</DialogTitle>
-              </DialogHeader>
-              <BreedingForm onSuccess={handleFormSuccess} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleTestNotifications}>
+              <Bell className="w-4 h-4 mr-2" />
+              Probar Notificaciones
+            </Button>
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo Apareamiento
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Registrar Nuevo Apareamiento</DialogTitle>
+                </DialogHeader>
+                <BreedingForm onSuccess={handleFormSuccess} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Statistics Cards */}

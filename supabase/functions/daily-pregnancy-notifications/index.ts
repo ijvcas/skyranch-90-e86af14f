@@ -39,10 +39,12 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('🔄 Starting daily pregnancy notifications check...');
 
     // Calculate the target date (7 days from now)
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + 7);
+    const today = new Date();
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + 7);
     const targetDateString = targetDate.toISOString().split('T')[0];
 
+    console.log(`📅 Today: ${today.toISOString().split('T')[0]}`);
     console.log(`📅 Checking for due dates on: ${targetDateString}`);
 
     // Get confirmed pregnancies with due dates in 7 days that haven't given birth yet
@@ -58,9 +60,27 @@ const handler = async (req: Request): Promise<Response> => {
       throw breedingError;
     }
 
+    console.log(`🔍 Query results: Found ${breedingRecords?.length || 0} breeding records`);
+    console.log('📋 Breeding records:', breedingRecords);
+
     if (!breedingRecords || breedingRecords.length === 0) {
       console.log('📋 No pregnancies due in 7 days');
-      return new Response(JSON.stringify({ message: 'No pregnancies due in 7 days' }), {
+      
+      // Let's also check what pregnancies exist in the system for debugging
+      const { data: allPregnancies, error: allError } = await supabase
+        .from('breeding_records')
+        .select('id, expected_due_date, pregnancy_confirmed, status')
+        .eq('pregnancy_confirmed', true);
+      
+      console.log('🔍 All confirmed pregnancies in system:', allPregnancies);
+      
+      return new Response(JSON.stringify({ 
+        message: 'No pregnancies due in 7 days',
+        debugInfo: {
+          targetDate: targetDateString,
+          allPregnancies: allPregnancies
+        }
+      }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
@@ -115,6 +135,8 @@ const handler = async (req: Request): Promise<Response> => {
       const motherName = motherMap[record.mother_id] || 'Animal desconocido';
       const dueDate = new Date(record.expected_due_date).toLocaleDateString('es-ES');
 
+      console.log(`🤰 Processing pregnancy for ${motherName}, due: ${dueDate}`);
+
       for (const user of users) {
         try {
           // Create in-app notification
@@ -151,7 +173,8 @@ const handler = async (req: Request): Promise<Response> => {
       message: 'Daily pregnancy notifications processed',
       pregnancies_checked: breedingRecords.length,
       notifications_sent: notificationsSent,
-      notifications_failed: notificationsFailed
+      notifications_failed: notificationsFailed,
+      target_date: targetDateString
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
