@@ -4,3 +4,4 @@ export { type AppUser } from './user/types';
 export { validatePhoneNumber, formatPhoneNumber } from './user/validation';
 export { getAllUsers, getCurrentUser, syncAuthUsersToAppUsers } from './user/userQueries';
 export { addUser, updateUser, deleteUser, toggleUserStatus } from './user/userMutations';
+export { deleteUserComplete, type CompleteUserDeletionResult } from './user/userDeletion';

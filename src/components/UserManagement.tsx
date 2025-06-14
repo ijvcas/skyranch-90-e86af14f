@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,6 +27,7 @@ const UserManagement = () => {
     handleSyncUsers,
     addUserMutation,
     deleteUserMutation,
+    deleteUserCompleteMutation,
     toggleStatusMutation,
     syncUsersMutation
   } = useUserManagement();
@@ -78,9 +78,23 @@ const UserManagement = () => {
       return;
     }
 
-    if (window.confirm(`¿Estás seguro de eliminar a ${userName}?\n\nNota: El usuario será eliminado de la aplicación.`)) {
+    if (window.confirm(`¿Eliminar a ${userName} de la aplicación?\n\nNota: Este usuario podría reaparecer si existe en el sistema de autenticación.`)) {
       deleteUserMutation.mutate(id);
     }
+  };
+
+  const handleCompleteDeleteUser = (id: string, userName: string) => {
+    if (currentUser?.id === id) {
+      toast({
+        title: "Error",
+        description: "No puedes eliminar tu propia cuenta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('🗑️ Starting complete deletion for user:', id, userName);
+    deleteUserCompleteMutation.mutate(id);
   };
 
   const handleToggleStatus = (id: string, userName: string) => {
@@ -143,9 +157,11 @@ const UserManagement = () => {
         currentUser={currentUser}
         onEditUser={setEditingUser}
         onDeleteUser={handleDeleteUser}
+        onCompleteDeleteUser={handleCompleteDeleteUser}
         onToggleStatus={handleToggleStatus}
         isToggling={toggleStatusMutation.isPending}
         isDeleting={deleteUserMutation.isPending}
+        isCompleteDeleting={deleteUserCompleteMutation.isPending}
       />
 
       {editingUser && (
