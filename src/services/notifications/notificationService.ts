@@ -1,19 +1,50 @@
 
-import { emailService } from './emailService';
+import { emailService, buildEmailTemplate } from './emailService';
 import { pushService } from './pushService';
 import { preferencesService } from './preferencesService';
 import { loggingService } from './loggingService';
 import { NotificationPreferences, NotificationTemplate, NotificationLog } from './interfaces';
 
 class NotificationService {
-  // Send email notification with optional event details
+  // Send email notification with proper HTML template
   async sendEmailNotification(
     to: string, 
     subject: string, 
     body: string, 
     eventDetails?: { title: string; description?: string; eventDate: string }
   ): Promise<boolean> {
-    return emailService.sendEmailNotification(to, subject, body, eventDetails);
+    // If we have event details, use the HTML template, otherwise use plain text
+    if (eventDetails) {
+      const userName = to.split('@')[0]; // Extract name from email
+      const organizationName = "SkyRanch";
+      
+      // Create a proper event object for the template
+      const eventForTemplate = {
+        title: eventDetails.title,
+        description: eventDetails.description,
+        event_type: 'reminder',
+        start_date: eventDetails.eventDate,
+        event_date: eventDetails.eventDate,
+        location: '',
+        veterinarian: ''
+      };
+
+      // Determine event type from subject
+      let eventType = 'reminder';
+      if (subject.includes('actualizado')) {
+        eventType = 'updated';
+      } else if (subject.includes('creado') || subject.includes('Nuevo')) {
+        eventType = 'created';
+      } else if (subject.includes('cancelado')) {
+        eventType = 'deleted';
+      }
+
+      const htmlBody = buildEmailTemplate(eventType, eventForTemplate, userName, organizationName);
+      
+      return emailService.sendEmailNotification(to, subject, htmlBody, eventDetails);
+    } else {
+      return emailService.sendEmailNotification(to, subject, body, eventDetails);
+    }
   }
 
   // Send push notification
@@ -36,7 +67,7 @@ class NotificationService {
     return loggingService.logNotification(log);
   }
 
-  // Send comprehensive notifications based on user preferences with event details
+  // Send comprehensive notifications based on user preferences with event details and proper HTML template
   async sendNotification(
     userId: string, 
     userEmail: string, 
@@ -48,7 +79,7 @@ class NotificationService {
     
     const preferences = await this.getUserPreferences(userId);
     
-    // Send email notification with event details
+    // Send email notification with proper HTML template
     if (preferences.email && userEmail) {
       const emailSuccess = await this.sendEmailNotification(userEmail, title, message, eventDetails);
       await this.logNotification({
