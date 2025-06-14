@@ -18,6 +18,13 @@ const emailService = {
       hasEventDetails: !!eventDetails
     });
 
+    // Validate input parameters
+    if (!to || !subject) {
+      const error = 'Missing required parameters: to and subject are required';
+      console.error('📧 [EMAIL SERVICE DEBUG] Parameter validation error:', error);
+      throw new Error(error);
+    }
+
     try {
       // If we have event details, build HTML template, otherwise use the body as-is
       let emailBody = body;
@@ -55,8 +62,8 @@ const emailService = {
 
       console.log('📧 [EMAIL SERVICE DEBUG] About to call emailClient.sendEmail...');
       const result = await sendEmail({
-        to,
-        subject,
+        to: to.trim(),
+        subject: subject.trim(),
         html: emailBody,
         senderName: "SkyRanch - Sistema de Gestión Ganadera",
         organizationName: "SkyRanch"
@@ -64,14 +71,29 @@ const emailService = {
       
       console.log('📧 [EMAIL SERVICE DEBUG] emailClient.sendEmail result:', result);
       
-      // Check if the result indicates success
-      if (result && typeof result === 'object' && !result.error) {
-        console.log('✅ [EMAIL SERVICE DEBUG] Email sent successfully through emailService');
-        return true;
-      } else {
-        console.error('❌ [EMAIL SERVICE DEBUG] Email client returned error or no data:', result);
-        throw new Error(`Email client failed: ${result?.error || 'No response data'}`);
+      // Validate the result more thoroughly
+      if (!result) {
+        console.error('❌ [EMAIL SERVICE DEBUG] Email client returned null/undefined result');
+        throw new Error('Email client returned no result');
       }
+
+      if (typeof result === 'object') {
+        if (result.error) {
+          console.error('❌ [EMAIL SERVICE DEBUG] Email client returned error:', result.error);
+          throw new Error(`Email client error: ${result.error}`);
+        }
+        
+        // Check for successful response indicators (Resend typically returns {data: {id: "..."}, error: null})
+        if (result.data?.id || result.id) {
+          console.log('✅ [EMAIL SERVICE DEBUG] Email sent successfully through emailService');
+          return true;
+        }
+      }
+
+      // If we get here, the result structure is unexpected
+      console.error('❌ [EMAIL SERVICE DEBUG] Unexpected result structure:', result);
+      throw new Error('Email client returned unexpected response structure');
+      
     } catch (error) {
       console.error('❌ [EMAIL SERVICE DEBUG] Failed to send email in emailService:', error);
       console.error('❌ [EMAIL SERVICE DEBUG] Full error details:', {

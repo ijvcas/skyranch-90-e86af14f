@@ -27,11 +27,20 @@ export class NotificationOrchestrator {
       const preferences = await userNotificationService.getUserPreferences(userId);
       console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] Retrieved preferences:', preferences);
       
-      // Step 2: Check if email should be sent
+      // Step 2: Validate email conditions with detailed logging
       console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] Step 2: Checking email conditions...');
       console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] Email enabled:', preferences.email);
       console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] User email available:', !!userEmail);
       console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] User email value:', userEmail);
+      
+      // Validate email format if provided
+      if (userEmail) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(userEmail)) {
+          console.error('📢 [NOTIFICATION ORCHESTRATOR DEBUG] Invalid email format:', userEmail);
+          throw new Error(`Invalid email format: ${userEmail}`);
+        }
+      }
       
       if (preferences.email && userEmail) {
         console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] ✅ Email conditions met - proceeding with email...');
@@ -51,6 +60,14 @@ export class NotificationOrchestrator {
           
         } catch (emailError) {
           console.error('❌ [NOTIFICATION ORCHESTRATOR DEBUG] EMAIL FAILED with error:', emailError);
+          console.error('❌ [NOTIFICATION ORCHESTRATOR DEBUG] Email error details:', {
+            name: emailError.name,
+            message: emailError.message,
+            stack: emailError.stack,
+            userId,
+            userEmail,
+            title
+          });
           
           await userNotificationService.logNotification({
             userId,
@@ -64,6 +81,8 @@ export class NotificationOrchestrator {
         }
       } else {
         console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] ❌ Email conditions NOT met');
+        console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] Email preference enabled:', preferences.email);
+        console.log('📢 [NOTIFICATION ORCHESTRATOR DEBUG] Valid email provided:', !!userEmail && userEmail.includes('@'));
       }
 
       // Step 4: Send push notification
