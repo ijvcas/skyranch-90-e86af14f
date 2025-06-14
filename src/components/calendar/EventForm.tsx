@@ -8,7 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarEvent } from '@/services/calendarService';
 import { getAllAnimals } from '@/services/animalService';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import UserSelector from '@/components/notifications/UserSelector';
+import DatePickerField from './DatePickerField';
+import EventTypeSelect from './EventTypeSelect';
 
 interface EventFormProps {
   selectedDate: Date | undefined;
@@ -43,13 +46,14 @@ const EventForm = ({
     queryFn: getAllAnimals
   });
 
+  // Set today's date when component mounts or selectedDate changes
   useEffect(() => {
-    if (selectedDate) {
-      setNewEvent(prev => ({
-        ...prev,
-        eventDate: selectedDate.toISOString().split('T')[0]
-      }));
-    }
+    const dateToUse = selectedDate || new Date();
+    const formattedDate = format(dateToUse, 'yyyy-MM-dd');
+    setNewEvent(prev => ({
+      ...prev,
+      eventDate: formattedDate
+    }));
   }, [selectedDate]);
 
   const handleSubmit = () => {
@@ -68,12 +72,13 @@ const EventForm = ({
     onSubmit(eventData, selectedUserIds);
     
     // Reset form
+    const today = format(new Date(), 'yyyy-MM-dd');
     setNewEvent({
       title: '',
       description: '',
       eventType: 'appointment',
       animalId: '',
-      eventDate: selectedDate?.toISOString().split('T')[0] || '',
+      eventDate: today,
       allDay: false,
       veterinarian: '',
       location: '',
@@ -84,7 +89,6 @@ const EventForm = ({
 
   return (
     <div className="space-y-6">
-      {/* Event Form Fields */}
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="title">Título *</Label>
@@ -98,39 +102,18 @@ const EventForm = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="event-date">Fecha *</Label>
-            <Input
-              id="event-date"
-              type="date"
-              value={newEvent.eventDate}
-              onChange={(e) => setNewEvent(prev => ({ ...prev, eventDate: e.target.value }))}
-              className="w-full"
-            />
-          </div>
+          <DatePickerField
+            value={newEvent.eventDate}
+            onChange={(date) => setNewEvent(prev => ({ ...prev, eventDate: date }))}
+            label="Fecha"
+            required
+          />
 
-          <div className="space-y-2">
-            <Label>Tipo de Evento</Label>
-            <Select 
-              value={newEvent.eventType} 
-              onValueChange={(value: CalendarEvent['eventType']) => 
-                setNewEvent(prev => ({ ...prev, eventType: value }))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="vaccination">Vacunación</SelectItem>
-                <SelectItem value="checkup">Revisión</SelectItem>
-                <SelectItem value="breeding">Reproducción</SelectItem>
-                <SelectItem value="treatment">Tratamiento</SelectItem>
-                <SelectItem value="feeding">Alimentación</SelectItem>
-                <SelectItem value="appointment">Cita</SelectItem>
-                <SelectItem value="reminder">Recordatorio</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <EventTypeSelect
+            value={newEvent.eventType}
+            onChange={(value) => setNewEvent(prev => ({ ...prev, eventType: value }))}
+            label="Tipo de Evento"
+          />
         </div>
 
         <div className="space-y-2">
@@ -142,7 +125,7 @@ const EventForm = ({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar animal" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999]">
               {animals.map(animal => (
                 <SelectItem key={animal.id} value={animal.id}>
                   {animal.name} (#{animal.tag})
@@ -200,13 +183,11 @@ const EventForm = ({
         </div>
       </div>
 
-      {/* User Selector */}
       <UserSelector
         selectedUserIds={selectedUserIds}
         onUserSelectionChange={onUserSelectionChange}
       />
 
-      {/* Submit Button */}
       <Button 
         onClick={handleSubmit} 
         className="w-full"
