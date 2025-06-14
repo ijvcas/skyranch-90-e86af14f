@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +33,10 @@ export const useCalendarEvents = () => {
   });
 
   const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false, eventDescription?: string) => {
+    console.log('🔄 [NOTIFICATION DEBUG] Starting sendNotificationsToUsers');
+    console.log('🔄 [NOTIFICATION DEBUG] Selected user IDs:', selectedUserIds);
+    console.log('🔄 [NOTIFICATION DEBUG] Event title:', eventTitle);
+    
     if (selectedUserIds.length === 0) {
       console.log('📢 No users selected for notification');
       return;
@@ -40,6 +45,8 @@ export const useCalendarEvents = () => {
     console.log(`📢 Sending notifications to ${selectedUserIds.length} users for event: ${eventTitle}`);
     
     const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
+    console.log('🔄 [NOTIFICATION DEBUG] Selected users:', selectedUsers.map(u => ({ id: u.id, email: u.email })));
+    
     const actionText = isUpdate ? "actualizado" : "creado";
     const notificationTitle = `Evento ${actionText}: ${eventTitle}`;
     const notificationBody = `Se ha ${actionText} el evento "${eventTitle}" programado para ${new Date(eventDate).toLocaleDateString('es-ES')}.`;
@@ -51,11 +58,15 @@ export const useCalendarEvents = () => {
       eventDate: eventDate
     };
 
+    console.log('🔄 [NOTIFICATION DEBUG] Event details for email:', eventDetails);
+
     // Create in-app notification
     try {
+      console.log('🔄 [NOTIFICATION DEBUG] Creating in-app notification...');
       await supabaseNotificationService.createCalendarNotification(eventTitle, eventDate);
+      console.log('✅ [NOTIFICATION DEBUG] In-app notification created successfully');
     } catch (error) {
-      console.error('Error creating in-app notification:', error);
+      console.error('❌ [NOTIFICATION DEBUG] Error creating in-app notification:', error);
     }
 
     // Check notification permission status
@@ -67,9 +78,11 @@ export const useCalendarEvents = () => {
 
     for (const user of selectedUsers) {
       try {
+        console.log(`🔄 [NOTIFICATION DEBUG] Processing user: ${user.email} (ID: ${user.id})`);
         console.log(`📢 Sending comprehensive notification to ${user.email} for event: ${eventTitle}`);
         
         // Send comprehensive notification (email + push) with event details
+        console.log('🔄 [NOTIFICATION DEBUG] Calling notificationService.sendNotification...');
         await notificationService.sendNotification(
           user.id,
           user.email,
@@ -77,14 +90,23 @@ export const useCalendarEvents = () => {
           notificationBody,
           eventDetails
         );
+        console.log(`✅ [NOTIFICATION DEBUG] Notification sent successfully to ${user.email}`);
 
         notificationsSent++;
         
       } catch (error) {
-        console.error(`❌ Error sending notification to ${user.email}:`, error);
+        console.error(`❌ [NOTIFICATION DEBUG] Error sending notification to ${user.email}:`, error);
+        console.error(`❌ [NOTIFICATION DEBUG] Error details:`, {
+          message: error.message,
+          stack: error.stack,
+          userId: user.id,
+          userEmail: user.email
+        });
         notificationsFailed++;
       }
     }
+
+    console.log(`🔄 [NOTIFICATION DEBUG] Notification summary: ${notificationsSent} sent, ${notificationsFailed} failed`);
 
     // Show summary toast
     if (notificationsSent > 0) {
@@ -119,69 +141,100 @@ export const useCalendarEvents = () => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
-    console.log('📅 Creating calendar event with notification users:', selectedUserIds);
+    console.log('📅 [CREATE EVENT DEBUG] Creating calendar event with notification users:', selectedUserIds);
+    console.log('📅 [CREATE EVENT DEBUG] Event data:', eventData);
 
-    const eventId = await addCalendarEvent(eventData, selectedUserIds);
-    if (eventId) {
-      // Send notifications with event details
-      await sendNotificationsToUsers(
-        selectedUserIds, 
-        eventData.title, 
-        eventData.eventDate, 
-        false, 
-        eventData.description
-      );
+    try {
+      const eventId = await addCalendarEvent(eventData, selectedUserIds);
+      console.log('📅 [CREATE EVENT DEBUG] Event created with ID:', eventId);
+      
+      if (eventId) {
+        // Send notifications with event details
+        console.log('📅 [CREATE EVENT DEBUG] Starting notification process...');
+        await sendNotificationsToUsers(
+          selectedUserIds, 
+          eventData.title, 
+          eventData.eventDate, 
+          false, 
+          eventData.description
+        );
+        console.log('📅 [CREATE EVENT DEBUG] Notification process completed');
 
-      // Check if this is a breeding-related event and setup pregnancy notifications
-      if (eventData.eventType === 'breeding' && eventData.animalId) {
-        console.log('🤰 Setting up pregnancy notifications for breeding event');
-        // Note: In a real scenario, you'd need to link this to a breeding record
-        // For now, we'll trigger a general check
-        try {
-          await setupPregnancyNotifications(eventId);
-        } catch (error) {
-          console.error('Error setting up pregnancy notifications:', error);
+        // Check if this is a breeding-related event and setup pregnancy notifications
+        if (eventData.eventType === 'breeding' && eventData.animalId) {
+          console.log('🤰 Setting up pregnancy notifications for breeding event');
+          // Note: In a real scenario, you'd need to link this to a breeding record
+          // For now, we'll trigger a general check
+          try {
+            await setupPregnancyNotifications(eventId);
+          } catch (error) {
+            console.error('Error setting up pregnancy notifications:', error);
+          }
         }
-      }
 
-      toast({
-        title: "Éxito",
-        description: "Evento creado correctamente"
-      });
-      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
-    } else {
+        toast({
+          title: "Éxito",
+          description: "Evento creado correctamente"
+        });
+        queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+      } else {
+        console.error('📅 [CREATE EVENT DEBUG] Event creation returned null ID');
+        toast({
+          title: "Error",
+          description: "No se pudo crear el evento",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('📅 [CREATE EVENT DEBUG] Error in createEvent:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear el evento",
+        description: "Error al crear el evento: " + error.message,
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const updateEvent = async (eventId: string, eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
-    console.log('📅 Updating calendar event with notification users:', selectedUserIds);
+    console.log('📅 [UPDATE EVENT DEBUG] Updating calendar event with notification users:', selectedUserIds);
+    console.log('📅 [UPDATE EVENT DEBUG] Event data:', eventData);
     
-    const success = await updateCalendarEvent(eventId, eventData, selectedUserIds);
-    if (success) {
-      // Send notifications with event details
-      await sendNotificationsToUsers(
-        selectedUserIds, 
-        eventData.title || 'Evento', 
-        eventData.eventDate || '', 
-        true, 
-        eventData.description
-      );
+    try {
+      const success = await updateCalendarEvent(eventId, eventData, selectedUserIds);
+      console.log('📅 [UPDATE EVENT DEBUG] Update result:', success);
+      
+      if (success) {
+        // Send notifications with event details
+        console.log('📅 [UPDATE EVENT DEBUG] Starting notification process...');
+        await sendNotificationsToUsers(
+          selectedUserIds, 
+          eventData.title || 'Evento', 
+          eventData.eventDate || '', 
+          true, 
+          eventData.description
+        );
+        console.log('📅 [UPDATE EVENT DEBUG] Notification process completed');
 
-      toast({
-        title: "Éxito",
-        description: "Evento actualizado correctamente"
-      });
-      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
-    } else {
+        toast({
+          title: "Éxito",
+          description: "Evento actualizado correctamente"
+        });
+        queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+      } else {
+        console.error('📅 [UPDATE EVENT DEBUG] Event update returned false');
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el evento",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('📅 [UPDATE EVENT DEBUG] Error in updateEvent:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el evento",
+        description: "Error al actualizar el evento: " + error.message,
         variant: "destructive"
       });
     }
