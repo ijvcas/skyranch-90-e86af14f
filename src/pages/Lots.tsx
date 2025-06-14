@@ -104,91 +104,93 @@ const Lots = () => {
   }, [activeTab]);
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Gestión de Lotes</h1>
-          <p className="text-gray-500">Administra los lotes de tu finca</p>
-        </div>
-        <Button onClick={handleCreateLot} className="mt-4 md:mt-0">
-          Crear Lote
-        </Button>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview">Resumen</TabsTrigger>
-          <TabsTrigger value="map">Mapa</TabsTrigger>
-          {selectedLot && <TabsTrigger value="detail">Detalle</TabsTrigger>}
-        </TabsList>
-        
-        <TabsContent value="overview">
-          <LotsOverview 
-            lots={lots}
-            isLoading={isLoading}
-            onLotSelect={handleLotSelect}
-            onCreateLot={handleCreateLot}
-            onDeleteLot={handleDeleteLot}
-            polygonData={polygonData}
-          />
-        </TabsContent>
-        
-        <TabsContent value="map">
-          <LotMapView 
-            lots={lots}
-            onLotSelect={handleLotSelect}
-          />
-        </TabsContent>
-        
-        <TabsContent value="detail">
-          {selectedLot && (
-            <LotDetail 
-              lot={selectedLot}
-              onBack={() => {
-                setActiveTab('overview');
-                setSelectedLotState(null);
-              }}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* Create Lot Dialog */}
-      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Crear Nuevo Lote</DialogTitle>
-          </DialogHeader>
-          <LotForm onClose={handleFormClose} />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Eliminación</DialogTitle>
-          </DialogHeader>
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Advertencia</AlertTitle>
-            <AlertDescription>
-              ¿Estás seguro de que deseas eliminar este lote? Esta acción no se puede deshacer.
-            </AlertDescription>
-          </Alert>
-          <div className="flex justify-end gap-2 mt-4">
-            <DialogClose asChild>
-              <Button variant="outline">Cancelar</Button>
-            </DialogClose>
-            <Button 
-              variant="destructive" 
-              onClick={confirmDeleteLot}
-            >
-              Eliminar
-            </Button>
+    <div className="page-with-logo">
+      <div className="container mx-auto py-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Gestión de Lotes</h1>
+            <p className="text-gray-500">Administra los lotes de tu finca</p>
           </div>
-        </DialogContent>
-      </Dialog>
+          <Button onClick={handleCreateLot} className="mt-4 md:mt-0">
+            Crear Lote
+          </Button>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="overview">Resumen</TabsTrigger>
+            <TabsTrigger value="map">Mapa</TabsTrigger>
+            {selectedLot && <TabsTrigger value="detail">Detalle</TabsTrigger>}
+          </TabsList>
+          
+          <TabsContent value="overview">
+            <LotsOverview 
+              lots={lots}
+              isLoading={isLoading}
+              onLotSelect={handleLotSelect}
+              onCreateLot={handleCreateLot}
+              onDeleteLot={handleDeleteLot}
+              polygonData={polygonData}
+            />
+          </TabsContent>
+          
+          <TabsContent value="map">
+            <LotMapView 
+              lots={lots}
+              onLotSelect={handleLotSelect}
+            />
+          </TabsContent>
+          
+          <TabsContent value="detail">
+            {selectedLot && (
+              <LotDetail 
+                lot={selectedLot}
+                onBack={() => {
+                  setActiveTab('overview');
+                  setSelectedLotState(null);
+                }}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Create Lot Dialog */}
+        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Lote</DialogTitle>
+            </DialogHeader>
+            <LotForm onClose={handleFormClose} />
+          </DialogContent>
+        </Dialog>
+        
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Eliminación</DialogTitle>
+            </DialogHeader>
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Advertencia</AlertTitle>
+              <AlertDescription>
+                ¿Estás seguro de que deseas eliminar este lote? Esta acción no se puede deshacer.
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-end gap-2 mt-4">
+              <DialogClose asChild>
+                <Button variant="outline">Cancelar</Button>
+              </DialogClose>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteLot}
+              >
+                Eliminar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };

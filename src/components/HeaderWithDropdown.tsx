@@ -50,13 +50,13 @@ const HeaderWithDropdown = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-16">
+    <header className="fixed top-0 left-0 right-0 bg-green-100 border-b border-green-200 z-50 h-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex justify-between items-center h-full">
           {/* Logo with Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-3 hover:bg-gray-50 p-2">
+              <Button variant="ghost" className="flex items-center space-x-3 hover:bg-green-50 p-2">
                 <img 
                   src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
                   alt="SkyRanch" 

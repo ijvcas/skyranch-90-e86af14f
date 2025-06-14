@@ -123,4 +123,32 @@
       font-size: 16px;
     }
   }
+
+  /* Background logo watermark */
+  .page-with-logo {
+    position: relative;
+    min-height: 100vh;
+  }
+  
+  .page-with-logo::before {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    background-image: url('/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.05;
+    z-index: 0;
+    pointer-events: none;
+  }
+  
+  .page-with-logo > * {
+    position: relative;
+    z-index: 1;
+  }
 }
