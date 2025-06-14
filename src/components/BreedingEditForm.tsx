@@ -34,7 +34,7 @@ const BreedingEditForm: React.FC<BreedingEditFormProps> = ({ record, onSuccess }
     breedingNotes: record.breedingNotes || '',
     veterinarian: record.veterinarian || '',
     cost: record.cost ? record.cost.toString() : '',
-    status: record.status
+    status: record.status as 'planned' | 'failed' | 'birth_completed' | 'completed' | 'confirmed_pregnant' | 'not_pregnant'
   });
 
   const [motherSpecies, setMotherSpecies] = useState<string>('');

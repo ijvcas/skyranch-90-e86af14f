@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { pushService } from '@/services/notifications/pushService';
 
 class PregnancyNotificationService {
   // Trigger the daily pregnancy notification check manually
@@ -15,10 +16,74 @@ class PregnancyNotificationService {
       }
       
       console.log('✅ Pregnancy notification check completed:', data);
+      
+      // If notifications were created, also send browser push notifications
+      if (data && data.notifications_sent > 0) {
+        await this.sendBrowserNotifications();
+      }
+      
       return true;
     } catch (error) {
       console.error('❌ Error in pregnancy notification service:', error);
       return false;
+    }
+  }
+
+  // Send browser push notifications for pregnancy alerts
+  private async sendBrowserNotifications(): Promise<void> {
+    try {
+      console.log('📱 Sending browser push notifications for pregnancies...');
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('❌ No authenticated user for push notifications');
+        return;
+      }
+
+      // Calculate the target date (7 days from now)
+      const today = new Date();
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + 7);
+      const targetDateString = targetDate.toISOString().split('T')[0];
+
+      // Get pregnancies due in 7 days
+      const { data: breedingRecords, error } = await supabase
+        .from('breeding_records')
+        .select(`
+          id, 
+          expected_due_date, 
+          mother_id,
+          animals!breeding_records_mother_id_fkey(name)
+        `)
+        .eq('pregnancy_confirmed', true)
+        .eq('expected_due_date', targetDateString)
+        .neq('status', 'birth_completed');
+
+      if (error || !breedingRecords || breedingRecords.length === 0) {
+        console.log('📋 No pregnancies due in 7 days for push notifications');
+        return;
+      }
+
+      // Send push notification for each pregnancy
+      for (const record of breedingRecords) {
+        const motherName = record.animals?.name || 'Animal desconocido';
+        const dueDate = new Date(record.expected_due_date).toLocaleDateString('es-ES');
+        
+        const success = await pushService.sendPushNotification(
+          user.id,
+          '🤰 Parto próximo',
+          `${motherName} está programada para dar a luz en 7 días (${dueDate}). Prepara el área de parto.`
+        );
+
+        if (success) {
+          console.log(`✅ Push notification sent for ${motherName}`);
+        } else {
+          console.log(`❌ Failed to send push notification for ${motherName}`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error sending browser push notifications:', error);
     }
   }
 
