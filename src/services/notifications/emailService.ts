@@ -78,27 +78,33 @@ export const buildEmailTemplate = (
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f8fafc; line-height: 1.6;">
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         
-        <!-- Logo placed elegantly outside the green header -->
-        <div style="text-align: center; padding: 30px 30px 0 30px; background-color: #ffffff;">
-          <img src="cid:logo" alt="SkyRanch Logo" style="height: 80px; width: auto; display: block; margin: 0 auto;">
+        <!-- Elegant Text Logo placed outside the green header -->
+        <div style="text-align: center; padding: 40px 30px 20px 30px; background-color: #ffffff;">
+          <h1 style="margin: 0; font-size: 42px; font-weight: 300; letter-spacing: 2px; color: #047857; font-family: 'Georgia', serif;">
+            SkyRanch
+          </h1>
+          <div style="width: 60px; height: 2px; background: linear-gradient(90deg, #10b981, #047857); margin: 15px auto; border-radius: 1px;"></div>
+          <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280; letter-spacing: 1px; text-transform: uppercase;">
+            Sistema de Gestión Ganadera
+          </p>
         </div>
 
         <!-- Green Header Rectangle -->
-        <div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 30px; text-align: center; margin-top: 20px;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 30px; text-align: center;">
+          <h2 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             ${organizationName}
-          </h1>
+          </h2>
           <p style="color: #d1fae5; margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">
-            Sistema de Gestión Ganadera
+            Notificación de Evento
           </p>
         </div>
 
         <!-- Content -->
         <div style="padding: 40px 30px;">
           <div style="background-color: ${actionColor}; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
-            <h2 style="margin: 0; font-size: 24px; font-weight: 600;">
+            <h3 style="margin: 0; font-size: 24px; font-weight: 600;">
               ${subject}
-            </h2>
+            </h3>
           </div>
 
           <p style="color: #374151; font-size: 18px; margin-bottom: 25px; font-weight: 500;">
@@ -111,9 +117,9 @@ export const buildEmailTemplate = (
 
           <!-- Event Details Card -->
           <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
-            <h3 style="color: #111827; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; border-bottom: 2px solid #10b981; padding-bottom: 10px;">
+            <h4 style="color: #111827; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; border-bottom: 2px solid #10b981; padding-bottom: 10px;">
               📋 Detalles del Evento
-            </h3>
+            </h4>
             
             <div style="margin-bottom: 15px;">
               <strong style="color: #374151; display: inline-block; width: 120px;">Título:</strong>
