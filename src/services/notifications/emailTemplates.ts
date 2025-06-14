@@ -1,3 +1,4 @@
+
 // Email template generation utilities
 export const buildEmailTemplate = (
   eventType: string, 
@@ -37,39 +38,73 @@ export const buildEmailTemplate = (
 
   const actionColor = eventType === 'deleted' ? '#dc2626' : '#059669';
 
-  // Exact replica of the authentic SkyRanch logo as SVG
+  // Exact replica of the authentic SkyRanch logo from Picture #2
   const logoSvg = `data:image/svg+xml;base64,${btoa(`
-    <svg width="120" height="120" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Outer frame & text background -->
-        <rect width="100" height="100" rx="10" fill="#a5c181" />
+    <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer light green frame with rounded corners -->
+        <rect x="5" y="5" width="110" height="110" rx="15" ry="15" fill="#a5c181" stroke="none"/>
         
-        <!-- Inner dark frame -->
-        <rect x="4" y="4" width="92" height="80" rx="8" fill="#254d2f" />
+        <!-- Inner dark green frame -->
+        <rect x="12" y="12" width="96" height="84" rx="12" ry="12" fill="#1a472a" stroke="none"/>
         
-        <!-- Sky area -->
-        <rect x="7" y="7" width="86" height="74" rx="5" fill="#e6f3d6" />
+        <!-- Light cream sky background -->
+        <rect x="18" y="18" width="84" height="72" rx="8" ry="8" fill="#f5f5dc" stroke="none"/>
         
-        <!-- Hills -->
-        <path d="M 7,81 C 25,68 35,70 50,63 C 65,56 75,63 93,58 V 81 H 7 Z" fill="#8db061" />
-        <path d="M 7,81 C 20,76 30,78 45,70 C 60,62 80,68 93,64 V 81 H 7 Z" fill="#739a47" />
-        <path d="M 7,81 C 15,80 25,81 40,74 C 55,67 75,76 93,70 V 81 H 7 Z" fill="#5a7f2f" />
+        <!-- Left cloud -->
+        <ellipse cx="32" cy="32" rx="8" ry="5" fill="#1a472a"/>
+        <ellipse cx="36" cy="30" rx="6" ry="4" fill="#1a472a"/>
+        <ellipse cx="28" cy="29" rx="5" ry="3" fill="#1a472a"/>
         
-        <!-- Clouds -->
-        <path d="M22,25 C19,25 18,22 21,21 C24,20 28,21 28,24 C28,27 25,28 22,25 Z" fill="#254d2f"/>
-        <path d="M70,23 C67,23 66,20 69,19 C72,18 76,19 76,22 C76,25 73,26 70,23 Z" fill="#254d2f"/>
+        <!-- Right cloud -->
+        <ellipse cx="88" cy="28" rx="7" ry="4" fill="#1a472a"/>
+        <ellipse cx="92" cy="26" rx="5" ry="3" fill="#1a472a"/>
+        <ellipse cx="84" cy="25" rx="4" ry="3" fill="#1a472a"/>
         
-        <!-- Donkey -->
-        <g transform="translate(18 45) scale(0.9)">
-            <path d="M 10,12 L 12,8 L 11,6 L 13,6 L 15,10 L 18,10 C 20,10 22,12 22,15 L 22,20 L 19,20 L 19,23 L 17,23 L 17,20 L 12,20 L 12,23 L 10,23 L 10,20 L 7,20 L 7,15 C 7,12 8,10 10,10 Z" fill="#254d2f"/>
+        <!-- Rolling hills in background (lightest green) -->
+        <path d="M 18,75 Q 35,65 50,70 Q 65,75 80,68 Q 90,65 102,70 L 102,90 L 18,90 Z" fill="#8db061"/>
+        
+        <!-- Middle hills (medium green) -->
+        <path d="M 18,80 Q 30,72 45,75 Q 60,78 75,72 Q 88,68 102,74 L 102,90 L 18,90 Z" fill="#6b8e23"/>
+        
+        <!-- Foreground hills (darkest green) -->
+        <path d="M 18,85 Q 35,78 50,82 Q 65,86 80,80 Q 95,76 102,82 L 102,90 L 18,90 Z" fill="#556b2f"/>
+        
+        <!-- Donkey silhouette (left animal) -->
+        <g transform="translate(35, 60)">
+            <!-- Body -->
+            <ellipse cx="8" cy="12" rx="6" ry="4" fill="#1a472a"/>
+            <!-- Head -->
+            <ellipse cx="2" cy="8" rx="3" ry="3" fill="#1a472a"/>
+            <!-- Ears -->
+            <ellipse cx="0" cy="6" rx="1" ry="2" fill="#1a472a"/>
+            <ellipse cx="1" cy="5" rx="1" ry="2" fill="#1a472a"/>
+            <!-- Legs -->
+            <rect x="4" y="15" width="1" height="4" fill="#1a472a"/>
+            <rect x="6" y="15" width="1" height="4" fill="#1a472a"/>
+            <rect x="10" y="15" width="1" height="4" fill="#1a472a"/>
+            <rect x="12" y="15" width="1" height="4" fill="#1a472a"/>
+            <!-- Tail -->
+            <ellipse cx="14" cy="10" rx="1" ry="2" fill="#1a472a"/>
         </g>
         
-        <!-- Sheep -->
-        <g transform="translate(60 47) scale(0.9)">
-            <path d="M 10,12 C 7,12 7,15 10,15 L 10,18 L 13,18 C 16,18 16,15 13,15 C 13,12 16,12 16,15 L 18,12 L 19,15 C 21,15 21,18 18,18 L 10,18 L 10,22 L 8,22 L 8,18 L 5,18 C 2,18 2,15 5,15 L 8,12 Z" fill="#254d2f"/>
+        <!-- Sheep silhouette (right animal) -->
+        <g transform="translate(65, 62)">
+            <!-- Woolly body -->
+            <circle cx="6" cy="10" r="4" fill="#1a472a"/>
+            <circle cx="3" cy="9" r="2" fill="#1a472a"/>
+            <circle cx="9" cy="9" r="2" fill="#1a472a"/>
+            <circle cx="6" cy="7" r="2" fill="#1a472a"/>
+            <!-- Head -->
+            <ellipse cx="1" cy="8" rx="2" ry="2" fill="#1a472a"/>
+            <!-- Legs -->
+            <rect x="3" y="13" width="1" height="3" fill="#1a472a"/>
+            <rect x="5" y="13" width="1" height="3" fill="#1a472a"/>
+            <rect x="7" y="13" width="1" height="3" fill="#1a472a"/>
+            <rect x="9" y="13" width="1" height="3" fill="#1a472a"/>
         </g>
         
-        <!-- Text -->
-        <text x="50" y="93" text-anchor="middle" fill="#254d2f" font-family="Arial, sans-serif" font-size="8" font-weight="bold">SKY RANCH</text>
+        <!-- SKY RANCH text at bottom -->
+        <text x="60" y="108" text-anchor="middle" fill="#1a472a" font-family="Arial, sans-serif" font-size="9" font-weight="bold" letter-spacing="0.5">SKY RANCH</text>
     </svg>
   `)}`;
 
