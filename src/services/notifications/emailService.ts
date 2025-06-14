@@ -28,15 +28,10 @@ export class EmailService {
           subject,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #16a34a, #22c55e); padding: 30px; border-radius: 12px 12px 0 0; text-align: center; position: relative;">
-                <div style="position: absolute; left: 30px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; background: #6b7280; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                  <span style="color: white; font-size: 20px; font-weight: bold;">S</span>
-                </div>
-                <div style="margin-left: 60px;">
-                  <img src="https://lovable-uploads.s3.amazonaws.com/b035d3c5-cdbb-4f85-b72b-f93369240315.png" alt="SkyRanch Logo" style="height: 60px; width: auto; margin-bottom: 15px; filter: brightness(0) invert(1); display: block; margin-left: auto; margin-right: auto;" />
-                  <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">SkyRanch</h1>
-                  <p style="color: #f0f9ff; margin: 8px 0 0 0; font-size: 16px;">Sistema de Gestión Ganadera</p>
-                </div>
+              <div style="background: linear-gradient(135deg, #16a34a, #22c55e); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+                <img src="https://lovable-uploads.s3.amazonaws.com/b035d3c5-cdbb-4f85-b72b-f93369240315.png" alt="SkyRanch Logo" style="height: 60px; width: auto; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;" />
+                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">SkyRanch</h1>
+                <p style="color: #f0f9ff; margin: 8px 0 0 0; font-size: 16px;">Sistema de Gestión Ganadera</p>
               </div>
               
               <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
