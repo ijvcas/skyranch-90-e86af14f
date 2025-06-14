@@ -1,3 +1,4 @@
+
 // Email template generation utilities
 export const buildEmailTemplate = (
   eventType: string, 
@@ -37,66 +38,8 @@ export const buildEmailTemplate = (
 
   const actionColor = eventType === 'deleted' ? '#dc2626' : '#059669';
 
-  // Authentic SkyRanch logo with donkey, sheep, clouds, and landscape
-  const logoSvg = `data:image/svg+xml;base64,${btoa(`
-    <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-      <!-- Background rounded square with gradient -->
-      <defs>
-        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#4ade80;stop-opacity:1" />
-          <stop offset="50%" style="stop-color:#22c55e;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
-        </linearGradient>
-      </defs>
-      <rect width="80" height="80" rx="12" fill="url(#bgGradient)"/>
-      
-      <!-- Clouds -->
-      <ellipse cx="20" cy="18" rx="8" ry="4" fill="white" opacity="0.7"/>
-      <ellipse cx="60" cy="15" rx="6" ry="3" fill="white" opacity="0.6"/>
-      <ellipse cx="45" cy="20" rx="5" ry="2.5" fill="white" opacity="0.5"/>
-      
-      <!-- Rolling hills landscape -->
-      <path d="M0 55 Q20 45, 40 55 Q60 50, 80 55 L80 80 L0 80 Z" fill="#166534" opacity="0.8"/>
-      <path d="M0 60 Q15 50, 30 60 Q50 55, 80 60 L80 80 L0 80 Z" fill="#15803d" opacity="0.6"/>
-      
-      <!-- Donkey silhouette (left) -->
-      <g transform="translate(12, 30)">
-        <!-- Donkey body -->
-        <ellipse cx="8" cy="12" rx="6" ry="4" fill="#374151"/>
-        <!-- Donkey head -->
-        <ellipse cx="3" cy="8" rx="3" ry="2.5" fill="#374151"/>
-        <!-- Long ears -->
-        <ellipse cx="1" cy="6" rx="1.5" ry="3" fill="#374151"/>
-        <ellipse cx="5" cy="6" rx="1.5" ry="3" fill="#374151"/>
-        <!-- Legs -->
-        <rect x="4" y="15" width="1.5" height="6" fill="#374151"/>
-        <rect x="7" y="15" width="1.5" height="6" fill="#374151"/>
-        <rect x="10" y="15" width="1.5" height="6" fill="#374151"/>
-        <rect x="13" y="15" width="1.5" height="6" fill="#374151"/>
-        <!-- Tail -->
-        <path d="M14 10 Q16 12, 15 15" stroke="#374151" stroke-width="1.5" fill="none"/>
-      </g>
-      
-      <!-- Sheep silhouette (right) -->
-      <g transform="translate(50, 32)">
-        <!-- Fluffy sheep body -->
-        <circle cx="6" cy="10" r="5" fill="white" opacity="0.9"/>
-        <circle cx="3" cy="8" r="2.5" fill="white" opacity="0.9"/>
-        <circle cx="9" cy="8" r="2.5" fill="white" opacity="0.9"/>
-        <circle cx="6" cy="6" r="3" fill="white" opacity="0.9"/>
-        <!-- Sheep head (darker) -->
-        <ellipse cx="1" cy="8" rx="2" ry="1.5" fill="#374151"/>
-        <!-- Legs -->
-        <rect x="3" y="14" width="1.2" height="5" fill="#374151"/>
-        <rect x="5.5" y="14" width="1.2" height="5" fill="#374151"/>
-        <rect x="8" y="14" width="1.2" height="5" fill="#374151"/>
-        <rect x="10.5" y="14" width="1.2" height="5" fill="#374151"/>
-      </g>
-      
-      <!-- SKY RANCH text at bottom -->
-      <text x="40" y="72" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold" letter-spacing="1px">SKY RANCH</text>
-    </svg>
-  `)}`;
+  // Use the actual SkyRanch logo image that was provided
+  const logoUrl = "https://ahwhtxygyzoadsmdrwwg.supabase.co/storage/v1/object/public/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png";
 
   return `
     <!DOCTYPE html>
@@ -111,7 +54,7 @@ export const buildEmailTemplate = (
         
         <!-- Logo Section -->
         <div style="text-align: center; padding: 32px 24px 24px 24px; background-color: #ffffff;">
-          <img src="${logoSvg}" alt="SkyRanch Logo" style="width: 80px; height: 80px; margin-bottom: 16px;">
+          <img src="${logoUrl}" alt="SkyRanch Logo" style="width: 120px; height: 120px; margin-bottom: 16px; border-radius: 12px;">
           <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 1px; color: #047857; font-family: 'Georgia', serif;">
             SKYRANCH
           </h1>
