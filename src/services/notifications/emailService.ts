@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Simple email service that calls the edge function using Supabase client
@@ -66,6 +67,14 @@ export const buildEmailTemplate = (
 
   const actionColor = eventType === 'deleted' ? '#dc2626' : '#059669';
 
+  // Simple logo using a green circle with "SR" initials
+  const logoSvg = `data:image/svg+xml;base64,${btoa(`
+    <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="30" cy="30" r="30" fill="#059669"/>
+      <text x="30" y="38" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="20" font-weight="bold">SR</text>
+    </svg>
+  `)}`;
+
   return `
     <!DOCTYPE html>
     <html lang="es">
@@ -77,10 +86,11 @@ export const buildEmailTemplate = (
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; line-height: 1.5;">
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
         
-        <!-- Simple Elegant Logo -->
+        <!-- Logo Section -->
         <div style="text-align: center; padding: 32px 24px 24px 24px; background-color: #ffffff;">
+          <img src="${logoSvg}" alt="SkyRanch Logo" style="width: 60px; height: 60px; margin-bottom: 16px;">
           <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 1px; color: #047857; font-family: 'Georgia', serif;">
-            SkyRanch
+            SKYRANCH
           </h1>
           <div style="width: 40px; height: 1px; background-color: #059669; margin: 12px auto;"></div>
           <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase;">
@@ -88,20 +98,22 @@ export const buildEmailTemplate = (
           </p>
         </div>
 
-        <!-- Simplified Header -->
-        <div style="background-color: #059669; padding: 20px 24px; text-align: center;">
-          <h2 style="color: #ffffff; margin: 0 0 4px 0; font-size: 18px; font-weight: 500;">
-            ${organizationName}
-          </h2>
-          <p style="color: #ecfdf5; margin: 0; font-size: 13px; font-weight: 400;">
-            Notificación de Evento
-          </p>
+        <!-- Centered Header -->
+        <div style="display: flex; justify-content: center; padding: 0 24px;">
+          <div style="background-color: #059669; padding: 16px 32px; border-radius: 8px; text-align: center; max-width: 400px;">
+            <h2 style="color: #ffffff; margin: 0 0 4px 0; font-size: 16px; font-weight: 500;">
+              SKYRANCH
+            </h2>
+            <p style="color: #ecfdf5; margin: 0; font-size: 12px; font-weight: 400;">
+              Notificación de Evento
+            </p>
+          </div>
         </div>
 
-        <!-- Compact Event Status -->
-        <div style="padding: 16px 24px;">
-          <div style="background-color: ${actionColor}; color: white; padding: 12px 16px; border-radius: 6px; text-align: center;">
-            <h3 style="margin: 0; font-size: 16px; font-weight: 500;">
+        <!-- Centered Event Status -->
+        <div style="padding: 16px 24px; display: flex; justify-content: center;">
+          <div style="background-color: ${actionColor}; color: white; padding: 12px 24px; border-radius: 6px; text-align: center; max-width: 400px;">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 500;">
               ${subject}
             </h3>
           </div>
