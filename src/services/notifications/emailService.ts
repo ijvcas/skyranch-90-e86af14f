@@ -1,24 +1,23 @@
-import { Resend } from "resend";
 
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-const resend = new Resend(resendApiKey);
-
-interface SendEmailProps {
+// Simple email service that calls the edge function - no Resend imports needed here
+export const sendEmail = async (emailData: {
   to: string;
   subject: string;
   html: string;
-}
-
-export const sendEmail = async ({ to, subject, html }: SendEmailProps) => {
+  senderName?: string;
+  organizationName?: string;
+}) => {
   try {
-    const data = await resend.emails.send({
-      from: "SkyRanch <onboarding@resend.dev>",
-      to: [to],
-      subject: subject,
-      html: html,
+    const { data } = await fetch(`https://ahwhtxygyzoadsmdrwwg.supabase.co/functions/v1/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify(emailData)
     });
 
-    console.log("Email sent successfully:", data);
+    console.log("Email sent successfully via edge function");
     return data;
   } catch (error) {
     console.error("Error sending email:", error);
@@ -75,9 +74,13 @@ export const buildEmailTemplate = (
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f8fafc; line-height: 1.6;">
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 30px; text-align: center;">
-          <img src="cid:logo" alt="SkyRanch Logo" style="height: 60px; width: auto; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+        <!-- Logo placed elegantly outside the green header -->
+        <div style="text-align: center; padding: 30px 30px 0 30px; background-color: #ffffff;">
+          <img src="cid:logo" alt="SkyRanch Logo" style="height: 80px; width: auto; display: block; margin: 0 auto;">
+        </div>
+
+        <!-- Green Header Rectangle -->
+        <div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 30px; text-align: center; margin-top: 20px;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             ${organizationName}
           </h1>
@@ -143,7 +146,7 @@ export const buildEmailTemplate = (
             <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
               Accede al sistema para más detalles
             </p>
-            <a href="${window.location?.origin || 'https://app.skyranch.com'}/calendar" 
+            <a href="https://ahwhtxygyzoadsmdrwwg.supabase.co/calendar" 
                style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); 
                       color: white; 
                       text-decoration: none; 
@@ -176,4 +179,28 @@ export const buildEmailTemplate = (
     </body>
     </html>
   `;
+};
+
+// Create emailService object for export
+export const emailService = {
+  sendEmailNotification: async (
+    to: string, 
+    subject: string, 
+    body: string, 
+    eventDetails?: { title: string; description?: string; eventDate: string }
+  ): Promise<boolean> => {
+    try {
+      await sendEmail({
+        to,
+        subject,
+        html: body,
+        senderName: "SkyRanch - Sistema de Gestión Ganadera",
+        organizationName: "SkyRanch"
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      return false;
+    }
+  }
 };
