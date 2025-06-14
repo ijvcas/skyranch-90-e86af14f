@@ -15,7 +15,6 @@ interface EmailRequest {
   html: string;
   senderName?: string;
   organizationName?: string;
-  logoUrl?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -27,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log('📧 Email function called');
     
-    const { to, subject, html, senderName, organizationName, logoUrl }: EmailRequest = await req.json();
+    const { to, subject, html, senderName, organizationName }: EmailRequest = await req.json();
     
     console.log(`📧 Sending email to: ${to}, subject: ${subject}`);
 
@@ -45,12 +44,7 @@ const handler = async (req: Request): Promise<Response> => {
         'X-Entity-Ref-ID': 'skyranch-sistema-ganadero',
         'List-Unsubscribe': '<mailto:unsubscribe@skyranch.com>',
         'Organization': organizationName || 'SkyRanch',
-        'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera',
-        // Add sender logo reference if provided
-        ...(logoUrl && {
-          'X-Logo-URL': logoUrl,
-          'X-Brand-Logo': logoUrl
-        })
+        'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera'
       },
       // Add tags for better email tracking and reputation
       tags: [
