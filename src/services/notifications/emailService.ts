@@ -2,7 +2,7 @@
 import { sendEmail, EmailData } from './emailClient';
 import { buildEmailTemplate } from './emailTemplates';
 
-// Main email service that orchestrates email sending with enhanced error handling
+// Simplified email service focused on core functionality
 const emailService = {
   sendEmail: async (
     to: string, 
@@ -10,31 +10,27 @@ const emailService = {
     body: string, 
     eventDetails?: { title: string; description?: string; eventDate: string }
   ): Promise<boolean> => {
-    console.log('📧 [EMAIL SERVICE DEBUG] Starting emailService.sendEmail');
-    console.log('📧 [EMAIL SERVICE DEBUG] Parameters:', {
+    console.log('📧 [EMAIL SERVICE] Starting emailService.sendEmail');
+    console.log('📧 [EMAIL SERVICE] Parameters:', {
       to,
       subject,
       bodyLength: body.length,
       hasEventDetails: !!eventDetails
     });
 
-    // Validate input parameters
     if (!to || !subject) {
-      const error = 'Missing required parameters: to and subject are required';
-      console.error('📧 [EMAIL SERVICE DEBUG] Parameter validation error:', error);
-      throw new Error(error);
+      throw new Error('Missing required parameters: to and subject are required');
     }
 
     try {
-      // If we have event details, build HTML template, otherwise use the body as-is
       let emailBody = body;
       
+      // Build HTML template if we have event details
       if (eventDetails) {
-        console.log('📧 [EMAIL SERVICE DEBUG] Building HTML template for event details');
-        const userName = to.split('@')[0]; // Extract name from email
+        console.log('📧 [EMAIL SERVICE] Building HTML template for event details');
+        const userName = to.split('@')[0];
         const organizationName = "SkyRanch";
         
-        // Create a proper event object for the template
         const eventForTemplate = {
           title: eventDetails.title,
           description: eventDetails.description,
@@ -55,12 +51,11 @@ const emailService = {
           eventType = 'deleted';
         }
 
-        console.log('📧 [EMAIL SERVICE DEBUG] Building HTML template for event type:', eventType);
         emailBody = buildEmailTemplate(eventType, eventForTemplate, userName, organizationName);
-        console.log('📧 [EMAIL SERVICE DEBUG] HTML template built, length:', emailBody.length);
+        console.log('📧 [EMAIL SERVICE] HTML template built, length:', emailBody.length);
       }
 
-      console.log('📧 [EMAIL SERVICE DEBUG] About to call emailClient.sendEmail...');
+      console.log('📧 [EMAIL SERVICE] Calling sendEmail...');
       const result = await sendEmail({
         to: to.trim(),
         subject: subject.trim(),
@@ -69,59 +64,33 @@ const emailService = {
         organizationName: "SkyRanch"
       });
       
-      console.log('📧 [EMAIL SERVICE DEBUG] emailClient.sendEmail result:', result);
+      console.log('📧 [EMAIL SERVICE] sendEmail result:', result);
       
-      // Validate the result more thoroughly
-      if (!result) {
-        console.error('❌ [EMAIL SERVICE DEBUG] Email client returned null/undefined result');
-        throw new Error('Email client returned no result');
+      if (result && (result.data?.id || result.id)) {
+        console.log('✅ [EMAIL SERVICE] Email sent successfully');
+        return true;
       }
 
-      if (typeof result === 'object') {
-        if (result.error) {
-          console.error('❌ [EMAIL SERVICE DEBUG] Email client returned error:', result.error);
-          throw new Error(`Email client error: ${result.error}`);
-        }
-        
-        // Check for successful response indicators (Resend typically returns {data: {id: "..."}, error: null})
-        if (result.data?.id || result.id) {
-          console.log('✅ [EMAIL SERVICE DEBUG] Email sent successfully through emailService');
-          return true;
-        }
-      }
-
-      // If we get here, the result structure is unexpected
-      console.error('❌ [EMAIL SERVICE DEBUG] Unexpected result structure:', result);
-      throw new Error('Email client returned unexpected response structure');
+      throw new Error('Email service returned invalid response');
       
     } catch (error) {
-      console.error('❌ [EMAIL SERVICE DEBUG] Failed to send email in emailService:', error);
-      console.error('❌ [EMAIL SERVICE DEBUG] Full error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        to,
-        subject
-      });
-      
-      // Re-throw the error so it can be caught upstream - don't return false
+      console.error('❌ [EMAIL SERVICE] Failed to send email:', error);
       throw new Error(`EmailService failed: ${error.message}`);
     }
   },
 
-  // Add a simple test method to verify the email chain works
   testEmail: async (to: string): Promise<boolean> => {
-    console.log('🧪 [EMAIL SERVICE DEBUG] Testing email functionality...');
+    console.log('🧪 [EMAIL SERVICE] Testing email functionality...');
     try {
       const result = await emailService.sendEmail(
         to,
         'Test Email - SkyRanch',
         '<h1>Test Email</h1><p>This is a test email to verify the email system is working.</p>'
       );
-      console.log('🧪 [EMAIL SERVICE DEBUG] Test email result:', result);
+      console.log('🧪 [EMAIL SERVICE] Test email result:', result);
       return result;
     } catch (error) {
-      console.error('🧪 [EMAIL SERVICE DEBUG] Test email failed:', error);
+      console.error('🧪 [EMAIL SERVICE] Test email failed:', error);
       throw error;
     }
   }
