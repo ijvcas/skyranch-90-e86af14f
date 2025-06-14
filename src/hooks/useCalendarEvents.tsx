@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -33,22 +32,31 @@ export const useCalendarEvents = () => {
   });
 
   const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false, eventDescription?: string) => {
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Starting sendNotificationsToUsers');
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Selected user IDs:', selectedUserIds);
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event title:', eventTitle);
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event date:', eventDate);
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Is update:', isUpdate);
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event description:', eventDescription);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] ===== STARTING NOTIFICATION PROCESS =====');
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Input parameters:', {
+      selectedUserIds: selectedUserIds.length,
+      selectedUserIdsList: selectedUserIds,
+      eventTitle,
+      eventDate,
+      isUpdate,
+      eventDescription
+    });
     
     if (selectedUserIds.length === 0) {
-      console.log('📢 No users selected for notification');
+      console.log('📢 [CALENDAR NOTIFICATION DEBUG] ❌ No users selected for notification - exiting');
       return;
     }
 
-    console.log(`📢 Sending notifications to ${selectedUserIds.length} users for event: ${eventTitle}`);
+    console.log(`📢 [CALENDAR NOTIFICATION DEBUG] Processing notifications for ${selectedUserIds.length} users`);
     
     const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Selected users:', selectedUsers.map(u => ({ id: u.id, email: u.email })));
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Found matching users:', selectedUsers.map(u => ({ id: u.id, email: u.email })));
+    
+    if (selectedUsers.length === 0) {
+      console.error('❌ [CALENDAR NOTIFICATION DEBUG] No matching users found in user list!');
+      console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Available users:', users.map(u => ({ id: u.id, email: u.email })));
+      return;
+    }
     
     const actionText = isUpdate ? "actualizado" : "creado";
     const notificationTitle = `Evento ${actionText}: ${eventTitle}`;
@@ -61,9 +69,11 @@ export const useCalendarEvents = () => {
       eventDate: eventDate
     };
 
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event details for email:', eventDetails);
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Notification title:', notificationTitle);
-    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Notification body:', notificationBody);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Notification details:', {
+      notificationTitle,
+      notificationBody,
+      eventDetails
+    });
 
     // Create in-app notification
     try {
@@ -76,19 +86,24 @@ export const useCalendarEvents = () => {
 
     // Check notification permission status
     const permissionStatus = pushService.getPermissionStatus();
-    console.log(`📱 Current notification permission: ${permissionStatus}`);
+    console.log(`📱 [CALENDAR NOTIFICATION DEBUG] Notification permission status: ${permissionStatus}`);
 
     let notificationsSent = 0;
     let notificationsFailed = 0;
+    let emailFailures: string[] = [];
 
     for (const user of selectedUsers) {
       try {
-        console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Processing user: ${user.email} (ID: ${user.id})`);
-        console.log(`📢 Sending comprehensive notification to ${user.email} for event: ${eventTitle}`);
+        console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] ===== PROCESSING USER: ${user.email} (${user.id}) =====`);
         
-        // Send comprehensive notification (email + push) with event details
-        console.log('🔄 [CALENDAR NOTIFICATION DEBUG] About to call notificationService.sendNotification...');
-        console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Call parameters:', {
+        if (!user.email) {
+          console.error(`❌ [CALENDAR NOTIFICATION DEBUG] User ${user.id} has no email address - skipping`);
+          notificationsFailed++;
+          emailFailures.push(`${user.id}: No email address`);
+          continue;
+        }
+        
+        console.log('🔄 [CALENDAR NOTIFICATION DEBUG] About to call notificationService.sendNotification with params:', {
           userId: user.id,
           userEmail: user.email,
           title: notificationTitle,
@@ -103,23 +118,31 @@ export const useCalendarEvents = () => {
           notificationBody,
           eventDetails
         );
-        console.log(`✅ [CALENDAR NOTIFICATION DEBUG] Notification sent successfully to ${user.email}`);
-
+        
+        console.log(`✅ [CALENDAR NOTIFICATION DEBUG] Notification process completed for ${user.email}`);
         notificationsSent++;
         
       } catch (error) {
-        console.error(`❌ [CALENDAR NOTIFICATION DEBUG] Error sending notification to ${user.email}:`, error);
+        console.error(`❌ [CALENDAR NOTIFICATION DEBUG] ===== NOTIFICATION FAILED FOR USER: ${user.email} =====`);
         console.error(`❌ [CALENDAR NOTIFICATION DEBUG] Error details:`, {
           message: error.message,
+          name: error.name,
           stack: error.stack,
           userId: user.id,
           userEmail: user.email
         });
         notificationsFailed++;
+        emailFailures.push(`${user.email}: ${error.message}`);
       }
     }
 
-    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Notification summary: ${notificationsSent} sent, ${notificationsFailed} failed`);
+    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] ===== NOTIFICATION SUMMARY =====`);
+    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Total users processed: ${selectedUsers.length}`);
+    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Notifications sent: ${notificationsSent}`);
+    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Notifications failed: ${notificationsFailed}`);
+    if (emailFailures.length > 0) {
+      console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Email failures:`, emailFailures);
+    }
 
     // Show summary toast
     if (notificationsSent > 0) {
@@ -154,15 +177,15 @@ export const useCalendarEvents = () => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
-    console.log('📅 [CREATE EVENT DEBUG] Creating calendar event with notification users:', selectedUserIds);
+    console.log('📅 [CREATE EVENT DEBUG] ===== CREATING CALENDAR EVENT =====');
     console.log('📅 [CREATE EVENT DEBUG] Event data:', eventData);
+    console.log('📅 [CREATE EVENT DEBUG] Selected user IDs:', selectedUserIds);
 
     try {
       const eventId = await addCalendarEvent(eventData, selectedUserIds);
       console.log('📅 [CREATE EVENT DEBUG] Event created with ID:', eventId);
       
       if (eventId) {
-        // Send notifications with event details
         console.log('📅 [CREATE EVENT DEBUG] Starting notification process...');
         await sendNotificationsToUsers(
           selectedUserIds, 
@@ -176,8 +199,6 @@ export const useCalendarEvents = () => {
         // Check if this is a breeding-related event and setup pregnancy notifications
         if (eventData.eventType === 'breeding' && eventData.animalId) {
           console.log('🤰 Setting up pregnancy notifications for breeding event');
-          // Note: In a real scenario, you'd need to link this to a breeding record
-          // For now, we'll trigger a general check
           try {
             await setupPregnancyNotifications(eventId);
           } catch (error) {
