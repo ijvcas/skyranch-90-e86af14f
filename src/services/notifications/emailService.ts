@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Simple email service that calls the edge function using Supabase client
@@ -65,7 +64,7 @@ export const buildEmailTemplate = (
                      eventType === 'updated' ? 'se ha actualizado' : 
                      eventType === 'deleted' ? 'se ha cancelado' : 'está programado';
 
-  const actionColor = eventType === 'deleted' ? '#ef4444' : '#10b981';
+  const actionColor = eventType === 'deleted' ? '#dc2626' : '#059669';
 
   return `
     <!DOCTYPE html>
@@ -75,115 +74,114 @@ export const buildEmailTemplate = (
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${subject}</title>
     </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f8fafc; line-height: 1.6;">
-      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; line-height: 1.5;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
         
-        <!-- Elegant Text Logo placed outside the green header -->
-        <div style="text-align: center; padding: 40px 30px 20px 30px; background-color: #ffffff;">
-          <h1 style="margin: 0; font-size: 42px; font-weight: 300; letter-spacing: 2px; color: #047857; font-family: 'Georgia', serif;">
+        <!-- Simple Elegant Logo -->
+        <div style="text-align: center; padding: 32px 24px 24px 24px; background-color: #ffffff;">
+          <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 1px; color: #047857; font-family: 'Georgia', serif;">
             SkyRanch
           </h1>
-          <div style="width: 60px; height: 2px; background: linear-gradient(90deg, #10b981, #047857); margin: 15px auto; border-radius: 1px;"></div>
-          <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280; letter-spacing: 1px; text-transform: uppercase;">
+          <div style="width: 40px; height: 1px; background-color: #059669; margin: 12px auto;"></div>
+          <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase;">
             Sistema de Gestión Ganadera
           </p>
         </div>
 
-        <!-- Green Header Rectangle -->
-        <div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 30px; text-align: center;">
-          <h2 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <!-- Simplified Header -->
+        <div style="background-color: #059669; padding: 20px 24px; text-align: center;">
+          <h2 style="color: #ffffff; margin: 0 0 4px 0; font-size: 18px; font-weight: 500;">
             ${organizationName}
           </h2>
-          <p style="color: #d1fae5; margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">
+          <p style="color: #ecfdf5; margin: 0; font-size: 13px; font-weight: 400;">
             Notificación de Evento
           </p>
         </div>
 
-        <!-- Content -->
-        <div style="padding: 40px 30px;">
-          <div style="background-color: ${actionColor}; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
-            <h3 style="margin: 0; font-size: 24px; font-weight: 600;">
+        <!-- Compact Event Status -->
+        <div style="padding: 16px 24px;">
+          <div style="background-color: ${actionColor}; color: white; padding: 12px 16px; border-radius: 6px; text-align: center;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 500;">
               ${subject}
             </h3>
           </div>
+        </div>
 
-          <p style="color: #374151; font-size: 18px; margin-bottom: 25px; font-weight: 500;">
+        <!-- Content -->
+        <div style="padding: 0 24px 32px 24px;">
+          <p style="color: #374151; font-size: 16px; margin-bottom: 20px; font-weight: 500;">
             Hola ${userName},
           </p>
           
-          <p style="color: #6b7280; font-size: 16px; margin-bottom: 30px; line-height: 1.6;">
+          <p style="color: #6b7280; font-size: 14px; margin-bottom: 24px; line-height: 1.6;">
             Te informamos que el evento <strong>${event.title}</strong> ${actionText} en el sistema.
           </p>
 
           <!-- Event Details Card -->
-          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
-            <h4 style="color: #111827; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; border-bottom: 2px solid #10b981; padding-bottom: 10px;">
+          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+            <h4 style="color: #111827; margin: 0 0 16px 0; font-size: 16px; font-weight: 600; border-bottom: 1px solid #d1d5db; padding-bottom: 8px;">
               📋 Detalles del Evento
             </h4>
             
-            <div style="margin-bottom: 15px;">
-              <strong style="color: #374151; display: inline-block; width: 120px;">Título:</strong>
-              <span style="color: #6b7280;">${event.title}</span>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #374151; display: inline-block; width: 100px; font-size: 13px;">Título:</strong>
+              <span style="color: #6b7280; font-size: 13px;">${event.title}</span>
             </div>
             
-            <div style="margin-bottom: 15px;">
-              <strong style="color: #374151; display: inline-block; width: 120px;">Tipo:</strong>
-              <span style="color: #6b7280;">${eventTitle}</span>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #374151; display: inline-block; width: 100px; font-size: 13px;">Tipo:</strong>
+              <span style="color: #6b7280; font-size: 13px;">${eventTitle}</span>
             </div>
             
-            <div style="margin-bottom: 15px;">
-              <strong style="color: #374151; display: inline-block; width: 120px;">Fecha:</strong>
-              <span style="color: #6b7280;">${eventDate}</span>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #374151; display: inline-block; width: 100px; font-size: 13px;">Fecha:</strong>
+              <span style="color: #6b7280; font-size: 13px;">${eventDate}</span>
             </div>
             
             ${event.description ? `
-            <div style="margin-bottom: 15px;">
-              <strong style="color: #374151; display: inline-block; width: 120px;">Descripción:</strong>
-              <span style="color: #6b7280;">${event.description}</span>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #374151; display: inline-block; width: 100px; font-size: 13px;">Descripción:</strong>
+              <span style="color: #6b7280; font-size: 13px;">${event.description}</span>
             </div>
             ` : ''}
             
             ${event.location ? `
-            <div style="margin-bottom: 15px;">
-              <strong style="color: #374151; display: inline-block; width: 120px;">Ubicación:</strong>
-              <span style="color: #6b7280;">${event.location}</span>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #374151; display: inline-block; width: 100px; font-size: 13px;">Ubicación:</strong>
+              <span style="color: #6b7280; font-size: 13px;">${event.location}</span>
             </div>
             ` : ''}
           </div>
 
           ${eventType !== 'deleted' ? `
-          <div style="text-align: center; margin: 30px 0;">
-            <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+          <div style="text-align: center; margin: 24px 0;">
+            <p style="color: #6b7280; font-size: 12px; margin-bottom: 16px;">
               Accede al sistema para más detalles
             </p>
             <a href="https://ahwhtxygyzoadsmdrwwg.supabase.co/calendar" 
-               style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); 
+               style="background-color: #059669; 
                       color: white; 
                       text-decoration: none; 
-                      padding: 15px 30px; 
-                      border-radius: 8px; 
-                      font-weight: 600; 
-                      font-size: 16px; 
-                      display: inline-block; 
-                      box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
-                      transition: all 0.3s ease;">
+                      padding: 12px 24px; 
+                      border-radius: 6px; 
+                      font-weight: 500; 
+                      font-size: 14px; 
+                      display: inline-block;">
               📅 Ver Calendario
             </a>
           </div>
           ` : ''}
         </div>
 
-        <!-- Footer -->
-        <div style="background-color: #f9fafb; padding: 25px 30px; border-top: 1px solid #e5e7eb; text-align: center;">
-          <p style="color: #6b7280; margin: 0; font-size: 14px; line-height: 1.5;">
+        <!-- Clean Footer -->
+        <div style="background-color: #f9fafb; padding: 20px 24px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <p style="color: #6b7280; margin: 0 0 12px 0; font-size: 12px; line-height: 1.4;">
             Este es un mensaje automático del sistema <strong>${organizationName}</strong>.<br>
             Por favor, no respondas a este correo electrónico.
           </p>
-          <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-            <p style="color: #9ca3af; margin: 0; font-size: 12px;">
-              © ${new Date().getFullYear()} ${organizationName} - Sistema de Gestión Ganadera
-            </p>
-          </div>
+          <p style="color: #9ca3af; margin: 0; font-size: 11px;">
+            © ${new Date().getFullYear()} ${organizationName} - Sistema de Gestión Ganadera
+          </p>
         </div>
       </div>
     </body>
