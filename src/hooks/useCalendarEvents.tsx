@@ -33,9 +33,12 @@ export const useCalendarEvents = () => {
   });
 
   const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false, eventDescription?: string) => {
-    console.log('🔄 [NOTIFICATION DEBUG] Starting sendNotificationsToUsers');
-    console.log('🔄 [NOTIFICATION DEBUG] Selected user IDs:', selectedUserIds);
-    console.log('🔄 [NOTIFICATION DEBUG] Event title:', eventTitle);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Starting sendNotificationsToUsers');
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Selected user IDs:', selectedUserIds);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event title:', eventTitle);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event date:', eventDate);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Is update:', isUpdate);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event description:', eventDescription);
     
     if (selectedUserIds.length === 0) {
       console.log('📢 No users selected for notification');
@@ -45,7 +48,7 @@ export const useCalendarEvents = () => {
     console.log(`📢 Sending notifications to ${selectedUserIds.length} users for event: ${eventTitle}`);
     
     const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
-    console.log('🔄 [NOTIFICATION DEBUG] Selected users:', selectedUsers.map(u => ({ id: u.id, email: u.email })));
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Selected users:', selectedUsers.map(u => ({ id: u.id, email: u.email })));
     
     const actionText = isUpdate ? "actualizado" : "creado";
     const notificationTitle = `Evento ${actionText}: ${eventTitle}`;
@@ -58,15 +61,17 @@ export const useCalendarEvents = () => {
       eventDate: eventDate
     };
 
-    console.log('🔄 [NOTIFICATION DEBUG] Event details for email:', eventDetails);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Event details for email:', eventDetails);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Notification title:', notificationTitle);
+    console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Notification body:', notificationBody);
 
     // Create in-app notification
     try {
-      console.log('🔄 [NOTIFICATION DEBUG] Creating in-app notification...');
+      console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Creating in-app notification...');
       await supabaseNotificationService.createCalendarNotification(eventTitle, eventDate);
-      console.log('✅ [NOTIFICATION DEBUG] In-app notification created successfully');
+      console.log('✅ [CALENDAR NOTIFICATION DEBUG] In-app notification created successfully');
     } catch (error) {
-      console.error('❌ [NOTIFICATION DEBUG] Error creating in-app notification:', error);
+      console.error('❌ [CALENDAR NOTIFICATION DEBUG] Error creating in-app notification:', error);
     }
 
     // Check notification permission status
@@ -78,11 +83,19 @@ export const useCalendarEvents = () => {
 
     for (const user of selectedUsers) {
       try {
-        console.log(`🔄 [NOTIFICATION DEBUG] Processing user: ${user.email} (ID: ${user.id})`);
+        console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Processing user: ${user.email} (ID: ${user.id})`);
         console.log(`📢 Sending comprehensive notification to ${user.email} for event: ${eventTitle}`);
         
         // Send comprehensive notification (email + push) with event details
-        console.log('🔄 [NOTIFICATION DEBUG] Calling notificationService.sendNotification...');
+        console.log('🔄 [CALENDAR NOTIFICATION DEBUG] About to call notificationService.sendNotification...');
+        console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Call parameters:', {
+          userId: user.id,
+          userEmail: user.email,
+          title: notificationTitle,
+          body: notificationBody,
+          eventDetails: eventDetails
+        });
+        
         await notificationService.sendNotification(
           user.id,
           user.email,
@@ -90,13 +103,13 @@ export const useCalendarEvents = () => {
           notificationBody,
           eventDetails
         );
-        console.log(`✅ [NOTIFICATION DEBUG] Notification sent successfully to ${user.email}`);
+        console.log(`✅ [CALENDAR NOTIFICATION DEBUG] Notification sent successfully to ${user.email}`);
 
         notificationsSent++;
         
       } catch (error) {
-        console.error(`❌ [NOTIFICATION DEBUG] Error sending notification to ${user.email}:`, error);
-        console.error(`❌ [NOTIFICATION DEBUG] Error details:`, {
+        console.error(`❌ [CALENDAR NOTIFICATION DEBUG] Error sending notification to ${user.email}:`, error);
+        console.error(`❌ [CALENDAR NOTIFICATION DEBUG] Error details:`, {
           message: error.message,
           stack: error.stack,
           userId: user.id,
@@ -106,7 +119,7 @@ export const useCalendarEvents = () => {
       }
     }
 
-    console.log(`🔄 [NOTIFICATION DEBUG] Notification summary: ${notificationsSent} sent, ${notificationsFailed} failed`);
+    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Notification summary: ${notificationsSent} sent, ${notificationsFailed} failed`);
 
     // Show summary toast
     if (notificationsSent > 0) {

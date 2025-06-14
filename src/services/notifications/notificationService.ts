@@ -1,65 +1,31 @@
 
-import { emailService, buildEmailTemplate } from './emailService';
+import { emailService } from './emailService';
 import { pushService } from './pushService';
 import { preferencesService } from './preferencesService';
 import { loggingService } from './loggingService';
 import { NotificationPreferences, NotificationTemplate, NotificationLog } from './interfaces';
 
 class NotificationService {
-  // Send email notification with proper HTML template
+  // Send email notification using the email service
   async sendEmailNotification(
     to: string, 
     subject: string, 
     body: string, 
     eventDetails?: { title: string; description?: string; eventDate: string }
   ): Promise<boolean> {
-    console.log('📧 [EMAIL SERVICE DEBUG] Starting sendEmailNotification');
-    console.log('📧 [EMAIL SERVICE DEBUG] To:', to);
-    console.log('📧 [EMAIL SERVICE DEBUG] Subject:', subject);
-    console.log('📧 [EMAIL SERVICE DEBUG] Event details:', eventDetails);
+    console.log('📧 [NOTIFICATION SERVICE DEBUG] Starting sendEmailNotification');
+    console.log('📧 [NOTIFICATION SERVICE DEBUG] To:', to);
+    console.log('📧 [NOTIFICATION SERVICE DEBUG] Subject:', subject);
+    console.log('📧 [NOTIFICATION SERVICE DEBUG] Event details:', eventDetails);
 
     try {
-      // If we have event details, use the HTML template, otherwise use plain text
-      if (eventDetails) {
-        const userName = to.split('@')[0]; // Extract name from email
-        const organizationName = "SkyRanch";
-        
-        // Create a proper event object for the template
-        const eventForTemplate = {
-          title: eventDetails.title,
-          description: eventDetails.description,
-          event_type: 'reminder',
-          start_date: eventDetails.eventDate,
-          event_date: eventDetails.eventDate,
-          location: '',
-          veterinarian: ''
-        };
-
-        // Determine event type from subject
-        let eventType = 'reminder';
-        if (subject.includes('actualizado')) {
-          eventType = 'updated';
-        } else if (subject.includes('creado') || subject.includes('Nuevo')) {
-          eventType = 'created';
-        } else if (subject.includes('cancelado')) {
-          eventType = 'deleted';
-        }
-
-        console.log('📧 [EMAIL SERVICE DEBUG] Building HTML template for event type:', eventType);
-        const htmlBody = buildEmailTemplate(eventType, eventForTemplate, userName, organizationName);
-        
-        console.log('📧 [EMAIL SERVICE DEBUG] Calling emailService.sendEmailNotification with HTML template');
-        const result = await emailService.sendEmailNotification(to, subject, htmlBody, eventDetails);
-        console.log('📧 [EMAIL SERVICE DEBUG] Email service result:', result);
-        return result;
-      } else {
-        console.log('📧 [EMAIL SERVICE DEBUG] Calling emailService.sendEmailNotification with plain text');
-        const result = await emailService.sendEmailNotification(to, subject, body, eventDetails);
-        console.log('📧 [EMAIL SERVICE DEBUG] Email service result:', result);
-        return result;
-      }
+      console.log('📧 [NOTIFICATION SERVICE DEBUG] Calling emailService.sendEmail');
+      const result = await emailService.sendEmail(to, subject, body, eventDetails);
+      console.log('📧 [NOTIFICATION SERVICE DEBUG] Email service result:', result);
+      return result;
     } catch (error) {
-      console.error('❌ [EMAIL SERVICE DEBUG] Error in sendEmailNotification:', error);
+      console.error('❌ [NOTIFICATION SERVICE DEBUG] Error in sendEmailNotification:', error);
+      console.error('❌ [NOTIFICATION SERVICE DEBUG] Error stack:', error.stack);
       throw error;
     }
   }
@@ -106,7 +72,7 @@ class NotificationService {
     return loggingService.logNotification(log);
   }
 
-  // Send comprehensive notifications based on user preferences with event details and proper HTML template
+  // Send comprehensive notifications based on user preferences with event details
   async sendNotification(
     userId: string, 
     userEmail: string, 
@@ -124,10 +90,11 @@ class NotificationService {
       const preferences = await this.getUserPreferences(userId);
       console.log('📢 [MAIN NOTIFICATION DEBUG] User preferences:', preferences);
       
-      // Send email notification with proper HTML template
+      // Send email notification
       if (preferences.email && userEmail) {
         console.log('📢 [MAIN NOTIFICATION DEBUG] Sending email notification...');
         try {
+          console.log('📢 [MAIN NOTIFICATION DEBUG] About to call this.sendEmailNotification');
           const emailSuccess = await this.sendEmailNotification(userEmail, title, message, eventDetails);
           console.log('📢 [MAIN NOTIFICATION DEBUG] Email notification result:', emailSuccess);
           
@@ -141,6 +108,7 @@ class NotificationService {
           });
         } catch (emailError) {
           console.error('❌ [MAIN NOTIFICATION DEBUG] Email notification failed:', emailError);
+          console.error('❌ [MAIN NOTIFICATION DEBUG] Email error stack:', emailError.stack);
           await this.logNotification({
             userId,
             type: 'email',
@@ -185,6 +153,7 @@ class NotificationService {
       console.log('✅ [MAIN NOTIFICATION DEBUG] Comprehensive notification process completed for user:', userId);
     } catch (error) {
       console.error('❌ [MAIN NOTIFICATION DEBUG] Error in sendNotification:', error);
+      console.error('❌ [MAIN NOTIFICATION DEBUG] sendNotification error stack:', error.stack);
       throw error;
     }
   }
