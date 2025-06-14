@@ -1,4 +1,3 @@
-
 // Email template generation utilities
 export const buildEmailTemplate = (
   eventType: string, 
@@ -40,76 +39,37 @@ export const buildEmailTemplate = (
 
   // Exact replica of the authentic SkyRanch logo as SVG
   const logoSvg = `data:image/svg+xml;base64,${btoa(`
-    <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <!-- Bright lime green outer frame -->
-      <rect width="120" height="120" rx="12" fill="#32cd32" stroke="#228b22" stroke-width="1"/>
-      
-      <!-- Darker green inner frame -->
-      <rect x="6" y="6" width="108" height="108" rx="8" fill="#228b22"/>
-      
-      <!-- Simple light blue sky -->
-      <rect x="10" y="10" width="100" height="55" rx="4" fill="#87ceeb"/>
-      
-      <!-- Two simple white clouds -->
-      <!-- Left cloud -->
-      <g opacity="0.9">
-        <circle cx="30" cy="25" r="4" fill="white"/>
-        <circle cx="35" cy="25" r="6" fill="white"/>
-        <circle cx="40" cy="25" r="4" fill="white"/>
-      </g>
-      <!-- Right cloud -->
-      <g opacity="0.9">
-        <circle cx="80" cy="30" r="3.5" fill="white"/>
-        <circle cx="85" cy="30" r="5" fill="white"/>
-        <circle cx="90" cy="30" r="3.5" fill="white"/>
-      </g>
-      
-      <!-- Simple rolling hills in two layers -->
-      <!-- Back hills -->
-      <path d="M10 50 Q30 42, 50 50 Q70 45, 90 50 Q100 48, 110 50 L110 65 L10 65 Z" fill="#228b22"/>
-      <!-- Front hills -->
-      <path d="M10 55 Q35 48, 60 55 Q85 50, 110 55 L110 65 L10 65 Z" fill="#32cd32"/>
-      
-      <!-- Donkey silhouette (left side, simplified) -->
-      <g transform="translate(25, 35)">
-        <!-- Body -->
-        <ellipse cx="8" cy="15" rx="6" ry="4" fill="#2c2c2c"/>
-        <!-- Head -->
-        <ellipse cx="2" cy="10" rx="3" ry="2.5" fill="#2c2c2c"/>
-        <!-- Long ears -->
-        <ellipse cx="0" cy="7" rx="1.5" ry="3" fill="#2c2c2c"/>
-        <ellipse cx="4" cy="7" rx="1.5" ry="3" fill="#2c2c2c"/>
-        <!-- Legs -->
-        <rect x="4" y="18" width="1.5" height="6" fill="#2c2c2c"/>
-        <rect x="6.5" y="18" width="1.5" height="6" fill="#2c2c2c"/>
-        <rect x="9" y="18" width="1.5" height="6" fill="#2c2c2c"/>
-        <rect x="11.5" y="18" width="1.5" height="6" fill="#2c2c2c"/>
-        <!-- Tail -->
-        <path d="M14 13 Q16 15, 15 18" stroke="#2c2c2c" stroke-width="1.5" fill="none"/>
-      </g>
-      
-      <!-- Sheep silhouette (right side, fluffy white body) -->
-      <g transform="translate(70, 37)">
-        <!-- Fluffy white body -->
-        <circle cx="6" cy="13" r="4.5" fill="white"/>
-        <circle cx="3" cy="11" r="2.5" fill="white"/>
-        <circle cx="9" cy="11" r="2.5" fill="white"/>
-        <circle cx="4.5" cy="9" r="2" fill="white"/>
-        <circle cx="7.5" cy="9" r="2" fill="white"/>
-        <!-- Dark head -->
-        <ellipse cx="1" cy="10" rx="2" ry="1.5" fill="#2c2c2c"/>
-        <!-- Legs -->
-        <rect x="3.5" y="16.5" width="1" height="5" fill="#2c2c2c"/>
-        <rect x="5.5" y="16.5" width="1" height="5" fill="#2c2c2c"/>
-        <rect x="7.5" y="16.5" width="1" height="5" fill="#2c2c2c"/>
-        <rect x="9.5" y="16.5" width="1" height="5" fill="#2c2c2c"/>
-      </g>
-      
-      <!-- Green text background bar -->
-      <rect x="10" y="75" width="100" height="20" rx="3" fill="#228b22"/>
-      
-      <!-- SKY RANCH text in white -->
-      <text x="60" y="88" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="11" font-weight="bold" letter-spacing="1px">SKY RANCH</text>
+    <svg width="120" height="120" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer frame & text background -->
+        <rect width="100" height="100" rx="10" fill="#a5c181" />
+        
+        <!-- Inner dark frame -->
+        <rect x="4" y="4" width="92" height="80" rx="8" fill="#254d2f" />
+        
+        <!-- Sky area -->
+        <rect x="7" y="7" width="86" height="74" rx="5" fill="#e6f3d6" />
+        
+        <!-- Hills -->
+        <path d="M 7,81 C 25,68 35,70 50,63 C 65,56 75,63 93,58 V 81 H 7 Z" fill="#8db061" />
+        <path d="M 7,81 C 20,76 30,78 45,70 C 60,62 80,68 93,64 V 81 H 7 Z" fill="#739a47" />
+        <path d="M 7,81 C 15,80 25,81 40,74 C 55,67 75,76 93,70 V 81 H 7 Z" fill="#5a7f2f" />
+        
+        <!-- Clouds -->
+        <path d="M22,25 C19,25 18,22 21,21 C24,20 28,21 28,24 C28,27 25,28 22,25 Z" fill="#254d2f"/>
+        <path d="M70,23 C67,23 66,20 69,19 C72,18 76,19 76,22 C76,25 73,26 70,23 Z" fill="#254d2f"/>
+        
+        <!-- Donkey -->
+        <g transform="translate(18 45) scale(0.9)">
+            <path d="M 10,12 L 12,8 L 11,6 L 13,6 L 15,10 L 18,10 C 20,10 22,12 22,15 L 22,20 L 19,20 L 19,23 L 17,23 L 17,20 L 12,20 L 12,23 L 10,23 L 10,20 L 7,20 L 7,15 C 7,12 8,10 10,10 Z" fill="#254d2f"/>
+        </g>
+        
+        <!-- Sheep -->
+        <g transform="translate(60 47) scale(0.9)">
+            <path d="M 10,12 C 7,12 7,15 10,15 L 10,18 L 13,18 C 16,18 16,15 13,15 C 13,12 16,12 16,15 L 18,12 L 19,15 C 21,15 21,18 18,18 L 10,18 L 10,22 L 8,22 L 8,18 L 5,18 C 2,18 2,15 5,15 L 8,12 Z" fill="#254d2f"/>
+        </g>
+        
+        <!-- Text -->
+        <text x="50" y="93" text-anchor="middle" fill="#254d2f" font-family="Arial, sans-serif" font-size="8" font-weight="bold">SKY RANCH</text>
     </svg>
   `)}`;
 
