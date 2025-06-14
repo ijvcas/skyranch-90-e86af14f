@@ -1,78 +1,62 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Calendar as CalendarIcon } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getAllAnimals } from '@/services/animalService';
-import EventForm from '@/components/calendar/EventForm';
-import EventList from '@/components/calendar/EventList';
-import UpcomingEvents from '@/components/calendar/UpcomingEvents';
-import EventEditDialog from '@/components/calendar/EventEditDialog';
-import EventDetailDialog from '@/components/calendar/EventDetailDialog';
-import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
+import React from 'react';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
+import { useCalendarState } from '@/hooks/useCalendarState';
 import { CalendarEvent } from '@/services/calendarService';
+import CalendarHeader from '@/components/calendar/CalendarHeader';
+import CalendarContent from '@/components/calendar/CalendarContent';
+import CalendarDialogs from '@/components/calendar/CalendarDialogs';
 
 const CalendarPage = () => {
-  const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [selectedEventForEdit, setSelectedEventForEdit] = useState<CalendarEvent | null>(null);
-  const [selectedEventForDetail, setSelectedEventForDetail] = useState<CalendarEvent | null>(null);
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const {
+    selectedDate,
+    setSelectedDate,
+    isDialogOpen,
+    isEditDialogOpen,
+    isDetailDialogOpen,
+    selectedEventForEdit,
+    selectedEventForDetail,
+    selectedUserIds,
+    setSelectedUserIds,
+    openCreateDialog,
+    closeCreateDialog,
+    openEditDialog,
+    closeEditDialog,
+    openDetailDialog,
+    closeDetailDialog
+  } = useCalendarState();
 
   const { events, createEvent, updateEvent, deleteEvent, getNotificationUsers, isSubmitting } = useCalendarEvents();
-
-  const { data: animals = [] } = useQuery({
-    queryKey: ['animals'],
-    queryFn: getAllAnimals
-  });
 
   const handleCreateEvent = async (eventData: any, selectedUserIds: string[]) => {
     console.log('📅 Creating event with selected users:', selectedUserIds);
     await createEvent(eventData, selectedUserIds);
-    setIsDialogOpen(false);
-    setSelectedUserIds([]);
+    closeCreateDialog();
   };
 
   const handleEditEvent = async (event: CalendarEvent) => {
     console.log('📅 Editing event:', event.title);
-    setSelectedEventForEdit(event);
-    // Load the selected users for this event
     const notificationUsers = await getNotificationUsers(event.id);
     console.log('📅 Loaded notification users for event:', notificationUsers);
-    setSelectedUserIds(notificationUsers);
-    setIsEditDialogOpen(true);
+    openEditDialog(event, notificationUsers);
   };
 
   const handleEventClick = (event: CalendarEvent) => {
-    setSelectedEventForDetail(event);
-    setIsDetailDialogOpen(true);
+    openDetailDialog(event);
   };
 
   const handleSaveEditedEvent = async (eventData: Partial<CalendarEvent>, selectedUserIds: string[]) => {
     if (!selectedEventForEdit) return;
     console.log('📅 Saving edited event with selected users:', selectedUserIds);
     await updateEvent(selectedEventForEdit.id, eventData, selectedUserIds);
-    setIsEditDialogOpen(false);
-    setSelectedEventForEdit(null);
-    setSelectedUserIds([]);
+    closeEditDialog();
   };
 
   const handleDeleteEvent = async (eventId: string) => {
     console.log('📅 Deleting event:', eventId);
     await deleteEvent(eventId);
-    setIsEditDialogOpen(false);
-    setSelectedEventForEdit(null);
-    setSelectedUserIds([]);
-    setIsDetailDialogOpen(false);
-    setSelectedEventForDetail(null);
+    closeEditDialog();
+    closeDetailDialog();
   };
 
   return (
@@ -85,125 +69,37 @@ const CalendarPage = () => {
         />
       </div>
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="mb-8">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/dashboard')}
-            className="mb-4"
-          >
-            ← Volver al Panel
-          </Button>
-          
-          {/* Notification Permission Banner */}
-          <NotificationPermissionBanner />
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Calendario de Eventos
-              </h1>
-              <p className="text-gray-600">Gestiona citas, vacunaciones y recordatorios</p>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700 text-white mt-4 md:mt-0">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nuevo Evento
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Crear Nuevo Evento</DialogTitle>
-                </DialogHeader>
-                <EventForm
-                  selectedDate={selectedDate}
-                  selectedUserIds={selectedUserIds}
-                  onUserSelectionChange={setSelectedUserIds}
-                  onSubmit={handleCreateEvent}
-                  isSubmitting={isSubmitting}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
-          <Card className="lg:col-span-2 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CalendarIcon className="w-5 h-5 mr-2" />
-                Calendario
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md border"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Events for Selected Date */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle>
-                Eventos - {selectedDate?.toLocaleDateString('es-ES', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EventList
-                events={events}
-                selectedDate={selectedDate}
-                onEditEvent={handleEditEvent}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Upcoming Events */}
-        <div className="mt-6">
-          <UpcomingEvents
-            events={events}
-            animals={animals}
-            onEventClick={handleEventClick}
-          />
-        </div>
-
-        {/* Event Detail Dialog */}
-        <EventDetailDialog
-          event={selectedEventForDetail}
-          isOpen={isDetailDialogOpen}
-          onClose={() => {
-            setIsDetailDialogOpen(false);
-            setSelectedEventForDetail(null);
-          }}
-          onEdit={handleEditEvent}
-          onDelete={handleDeleteEvent}
-          animals={animals}
-        />
-
-        {/* Event Edit Dialog */}
-        <EventEditDialog
-          event={selectedEventForEdit}
-          isOpen={isEditDialogOpen}
-          onClose={() => {
-            setIsEditDialogOpen(false);
-            setSelectedEventForEdit(null);
-            setSelectedUserIds([]);
-          }}
-          onSave={handleSaveEditedEvent}
-          onDelete={handleDeleteEvent}
+        <CalendarHeader
+          selectedDate={selectedDate}
           selectedUserIds={selectedUserIds}
           onUserSelectionChange={setSelectedUserIds}
+          onSubmit={handleCreateEvent}
+          isSubmitting={isSubmitting}
+          isDialogOpen={isDialogOpen}
+          onOpenDialog={openCreateDialog}
+          onCloseDialog={closeCreateDialog}
+        />
+
+        <CalendarContent
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          events={events}
+          onEditEvent={handleEditEvent}
+          onEventClick={handleEventClick}
+        />
+
+        <CalendarDialogs
+          selectedEventForEdit={selectedEventForEdit}
+          selectedEventForDetail={selectedEventForDetail}
+          isEditDialogOpen={isEditDialogOpen}
+          isDetailDialogOpen={isDetailDialogOpen}
+          selectedUserIds={selectedUserIds}
+          onUserSelectionChange={setSelectedUserIds}
+          onCloseEditDialog={closeEditDialog}
+          onCloseDetailDialog={closeDetailDialog}
+          onSaveEditedEvent={handleSaveEditedEvent}
+          onDeleteEvent={handleDeleteEvent}
+          onEditEvent={handleEditEvent}
         />
       </div>
     </div>
