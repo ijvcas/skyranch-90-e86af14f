@@ -1,5 +1,6 @@
 
-import { emailService } from '../emailService';
+import { emailServiceV2 } from '../../email/v2/EmailServiceV2';
+import { emailLogger } from '../../email/core/EmailLogger';
 
 export class EmailNotificationService {
   async sendEmailNotification(
@@ -8,15 +9,12 @@ export class EmailNotificationService {
     body: string, 
     eventDetails?: { title: string; description?: string; eventDate: string }
   ): Promise<boolean> {
-    console.log('📧 [EMAIL NOTIFICATION SERVICE] Sending to:', to);
-    console.log('📧 [EMAIL NOTIFICATION SERVICE] Subject:', subject);
+    emailLogger.info('EmailNotificationService.sendEmailNotification called - using v2');
 
     try {
-      const result = await emailService.sendEmail(to, subject, body, eventDetails);
-      console.log('✅ [EMAIL NOTIFICATION SERVICE] Success');
-      return result;
+      return await emailServiceV2.sendEmail(to, subject, body, eventDetails);
     } catch (error) {
-      console.error('❌ [EMAIL NOTIFICATION SERVICE] Error:', error);
+      emailLogger.error('EmailNotificationService.sendEmailNotification failed', error);
       throw error;
     }
   }

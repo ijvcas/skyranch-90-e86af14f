@@ -1,7 +1,7 @@
+import { emailServiceV2 } from '../email/v2/EmailServiceV2';
+import { emailLogger } from '../email/core/EmailLogger';
 
-import { sendEmail, EmailData } from './emailClient';
-import { buildEmailTemplate } from './emailTemplates';
-
+// Backward compatibility wrapper for the new email system
 const emailService = {
   sendEmail: async (
     to: string, 
@@ -9,78 +9,33 @@ const emailService = {
     body: string, 
     eventDetails?: { title: string; description?: string; eventDate: string }
   ): Promise<boolean> => {
-    console.log('📧 [EMAIL SERVICE] Starting sendEmail');
-    console.log('📧 [EMAIL SERVICE] To:', to);
-    console.log('📧 [EMAIL SERVICE] Subject:', subject);
-
-    if (!to || !subject) {
-      throw new Error('Missing required parameters: to and subject');
-    }
-
+    emailLogger.info('Legacy emailService.sendEmail called - forwarding to v2');
+    
     try {
-      let emailBody = body;
-      
-      if (eventDetails) {
-        console.log('📧 [EMAIL SERVICE] Building HTML template');
-        const userName = to.split('@')[0];
-        const organizationName = "SkyRanch";
-        
-        const eventForTemplate = {
-          title: eventDetails.title,
-          description: eventDetails.description,
-          event_type: 'reminder',
-          start_date: eventDetails.eventDate,
-          event_date: eventDetails.eventDate,
-          location: '',
-          veterinarian: ''
-        };
-
-        let eventType = 'reminder';
-        if (subject.includes('actualizado')) {
-          eventType = 'updated';
-        } else if (subject.includes('creado') || subject.includes('Nuevo')) {
-          eventType = 'created';
-        } else if (subject.includes('cancelado')) {
-          eventType = 'deleted';
-        }
-
-        emailBody = buildEmailTemplate(eventType, eventForTemplate, userName, organizationName);
-      }
-
-      console.log('📧 [EMAIL SERVICE] Calling sendEmail...');
-      const result = await sendEmail({
-        to: to.trim(),
-        subject: subject.trim(),
-        html: emailBody,
-        senderName: "SkyRanch - Sistema de Gestión Ganadera",
-        organizationName: "SkyRanch"
-      });
-      
-      console.log('📧 [EMAIL SERVICE] Send result:', result);
-      return true;
-      
+      return await emailServiceV2.sendEmail(to, subject, body, eventDetails);
     } catch (error) {
-      console.error('❌ [EMAIL SERVICE] Failed:', error);
+      emailLogger.error('Legacy emailService.sendEmail failed', error);
       throw error;
     }
   },
 
   testEmail: async (to: string): Promise<boolean> => {
-    console.log('🧪 [EMAIL SERVICE] Testing email to:', to);
+    emailLogger.info('Legacy emailService.testEmail called - forwarding to v2');
+    
     try {
-      const result = await emailService.sendEmail(
-        to,
-        'Test Email - SkyRanch',
-        '<h1>Test Email</h1><p>This is a test email to verify the email system is working.</p>'
-      );
-      console.log('🧪 [EMAIL SERVICE] Test result:', result);
-      return result;
+      return await emailServiceV2.testEmail(to);
     } catch (error) {
-      console.error('🧪 [EMAIL SERVICE] Test failed:', error);
+      emailLogger.error('Legacy emailService.testEmail failed', error);
       throw error;
     }
   }
 };
 
-export { emailService, buildEmailTemplate, sendEmail };
-export type { EmailData };
+// Re-export everything for backward compatibility
+export { emailService };
+export { emailServiceV2 as emailServiceNew };
+export type { EmailData } from './emailClient';
+
+// Keep the buildEmailTemplate export for backward compatibility
+export { buildEmailTemplate } from './emailTemplates';
+export { sendEmail } from './emailClient';
