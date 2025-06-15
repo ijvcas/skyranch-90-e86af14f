@@ -13,7 +13,7 @@ const EmailTestButton = () => {
 
   const handleTestEmail = async () => {
     setIsTesting(true);
-    console.log('🧪 [EMAIL TEST V2] Starting regular email test via EmailServiceV2...');
+    console.log('🧪 [EMAIL TEST V2] Starting test email via direct edge function (same as working direct test)...');
     
     try {
       // Get current user email
@@ -23,59 +23,84 @@ const EmailTestButton = () => {
         throw new Error('No authenticated user found');
       }
 
-      console.log('🧪 [EMAIL TEST V2] Testing regular flow with user email:', user.email);
+      console.log('🧪 [EMAIL TEST V2] Using direct edge function call for test email:', user.email);
       
-      // Use the EmailServiceV2 for consistent testing
-      const result = await emailServiceV2.testEmail(user.email);
-      console.log('🧪 [EMAIL TEST V2] Regular test result:', result);
-      
-      if (result) {
+      // Use the SAME direct edge function approach that works in handleDirectEdgeFunctionTest
+      const payload = {
+        to: user.email,
+        subject: "Test Email V2 - SkyRanch",
+        html: "<h1>Test Email V2</h1><p>This is a test of the regular email flow using the direct edge function approach.</p><p>If you receive this, the email system is working correctly.</p>",
+        senderName: "SkyRanch - Sistema de Gestión Ganadera",
+        organizationName: "SkyRanch",
+        metadata: {
+          tags: [
+            { name: "category", value: "test" },
+            { name: "test-type", value: "regular" },
+            { name: "sender", value: "skyranch" },
+            { name: "version", value: "2_0" }
+          ],
+          headers: {}
+        }
+      };
+
+      console.log('🧪 [EMAIL TEST V2] Calling edge function directly with payload:', {
+        to: payload.to,
+        subject: payload.subject,
+        senderName: payload.senderName
+      });
+
+      const { data, error } = await supabase.functions.invoke('send-email-v2', {
+        body: payload
+      });
+
+      console.log('🧪 [EMAIL TEST V2] Direct edge function response:', { data, error });
+
+      if (error) {
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+
+      if (data?.success) {
         toast({
-          title: "Test Email Sent Successfully (V2)",
-          description: `Test email sent to ${user.email} via regular flow. Check your inbox (including spam folder) and Resend dashboard for delivery confirmation.`,
+          title: "Test Email V2 Sent Successfully",
+          description: `Test email sent to ${user.email} via direct edge function. Check your inbox (including spam folder) and Resend dashboard for delivery confirmation.`,
+        });
+      } else if (data?.error) {
+        // Handle specific error types returned by the edge function
+        if (data.error === 'sandbox_mode_restriction') {
+          toast({
+            title: "Sandbox Mode Restriction",
+            description: `Resend account is in sandbox mode. Upgrade your account at https://resend.com/pricing`,
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (data.error === 'domain_verification_required') {
+          toast({
+            title: "Domain Verification Required",
+            description: `Domain verification required. Verify your domain at https://resend.com/domains`,
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        toast({
+          title: "Edge Function Error",
+          description: `${data.error}: ${data.message}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Unexpected Response",
+          description: "Edge function returned unexpected response format",
+          variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('🧪 [EMAIL TEST V2] Regular test failed:', error);
-      
-      let errorMessage = error.message;
-      
-      // Handle sandbox mode restrictions with helpful message
-      if (error.message.includes('sandbox mode') || error.message.includes('only send testing emails to your own email')) {
-        errorMessage = `Resend account is in sandbox mode. Upgrade your account at https://resend.com/pricing`;
-        toast({
-          title: "Sandbox Mode Restriction",
-          description: errorMessage,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Handle domain verification errors
-      if (error.message.includes('domain verification') || error.message.includes('Domain verification')) {
-        errorMessage = `Domain verification required. Verify your domain at https://resend.com/domains`;
-        toast({
-          title: "Domain Verification Required",
-          description: errorMessage,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Handle edge function deployment issues
-      if (error.message.includes('not found') || error.message.includes('edge function not deployed')) {
-        errorMessage = `Email service not available. Edge function may not be deployed.`;
-        toast({
-          title: "Service Not Available",
-          description: errorMessage,
-          variant: "destructive"
-        });
-        return;
-      }
-      
+      console.error('🧪 [EMAIL TEST V2] Test email failed:', error);
       toast({
         title: "Email Test Failed",
-        description: `Failed to send test email: ${errorMessage}`,
+        description: `Failed to send test email: ${error.message}`,
         variant: "destructive"
       });
     } finally {

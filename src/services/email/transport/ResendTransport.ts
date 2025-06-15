@@ -12,7 +12,7 @@ export class ResendTransport implements EmailTransport {
     });
 
     try {
-      // Ensure user is authenticated
+      // Ensure user is authenticated - with better error handling
       emailLogger.debug('🔐 [TRANSPORT V2] Checking user authentication...');
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -22,16 +22,21 @@ export class ResendTransport implements EmailTransport {
         authError: authError?.message 
       });
       
-      if (authError || !user) {
-        emailLogger.error('❌ [TRANSPORT V2] Authentication failed', authError);
-        throw new Error('Authentication required to send emails');
+      if (authError) {
+        emailLogger.error('❌ [TRANSPORT V2] Authentication error details', authError);
+        throw new Error(`Authentication failed: ${authError.message}`);
+      }
+      
+      if (!user) {
+        emailLogger.error('❌ [TRANSPORT V2] No authenticated user found');
+        throw new Error('No authenticated user found - please log in');
       }
 
       // Prepare recipients
       const recipients = Array.isArray(request.to) ? request.to : [request.to];
       const toEmail = recipients[0].email; // For now, send to first recipient
 
-      // Prepare payload for the edge function - matching the working direct test format
+      // Prepare payload for the edge function - using the EXACT same format as working direct test
       const payload = {
         to: toEmail,
         subject: request.content.subject,
@@ -48,7 +53,7 @@ export class ResendTransport implements EmailTransport {
         }
       };
 
-      emailLogger.debug('📤 [TRANSPORT V2] Calling send-email-v2 edge function with payload', {
+      emailLogger.debug('📤 [TRANSPORT V2] Calling send-email-v2 edge function with exact working payload format', {
         to: payload.to,
         subject: payload.subject,
         senderName: payload.senderName,
@@ -56,10 +61,11 @@ export class ResendTransport implements EmailTransport {
         hasHtml: !!payload.html,
         htmlLength: payload.html?.length,
         tagsCount: payload.metadata.tags.length,
-        headersCount: Object.keys(payload.metadata.headers).length
+        authToken: user ? 'present' : 'missing'
       });
 
-      // Call the edge function with explicit error handling
+      // Call the edge function using the same approach as the working direct test
+      emailLogger.debug('📤 [TRANSPORT V2] About to invoke edge function...');
       const { data, error } = await supabase.functions.invoke('send-email-v2', {
         body: payload
       });
@@ -67,27 +73,22 @@ export class ResendTransport implements EmailTransport {
       emailLogger.debug('📥 [TRANSPORT V2] Edge function V2 response received', { 
         hasData: !!data, 
         hasError: !!error,
-        data: data ? {
-          success: data.success,
-          error: data.error,
-          messageId: data.messageId,
-          hasDetails: !!data.details
-        } : null,
-        error: error ? {
-          message: error.message,
-          name: error.name
-        } : null
+        dataSuccess: data?.success,
+        dataError: data?.error,
+        dataMessage: data?.message,
+        errorMessage: error?.message
       });
 
-      // Handle Supabase function invocation errors
+      // Handle Supabase function invocation errors first
       if (error) {
         emailLogger.error('❌ [TRANSPORT V2] Edge function invocation error', {
           errorMessage: error.message,
           errorName: error.name,
-          errorCode: error.code
+          errorCode: error.code,
+          errorDetails: error
         });
         
-        // Check for specific invocation errors
+        // Enhanced error handling for common invocation issues
         if (error.message?.includes('not found') || error.message?.includes('404')) {
           return {
             success: false,
@@ -99,15 +100,23 @@ export class ResendTransport implements EmailTransport {
         if (error.message?.includes('unauthorized') || error.message?.includes('401')) {
           return {
             success: false,
-            error: 'Not authorized to send emails',
-            details: { originalError: error, suggestion: 'Check user permissions' }
+            error: 'Not authorized to send emails - authentication required',
+            details: { originalError: error, suggestion: 'Please log in again' }
+          };
+        }
+
+        if (error.message?.includes('timeout')) {
+          return {
+            success: false,
+            error: 'Email service timeout - please try again',
+            details: { originalError: error, suggestion: 'Retry the operation' }
           };
         }
         
         const emailError = EmailErrorHandler.handleResendError(error);
         return {
           success: false,
-          error: emailError.message,
+          error: `Edge function invocation failed: ${emailError.message}`,
           details: emailError
         };
       }
@@ -121,7 +130,7 @@ export class ResendTransport implements EmailTransport {
         };
       }
 
-      // Check for specific error types returned by the edge function
+      // Handle specific error types returned by the edge function (same as working direct test)
       if (data.error) {
         emailLogger.error('❌ [TRANSPORT V2] Email service V2 error', {
           errorType: data.error,
@@ -129,86 +138,44 @@ export class ResendTransport implements EmailTransport {
           details: data.details
         });
         
-        // Handle sandbox mode restrictions
-        if (data.error === 'sandbox_mode_restriction') {
-          const sandboxError = EmailErrorHandler.createError(
-            'SANDBOX_MODE_RESTRICTION',
-            'Resend account is in sandbox mode. You can only send emails to your account email address.',
-            data.details,
-            false
-          );
-          
-          return {
+        // Handle all the same error types as the working direct test
+        const errorHandlers = {
+          'sandbox_mode_restriction': () => ({
             success: false,
-            error: sandboxError.message,
-            details: sandboxError
-          };
-        }
+            error: 'Resend account is in sandbox mode. You can only send emails to your account email address.',
+            details: { errorType: 'SANDBOX_MODE_RESTRICTION', ...data.details }
+          }),
+          'domain_verification_required': () => ({
+            success: false,
+            error: 'Email domain requires verification in your Resend account.',
+            details: { errorType: 'DOMAIN_VERIFICATION_REQUIRED', ...data.details }
+          }),
+          'rate_limited': () => ({
+            success: false,
+            error: 'Rate limit exceeded, please try again later',
+            details: { errorType: 'RATE_LIMITED', retryable: true, ...data.details }
+          }),
+          'invalid_api_key': () => ({
+            success: false,
+            error: 'Invalid or missing Resend API key',
+            details: { errorType: 'INVALID_API_KEY', ...data.details }
+          })
+        };
 
-        // Handle domain verification errors
-        if (data.error === 'domain_verification_required') {
-          const domainError = EmailErrorHandler.createError(
-            'DOMAIN_VERIFICATION_REQUIRED',
-            'Email domain requires verification in your Resend account.',
-            data.details,
-            false
-          );
-          
-          return {
-            success: false,
-            error: domainError.message,
-            details: domainError
-          };
-        }
-
-        // Handle rate limiting
-        if (data.error === 'rate_limited') {
-          const rateError = EmailErrorHandler.createError(
-            'RATE_LIMITED',
-            'Rate limit exceeded, please try again later',
-            data.details,
-            true
-          );
-          
-          return {
-            success: false,
-            error: rateError.message,
-            details: rateError
-          };
-        }
-
-        // Handle API key issues
-        if (data.error === 'invalid_api_key') {
-          const apiError = EmailErrorHandler.createError(
-            'INVALID_API_KEY',
-            'Invalid or missing Resend API key',
-            data.details,
-            false
-          );
-          
-          return {
-            success: false,
-            error: apiError.message,
-            details: apiError
-          };
+        const handler = errorHandlers[data.error];
+        if (handler) {
+          return handler();
         }
 
         // Generic error from edge function
-        const emailError = EmailErrorHandler.createError(
-          'EMAIL_SERVICE_ERROR',
-          data.message || 'Email service error',
-          data.details,
-          true
-        );
-        
         return {
           success: false,
-          error: emailError.message,
-          details: emailError
+          error: data.message || `Email service error: ${data.error}`,
+          details: { errorType: 'EMAIL_SERVICE_ERROR', originalError: data.error, ...data.details }
         };
       }
 
-      // Success case
+      // Success case - same as working direct test
       if (data.success) {
         emailLogger.info('✅ [TRANSPORT V2] Email sent successfully via V2', { 
           messageId: data.messageId,
@@ -225,7 +192,8 @@ export class ResendTransport implements EmailTransport {
       // Unexpected response format
       emailLogger.error('❌ [TRANSPORT V2] Unexpected response format from email service V2', {
         dataKeys: Object.keys(data || {}),
-        dataType: typeof data
+        dataType: typeof data,
+        fullData: data
       });
       return {
         success: false,
@@ -234,16 +202,18 @@ export class ResendTransport implements EmailTransport {
       };
       
     } catch (error) {
-      emailLogger.error('❌ [TRANSPORT V2] Transport V2 error', {
+      emailLogger.error('❌ [TRANSPORT V2] Transport V2 unexpected error', {
         errorMessage: error.message,
         errorName: error.name,
-        errorStack: error.stack?.substring(0, 500)
+        errorStack: error.stack?.substring(0, 500),
+        fullError: error
       });
+      
       const emailError = EmailErrorHandler.categorizeError(error);
       
       return {
         success: false,
-        error: emailError.message,
+        error: `Transport error: ${emailError.message}`,
         details: emailError
       };
     }
