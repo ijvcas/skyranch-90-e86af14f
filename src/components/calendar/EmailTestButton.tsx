@@ -35,11 +35,10 @@ const EmailTestButton = () => {
       console.error('🧪 [EMAIL TEST V2] Test failed:', error);
       
       let errorMessage = error.message;
-      let toastVariant = "destructive";
       
       // Handle domain verification errors with helpful message
       if (error.message.includes('domain verification') || error.message.includes('Domain verification')) {
-        errorMessage = `Domain verification required. Only verified email addresses can receive emails. Your email: ${user?.email}`;
+        errorMessage = `Domain verification required. Only verified email addresses can receive emails.`;
         toast({
           title: "Domain Verification Required",
           description: "To send emails to your address, verify your domain at https://resend.com/domains",
@@ -51,7 +50,7 @@ const EmailTestButton = () => {
       toast({
         title: "Email Test Failed",
         description: `Failed to send test email: ${errorMessage}`,
-        variant: toastVariant
+        variant: "destructive"
       });
     } finally {
       setIsTesting(false);

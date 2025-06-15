@@ -60,6 +60,36 @@ const handler = async (req: Request): Promise<Response> => {
     const fromEmail = "onboarding@resend.dev";
     const fromName = senderName || "SkyRanch - Sistema de Gestión Ganadera";
 
+    // Clean tags to only contain ASCII letters, numbers, underscores, or dashes
+    const cleanTags = [
+      {
+        name: 'category',
+        value: 'notification_v2'
+      },
+      {
+        name: 'sender',
+        value: 'skyranch_v2'
+      },
+      {
+        name: 'version',
+        value: '2_0'
+      }
+    ];
+
+    // Add custom tags if provided, cleaning them first
+    if (metadata?.tags) {
+      metadata.tags.forEach(tag => {
+        if (tag.name && tag.value) {
+          const cleanName = tag.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const cleanValue = tag.value.replace(/[^a-zA-Z0-9_-]/g, '_');
+          cleanTags.push({
+            name: cleanName,
+            value: cleanValue
+          });
+        }
+      });
+    }
+
     // Prepare email payload
     const emailPayload = {
       from: `${fromName} <${fromEmail}>`,
@@ -72,21 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
         'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera v2',
         ...(metadata?.headers || {})
       },
-      tags: [
-        {
-          name: 'category',
-          value: 'notification-v2'
-        },
-        {
-          name: 'sender',
-          value: 'skyranch-v2'
-        },
-        {
-          name: 'version',
-          value: '2.0'
-        },
-        ...(metadata?.tags || [])
-      ]
+      tags: cleanTags
     };
 
     console.log('📧 [EMAIL V2] Sending email with payload:', {
