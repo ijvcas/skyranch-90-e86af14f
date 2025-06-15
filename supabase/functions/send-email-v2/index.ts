@@ -60,35 +60,43 @@ const handler = async (req: Request): Promise<Response> => {
     const fromEmail = "onboarding@resend.dev";
     const fromName = senderName || "SkyRanch - Sistema de Gestión Ganadera";
 
-    // Clean tags to only contain ASCII letters, numbers, underscores, or dashes
-    const cleanTags = [
-      {
-        name: 'category',
-        value: 'notification_v2'
-      },
-      {
-        name: 'sender',
-        value: 'skyranch_v2'
-      },
-      {
-        name: 'version',
-        value: '2_0'
-      }
-    ];
+    // Helper function to clean tag values
+    const cleanTagValue = (value: string): string => {
+      return value.replace(/[^a-zA-Z0-9_-]/g, '_');
+    };
 
-    // Add custom tags if provided, cleaning them first
+    // Create a Map to prevent duplicate tag names (incoming tags take priority)
+    const tagMap = new Map<string, string>();
+    
+    // Add custom tags first (they have priority)
     if (metadata?.tags) {
       metadata.tags.forEach(tag => {
         if (tag.name && tag.value) {
-          const cleanName = tag.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-          const cleanValue = tag.value.replace(/[^a-zA-Z0-9_-]/g, '_');
-          cleanTags.push({
-            name: cleanName,
-            value: cleanValue
-          });
+          const cleanName = cleanTagValue(tag.name);
+          const cleanValue = cleanTagValue(tag.value);
+          tagMap.set(cleanName, cleanValue);
         }
       });
     }
+
+    // Add default tags only if they don't already exist
+    if (!tagMap.has('category')) {
+      tagMap.set('category', 'notification_v2');
+    }
+    if (!tagMap.has('sender')) {
+      tagMap.set('sender', 'skyranch_v2');
+    }
+    if (!tagMap.has('version')) {
+      tagMap.set('version', '2_0');
+    }
+
+    // Convert Map back to array format
+    const finalTags = Array.from(tagMap.entries()).map(([name, value]) => ({
+      name,
+      value
+    }));
+
+    console.log('📧 [EMAIL V2] Final tags after deduplication:', finalTags);
 
     // Prepare email payload
     const emailPayload = {
@@ -102,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
         'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera v2',
         ...(metadata?.headers || {})
       },
-      tags: cleanTags
+      tags: finalTags
     };
 
     console.log('📧 [EMAIL V2] Sending email with payload:', {
