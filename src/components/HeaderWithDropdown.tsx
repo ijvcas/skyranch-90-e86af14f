@@ -51,26 +51,26 @@ const HeaderWithDropdown = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-green-100 border-b border-green-200 z-50 h-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full">
         <div className="flex justify-between items-center h-full">
           {/* Logo with Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-3 hover:bg-green-50 p-2">
+              <Button variant="ghost" className="flex items-center space-x-3 hover:bg-green-50 h-12 px-3">
                 <img 
                   src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
                   alt="SkyRanch" 
                   className="h-10 w-10 flex-shrink-0"
                 />
                 <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-900 whitespace-nowrap uppercase">SKYRANCH</span>
+                  <span className="text-2xl font-bold text-gray-900 whitespace-nowrap uppercase leading-none">SKYRANCH</span>
                   <ChevronDown className="w-4 h-4 ml-2 text-gray-600" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="start" 
-              className="w-64 bg-white border border-gray-200 shadow-lg"
+              className="w-64 bg-white border border-gray-200 shadow-lg z-50"
               sideOffset={8}
             >
               {navItems.map((item) => (
@@ -99,9 +99,13 @@ const HeaderWithDropdown = () => {
           </DropdownMenu>
 
           {/* Right side - PWA install button and notification bell */}
-          <div className="flex items-center space-x-2">
-            <PWAInstallButton />
-            <NotificationBell />
+          <div className="flex items-center space-x-3 h-full">
+            <div className="flex items-center h-full">
+              <PWAInstallButton />
+            </div>
+            <div className="flex items-center h-full">
+              <NotificationBell />
+            </div>
           </div>
         </div>
       </div>

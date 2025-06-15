@@ -30,21 +30,23 @@ const MobileNavigation = () => {
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-14">
         <div className="flex justify-between items-center h-full px-6">
           {/* Logo */}
-          <div className="flex items-center flex-shrink-0 min-w-0 mr-4">
+          <div className="flex items-center flex-shrink-0 min-w-0 mr-4 h-full">
             <img 
               src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
               alt="SkyRanch" 
               className="h-8 w-8 flex-shrink-0"
             />
-            <span className="ml-4 text-lg font-bold text-gray-900 whitespace-nowrap">SkyRanch</span>
+            <span className="ml-4 text-lg font-bold text-gray-900 whitespace-nowrap leading-none">SkyRanch</span>
           </div>
 
           {/* Right side buttons */}
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <NotificationBell />
+          <div className="flex items-center space-x-2 flex-shrink-0 h-full">
+            <div className="flex items-center h-full">
+              <NotificationBell />
+            </div>
             <NavLink
               to="/animals/new"
-              className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium"
+              className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium h-8"
             >
               <PlusCircle className="w-4 h-4" />
             </NavLink>
@@ -61,7 +63,7 @@ const MobileNavigation = () => {
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center justify-center px-1 text-xs font-medium transition-colors',
+                  'flex flex-col items-center justify-center px-1 text-xs font-medium transition-colors h-full',
                   isActive
                     ? 'text-green-600 bg-green-50'
                     : 'text-gray-600'
@@ -69,7 +71,7 @@ const MobileNavigation = () => {
               }
             >
               <item.icon className="w-5 h-5 mb-1" />
-              <span className="truncate">{item.label}</span>
+              <span className="truncate leading-tight">{item.label}</span>
             </NavLink>
           ))}
         </div>
@@ -78,7 +80,7 @@ const MobileNavigation = () => {
       {/* Floating Action Button for Notifications on Mobile */}
       <NavLink
         to="/notifications"
-        className="md:hidden fixed bottom-20 right-4 bg-blue-600 text-white rounded-full p-3 shadow-lg z-40"
+        className="md:hidden fixed bottom-20 right-4 bg-blue-600 text-white rounded-full p-3 shadow-lg z-40 flex items-center justify-center"
       >
         <Bell className="w-6 h-6" />
       </NavLink>

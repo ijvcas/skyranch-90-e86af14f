@@ -29,27 +29,27 @@ const Navigation = () => {
 
   return (
     <nav className="hidden md:flex fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full">
         <div className="flex justify-between items-center h-full">
           {/* Logo */}
-          <div className="flex items-center flex-shrink-0 min-w-0 mr-8">
+          <div className="flex items-center flex-shrink-0 min-w-0 mr-8 h-full">
             <img 
               src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
               alt="SkyRanch" 
               className="h-12 w-12 flex-shrink-0"
             />
-            <span className="ml-4 text-xl font-bold text-gray-900 whitespace-nowrap">SkyRanch</span>
+            <span className="ml-4 text-xl font-bold text-gray-900 whitespace-nowrap leading-none">SkyRanch</span>
           </div>
 
           {/* Navigation Links */}
-          <div className="flex items-center space-x-1 flex-shrink-0">
+          <div className="flex items-center space-x-1 flex-shrink-0 h-full">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
+                    'flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap h-10',
                     isActive
                       ? 'bg-green-100 text-green-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -64,14 +64,14 @@ const Navigation = () => {
             {/* Add Animal Button */}
             <NavLink
               to="/animals/new"
-              className="flex items-center px-4 py-2 ml-4 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap"
+              className="flex items-center px-4 py-2 ml-4 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap h-10"
             >
               <PlusCircle className="w-4 h-4 mr-2 flex-shrink-0" />
               Agregar Animal
             </NavLink>
 
             {/* Notification Bell */}
-            <div className="ml-4 flex-shrink-0">
+            <div className="ml-4 flex-shrink-0 flex items-center h-full">
               <NotificationBell />
             </div>
           </div>
