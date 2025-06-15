@@ -69,7 +69,8 @@ export const useCalendarNotifications = (users: any[]) => {
     let notificationsSent = 0;
     let notificationsFailed = 0;
     let emailFailures: string[] = [];
-    let domainVerificationErrors: string[] = [];
+    let edgeFunctionErrors: string[] = [];
+    let authenticationErrors: string[] = [];
 
     for (const user of selectedUsers) {
       try {
@@ -113,10 +114,17 @@ export const useCalendarNotifications = (users: any[]) => {
         
         notificationsFailed++;
         
-        // Handle domain verification errors specifically
-        if (error.message.includes('Domain verification required')) {
-          domainVerificationErrors.push(user.email);
+        // Categorize different types of errors
+        if (error.message.includes('Authentication required') || error.message.includes('not authorized')) {
+          authenticationErrors.push(user.email);
+          emailFailures.push(`${user.email}: Authentication error`);
+        } else if (error.message.includes('not found') || error.message.includes('edge function not deployed')) {
+          edgeFunctionErrors.push(user.email);
+          emailFailures.push(`${user.email}: Email service not available`);
+        } else if (error.message.includes('Domain verification required')) {
           emailFailures.push(`${user.email}: Domain verification required`);
+        } else if (error.message.includes('sandbox mode')) {
+          emailFailures.push(`${user.email}: Sandbox mode restriction`);
         } else {
           emailFailures.push(`${user.email}: ${error.message}`);
         }
@@ -127,17 +135,22 @@ export const useCalendarNotifications = (users: any[]) => {
     console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Total users processed: ${selectedUsers.length}`);
     console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Notifications sent: ${notificationsSent}`);
     console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Notifications failed: ${notificationsFailed}`);
+    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Authentication errors: ${authenticationErrors.length}`);
+    console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Edge function errors: ${edgeFunctionErrors.length}`);
     if (emailFailures.length > 0) {
       console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Email failures:`, emailFailures);
     }
 
-    // Show summary toast with specific domain verification guidance
+    // Show summary toast with specific error categorization
     if (notificationsSent > 0) {
       let description = `Se enviaron ${notificationsSent} notificación(es) correctamente`;
       if (notificationsFailed > 0) {
         description += `. ${notificationsFailed} fallaron`;
-        if (domainVerificationErrors.length > 0) {
-          description += ` (${domainVerificationErrors.length} requieren verificación de dominio)`;
+        if (edgeFunctionErrors.length > 0) {
+          description += ` (${edgeFunctionErrors.length} por servicio no disponible)`;
+        }
+        if (authenticationErrors.length > 0) {
+          description += ` (${authenticationErrors.length} por problemas de autenticación)`;
         }
         description += '.';
       }
@@ -150,8 +163,11 @@ export const useCalendarNotifications = (users: any[]) => {
 
     if (notificationsFailed > 0 && notificationsSent === 0) {
       let description = `No se pudieron enviar las notificaciones (${notificationsFailed} fallos)`;
-      if (domainVerificationErrors.length > 0) {
-        description = `Las notificaciones por email requieren verificación de dominio. Solo las direcciones verificadas pueden recibir emails.`;
+      
+      if (edgeFunctionErrors.length > 0) {
+        description = `El servicio de email no está disponible. Contacta al administrador.`;
+      } else if (authenticationErrors.length > 0) {
+        description = `Problemas de autenticación al enviar emails. Inicia sesión nuevamente.`;
       }
       
       toast({
@@ -161,11 +177,11 @@ export const useCalendarNotifications = (users: any[]) => {
       });
     }
 
-    // Show domain verification specific warning
-    if (domainVerificationErrors.length > 0) {
+    // Show specific warnings for edge function issues
+    if (edgeFunctionErrors.length > 0) {
       toast({
-        title: "Verificación de dominio requerida",
-        description: `Los emails a ${domainVerificationErrors.join(', ')} requieren verificación de dominio en Resend. Solo direcciones verificadas pueden recibir emails.`,
+        title: "Servicio de email no disponible",
+        description: `El sistema de emails puede no estar funcionando correctamente. Los emails a ${edgeFunctionErrors.length} usuario(s) no se enviaron.`,
         variant: "destructive"
       });
     }

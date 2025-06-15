@@ -22,12 +22,35 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     console.log('📧 [EMAIL V2] Function called');
+    console.log('📧 [EMAIL V2] Method:', req.method);
+    console.log('📧 [EMAIL V2] Headers:', Object.fromEntries(req.headers.entries()));
     
-    const requestData: EmailRequestV2 = await req.json();
+    // Check if RESEND_API_KEY is available
+    const apiKey = Deno.env.get("RESEND_API_KEY");
+    if (!apiKey) {
+      console.error('❌ [EMAIL V2] RESEND_API_KEY not found in environment');
+      const errorResponse = EmailErrorHandler.createInvalidApiKeyError({ message: 'RESEND_API_KEY not configured' });
+      return new Response(JSON.stringify(errorResponse), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    
+    let requestData: EmailRequestV2;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      console.error('❌ [EMAIL V2] Failed to parse request JSON:', parseError);
+      const errorResponse = EmailErrorHandler.createValidationError('Invalid JSON in request body', parseError);
+      return new Response(JSON.stringify(errorResponse), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
     
     console.log(`📧 [EMAIL V2] Processing email request:`, {
       to: requestData.to,
-      subject: requestData.subject.substring(0, 50) + '...',
+      subject: requestData.subject?.substring(0, 50) + '...',
       senderName: requestData.senderName,
       organizationName: requestData.organizationName,
       hasMetadata: !!requestData.metadata
@@ -162,6 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("❌ [EMAIL V2] Error in send-email-v2 function:", error);
+    console.error("❌ [EMAIL V2] Error stack:", error.stack);
     
     // Check if it's a network/connection error
     const isNetworkError = error.name === 'TypeError' && error.message?.includes('fetch');

@@ -8,11 +8,12 @@ import { supabase } from '@/integrations/supabase/client';
 const EmailTestButton = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [isHealthChecking, setIsHealthChecking] = useState(false);
+  const [isDirectTesting, setIsDirectTesting] = useState(false);
   const { toast } = useToast();
 
   const handleTestEmail = async () => {
     setIsTesting(true);
-    console.log('🧪 [EMAIL TEST V2] Starting email test with improved diagnostics...');
+    console.log('🧪 [EMAIL TEST V2] Starting email test with comprehensive diagnostics...');
     
     try {
       // Get current user email
@@ -35,7 +36,6 @@ const EmailTestButton = () => {
       console.error('🧪 [EMAIL TEST V2] Test failed:', error);
       
       let errorMessage = error.message;
-      let toastVariant = "destructive";
       
       // Handle sandbox mode restrictions with helpful message
       if (error.message.includes('sandbox mode') || error.message.includes('only send testing emails to your own email')) {
@@ -58,6 +58,17 @@ const EmailTestButton = () => {
         });
         return;
       }
+
+      // Handle edge function deployment issues
+      if (error.message.includes('not found') || error.message.includes('edge function not deployed')) {
+        errorMessage = `Email service not available. Edge function may not be deployed.`;
+        toast({
+          title: "Service Not Available",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return;
+      }
       
       toast({
         title: "Email Test Failed",
@@ -66,6 +77,71 @@ const EmailTestButton = () => {
       });
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const handleDirectEdgeFunctionTest = async () => {
+    setIsDirectTesting(true);
+    console.log('🔧 [DIRECT TEST] Testing edge function directly...');
+    
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user?.email) {
+        throw new Error('No authenticated user found');
+      }
+
+      console.log('🔧 [DIRECT TEST] Calling edge function directly with user email:', user.email);
+      
+      const payload = {
+        to: user.email,
+        subject: "Direct Edge Function Test",
+        html: "<h1>Direct Test</h1><p>This is a direct test of the send-email-v2 edge function.</p>",
+        senderName: "SkyRanch Test",
+        organizationName: "SkyRanch",
+        metadata: {
+          tags: [{ name: "test-type", value: "direct" }],
+          headers: {}
+        }
+      };
+
+      const { data, error } = await supabase.functions.invoke('send-email-v2', {
+        body: payload
+      });
+
+      console.log('🔧 [DIRECT TEST] Raw edge function response:', { data, error });
+
+      if (error) {
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Direct Test Successful",
+          description: `Edge function working correctly. Message ID: ${data.messageId}`,
+        });
+      } else if (data?.error) {
+        toast({
+          title: "Edge Function Error",
+          description: `${data.error}: ${data.message}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Unexpected Response",
+          description: "Edge function returned unexpected response format",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('🔧 [DIRECT TEST] Direct test failed:', error);
+      toast({
+        title: "Direct Test Failed",
+        description: `Edge function test failed: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsDirectTesting(false);
     }
   };
 
@@ -95,7 +171,7 @@ const EmailTestButton = () => {
   };
 
   return (
-    <div className="flex space-x-2">
+    <div className="flex flex-wrap gap-2">
       <Button 
         onClick={handleTestEmail} 
         disabled={isTesting}
@@ -103,6 +179,15 @@ const EmailTestButton = () => {
         size="sm"
       >
         {isTesting ? 'Testing V2...' : 'Test Email V2'}
+      </Button>
+      
+      <Button 
+        onClick={handleDirectEdgeFunctionTest} 
+        disabled={isDirectTesting}
+        variant="outline"
+        size="sm"
+      >
+        {isDirectTesting ? 'Testing Direct...' : 'Direct Edge Test'}
       </Button>
       
       <Button 

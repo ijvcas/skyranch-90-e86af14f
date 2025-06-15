@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export class ResendTransport implements EmailTransport {
   async send(request: EmailRequest): Promise<EmailResult> {
-    emailLogger.info('Sending email via Resend transport V2', {
+    emailLogger.info('🚀 [TRANSPORT] Starting email send via Resend transport V2', {
       to: Array.isArray(request.to) ? request.to.map(t => t.email) : request.to.email,
       subject: request.content.subject
     });
@@ -14,7 +14,14 @@ export class ResendTransport implements EmailTransport {
     try {
       // Ensure user is authenticated
       const { data: { user }, error: authError } = await supabase.auth.getUser();
+      emailLogger.debug('🔐 [TRANSPORT] Authentication check', { 
+        hasUser: !!user, 
+        userEmail: user?.email,
+        authError: authError?.message 
+      });
+      
       if (authError || !user) {
+        emailLogger.error('❌ [TRANSPORT] Authentication failed', authError);
         throw new Error('Authentication required to send emails');
       }
 
@@ -35,17 +42,41 @@ export class ResendTransport implements EmailTransport {
         }
       };
 
-      emailLogger.debug('Calling send-email-v2 edge function', payload);
+      emailLogger.debug('📤 [TRANSPORT] Calling send-email-v2 edge function', payload);
 
-      // Call the new edge function
+      // Call the new edge function with explicit error handling
       const { data, error } = await supabase.functions.invoke('send-email-v2', {
         body: payload
       });
 
-      emailLogger.debug('Edge function V2 response', { data, error });
+      emailLogger.debug('📥 [TRANSPORT] Edge function V2 response', { 
+        hasData: !!data, 
+        hasError: !!error,
+        data,
+        error 
+      });
 
+      // Handle Supabase function invocation errors
       if (error) {
-        emailLogger.error('Edge function V2 error', error);
+        emailLogger.error('❌ [TRANSPORT] Edge function invocation error', error);
+        
+        // Check for specific invocation errors
+        if (error.message?.includes('not found') || error.message?.includes('404')) {
+          return {
+            success: false,
+            error: 'Email service not available - edge function not deployed',
+            details: { originalError: error, suggestion: 'Contact administrator to deploy edge function' }
+          };
+        }
+        
+        if (error.message?.includes('unauthorized') || error.message?.includes('401')) {
+          return {
+            success: false,
+            error: 'Not authorized to send emails',
+            details: { originalError: error, suggestion: 'Check user permissions' }
+          };
+        }
+        
         const emailError = EmailErrorHandler.handleResendError(error);
         return {
           success: false,
@@ -55,12 +86,17 @@ export class ResendTransport implements EmailTransport {
       }
 
       if (!data) {
-        throw new Error('No response data from email service V2');
+        emailLogger.error('❌ [TRANSPORT] No response data from email service V2');
+        return {
+          success: false,
+          error: 'No response from email service',
+          details: { suggestion: 'Check edge function logs for more details' }
+        };
       }
 
       // Check for specific error types returned by the edge function
       if (data.error) {
-        emailLogger.error('Email service V2 error', data);
+        emailLogger.error('❌ [TRANSPORT] Email service V2 error', data);
         
         // Handle sandbox mode restrictions
         if (data.error === 'sandbox_mode_restriction') {
@@ -143,7 +179,7 @@ export class ResendTransport implements EmailTransport {
 
       // Success case
       if (data.success) {
-        emailLogger.info('Email sent successfully via V2', { 
+        emailLogger.info('✅ [TRANSPORT] Email sent successfully via V2', { 
           messageId: data.messageId,
           deliveryInfo: data.deliveryInfo 
         });
@@ -156,10 +192,15 @@ export class ResendTransport implements EmailTransport {
       }
 
       // Unexpected response format
-      throw new Error('Unexpected response format from email service V2');
+      emailLogger.error('❌ [TRANSPORT] Unexpected response format from email service V2', data);
+      return {
+        success: false,
+        error: 'Unexpected response format from email service',
+        details: { response: data, suggestion: 'Check edge function implementation' }
+      };
       
     } catch (error) {
-      emailLogger.error('Transport V2 error', error);
+      emailLogger.error('❌ [TRANSPORT] Transport V2 error', error);
       const emailError = EmailErrorHandler.categorizeError(error);
       
       return {
