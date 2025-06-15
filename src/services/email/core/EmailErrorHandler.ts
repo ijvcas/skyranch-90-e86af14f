@@ -16,16 +16,28 @@ export class EmailErrorHandler {
   static handleResendError(error: any): EmailError {
     emailLogger.error('Resend API error detected', error);
 
-    // Common Resend error patterns
-    if (error.message?.includes('Domain verification required')) {
+    // Handle new V2 domain verification errors
+    if (error.message?.includes('Domain verification required') || 
+        error.message?.includes('verify a domain')) {
       return this.createError(
         'DOMAIN_VERIFICATION_REQUIRED',
-        'Email domain requires verification in Resend dashboard',
+        'Email domain requires verification. Only verified email addresses can receive emails in production.',
         error,
         false
       );
     }
 
+    // Handle V2 specific errors
+    if (error.message?.includes('only send testing emails to your own email')) {
+      return this.createError(
+        'UNVERIFIED_RECIPIENT',
+        'Can only send emails to verified email addresses. Please verify your domain at resend.com/domains',
+        error,
+        false
+      );
+    }
+
+    // Common Resend error patterns
     if (error.message?.includes('API key')) {
       return this.createError(
         'INVALID_API_KEY',
@@ -102,6 +114,12 @@ export class EmailErrorHandler {
         error,
         false
       );
+    }
+
+    // Domain verification errors (V2)
+    if (error.message?.includes('domain verification') || 
+        error.message?.includes('verify a domain')) {
+      return this.handleResendError(error);
     }
 
     // Network/connection errors
