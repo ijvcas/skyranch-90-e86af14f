@@ -11,10 +11,12 @@ export class EmailServiceV2 {
     body: string, 
     eventDetails?: EventDetails
   ): Promise<boolean> {
-    emailLogger.info('EmailServiceV2.sendEmail called', { to, subject });
+    emailLogger.info('🔄 [EMAIL SERVICE V2] EmailServiceV2.sendEmail called', { to, subject, hasEventDetails: !!eventDetails });
 
     if (!to || !subject) {
-      throw new Error('Missing required parameters: to and subject');
+      const error = 'Missing required parameters: to and subject';
+      emailLogger.error('❌ [EMAIL SERVICE V2] Validation failed', { to: !!to, subject: !!subject });
+      throw new Error(error);
     }
 
     try {
@@ -22,7 +24,7 @@ export class EmailServiceV2 {
 
       if (eventDetails) {
         // This is a calendar event email
-        emailLogger.debug('Sending calendar event email');
+        emailLogger.debug('📅 [EMAIL SERVICE V2] Sending calendar event email', { eventDetails });
         
         const userName = to.split('@')[0];
         
@@ -36,16 +38,31 @@ export class EmailServiceV2 {
           eventType = 'deleted';
         }
 
+        emailLogger.debug('📅 [EMAIL SERVICE V2] Calling notificationEmailService.sendEventNotification', {
+          to,
+          eventType,
+          userName,
+          eventDetails
+        });
+
         result = await notificationEmailService.sendEventNotification(
           to,
           eventType,
           eventDetails,
           userName
         );
+
+        emailLogger.debug('📅 [EMAIL SERVICE V2] notificationEmailService.sendEventNotification result', result);
       } else {
         // This is a custom email with HTML body
-        emailLogger.debug('Sending custom email');
+        emailLogger.debug('🔧 [EMAIL SERVICE V2] Sending custom email', { bodyLength: body?.length });
         
+        emailLogger.debug('🔧 [EMAIL SERVICE V2] Calling emailEngine.sendCustomEmail', {
+          to,
+          subject,
+          bodyLength: body?.length
+        });
+
         result = await emailEngine.sendCustomEmail({
           to: { email: to },
           content: {
@@ -57,43 +74,64 @@ export class EmailServiceV2 {
             organizationName: "SkyRanch"
           }
         });
+
+        emailLogger.debug('🔧 [EMAIL SERVICE V2] emailEngine.sendCustomEmail result', result);
       }
 
       if (result.success) {
-        emailLogger.info('Email sent successfully');
+        emailLogger.info('✅ [EMAIL SERVICE V2] Email sent successfully', { messageId: result.messageId });
         return true;
       } else {
-        emailLogger.error('Email sending failed', result.error);
+        emailLogger.error('❌ [EMAIL SERVICE V2] Email sending failed', { 
+          error: result.error, 
+          details: result.details 
+        });
         throw new Error(result.error || 'Email sending failed');
       }
       
     } catch (error) {
-      emailLogger.error('EmailServiceV2.sendEmail failed', error);
+      emailLogger.error('❌ [EMAIL SERVICE V2] EmailServiceV2.sendEmail failed', {
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack?.substring(0, 500)
+      });
       throw error;
     }
   }
 
   async testEmail(to: string): Promise<boolean> {
-    emailLogger.info('EmailServiceV2.testEmail called', { to });
+    emailLogger.info('🧪 [EMAIL SERVICE V2] EmailServiceV2.testEmail called', { to });
     
     try {
+      emailLogger.debug('🧪 [EMAIL SERVICE V2] Calling notificationEmailService.sendTestNotification', { to });
+      
       const result = await notificationEmailService.sendTestNotification(to);
       
+      emailLogger.debug('🧪 [EMAIL SERVICE V2] notificationEmailService.sendTestNotification result', result);
+
       if (result.success) {
-        emailLogger.info('Test email sent successfully');
+        emailLogger.info('✅ [EMAIL SERVICE V2] Test email sent successfully', { messageId: result.messageId });
         return true;
       } else {
-        emailLogger.error('Test email sending failed', result.error);
+        emailLogger.error('❌ [EMAIL SERVICE V2] Test email sending failed', { 
+          error: result.error, 
+          details: result.details 
+        });
         throw new Error(result.error || 'Test email sending failed');
       }
     } catch (error) {
-      emailLogger.error('EmailServiceV2.testEmail failed', error);
+      emailLogger.error('❌ [EMAIL SERVICE V2] EmailServiceV2.testEmail failed', {
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack?.substring(0, 500)
+      });
       throw error;
     }
   }
 
   // Health check method
   async healthCheck() {
+    emailLogger.info('🏥 [EMAIL SERVICE V2] Health check called');
     return await emailEngine.healthCheck();
   }
 

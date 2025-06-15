@@ -13,7 +13,7 @@ const EmailTestButton = () => {
 
   const handleTestEmail = async () => {
     setIsTesting(true);
-    console.log('🧪 [EMAIL TEST V2] Starting email test with comprehensive diagnostics...');
+    console.log('🧪 [EMAIL TEST V2] Starting regular email test via EmailServiceV2...');
     
     try {
       // Get current user email
@@ -23,17 +23,20 @@ const EmailTestButton = () => {
         throw new Error('No authenticated user found');
       }
 
-      console.log('🧪 [EMAIL TEST V2] Testing with user email:', user.email);
+      console.log('🧪 [EMAIL TEST V2] Testing regular flow with user email:', user.email);
       
+      // Use the EmailServiceV2 for consistent testing
       const result = await emailServiceV2.testEmail(user.email);
-      console.log('🧪 [EMAIL TEST V2] Test result:', result);
+      console.log('🧪 [EMAIL TEST V2] Regular test result:', result);
       
-      toast({
-        title: "Test Email Sent Successfully (V2)",
-        description: `Test email sent to ${user.email}. Check your inbox (including spam folder) and Resend dashboard for delivery confirmation.`,
-      });
+      if (result) {
+        toast({
+          title: "Test Email Sent Successfully (V2)",
+          description: `Test email sent to ${user.email} via regular flow. Check your inbox (including spam folder) and Resend dashboard for delivery confirmation.`,
+        });
+      }
     } catch (error) {
-      console.error('🧪 [EMAIL TEST V2] Test failed:', error);
+      console.error('🧪 [EMAIL TEST V2] Regular test failed:', error);
       
       let errorMessage = error.message;
       

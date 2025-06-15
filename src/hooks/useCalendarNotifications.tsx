@@ -83,7 +83,7 @@ export const useCalendarNotifications = (users: any[]) => {
           continue;
         }
         
-        console.log('🔄 [CALENDAR NOTIFICATION DEBUG] About to call notificationService.sendNotification with params:', {
+        console.log('🔄 [CALENDAR NOTIFICATION DEBUG] About to call notificationService.sendNotification with enhanced debugging:', {
           userId: user.id,
           userEmail: user.email,
           title: notificationTitle,
@@ -114,7 +114,7 @@ export const useCalendarNotifications = (users: any[]) => {
         
         notificationsFailed++;
         
-        // Categorize different types of errors
+        // Enhanced error categorization
         if (error.message.includes('Authentication required') || error.message.includes('not authorized')) {
           authenticationErrors.push(user.email);
           emailFailures.push(`${user.email}: Authentication error`);
@@ -125,6 +125,12 @@ export const useCalendarNotifications = (users: any[]) => {
           emailFailures.push(`${user.email}: Domain verification required`);
         } else if (error.message.includes('sandbox mode')) {
           emailFailures.push(`${user.email}: Sandbox mode restriction`);
+        } else if (error.message.includes('No response from email service')) {
+          edgeFunctionErrors.push(user.email);
+          emailFailures.push(`${user.email}: Email service timeout`);
+        } else if (error.message.includes('Unexpected response format')) {
+          edgeFunctionErrors.push(user.email);
+          emailFailures.push(`${user.email}: Email service error`);
         } else {
           emailFailures.push(`${user.email}: ${error.message}`);
         }
@@ -141,7 +147,7 @@ export const useCalendarNotifications = (users: any[]) => {
       console.log(`🔄 [CALENDAR NOTIFICATION DEBUG] Email failures:`, emailFailures);
     }
 
-    // Show summary toast with specific error categorization
+    // Enhanced success/failure reporting
     if (notificationsSent > 0) {
       let description = `Se enviaron ${notificationsSent} notificación(es) correctamente`;
       if (notificationsFailed > 0) {
