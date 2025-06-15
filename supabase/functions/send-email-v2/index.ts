@@ -56,6 +56,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check if recipient is likely to cause delivery issues
+    const recipientDomain = to.split('@')[1];
+    const isVerifiedDomain = recipientDomain === 'resend.dev' || recipientDomain === 'gmail.com' || recipientDomain === 'yahoo.com' || recipientDomain === 'outlook.com' || recipientDomain === 'hotmail.com';
+    
+    console.log(`📧 [EMAIL V2] Recipient domain: ${recipientDomain}, likely verified: ${isVerifiedDomain}`);
+
     // Use Resend's verified default domain to avoid domain verification issues
     const fromEmail = "onboarding@resend.dev";
     const fromName = senderName || "SkyRanch - Sistema de Gestión Ganadera";
@@ -108,6 +114,8 @@ const handler = async (req: Request): Promise<Response> => {
         'X-Entity-Ref-ID': 'skyranch-sistema-ganadero-v2',
         'Organization': organizationName || 'SkyRanch',
         'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera v2',
+        'X-Debug-Domain': recipientDomain,
+        'X-Debug-Verified': isVerifiedDomain.toString(),
         ...(metadata?.headers || {})
       },
       tags: finalTags
@@ -118,7 +126,9 @@ const handler = async (req: Request): Promise<Response> => {
       to: emailPayload.to,
       subject: emailPayload.subject,
       headerCount: Object.keys(emailPayload.headers).length,
-      tagCount: emailPayload.tags.length
+      tagCount: emailPayload.tags.length,
+      recipientDomain,
+      isVerifiedDomain
     });
 
     const emailResponse = await resend.emails.send(emailPayload);
@@ -131,7 +141,8 @@ const handler = async (req: Request): Promise<Response> => {
       
       // Handle specific domain verification error
       if (emailResponse.error.message?.includes('domain verification') || 
-          emailResponse.error.message?.includes('verify a domain')) {
+          emailResponse.error.message?.includes('verify a domain') ||
+          emailResponse.error.message?.includes('only send testing emails to your own email')) {
         return new Response(
           JSON.stringify({ 
             error: "domain_verification_required",
@@ -139,8 +150,10 @@ const handler = async (req: Request): Promise<Response> => {
             details: {
               originalError: emailResponse.error,
               suggestion: "Verify your domain at https://resend.com/domains or use a verified email address",
-              verifiedDomains: ["resend.dev"],
-              userEmail: to
+              verifiedDomains: ["resend.dev", "gmail.com", "yahoo.com", "outlook.com", "hotmail.com"],
+              userEmail: to,
+              recipientDomain,
+              isVerifiedDomain
             }
           }),
           {
@@ -194,14 +207,27 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Success case
+    // Success case - but add warning for unverified domains
     if (emailResponse.data) {
       console.log("✅ [EMAIL V2] Email sent successfully:", emailResponse.data);
+      
+      let warningMessage = null;
+      if (!isVerifiedDomain) {
+        warningMessage = `Warning: Email sent to unverified domain '${recipientDomain}'. If email doesn't arrive, verify your domain at https://resend.com/domains`;
+        console.warn("⚠️ [EMAIL V2] " + warningMessage);
+      }
+      
       return new Response(JSON.stringify({
         success: true,
         messageId: emailResponse.data.id,
         details: emailResponse.data,
-        version: '2.0'
+        version: '2.0',
+        warning: warningMessage,
+        debugInfo: {
+          recipientDomain,
+          isVerifiedDomain,
+          suggestion: !isVerifiedDomain ? "Try sending to a Gmail/Yahoo/Outlook address or verify your domain" : null
+        }
       }), {
         status: 200,
         headers: {
@@ -217,7 +243,14 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         error: "unexpected_response", 
         message: "Unexpected email service response - no data returned",
-        details: { response: emailResponse }
+        details: { 
+          response: emailResponse,
+          debugInfo: {
+            recipientDomain,
+            isVerifiedDomain,
+            suggestion: "Check Resend dashboard for delivery status"
+          }
+        }
       }),
       {
         status: 500,
@@ -227,13 +260,18 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("❌ [EMAIL V2] Error in send-email-v2 function:", error);
+    
+    // Check if it's a network/connection error
+    const isNetworkError = error.name === 'TypeError' && error.message?.includes('fetch');
+    
     return new Response(
       JSON.stringify({ 
-        error: "function_error",
+        error: isNetworkError ? "network_error" : "function_error",
         message: error.message || "Internal server error",
         details: {
           name: error.name,
-          stack: error.stack?.substring(0, 500)
+          stack: error.stack?.substring(0, 500),
+          suggestion: isNetworkError ? "Check your internet connection and Resend API status" : "Check function logs for more details"
         }
       }),
       {
