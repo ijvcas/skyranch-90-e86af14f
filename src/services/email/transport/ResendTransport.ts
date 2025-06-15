@@ -12,14 +12,16 @@ export class ResendTransport implements EmailTransport {
     });
 
     try {
-      // Ensure user is authenticated - with better error handling
+      // Enhanced authentication check with detailed logging
       emailLogger.debug('🔐 [TRANSPORT V2] Checking user authentication...');
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       emailLogger.debug('🔐 [TRANSPORT V2] Authentication check result', { 
         hasUser: !!user, 
         userEmail: user?.email,
-        authError: authError?.message 
+        userId: user?.id,
+        authError: authError?.message,
+        emailVerified: user?.email_confirmed_at ? 'yes' : 'no'
       });
       
       if (authError) {
@@ -36,7 +38,7 @@ export class ResendTransport implements EmailTransport {
       const recipients = Array.isArray(request.to) ? request.to : [request.to];
       const toEmail = recipients[0].email; // For now, send to first recipient
 
-      // Prepare payload for the edge function - using the EXACT same format as working direct test
+      // Enhanced payload preparation with detailed logging
       const payload = {
         to: toEmail,
         subject: request.content.subject,
@@ -53,7 +55,7 @@ export class ResendTransport implements EmailTransport {
         }
       };
 
-      emailLogger.debug('📤 [TRANSPORT V2] Calling send-email-v2 edge function with exact working payload format', {
+      emailLogger.debug('📤 [TRANSPORT V2] Calling send-email-v2 edge function with enhanced debugging', {
         to: payload.to,
         subject: payload.subject,
         senderName: payload.senderName,
@@ -61,23 +63,53 @@ export class ResendTransport implements EmailTransport {
         hasHtml: !!payload.html,
         htmlLength: payload.html?.length,
         tagsCount: payload.metadata.tags.length,
-        authToken: user ? 'present' : 'missing'
+        tags: payload.metadata.tags,
+        authToken: user ? 'present' : 'missing',
+        timestamp: new Date().toISOString()
       });
 
-      // Call the edge function using the same approach as the working direct test
+      // Add detailed payload logging
+      emailLogger.debug('📤 [TRANSPORT V2] Full payload JSON:', JSON.stringify(payload, null, 2));
+
+      // Call the edge function with timing
       emailLogger.debug('📤 [TRANSPORT V2] About to invoke edge function...');
+      const startTime = Date.now();
+      
       const { data, error } = await supabase.functions.invoke('send-email-v2', {
         body: payload
       });
+      
+      const endTime = Date.now();
+      const duration = endTime - startTime;
 
       emailLogger.debug('📥 [TRANSPORT V2] Edge function V2 response received', { 
+        duration: `${duration}ms`,
         hasData: !!data, 
         hasError: !!error,
         dataSuccess: data?.success,
         dataError: data?.error,
         dataMessage: data?.message,
-        errorMessage: error?.message
+        messageId: data?.messageId,
+        errorMessage: error?.message,
+        timestamp: new Date().toISOString()
       });
+
+      // Enhanced Resend dashboard verification logging
+      if (data?.success && data?.messageId) {
+        emailLogger.info('✅ [TRANSPORT V2] SUCCESS - Resend Message ID received', {
+          messageId: data.messageId,
+          recipient: toEmail,
+          recipientDomain: toEmail.split('@')[1],
+          resendDashboard: 'https://resend.com/emails'
+        });
+        
+        console.log('📊 [TRANSPORT V2] DELIVERY VERIFICATION:');
+        console.log('📊 [TRANSPORT V2] - Check Resend dashboard: https://resend.com/emails');
+        console.log(`📊 [TRANSPORT V2] - Search for Message ID: ${data.messageId}`);
+        console.log(`📊 [TRANSPORT V2] - Recipient: ${toEmail}`);
+        console.log(`📊 [TRANSPORT V2] - Delivery domain: ${toEmail.split('@')[1]}`);
+        console.log('📊 [TRANSPORT V2] - If message appears in dashboard but not in inbox, check spam folder');
+      }
 
       // Handle Supabase function invocation errors first
       if (error) {
@@ -85,7 +117,8 @@ export class ResendTransport implements EmailTransport {
           errorMessage: error.message,
           errorName: error.name,
           errorCode: error.code,
-          errorDetails: error
+          errorDetails: error,
+          duration: `${duration}ms`
         });
         
         // Enhanced error handling for common invocation issues
@@ -130,12 +163,13 @@ export class ResendTransport implements EmailTransport {
         };
       }
 
-      // Handle specific error types returned by the edge function (same as working direct test)
+      // Handle specific error types returned by the edge function
       if (data.error) {
         emailLogger.error('❌ [TRANSPORT V2] Email service V2 error', {
           errorType: data.error,
           message: data.message,
-          details: data.details
+          details: data.details,
+          duration: `${duration}ms`
         });
         
         // Handle all the same error types as the working direct test
@@ -175,11 +209,13 @@ export class ResendTransport implements EmailTransport {
         };
       }
 
-      // Success case - same as working direct test
+      // Success case with enhanced logging
       if (data.success) {
         emailLogger.info('✅ [TRANSPORT V2] Email sent successfully via V2', { 
           messageId: data.messageId,
-          deliveryInfo: data.deliveryInfo 
+          deliveryInfo: data.deliveryInfo,
+          duration: `${duration}ms`,
+          recipient: toEmail
         });
         
         return {
@@ -189,11 +225,12 @@ export class ResendTransport implements EmailTransport {
         };
       }
 
-      // Unexpected response format
+      // Unexpected response format with enhanced logging
       emailLogger.error('❌ [TRANSPORT V2] Unexpected response format from email service V2', {
         dataKeys: Object.keys(data || {}),
         dataType: typeof data,
-        fullData: data
+        fullData: data,
+        duration: `${duration}ms`
       });
       return {
         success: false,

@@ -11,9 +11,46 @@ const EmailTestButton = () => {
   const [isDirectTesting, setIsDirectTesting] = useState(false);
   const { toast } = useToast();
 
+  // STANDARDIZED payload builder to ensure both buttons use EXACT same format
+  const buildStandardPayload = (userEmail: string, testType: string) => {
+    const basePayload = {
+      to: userEmail,
+      subject: testType === 'direct' ? "Direct Edge Function Test" : "Test Email V2 - SkyRanch",
+      html: testType === 'direct' 
+        ? "<h1>Direct Test</h1><p>This is a direct test of the send-email-v2 edge function.</p>"
+        : "<h1>Test Email V2</h1><p>This is a test of the regular email flow using the direct edge function approach.</p><p>If you receive this, the email system is working correctly.</p>",
+      senderName: testType === 'direct' ? "SkyRanch Test" : "SkyRanch - Sistema de Gestión Ganadera",
+      organizationName: "SkyRanch",
+      metadata: {
+        tags: testType === 'direct' 
+          ? [{ name: "test-type", value: "direct" }]
+          : [
+              { name: "category", value: "test" },
+              { name: "test-type", value: "regular" },
+              { name: "sender", value: "skyranch" },
+              { name: "version", value: "2_0" }
+            ],
+        headers: {}
+      }
+    };
+
+    console.log(`🔧 [${testType.toUpperCase()} TEST PAYLOAD] Standardized payload created:`, {
+      to: basePayload.to,
+      subject: basePayload.subject,
+      senderName: basePayload.senderName,
+      organizationName: basePayload.organizationName,
+      tagsCount: basePayload.metadata.tags.length,
+      tags: basePayload.metadata.tags,
+      timestamp: new Date().toISOString()
+    });
+
+    return basePayload;
+  };
+
   const handleTestEmail = async () => {
     setIsTesting(true);
-    console.log('🧪 [EMAIL TEST V2] Starting test email via direct edge function (same as working direct test)...');
+    console.log('🧪 [EMAIL TEST V2] ===== STARTING TEST EMAIL V2 WITH ENHANCED DEBUGGING =====');
+    console.log('🧪 [EMAIL TEST V2] Timestamp:', new Date().toISOString());
     
     try {
       // Get current user email
@@ -23,50 +60,62 @@ const EmailTestButton = () => {
         throw new Error('No authenticated user found');
       }
 
-      console.log('🧪 [EMAIL TEST V2] Using direct edge function call for test email:', user.email);
-      
-      // Use the SAME direct edge function approach that works in handleDirectEdgeFunctionTest
-      const payload = {
-        to: user.email,
-        subject: "Test Email V2 - SkyRanch",
-        html: "<h1>Test Email V2</h1><p>This is a test of the regular email flow using the direct edge function approach.</p><p>If you receive this, the email system is working correctly.</p>",
-        senderName: "SkyRanch - Sistema de Gestión Ganadera",
-        organizationName: "SkyRanch",
-        metadata: {
-          tags: [
-            { name: "category", value: "test" },
-            { name: "test-type", value: "regular" },
-            { name: "sender", value: "skyranch" },
-            { name: "version", value: "2_0" }
-          ],
-          headers: {}
-        }
-      };
-
-      console.log('🧪 [EMAIL TEST V2] Calling edge function directly with payload:', {
-        to: payload.to,
-        subject: payload.subject,
-        senderName: payload.senderName
+      console.log('🧪 [EMAIL TEST V2] User authenticated:', {
+        email: user.email,
+        userId: user.id,
+        emailVerified: user.email_confirmed_at ? 'yes' : 'no'
       });
 
+      // Use STANDARDIZED payload builder
+      const payload = buildStandardPayload(user.email, 'regular');
+
+      console.log('🧪 [EMAIL TEST V2] About to call edge function with STANDARDIZED payload...');
+      console.log('🧪 [EMAIL TEST V2] Payload JSON:', JSON.stringify(payload, null, 2));
+      
+      const startTime = Date.now();
       const { data, error } = await supabase.functions.invoke('send-email-v2', {
         body: payload
       });
+      const endTime = Date.now();
 
-      console.log('🧪 [EMAIL TEST V2] Direct edge function response:', { data, error });
+      console.log('🧪 [EMAIL TEST V2] Edge function call completed:', {
+        duration: `${endTime - startTime}ms`,
+        hasData: !!data,
+        hasError: !!error,
+        timestamp: new Date().toISOString()
+      });
+
+      console.log('🧪 [EMAIL TEST V2] Raw response data:', data);
+      console.log('🧪 [EMAIL TEST V2] Raw response error:', error);
 
       if (error) {
+        console.error('🧪 [EMAIL TEST V2] Edge function invocation error:', error);
         throw new Error(`Edge function error: ${error.message}`);
       }
 
       if (data?.success) {
+        console.log('🧪 [EMAIL TEST V2] ✅ SUCCESS RESPONSE RECEIVED');
+        console.log('🧪 [EMAIL TEST V2] Resend Message ID:', data.messageId);
+        console.log('🧪 [EMAIL TEST V2] Full success data:', data);
+        
+        // Enhanced success logging for Resend dashboard verification
+        console.log('🧪 [EMAIL TEST V2] 📊 DELIVERY VERIFICATION:');
+        console.log('🧪 [EMAIL TEST V2] - Check Resend dashboard: https://resend.com/emails');
+        console.log(`🧪 [EMAIL TEST V2] - Search for Message ID: ${data.messageId}`);
+        console.log(`🧪 [EMAIL TEST V2] - Recipient: ${user.email}`);
+        console.log(`🧪 [EMAIL TEST V2] - Delivery domain: ${user.email.split('@')[1]}`);
+        console.log('🧪 [EMAIL TEST V2] - If message appears in dashboard but not in inbox, check spam folder');
+        
         toast({
           title: "Test Email V2 Sent Successfully",
-          description: `Test email sent to ${user.email} via direct edge function. Check your inbox (including spam folder) and Resend dashboard for delivery confirmation.`,
+          description: `Test email sent to ${user.email}. Message ID: ${data.messageId}. Check Resend dashboard and your inbox (including spam folder).`,
         });
       } else if (data?.error) {
+        console.error('🧪 [EMAIL TEST V2] Edge function returned error:', data.error);
+        
         // Handle specific error types returned by the edge function
         if (data.error === 'sandbox_mode_restriction') {
+          console.error('🧪 [EMAIL TEST V2] ❌ SANDBOX MODE RESTRICTION');
           toast({
             title: "Sandbox Mode Restriction",
             description: `Resend account is in sandbox mode. Upgrade your account at https://resend.com/pricing`,
@@ -76,6 +125,7 @@ const EmailTestButton = () => {
         }
         
         if (data.error === 'domain_verification_required') {
+          console.error('🧪 [EMAIL TEST V2] ❌ DOMAIN VERIFICATION REQUIRED');
           toast({
             title: "Domain Verification Required",
             description: `Domain verification required. Verify your domain at https://resend.com/domains`,
@@ -90,6 +140,7 @@ const EmailTestButton = () => {
           variant: "destructive"
         });
       } else {
+        console.error('🧪 [EMAIL TEST V2] ❌ UNEXPECTED RESPONSE FORMAT:', data);
         toast({
           title: "Unexpected Response",
           description: "Edge function returned unexpected response format",
@@ -97,7 +148,8 @@ const EmailTestButton = () => {
         });
       }
     } catch (error) {
-      console.error('🧪 [EMAIL TEST V2] Test email failed:', error);
+      console.error('🧪 [EMAIL TEST V2] ❌ FATAL ERROR:', error);
+      console.error('🧪 [EMAIL TEST V2] Error stack:', error.stack);
       toast({
         title: "Email Test Failed",
         description: `Failed to send test email: ${error.message}`,
@@ -105,12 +157,14 @@ const EmailTestButton = () => {
       });
     } finally {
       setIsTesting(false);
+      console.log('🧪 [EMAIL TEST V2] ===== TEST EMAIL V2 COMPLETED =====');
     }
   };
 
   const handleDirectEdgeFunctionTest = async () => {
     setIsDirectTesting(true);
-    console.log('🔧 [DIRECT TEST] Testing edge function directly...');
+    console.log('🔧 [DIRECT TEST] ===== STARTING DIRECT EDGE FUNCTION TEST =====');
+    console.log('🔧 [DIRECT TEST] Timestamp:', new Date().toISOString());
     
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -119,42 +173,65 @@ const EmailTestButton = () => {
         throw new Error('No authenticated user found');
       }
 
-      console.log('🔧 [DIRECT TEST] Calling edge function directly with user email:', user.email);
-      
-      const payload = {
-        to: user.email,
-        subject: "Direct Edge Function Test",
-        html: "<h1>Direct Test</h1><p>This is a direct test of the send-email-v2 edge function.</p>",
-        senderName: "SkyRanch Test",
-        organizationName: "SkyRanch",
-        metadata: {
-          tags: [{ name: "test-type", value: "direct" }],
-          headers: {}
-        }
-      };
+      console.log('🔧 [DIRECT TEST] User authenticated:', {
+        email: user.email,
+        userId: user.id,
+        emailVerified: user.email_confirmed_at ? 'yes' : 'no'
+      });
 
+      // Use STANDARDIZED payload builder
+      const payload = buildStandardPayload(user.email, 'direct');
+
+      console.log('🔧 [DIRECT TEST] About to call edge function with STANDARDIZED payload...');
+      console.log('🔧 [DIRECT TEST] Payload JSON:', JSON.stringify(payload, null, 2));
+
+      const startTime = Date.now();
       const { data, error } = await supabase.functions.invoke('send-email-v2', {
         body: payload
       });
+      const endTime = Date.now();
 
-      console.log('🔧 [DIRECT TEST] Raw edge function response:', { data, error });
+      console.log('🔧 [DIRECT TEST] Edge function call completed:', {
+        duration: `${endTime - startTime}ms`,
+        hasData: !!data,
+        hasError: !!error,
+        timestamp: new Date().toISOString()
+      });
+
+      console.log('🔧 [DIRECT TEST] Raw response data:', data);
+      console.log('🔧 [DIRECT TEST] Raw response error:', error);
 
       if (error) {
+        console.error('🔧 [DIRECT TEST] Edge function invocation error:', error);
         throw new Error(`Edge function error: ${error.message}`);
       }
 
       if (data?.success) {
+        console.log('🔧 [DIRECT TEST] ✅ SUCCESS RESPONSE RECEIVED');
+        console.log('🔧 [DIRECT TEST] Resend Message ID:', data.messageId);
+        console.log('🔧 [DIRECT TEST] Full success data:', data);
+        
+        // Enhanced success logging for Resend dashboard verification
+        console.log('🔧 [DIRECT TEST] 📊 DELIVERY VERIFICATION:');
+        console.log('🔧 [DIRECT TEST] - Check Resend dashboard: https://resend.com/emails');
+        console.log(`🔧 [DIRECT TEST] - Search for Message ID: ${data.messageId}`);
+        console.log(`🔧 [DIRECT TEST] - Recipient: ${user.email}`);
+        console.log(`🔧 [DIRECT TEST] - Delivery domain: ${user.email.split('@')[1]}`);
+        console.log('🔧 [DIRECT TEST] - If message appears in dashboard but not in inbox, check spam folder');
+        
         toast({
           title: "Direct Test Successful",
-          description: `Edge function working correctly. Message ID: ${data.messageId}`,
+          description: `Edge function working correctly. Message ID: ${data.messageId}. Check Resend dashboard.`,
         });
       } else if (data?.error) {
+        console.error('🔧 [DIRECT TEST] Edge function returned error:', data.error);
         toast({
           title: "Edge Function Error",
           description: `${data.error}: ${data.message}`,
           variant: "destructive"
         });
       } else {
+        console.error('🔧 [DIRECT TEST] ❌ UNEXPECTED RESPONSE FORMAT:', data);
         toast({
           title: "Unexpected Response",
           description: "Edge function returned unexpected response format",
@@ -162,7 +239,8 @@ const EmailTestButton = () => {
         });
       }
     } catch (error) {
-      console.error('🔧 [DIRECT TEST] Direct test failed:', error);
+      console.error('🔧 [DIRECT TEST] ❌ FATAL ERROR:', error);
+      console.error('🔧 [DIRECT TEST] Error stack:', error.stack);
       toast({
         title: "Direct Test Failed",
         description: `Edge function test failed: ${error.message}`,
@@ -170,6 +248,7 @@ const EmailTestButton = () => {
       });
     } finally {
       setIsDirectTesting(false);
+      console.log('🔧 [DIRECT TEST] ===== DIRECT EDGE FUNCTION TEST COMPLETED =====');
     }
   };
 
