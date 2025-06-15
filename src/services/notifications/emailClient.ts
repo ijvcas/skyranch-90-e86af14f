@@ -52,10 +52,6 @@ export const sendEmail = async (emailData: EmailData) => {
     if (data.error) {
       console.error('📧 [EMAIL CLIENT] Email service error:', data);
       
-      if (data.error === 'domain_verification_required') {
-        throw new Error(`Domain verification required: ${data.message}`);
-      }
-      
       if (data.error === 'resend_api_error') {
         throw new Error(`Email API error: ${data.message}`);
       }

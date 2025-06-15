@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -29,9 +30,8 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log(`📧 Sending email to: ${to}, subject: ${subject}`);
 
-    // Use a professional sender name
-    const fromName = senderName || "SkyRanch - Sistema de Gestión Ganadera";
-    const fromEmail = "SkyRanch <onboarding@resend.dev>";
+    // Use Resend's verified default domain to avoid domain verification issues
+    const fromEmail = "onboarding@resend.dev";
 
     const emailResponse = await resend.emails.send({
       from: fromEmail,
@@ -40,7 +40,6 @@ const handler = async (req: Request): Promise<Response> => {
       html: html,
       headers: {
         'X-Entity-Ref-ID': 'skyranch-sistema-ganadero',
-        'List-Unsubscribe': '<mailto:unsubscribe@skyranch.com>',
         'Organization': organizationName || 'SkyRanch',
         'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera'
       },
@@ -62,22 +61,6 @@ const handler = async (req: Request): Promise<Response> => {
     if (emailResponse.error) {
       console.error("❌ Resend API error:", emailResponse.error);
       
-      // Check for domain verification errors
-      if (emailResponse.error.message && emailResponse.error.message.includes("verify a domain")) {
-        return new Response(
-          JSON.stringify({ 
-            error: "domain_verification_required",
-            message: "Email domain verification required. Only verified addresses can receive emails.",
-            details: emailResponse.error.message
-          }),
-          {
-            status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        );
-      }
-      
-      // Other Resend errors
       return new Response(
         JSON.stringify({ 
           error: "resend_api_error",
