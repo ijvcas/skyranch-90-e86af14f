@@ -56,13 +56,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if recipient is likely to cause delivery issues
+    // Extract domain for debugging (but don't make assumptions about verification)
     const recipientDomain = to.split('@')[1];
-    const isVerifiedDomain = recipientDomain === 'resend.dev' || recipientDomain === 'gmail.com' || recipientDomain === 'yahoo.com' || recipientDomain === 'outlook.com' || recipientDomain === 'hotmail.com';
-    
-    console.log(`📧 [EMAIL V2] Recipient domain: ${recipientDomain}, likely verified: ${isVerifiedDomain}`);
+    console.log(`📧 [EMAIL V2] Recipient domain: ${recipientDomain}`);
 
-    // Use Resend's verified default domain to avoid domain verification issues
+    // Use Resend's verified default domain
     const fromEmail = "onboarding@resend.dev";
     const fromName = senderName || "SkyRanch - Sistema de Gestión Ganadera";
 
@@ -115,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
         'Organization': organizationName || 'SkyRanch',
         'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera v2',
         'X-Debug-Domain': recipientDomain,
-        'X-Debug-Verified': isVerifiedDomain.toString(),
+        'X-Debug-Timestamp': new Date().toISOString(),
         ...(metadata?.headers || {})
       },
       tags: finalTags
@@ -127,33 +125,50 @@ const handler = async (req: Request): Promise<Response> => {
       subject: emailPayload.subject,
       headerCount: Object.keys(emailPayload.headers).length,
       tagCount: emailPayload.tags.length,
-      recipientDomain,
-      isVerifiedDomain
+      recipientDomain
     });
 
+    console.log('📧 [EMAIL V2] About to call Resend API...');
     const emailResponse = await resend.emails.send(emailPayload);
-
-    console.log("📧 [EMAIL V2] Resend response:", emailResponse);
+    console.log("📧 [EMAIL V2] Resend API response received:", emailResponse);
 
     // Handle Resend API errors
     if (emailResponse.error) {
       console.error("❌ [EMAIL V2] Resend API error:", emailResponse.error);
       
-      // Handle specific domain verification error
+      // Handle sandbox mode restrictions
+      if (emailResponse.error.message?.includes('only send testing emails to your own email') ||
+          emailResponse.error.message?.includes('sandbox')) {
+        return new Response(
+          JSON.stringify({ 
+            error: "sandbox_mode_restriction",
+            message: "Resend account is in sandbox mode. You can only send emails to the email address associated with your Resend account.",
+            details: {
+              originalError: emailResponse.error,
+              suggestion: "Upgrade your Resend account or send test emails to your Resend account email address",
+              userEmail: to,
+              recipientDomain
+            }
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      // Handle domain verification errors
       if (emailResponse.error.message?.includes('domain verification') || 
-          emailResponse.error.message?.includes('verify a domain') ||
-          emailResponse.error.message?.includes('only send testing emails to your own email')) {
+          emailResponse.error.message?.includes('verify a domain')) {
         return new Response(
           JSON.stringify({ 
             error: "domain_verification_required",
-            message: "Email domain requires verification. Only verified email addresses can receive emails in production.",
+            message: "Email domain requires verification in your Resend account.",
             details: {
               originalError: emailResponse.error,
-              suggestion: "Verify your domain at https://resend.com/domains or use a verified email address",
-              verifiedDomains: ["resend.dev", "gmail.com", "yahoo.com", "outlook.com", "hotmail.com"],
+              suggestion: "Verify your domain at https://resend.com/domains",
               userEmail: to,
-              recipientDomain,
-              isVerifiedDomain
+              recipientDomain
             }
           }),
           {
@@ -207,26 +222,21 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Success case - but add warning for unverified domains
+    // Success case
     if (emailResponse.data) {
       console.log("✅ [EMAIL V2] Email sent successfully:", emailResponse.data);
-      
-      let warningMessage = null;
-      if (!isVerifiedDomain) {
-        warningMessage = `Warning: Email sent to unverified domain '${recipientDomain}'. If email doesn't arrive, verify your domain at https://resend.com/domains`;
-        console.warn("⚠️ [EMAIL V2] " + warningMessage);
-      }
+      console.log("✅ [EMAIL V2] Check your inbox (including spam folder) for email delivery");
+      console.log("✅ [EMAIL V2] Also check your Resend dashboard at https://resend.com/emails for delivery status");
       
       return new Response(JSON.stringify({
         success: true,
         messageId: emailResponse.data.id,
         details: emailResponse.data,
         version: '2.0',
-        warning: warningMessage,
-        debugInfo: {
+        deliveryInfo: {
           recipientDomain,
-          isVerifiedDomain,
-          suggestion: !isVerifiedDomain ? "Try sending to a Gmail/Yahoo/Outlook address or verify your domain" : null
+          suggestion: "Check your inbox (including spam folder) and Resend dashboard for delivery confirmation",
+          resendDashboard: "https://resend.com/emails"
         }
       }), {
         status: 200,
@@ -247,8 +257,7 @@ const handler = async (req: Request): Promise<Response> => {
           response: emailResponse,
           debugInfo: {
             recipientDomain,
-            isVerifiedDomain,
-            suggestion: "Check Resend dashboard for delivery status"
+            suggestion: "Check Resend dashboard at https://resend.com/emails for delivery status"
           }
         }
       }),

@@ -16,22 +16,23 @@ export class EmailErrorHandler {
   static handleResendError(error: any): EmailError {
     emailLogger.error('Resend API error detected', error);
 
-    // Handle new V2 domain verification errors
-    if (error.message?.includes('Domain verification required') || 
-        error.message?.includes('verify a domain')) {
+    // Handle sandbox mode restrictions
+    if (error.message?.includes('only send testing emails to your own email') || 
+        error.message?.includes('sandbox')) {
       return this.createError(
-        'DOMAIN_VERIFICATION_REQUIRED',
-        'Email domain requires verification. Only verified email addresses can receive emails in production.',
+        'SANDBOX_MODE_RESTRICTION',
+        'Resend account is in sandbox mode. You can only send emails to your account email address.',
         error,
         false
       );
     }
 
-    // Handle V2 specific errors
-    if (error.message?.includes('only send testing emails to your own email')) {
+    // Handle domain verification errors (legitimate ones from Resend)
+    if (error.message?.includes('Domain verification required') || 
+        error.message?.includes('verify a domain')) {
       return this.createError(
-        'UNVERIFIED_RECIPIENT',
-        'Can only send emails to verified email addresses. Please verify your domain at resend.com/domains',
+        'DOMAIN_VERIFICATION_REQUIRED',
+        'Email domain requires verification in your Resend account.',
         error,
         false
       );
@@ -116,7 +117,13 @@ export class EmailErrorHandler {
       );
     }
 
-    // Domain verification errors (V2)
+    // Sandbox mode restrictions
+    if (error.message?.includes('sandbox') || 
+        error.message?.includes('only send testing emails to your own email')) {
+      return this.handleResendError(error);
+    }
+
+    // Domain verification errors (legitimate ones from Resend API)
     if (error.message?.includes('domain verification') || 
         error.message?.includes('verify a domain')) {
       return this.handleResendError(error);

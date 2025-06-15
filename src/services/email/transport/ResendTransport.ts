@@ -62,11 +62,27 @@ export class ResendTransport implements EmailTransport {
       if (data.error) {
         emailLogger.error('Email service V2 error', data);
         
-        // Handle domain verification errors specifically
+        // Handle sandbox mode restrictions
+        if (data.error === 'sandbox_mode_restriction') {
+          const sandboxError = EmailErrorHandler.createError(
+            'SANDBOX_MODE_RESTRICTION',
+            'Resend account is in sandbox mode. You can only send emails to your account email address.',
+            data.details,
+            false
+          );
+          
+          return {
+            success: false,
+            error: sandboxError.message,
+            details: sandboxError
+          };
+        }
+
+        // Handle domain verification errors
         if (data.error === 'domain_verification_required') {
           const domainError = EmailErrorHandler.createError(
             'DOMAIN_VERIFICATION_REQUIRED',
-            'Email domain requires verification. Only verified email addresses can receive emails.',
+            'Email domain requires verification in your Resend account.',
             data.details,
             false
           );
@@ -127,7 +143,10 @@ export class ResendTransport implements EmailTransport {
 
       // Success case
       if (data.success) {
-        emailLogger.info('Email sent successfully via V2', { messageId: data.messageId });
+        emailLogger.info('Email sent successfully via V2', { 
+          messageId: data.messageId,
+          deliveryInfo: data.deliveryInfo 
+        });
         
         return {
           success: true,
