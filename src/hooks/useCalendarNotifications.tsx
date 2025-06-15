@@ -1,15 +1,30 @@
-
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabaseNotificationService } from '@/services/notifications/supabaseNotificationService';
 import { pushService } from '@/services/notifications/pushService';
 import { supabase } from '@/integrations/supabase/client';
+import { CalendarEventTemplate } from '@/services/email/templates/CalendarEventTemplate';
 
 export const useCalendarNotifications = (users: any[]) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const sendNotificationsToUsers = async (selectedUserIds: string[], eventTitle: string, eventDate: string, isUpdate: boolean = false, eventDescription?: string) => {
+  // Helper to get userName
+  const getUserNameByEmail = (email: string) => {
+    const u = users.find(user => user.email === email);
+    return u?.name || u?.full_name || u?.email?.split('@')[0] || 'Usuario';
+  };
+
+  const sendNotificationsToUsers = async (
+    selectedUserIds: string[],
+    eventTitle: string,
+    eventDate: string,
+    isUpdate: boolean = false,
+    eventDescription?: string,
+    eventType?: string,
+    location?: string,
+    veterinarian?: string
+  ) => {
     console.log('🔄 [CALENDAR NOTIFICATION DEBUG] ===== STARTING NOTIFICATION PROCESS =====');
     console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Input parameters:', {
       selectedUserIds: selectedUserIds.length,
@@ -36,9 +51,9 @@ export const useCalendarNotifications = (users: any[]) => {
       return;
     }
     
-    const actionText = isUpdate ? "actualizado" : "creado";
-    const notificationTitle = `Evento ${actionText}: ${eventTitle}`;
-    const notificationBody = `Se ha ${actionText} el evento "${eventTitle}" programado para ${new Date(eventDate).toLocaleDateString('es-ES')}.`;
+    const actionType = isUpdate ? "updated" : "created";
+    const notificationTitle = `Evento ${actionType}: ${eventTitle}`;
+    const notificationBody = `Se ha ${actionType} el evento "${eventTitle}" programado para ${new Date(eventDate).toLocaleDateString('es-ES')}.`;
 
     console.log('🔄 [CALENDAR NOTIFICATION DEBUG] Notification details:', {
       notificationTitle,
@@ -77,12 +92,9 @@ export const useCalendarNotifications = (users: any[]) => {
           continue;
         }
 
-        // Send email notification using direct edge function approach (same as working test)
-        console.log(`📧 [CALENDAR NOTIFICATION DEBUG] Sending email directly via edge function to ${user.email}`);
-        
         // Get authenticated user
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-        
+
         if (authError || !authUser) {
           console.error(`❌ [CALENDAR NOTIFICATION DEBUG] Authentication failed for ${user.email}:`, authError);
           authenticationErrors.push(user.email);
@@ -90,21 +102,42 @@ export const useCalendarNotifications = (users: any[]) => {
           continue;
         }
 
-        // Prepare email content
-        const emailSubject = `${notificationTitle} - SkyRanch`;
-        const emailHtml = `
-          <h2>${notificationTitle}</h2>
-          <p>${notificationBody}</p>
-          ${eventDescription ? `<p><strong>Descripción:</strong> ${eventDescription}</p>` : ''}
-          <hr>
-          <p><small>Este mensaje fue enviado desde SkyRanch - Sistema de Gestión Ganadera</small></p>
-        `;
+        // Use the CalendarEventTemplate to generate professional email HTML
+        const template = new CalendarEventTemplate();
+        const html = template.render({
+          eventType: actionType,
+          userName: getUserNameByEmail(user.email),
+          organizationName: "SkyRanch",
+          event: {
+            title: eventTitle,
+            description: eventDescription,
+            eventDate: eventDate,
+            eventType: eventType || undefined,
+            location: location || undefined,
+            veterinarian: veterinarian || undefined,
+          },
+        }).content;
 
-        // Use direct edge function call (same as working test email)
+        // Subject line from template (matches branding)
+        const subject = template.render({
+          eventType: actionType,
+          userName: getUserNameByEmail(user.email),
+          organizationName: "SkyRanch",
+          event: {
+            title: eventTitle,
+            description: eventDescription,
+            eventDate: eventDate,
+            eventType: eventType || undefined,
+            location: location || undefined,
+            veterinarian: veterinarian || undefined,
+          },
+        }).title;
+
+        // Use direct edge function call to send email with template
         const payload = {
           to: user.email,
-          subject: emailSubject,
-          html: emailHtml,
+          subject: subject,
+          html: html,
           senderName: "SkyRanch - Sistema de Gestión Ganadera",
           organizationName: "SkyRanch",
           metadata: {
