@@ -36,7 +36,7 @@ const Navigation = () => {
             <img 
               src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
               alt="SkyRanch" 
-              className="h-12 w-12 flex-shrink-0"
+              className="h-14 w-14 flex-shrink-0"
             />
             <span className="ml-4 text-xl font-bold text-gray-900 whitespace-nowrap leading-none">SkyRanch</span>
           </div>
