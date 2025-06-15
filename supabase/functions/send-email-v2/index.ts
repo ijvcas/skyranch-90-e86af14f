@@ -1,6 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { EmailRequestV2 } from './types.ts';
+import { EmailValidator } from './validator.ts';
+import { PayloadBuilder } from './payloadBuilder.ts';
+import { ResponseBuilder } from './responseBuilder.ts';
+import { EmailErrorHandler } from './errorHandler.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -8,18 +13,6 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-interface EmailRequestV2 {
-  to: string;
-  subject: string;
-  html: string;
-  senderName?: string;
-  organizationName?: string;
-  metadata?: {
-    tags?: Array<{ name: string; value: string }>;
-    headers?: Record<string, string>;
-  };
-}
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -30,94 +23,41 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log('📧 [EMAIL V2] Function called');
     
-    const { to, subject, html, senderName, organizationName, metadata }: EmailRequestV2 = await req.json();
+    const requestData: EmailRequestV2 = await req.json();
     
     console.log(`📧 [EMAIL V2] Processing email request:`, {
-      to,
-      subject: subject.substring(0, 50) + '...',
-      senderName,
-      organizationName,
-      hasMetadata: !!metadata
+      to: requestData.to,
+      subject: requestData.subject.substring(0, 50) + '...',
+      senderName: requestData.senderName,
+      organizationName: requestData.organizationName,
+      hasMetadata: !!requestData.metadata
     });
 
     // Validate required fields
-    if (!to || !subject || !html) {
-      console.error('❌ [EMAIL V2] Missing required fields');
-      return new Response(
-        JSON.stringify({ 
-          error: "validation_error",
-          message: "Missing required fields: to, subject, and html are required",
-          details: { to: !!to, subject: !!subject, html: !!html }
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+    const validation = EmailValidator.validate(requestData);
+    if (!validation.isValid) {
+      console.error('❌ [EMAIL V2] Validation failed:', validation.errors);
+      const errorResponse = EmailErrorHandler.createValidationError(
+        `Missing required fields: ${validation.errors.join(', ')}`,
+        { 
+          to: !!requestData.to, 
+          subject: !!requestData.subject, 
+          html: !!requestData.html 
         }
       );
-    }
-
-    // Extract domain for debugging (but don't make assumptions about verification)
-    const recipientDomain = to.split('@')[1];
-    console.log(`📧 [EMAIL V2] Recipient domain: ${recipientDomain}`);
-
-    // Use Resend's verified default domain
-    const fromEmail = "onboarding@resend.dev";
-    const fromName = senderName || "SkyRanch - Sistema de Gestión Ganadera";
-
-    // Helper function to clean tag values
-    const cleanTagValue = (value: string): string => {
-      return value.replace(/[^a-zA-Z0-9_-]/g, '_');
-    };
-
-    // Create a Map to prevent duplicate tag names (incoming tags take priority)
-    const tagMap = new Map<string, string>();
-    
-    // Add custom tags first (they have priority)
-    if (metadata?.tags) {
-      metadata.tags.forEach(tag => {
-        if (tag.name && tag.value) {
-          const cleanName = cleanTagValue(tag.name);
-          const cleanValue = cleanTagValue(tag.value);
-          tagMap.set(cleanName, cleanValue);
-        }
+      
+      return new Response(JSON.stringify(errorResponse), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // Add default tags only if they don't already exist
-    if (!tagMap.has('category')) {
-      tagMap.set('category', 'notification_v2');
-    }
-    if (!tagMap.has('sender')) {
-      tagMap.set('sender', 'skyranch_v2');
-    }
-    if (!tagMap.has('version')) {
-      tagMap.set('version', '2_0');
-    }
+    // Extract domain for debugging
+    const recipientDomain = requestData.to.split('@')[1];
+    console.log(`📧 [EMAIL V2] Recipient domain: ${recipientDomain}`);
 
-    // Convert Map back to array format
-    const finalTags = Array.from(tagMap.entries()).map(([name, value]) => ({
-      name,
-      value
-    }));
-
-    console.log('📧 [EMAIL V2] Final tags after deduplication:', finalTags);
-
-    // Prepare email payload
-    const emailPayload = {
-      from: `${fromName} <${fromEmail}>`,
-      to: [to],
-      subject: subject,
-      html: html,
-      headers: {
-        'X-Entity-Ref-ID': 'skyranch-sistema-ganadero-v2',
-        'Organization': organizationName || 'SkyRanch',
-        'X-Mailer': 'SkyRanch Sistema de Gestión Ganadera v2',
-        'X-Debug-Domain': recipientDomain,
-        'X-Debug-Timestamp': new Date().toISOString(),
-        ...(metadata?.headers || {})
-      },
-      tags: finalTags
-    };
+    // Build email payload
+    const emailPayload = PayloadBuilder.build(requestData);
 
     console.log('📧 [EMAIL V2] Sending email with payload:', {
       from: emailPayload.from,
@@ -128,6 +68,8 @@ const handler = async (req: Request): Promise<Response> => {
       recipientDomain
     });
 
+    console.log('📧 [EMAIL V2] Final tags after deduplication:', emailPayload.tags);
+
     console.log('📧 [EMAIL V2] About to call Resend API...');
     const emailResponse = await resend.emails.send(emailPayload);
     console.log("📧 [EMAIL V2] Resend API response received:", emailResponse);
@@ -136,90 +78,60 @@ const handler = async (req: Request): Promise<Response> => {
     if (emailResponse.error) {
       console.error("❌ [EMAIL V2] Resend API error:", emailResponse.error);
       
+      let errorResponse;
+      
       // Handle sandbox mode restrictions
       if (emailResponse.error.message?.includes('only send testing emails to your own email') ||
           emailResponse.error.message?.includes('sandbox')) {
-        return new Response(
-          JSON.stringify({ 
-            error: "sandbox_mode_restriction",
-            message: "Resend account is in sandbox mode. You can only send emails to the email address associated with your Resend account.",
-            details: {
-              originalError: emailResponse.error,
-              suggestion: "Upgrade your Resend account or send test emails to your Resend account email address",
-              userEmail: to,
-              recipientDomain
-            }
-          }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
+        errorResponse = EmailErrorHandler.createSandboxModeError(
+          emailResponse.error, 
+          requestData.to, 
+          recipientDomain
         );
+        return new Response(JSON.stringify(errorResponse), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
 
       // Handle domain verification errors
       if (emailResponse.error.message?.includes('domain verification') || 
           emailResponse.error.message?.includes('verify a domain')) {
-        return new Response(
-          JSON.stringify({ 
-            error: "domain_verification_required",
-            message: "Email domain requires verification in your Resend account.",
-            details: {
-              originalError: emailResponse.error,
-              suggestion: "Verify your domain at https://resend.com/domains",
-              userEmail: to,
-              recipientDomain
-            }
-          }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
+        errorResponse = EmailErrorHandler.createDomainVerificationError(
+          emailResponse.error,
+          requestData.to,
+          recipientDomain
         );
+        return new Response(JSON.stringify(errorResponse), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
 
       // Handle rate limiting
       if (emailResponse.error.message?.includes('rate limit')) {
-        return new Response(
-          JSON.stringify({ 
-            error: "rate_limited",
-            message: "Rate limit exceeded. Please try again later.",
-            details: emailResponse.error
-          }),
-          {
-            status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        );
+        errorResponse = EmailErrorHandler.createRateLimitError(emailResponse.error);
+        return new Response(JSON.stringify(errorResponse), {
+          status: 429,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
 
       // Handle invalid API key
       if (emailResponse.error.message?.includes('API key')) {
-        return new Response(
-          JSON.stringify({ 
-            error: "invalid_api_key",
-            message: "Invalid or missing Resend API key configuration.",
-            details: emailResponse.error
-          }),
-          {
-            status: 401,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        );
+        errorResponse = EmailErrorHandler.createInvalidApiKeyError(emailResponse.error);
+        return new Response(JSON.stringify(errorResponse), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
 
       // Generic Resend error
-      return new Response(
-        JSON.stringify({ 
-          error: "resend_api_error",
-          message: emailResponse.error.message || "Email service error",
-          details: emailResponse.error
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      errorResponse = EmailErrorHandler.createGenericResendError(emailResponse.error);
+      return new Response(JSON.stringify(errorResponse), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Success case
@@ -228,17 +140,9 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("✅ [EMAIL V2] Check your inbox (including spam folder) for email delivery");
       console.log("✅ [EMAIL V2] Also check your Resend dashboard at https://resend.com/emails for delivery status");
       
-      return new Response(JSON.stringify({
-        success: true,
-        messageId: emailResponse.data.id,
-        details: emailResponse.data,
-        version: '2.0',
-        deliveryInfo: {
-          recipientDomain,
-          suggestion: "Check your inbox (including spam folder) and Resend dashboard for delivery confirmation",
-          resendDashboard: "https://resend.com/emails"
-        }
-      }), {
+      const successResponse = ResponseBuilder.buildSuccessResponse(emailResponse.data, recipientDomain);
+      
+      return new Response(JSON.stringify(successResponse), {
         status: 200,
         headers: {
           "Content-Type": "application/json",
@@ -249,23 +153,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Unexpected case - no data and no error
     console.error("❌ [EMAIL V2] Unexpected Resend response - no data and no error");
-    return new Response(
-      JSON.stringify({ 
-        error: "unexpected_response", 
-        message: "Unexpected email service response - no data returned",
-        details: { 
-          response: emailResponse,
-          debugInfo: {
-            recipientDomain,
-            suggestion: "Check Resend dashboard at https://resend.com/emails for delivery status"
-          }
-        }
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    const errorResponse = EmailErrorHandler.createUnexpectedResponseError(emailResponse, recipientDomain);
+    
+    return new Response(JSON.stringify(errorResponse), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
 
   } catch (error: any) {
     console.error("❌ [EMAIL V2] Error in send-email-v2 function:", error);
@@ -273,21 +166,14 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if it's a network/connection error
     const isNetworkError = error.name === 'TypeError' && error.message?.includes('fetch');
     
-    return new Response(
-      JSON.stringify({ 
-        error: isNetworkError ? "network_error" : "function_error",
-        message: error.message || "Internal server error",
-        details: {
-          name: error.name,
-          stack: error.stack?.substring(0, 500),
-          suggestion: isNetworkError ? "Check your internet connection and Resend API status" : "Check function logs for more details"
-        }
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    const errorResponse = isNetworkError 
+      ? EmailErrorHandler.createNetworkError(error)
+      : EmailErrorHandler.createFunctionError(error);
+    
+    return new Response(JSON.stringify(errorResponse), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
