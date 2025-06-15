@@ -36,27 +36,24 @@ export class NotificationOrchestrator {
           console.error('❌ [ORCHESTRATOR] Email failed:', emailError);
           
           let errorMessage = emailError.message;
-          let errorType = 'failed';
           
           // Handle specific email error types
           if (emailError.message.includes('Domain verification required')) {
-            errorType = 'domain_verification_required';
             errorMessage = `Email not sent to ${userEmail}: Domain verification required`;
           } else if (emailError.message.includes('Email API error')) {
-            errorType = 'api_error';
             errorMessage = `Email API error for ${userEmail}: ${emailError.message}`;
           }
           
           await userNotificationService.logNotification({
             userId,
             type: 'email',
-            status: errorType,
+            status: 'failed',
             message: `${title}: ${message}`,
             error: errorMessage
           });
 
           // Re-throw domain verification errors so they can be handled by the UI
-          if (errorType === 'domain_verification_required') {
+          if (emailError.message.includes('Domain verification required')) {
             throw new Error(`Cannot send email to ${userEmail}: Domain verification required. Only verified email addresses can receive emails.`);
           }
           
