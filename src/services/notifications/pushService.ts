@@ -12,13 +12,26 @@ export class PushService {
 
     if (Notification.permission === 'denied') {
       console.log('❌ Notification permission was denied');
-      return 'denied';
+      // Try to request again in case user wants to change their mind
+      try {
+        const permission = await Notification.requestPermission();
+        console.log(`📱 Notification permission retry result: ${permission}`);
+        return permission;
+      } catch (error) {
+        console.log('❌ Could not retry permission request');
+        return 'denied';
+      }
     }
 
     // Request permission
-    const permission = await Notification.requestPermission();
-    console.log(`📱 Notification permission: ${permission}`);
-    return permission;
+    try {
+      const permission = await Notification.requestPermission();
+      console.log(`📱 Notification permission: ${permission}`);
+      return permission;
+    } catch (error) {
+      console.error('❌ Error requesting notification permission:', error);
+      return 'denied';
+    }
   }
 
   async sendPushNotification(userId: string, title: string, body: string): Promise<boolean> {
@@ -31,28 +44,60 @@ export class PushService {
       
       if (permission !== 'granted') {
         console.log('❌ Push notification failed: Permission not granted');
+        // Show a fallback alert if notifications are not allowed
+        if (permission === 'denied') {
+          console.log('📱 Showing fallback alert for denied notification');
+          // Don't show alert as it can be disruptive, just log
+        }
         return false;
       }
 
-      // Create and show the notification
+      // Create and show the notification with enhanced options
       const notification = new Notification(title, {
         body,
         icon: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
+        badge: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
         tag: `skyranch-${userId}-${Date.now()}`, // Unique tag to avoid grouping
         requireInteraction: true, // Keep notification visible until user interacts
-        silent: false // Allow sound
+        silent: false, // Allow sound
+        vibrate: [200, 100, 200], // Vibration pattern for mobile devices
+        data: {
+          userId,
+          timestamp: Date.now(),
+          url: window.location.origin + '/notifications' // URL to open when clicked
+        },
+        actions: [
+          {
+            action: 'view',
+            title: 'Ver Notificaciones',
+            icon: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png'
+          }
+        ]
       });
 
-      // Add click handler
-      notification.onclick = function() {
+      // Add click handler to navigate to notifications
+      notification.onclick = function(event) {
+        event.preventDefault();
         window.focus();
+        // Navigate to notifications page
+        window.location.href = '/notifications';
         notification.close();
       };
 
-      // Auto close after 10 seconds
+      // Handle action clicks
+      notification.addEventListener('notificationclick', function(event) {
+        event.preventDefault();
+        if (event.action === 'view') {
+          window.focus();
+          window.location.href = '/notifications';
+        }
+        notification.close();
+      });
+
+      // Auto close after 15 seconds (longer for breeding notifications)
       setTimeout(() => {
         notification.close();
-      }, 10000);
+      }, 15000);
       
       console.log('✅ Push notification sent successfully');
       return true;
@@ -71,6 +116,20 @@ export class PushService {
   getPermissionStatus(): NotificationPermission {
     if (!this.isSupported()) return 'denied';
     return Notification.permission;
+  }
+
+  // Method to explicitly request permission (can be called from UI)
+  async requestNotificationPermission(): Promise<NotificationPermission> {
+    return this.requestPermission();
+  }
+
+  // Test notification to verify everything works
+  async sendTestNotification(): Promise<boolean> {
+    return this.sendPushNotification(
+      'test-user',
+      '🧪 Notificación de Prueba',
+      'Esta es una notificación de prueba para verificar que el sistema funciona correctamente.'
+    );
   }
 }
 

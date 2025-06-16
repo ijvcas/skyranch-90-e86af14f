@@ -78,6 +78,7 @@ class PregnancyNotificationService {
       }
 
       // Send push notification for each pregnancy
+      let successCount = 0;
       for (const record of breedingRecords) {
         const motherName = record.animals?.name || 'Animal desconocido';
         const dueDate = new Date(record.expected_due_date);
@@ -88,16 +89,22 @@ class PregnancyNotificationService {
         
         const success = await pushService.sendPushNotification(
           user.id,
-          '🤰 Parto próximo',
+          '🤰 Parto próximo - SkyRanch',
           `${motherName} está programada para dar a luz en ${daysUntilDue} días (${dueDateString}). Prepara el área de parto.`
         );
 
         if (success) {
           console.log(`✅ Push notification sent for ${motherName}`);
+          successCount++;
         } else {
           console.log(`❌ Failed to send push notification for ${motherName}`);
         }
+
+        // Add a small delay between notifications to avoid overwhelming
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+
+      console.log(`📱 Successfully sent ${successCount} out of ${breedingRecords.length} push notifications`);
     } catch (error) {
       console.error('❌ Error sending browser push notifications:', error);
     }
