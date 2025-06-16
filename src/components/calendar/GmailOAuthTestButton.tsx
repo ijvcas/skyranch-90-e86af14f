@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -120,6 +121,7 @@ const GmailOAuthTestButton = () => {
 
     setIsTesting(true);
     console.log('📧 [GMAIL OAUTH TEST] Starting test email send...');
+    console.log('📧 [GMAIL OAUTH TEST] Using access token (first 10 chars):', accessToken.substring(0, 10) + '...');
     
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -127,6 +129,8 @@ const GmailOAuthTestButton = () => {
       if (authError || !user?.email) {
         throw new Error('No authenticated user found');
       }
+
+      console.log('📧 [GMAIL OAUTH TEST] Sending test email to:', user.email);
 
       const testPayload = {
         to: user.email,
@@ -142,6 +146,7 @@ const GmailOAuthTestButton = () => {
                 <li><strong>Recipient:</strong> ${user.email}</li>
                 <li><strong>Timestamp:</strong> ${new Date().toISOString()}</li>
                 <li><strong>Sender:</strong> Your personal Gmail account</li>
+                <li><strong>Access Token Preview:</strong> ${accessToken.substring(0, 10)}...</li>
               </ul>
             </div>
             <p>If you receive this email, the Gmail OAuth integration is working correctly!</p>
@@ -156,7 +161,8 @@ const GmailOAuthTestButton = () => {
         metadata: {
           tags: [
             { name: "test-type", value: "gmail-oauth" },
-            { name: "sender", value: "oauth-test" }
+            { name: "sender", value: "oauth-test" },
+            { name: "delivery-verification", value: "true" }
           ]
         }
       };
@@ -164,7 +170,8 @@ const GmailOAuthTestButton = () => {
       console.log('📧 [GMAIL OAUTH TEST] Sending email with payload:', {
         to: testPayload.to,
         subject: testPayload.subject,
-        hasAccessToken: !!testPayload.accessToken
+        hasAccessToken: !!testPayload.accessToken,
+        accessTokenPreview: testPayload.accessToken.substring(0, 10) + '...'
       });
 
       const startTime = Date.now();
@@ -173,25 +180,44 @@ const GmailOAuthTestButton = () => {
       });
       const endTime = Date.now();
 
-      console.log('📧 [GMAIL OAUTH TEST] Email send completed:', {
+      console.log('📧 [GMAIL OAUTH TEST] Gmail API response received:', {
         duration: `${endTime - startTime}ms`,
         hasData: !!data,
-        hasError: !!error
+        hasError: !!error,
+        responseData: data,
+        responseError: error
       });
 
       if (error) {
+        console.error('📧 [GMAIL OAUTH TEST] Edge function error:', error);
         throw new Error(`Gmail API error: ${error.message}`);
       }
 
       if (data?.success) {
         console.log('✅ [GMAIL OAUTH TEST] Email sent successfully!');
-        console.log('📧 [GMAIL OAUTH TEST] Message ID:', data.messageId);
+        console.log('📧 [GMAIL OAUTH TEST] Gmail Response Details:', {
+          messageId: data.messageId,
+          threadId: data.threadId,
+          provider: data.details?.provider,
+          timestamp: data.details?.timestamp,
+          sentViaGmailAPI: data.details?.sentViaGmailAPI
+        });
         
+        // Enhanced success message with delivery verification steps
         toast({
           title: "Gmail OAuth Test Successful! 🎉",
-          description: `Test email sent successfully. Message ID: ${data.messageId}. Check your inbox!`,
+          description: `Test email sent successfully. Message ID: ${data.messageId}. Check your Gmail Sent folder to verify delivery.`,
         });
+
+        // Additional logging for delivery verification
+        console.log('📧 [GMAIL OAUTH TEST] 📊 DELIVERY VERIFICATION STEPS:');
+        console.log('📧 [GMAIL OAUTH TEST] 1. Check Gmail Sent folder for the email');
+        console.log('📧 [GMAIL OAUTH TEST] 2. If in Sent folder, check recipient inbox/spam');
+        console.log('📧 [GMAIL OAUTH TEST] 3. Gmail Message ID:', data.messageId);
+        console.log('📧 [GMAIL OAUTH TEST] 4. Search Gmail for subject: "🧪 Gmail OAuth Test - SkyRanch"');
+        console.log('📧 [GMAIL OAUTH TEST] 5. Recipient email:', user.email);
       } else {
+        console.error('📧 [GMAIL OAUTH TEST] Unexpected response format:', data);
         throw new Error(data?.message || 'Unknown error occurred');
       }
     } catch (error: any) {
