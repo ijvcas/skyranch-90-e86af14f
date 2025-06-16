@@ -148,8 +148,16 @@ export const useCalendarNotifications = (users: any[]) => {
 
         if (error) {
           console.error(`❌ [CALENDAR NOTIFICATION DEBUG] Edge function invocation failed for ${user.email}:`, error);
-          edgeFunctionErrors.push(user.email);
-          emailFailures.push(`${user.email}: Edge function error - ${error.message}`);
+          
+          // Better error handling for edge function errors
+          if (error.message?.includes('non-2xx status code')) {
+            console.error(`❌ [CALENDAR NOTIFICATION DEBUG] Edge function returned error status for ${user.email}`);
+            sandboxModeErrors.push(user.email);
+            emailFailures.push(`${user.email}: Resend sandbox mode restriction - can only send to verified account email`);
+          } else {
+            edgeFunctionErrors.push(user.email);
+            emailFailures.push(`${user.email}: Edge function error - ${error.message}`);
+          }
           notificationsFailed++;
           continue;
         }
@@ -223,7 +231,7 @@ export const useCalendarNotifications = (users: any[]) => {
       if (notificationsFailed > 0) {
         description += `. ${notificationsFailed} fallaron`;
         if (sandboxModeErrors.length > 0) {
-          description += ` (${sandboxModeErrors.length} por modo sandbox)`;
+          description += ` (${sandboxModeErrors.length} por modo sandbox - solo pueden recibir emails usuarios verificados en Resend)`;
         }
         if (domainVerificationErrors.length > 0) {
           description += ` (${domainVerificationErrors.length} por verificación de dominio)`;
@@ -247,7 +255,7 @@ export const useCalendarNotifications = (users: any[]) => {
       let description = `No se pudieron enviar las notificaciones (${notificationsFailed} fallos)`;
       
       if (sandboxModeErrors.length > 0) {
-        description = `Cuenta Resend en modo sandbox. Upgrade necesario para enviar emails.`;
+        description = `Cuenta Resend en modo sandbox. Solo se pueden enviar emails a la cuenta verificada del propietario.`;
       } else if (domainVerificationErrors.length > 0) {
         description = `Verificación de dominio requerida en Resend. Contacta al administrador.`;
       } else if (edgeFunctionErrors.length > 0) {
@@ -267,7 +275,7 @@ export const useCalendarNotifications = (users: any[]) => {
     if (sandboxModeErrors.length > 0) {
       toast({
         title: "Modo Sandbox Detectado",
-        description: `Tu cuenta de Resend está en modo sandbox. Los emails a ${sandboxModeErrors.length} usuario(s) no se enviaron. Upgrade en https://resend.com/pricing`,
+        description: `Tu cuenta de Resend está en modo sandbox. Los emails a ${sandboxModeErrors.length} usuario(s) no se enviaron. Para enviar a otros usuarios, verifica tu dominio en https://resend.com/domains`,
         variant: "destructive"
       });
     }
