@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -22,9 +21,10 @@ const GmailOAuthTestButton = () => {
         throw new Error('No authenticated user found');
       }
 
-      const redirectUri = window.location.origin + '/dashboard'; // Redirect back to dashboard
+      // Use the Gmail callback route as redirect URI
+      const redirectUri = window.location.origin + '/gmail-callback';
       
-      console.log('🔐 [GMAIL OAUTH] Getting auth URL...');
+      console.log('🔐 [GMAIL OAUTH] Getting auth URL with redirect:', redirectUri);
       const { data, error } = await supabase.functions.invoke('send-gmail/auth-url', {
         body: { redirectUri }
       });
@@ -47,7 +47,6 @@ const GmailOAuthTestButton = () => {
           if (event.origin !== window.location.origin) return;
           
           if (event.data.type === 'GMAIL_OAUTH_SUCCESS' && event.data.code) {
-            popup?.close();
             window.removeEventListener('message', handleMessage);
             
             console.log('🔐 [GMAIL OAUTH] OAuth code received, exchanging for token...');
@@ -73,7 +72,6 @@ const GmailOAuthTestButton = () => {
               });
             }
           } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
-            popup?.close();
             window.removeEventListener('message', handleMessage);
             throw new Error(event.data.error || 'OAuth authentication failed');
           }

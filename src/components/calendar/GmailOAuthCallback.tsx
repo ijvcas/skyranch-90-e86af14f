@@ -17,6 +17,7 @@ const GmailOAuthCallback = () => {
         type: 'GMAIL_OAUTH_ERROR',
         error: error
       }, window.location.origin);
+      window.close();
     } else if (code) {
       console.log('📧 [GMAIL OAUTH CALLBACK] OAuth code received');
       // Send code to parent window
@@ -24,12 +25,14 @@ const GmailOAuthCallback = () => {
         type: 'GMAIL_OAUTH_SUCCESS',
         code: code
       }, window.location.origin);
+      window.close();
     } else {
       console.error('📧 [GMAIL OAUTH CALLBACK] No code or error in callback');
       window.opener?.postMessage({
         type: 'GMAIL_OAUTH_ERROR',
         error: 'No authorization code received'
       }, window.location.origin);
+      window.close();
     }
   }, []);
 
