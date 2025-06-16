@@ -1,4 +1,3 @@
-
 export class PushService {
   private async requestPermission(): Promise<NotificationPermission> {
     if (!('Notification' in window)) {
@@ -44,57 +43,41 @@ export class PushService {
       
       if (permission !== 'granted') {
         console.log('❌ Push notification failed: Permission not granted');
-        // Show a fallback alert if notifications are not allowed
-        if (permission === 'denied') {
-          console.log('📱 Showing fallback alert for denied notification');
-          // Don't show alert as it can be disruptive, just log
-        }
         return false;
       }
 
-      // Create and show the notification with enhanced options
-      const notification = new Notification(title, {
+      // Create notification options with proper TypeScript types
+      const options: NotificationOptions = {
         body,
         icon: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
         badge: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
-        tag: `skyranch-${userId}-${Date.now()}`, // Unique tag to avoid grouping
-        requireInteraction: true, // Keep notification visible until user interacts
-        silent: false, // Allow sound
-        vibrate: [200, 100, 200], // Vibration pattern for mobile devices
+        tag: `skyranch-${userId}-${Date.now()}`,
+        requireInteraction: true,
+        silent: false,
         data: {
           userId,
           timestamp: Date.now(),
-          url: window.location.origin + '/notifications' // URL to open when clicked
-        },
-        actions: [
-          {
-            action: 'view',
-            title: 'Ver Notificaciones',
-            icon: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png'
-          }
-        ]
-      });
+          url: window.location.origin + '/notifications'
+        }
+      };
+
+      // Add vibration pattern for mobile devices (if supported)
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+
+      // Create and show the notification
+      const notification = new Notification(title, options);
 
       // Add click handler to navigate to notifications
       notification.onclick = function(event) {
         event.preventDefault();
         window.focus();
-        // Navigate to notifications page
         window.location.href = '/notifications';
         notification.close();
       };
 
-      // Handle action clicks
-      notification.addEventListener('notificationclick', function(event) {
-        event.preventDefault();
-        if (event.action === 'view') {
-          window.focus();
-          window.location.href = '/notifications';
-        }
-        notification.close();
-      });
-
-      // Auto close after 15 seconds (longer for breeding notifications)
+      // Auto close after 15 seconds
       setTimeout(() => {
         notification.close();
       }, 15000);
