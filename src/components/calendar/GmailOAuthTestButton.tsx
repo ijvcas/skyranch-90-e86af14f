@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,6 +10,7 @@ const GmailOAuthTestButton = () => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [testRecipient, setTestRecipient] = useState('');
   const { toast } = useToast();
 
   const handleGmailAuth = async () => {
@@ -119,6 +122,21 @@ const GmailOAuthTestButton = () => {
       return;
     }
 
+    // Use testRecipient if provided, otherwise use current user's email
+    const recipientEmail = testRecipient.trim() || null;
+    
+    if (!recipientEmail) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user?.email) {
+        toast({
+          title: "No Recipient",
+          description: "Please enter a recipient email address or ensure you're logged in",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     setIsTesting(true);
     console.log('📧 [GMAIL OAUTH TEST] Starting test email send...');
     console.log('📧 [GMAIL OAUTH TEST] Using access token (first 10 chars):', accessToken.substring(0, 10) + '...');
@@ -130,10 +148,11 @@ const GmailOAuthTestButton = () => {
         throw new Error('No authenticated user found');
       }
 
-      console.log('📧 [GMAIL OAUTH TEST] Sending test email to:', user.email);
+      const finalRecipient = recipientEmail || user.email;
+      console.log('📧 [GMAIL OAUTH TEST] Sending test email to:', finalRecipient);
 
       const testPayload = {
-        to: user.email,
+        to: finalRecipient,
         subject: "🧪 Gmail OAuth Test - SkyRanch",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -143,7 +162,8 @@ const GmailOAuthTestButton = () => {
               <h3>Test Details:</h3>
               <ul>
                 <li><strong>Method:</strong> Gmail API with OAuth</li>
-                <li><strong>Recipient:</strong> ${user.email}</li>
+                <li><strong>Recipient:</strong> ${finalRecipient}</li>
+                <li><strong>Sender:</strong> ${user.email}</li>
                 <li><strong>Timestamp:</strong> ${new Date().toISOString()}</li>
                 <li><strong>Sender:</strong> Your personal Gmail account</li>
                 <li><strong>Access Token Preview:</strong> ${accessToken.substring(0, 10)}...</li>
@@ -162,7 +182,8 @@ const GmailOAuthTestButton = () => {
           tags: [
             { name: "test-type", value: "gmail-oauth" },
             { name: "sender", value: "oauth-test" },
-            { name: "delivery-verification", value: "true" }
+            { name: "delivery-verification", value: "true" },
+            { name: "recipient-type", value: recipientEmail ? "external" : "self" }
           ]
         }
       };
@@ -171,7 +192,8 @@ const GmailOAuthTestButton = () => {
         to: testPayload.to,
         subject: testPayload.subject,
         hasAccessToken: !!testPayload.accessToken,
-        accessTokenPreview: testPayload.accessToken.substring(0, 10) + '...'
+        accessTokenPreview: testPayload.accessToken.substring(0, 10) + '...',
+        recipientType: recipientEmail ? "external" : "self"
       });
 
       const startTime = Date.now();
@@ -206,16 +228,22 @@ const GmailOAuthTestButton = () => {
         // Enhanced success message with delivery verification steps
         toast({
           title: "Gmail OAuth Test Successful! 🎉",
-          description: `Test email sent successfully. Message ID: ${data.messageId}. Check your Gmail Sent folder to verify delivery.`,
+          description: `Test email sent successfully to ${finalRecipient}. Message ID: ${data.messageId}. ${recipientEmail ? 'Check the recipient inbox!' : 'Check your Gmail Sent folder to verify delivery.'}`,
         });
 
         // Additional logging for delivery verification
         console.log('📧 [GMAIL OAUTH TEST] 📊 DELIVERY VERIFICATION STEPS:');
-        console.log('📧 [GMAIL OAUTH TEST] 1. Check Gmail Sent folder for the email');
-        console.log('📧 [GMAIL OAUTH TEST] 2. If in Sent folder, check recipient inbox/spam');
+        if (recipientEmail) {
+          console.log('📧 [GMAIL OAUTH TEST] 1. Email sent to external recipient:', finalRecipient);
+          console.log('📧 [GMAIL OAUTH TEST] 2. Check recipient inbox/spam folder');
+          console.log('📧 [GMAIL OAUTH TEST] 3. Also check your Gmail Sent folder');
+        } else {
+          console.log('📧 [GMAIL OAUTH TEST] 1. Check Gmail Sent folder for the email');
+          console.log('📧 [GMAIL OAUTH TEST] 2. If in Sent folder, check recipient inbox/spam');
+        }
         console.log('📧 [GMAIL OAUTH TEST] 3. Gmail Message ID:', data.messageId);
         console.log('📧 [GMAIL OAUTH TEST] 4. Search Gmail for subject: "🧪 Gmail OAuth Test - SkyRanch"');
-        console.log('📧 [GMAIL OAUTH TEST] 5. Recipient email:', user.email);
+        console.log('📧 [GMAIL OAUTH TEST] 5. Recipient email:', finalRecipient);
       } else {
         console.error('📧 [GMAIL OAUTH TEST] Unexpected response format:', data);
         throw new Error(data?.message || 'Unknown error occurred');
@@ -233,25 +261,48 @@ const GmailOAuthTestButton = () => {
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button 
-        onClick={handleGmailAuth} 
-        disabled={isAuthenticating || !!accessToken}
-        variant="outline"
-        size="sm"
-      >
-        {isAuthenticating ? 'Authenticating...' : accessToken ? '✓ Gmail Authenticated' : 'Authenticate Gmail'}
-      </Button>
-      
-      {accessToken && (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2">
         <Button 
-          onClick={handleSendTestEmail} 
-          disabled={isTesting}
+          onClick={handleGmailAuth} 
+          disabled={isAuthenticating || !!accessToken}
           variant="outline"
           size="sm"
         >
-          {isTesting ? 'Sending...' : 'Send Gmail Test'}
+          {isAuthenticating ? 'Authenticating...' : accessToken ? '✓ Gmail Authenticated' : 'Authenticate Gmail'}
         </Button>
+      </div>
+      
+      {accessToken && (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="test-recipient" className="text-sm">
+              Test Email Recipient (optional)
+            </Label>
+            <Input
+              id="test-recipient"
+              type="email"
+              placeholder="Enter email address to test delivery (leave empty to send to yourself)"
+              value={testRecipient}
+              onChange={(e) => setTestRecipient(e.target.value)}
+              className="text-sm"
+            />
+            <p className="text-xs text-gray-500">
+              Leave empty to send to yourself (will appear in Sent folder only). 
+              Enter another email to test actual delivery.
+            </p>
+          </div>
+          
+          <Button 
+            onClick={handleSendTestEmail} 
+            disabled={isTesting}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
+            {isTesting ? 'Sending...' : 'Send Gmail Test'}
+          </Button>
+        </div>
       )}
     </div>
   );
