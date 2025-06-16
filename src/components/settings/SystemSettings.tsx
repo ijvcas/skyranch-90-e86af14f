@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, Smartphone, Globe, Mail } from 'lucide-react';
@@ -17,49 +17,10 @@ const SystemSettings = () => {
   const testGmailIntegration = async () => {
     try {
       toast({
-        title: "🧪 Probando Gmail API...",
-        description: "Enviando email de prueba via Gmail API",
+        title: "⚠️ OAuth Required",
+        description: "Please use the Gmail OAuth Test button below for Gmail API testing. The Gmail API requires OAuth authentication.",
+        variant: "destructive"
       });
-
-      const { data, error } = await supabase.functions.invoke('send-gmail', {
-        body: {
-          to: 'jvcas@mac.com',
-          subject: '🧪 Test Gmail API Integration - SkyRanch',
-          html: `
-            <h1>✅ Gmail API Integration Test</h1>
-            <p>This is a test email sent via Gmail API from SkyRanch.</p>
-            <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-            <p><strong>System:</strong> SkyRanch - Sistema de Gestión Ganadera</p>
-            <hr>
-            <p><em>Si recibes este email, la integración con Gmail API está funcionando correctamente.</em></p>
-          `,
-          senderName: "SkyRanch - Gmail Test",
-          organizationName: "SkyRanch"
-        }
-      });
-
-      if (error) {
-        console.error('Gmail test error:', error);
-        toast({
-          title: "❌ Error en Gmail API",
-          description: `Error: ${error.message}`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data?.success) {
-        toast({
-          title: "✅ Gmail API Funcionando",
-          description: `Email enviado exitosamente. Message ID: ${data.messageId}`,
-        });
-      } else {
-        toast({
-          title: "❌ Error en Gmail API",
-          description: data?.message || "Error desconocido",
-          variant: "destructive"
-        });
-      }
     } catch (error) {
       console.error('Gmail test error:', error);
       toast({
@@ -96,7 +57,7 @@ const SystemSettings = () => {
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Transporte:</span>
-                <span className="text-sm text-blue-600 font-medium">Gmail API</span>
+                <span className="text-sm text-blue-600 font-medium">Gmail API (OAuth Required)</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -105,9 +66,9 @@ const SystemSettings = () => {
               </div>
               
               <div className="space-y-2">
-                <span className="text-sm text-gray-600">Email de Prueba:</span>
-                <p className="text-xs font-mono text-gray-500">
-                  jvcas@mac.com
+                <span className="text-sm text-gray-600">Nota:</span>
+                <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                  Gmail API requiere autenticación OAuth. Use el botón OAuth abajo.
                 </p>
               </div>
               
@@ -115,8 +76,9 @@ const SystemSettings = () => {
                 onClick={testGmailIntegration}
                 className="w-full"
                 variant="outline"
+                disabled
               >
-                🧪 Probar Envío Gmail
+                🔒 OAuth Required (Use OAuth Test Below)
               </Button>
             </CardContent>
           </Card>
