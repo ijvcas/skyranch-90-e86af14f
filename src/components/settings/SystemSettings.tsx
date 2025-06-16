@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import DatabaseVersionDisplay from '@/components/app-info/DatabaseVersionDisplay';
 import AuthenticationStatusCard from '@/components/lots/AuthenticationStatusCard';
 import TimezoneSettings from '@/components/TimezoneSettings';
+import GmailOAuthTestButton from '@/components/calendar/GmailOAuthTestButton';
 
 const SystemSettings = () => {
   const { toast } = useToast();
@@ -117,6 +118,38 @@ const SystemSettings = () => {
               >
                 🧪 Probar Envío Gmail
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Gmail OAuth Testing Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Mail className="w-5 h-5 mr-2" />
+                Gmail OAuth Testing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Método:</span>
+                <span className="text-sm text-blue-600 font-medium">OAuth 2.0</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Cuenta:</span>
+                <span className="text-sm text-gray-500 font-medium">Personal Gmail</span>
+              </div>
+              
+              <div className="space-y-2">
+                <span className="text-sm text-gray-600">Descripción:</span>
+                <p className="text-xs text-gray-500">
+                  Envía emails usando tu cuenta personal de Gmail con autenticación OAuth
+                </p>
+              </div>
+              
+              <div className="pt-2">
+                <GmailOAuthTestButton />
+              </div>
             </CardContent>
           </Card>
           
