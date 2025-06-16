@@ -19,11 +19,13 @@ interface GmailRequest {
 }
 
 // JWT helper functions for Google OAuth
-function base64UrlEncode(str: string): string {
-  return btoa(str)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+function base64UrlEncode(data: Uint8Array): string {
+  const base64 = btoa(String.fromCharCode(...data));
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function base64UrlEncodeString(str: string): string {
+  return base64UrlEncode(new TextEncoder().encode(str));
 }
 
 async function createJWT(serviceAccount: any): Promise<string> {
@@ -42,14 +44,20 @@ async function createJWT(serviceAccount: any): Promise<string> {
     iat: now
   };
   
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const encodedHeader = base64UrlEncodeString(JSON.stringify(header));
+  const encodedPayload = base64UrlEncodeString(JSON.stringify(payload));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+  
+  // Clean and format the private key
+  let privateKeyPem = serviceAccount.private_key;
+  if (typeof privateKeyPem === 'string') {
+    privateKeyPem = privateKeyPem.replace(/\\n/g, '\n');
+  }
   
   // Import the private key
   const privateKey = await crypto.subtle.importKey(
     "pkcs8",
-    new TextEncoder().encode(serviceAccount.private_key.replace(/\\n/g, '\n')),
+    new TextEncoder().encode(privateKeyPem),
     {
       name: "RSASSA-PKCS1-v1_5",
       hash: "SHA-256",
@@ -65,7 +73,7 @@ async function createJWT(serviceAccount: any): Promise<string> {
     new TextEncoder().encode(unsignedToken)
   );
   
-  const encodedSignature = base64UrlEncode(String.fromCharCode(...new Uint8Array(signature)));
+  const encodedSignature = base64UrlEncode(new Uint8Array(signature));
   
   return `${unsignedToken}.${encodedSignature}`;
 }
@@ -86,6 +94,7 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
   
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('OAuth token error:', response.status, errorText);
     throw new Error(`Failed to get access token: ${response.status} ${errorText}`);
   }
   
@@ -93,12 +102,12 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
   return tokenData.access_token;
 }
 
-function createMimeMessage(to: string, subject: string, html: string, senderName: string): string {
+function createMimeMessage(to: string, subject: string, html: string, fromEmail: string): string {
   const boundary = "boundary_" + Math.random().toString(36).substring(2);
   
   const message = [
     `To: ${to}`,
-    `From: ${senderName} <${senderName.toLowerCase().replace(/\s+/g, '.')}@gmail.com>`,
+    `From: SkyRanch <${fromEmail}>`,
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
@@ -112,7 +121,9 @@ function createMimeMessage(to: string, subject: string, html: string, senderName
     `--${boundary}--`
   ].join('\r\n');
   
-  return btoa(message).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  // Convert to base64url
+  const base64Message = btoa(unescape(encodeURIComponent(message)));
+  return base64Message.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -123,14 +134,12 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     console.log('📧 [GMAIL API] Function called');
-    console.log('📧 [GMAIL API] Method:', req.method);
     
     // Get Google credentials from environment
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     
     console.log('📧 [GMAIL API] Environment check:', {
       hasServiceAccount: !!serviceAccountJson,
-      serviceAccountLength: serviceAccountJson?.length || 0
     });
     
     if (!serviceAccountJson) {
@@ -153,7 +162,6 @@ const handler = async (req: Request): Promise<Response> => {
         to: requestData.to,
         subject: requestData.subject?.substring(0, 50),
         hasHtml: !!requestData.html,
-        htmlLength: requestData.html?.length
       });
     } catch (parseError) {
       console.error('❌ [GMAIL API] Failed to parse request JSON:', parseError);
@@ -186,7 +194,6 @@ const handler = async (req: Request): Promise<Response> => {
       serviceAccount = JSON.parse(serviceAccountJson);
       console.log('📧 [GMAIL API] Service account parsed successfully:', {
         type: serviceAccount.type,
-        projectId: serviceAccount.project_id,
         clientEmail: serviceAccount.client_email?.substring(0, 30) + '...',
         hasPrivateKey: !!serviceAccount.private_key
       });
@@ -208,18 +215,17 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('✅ [GMAIL API] Access token obtained successfully');
       
       console.log('📝 [GMAIL API] Creating MIME message...');
-      const senderName = requestData.senderName || "SkyRanch";
       const mimeMessage = createMimeMessage(
         requestData.to,
         requestData.subject,
         requestData.html,
-        senderName
+        serviceAccount.client_email
       );
       console.log('✅ [GMAIL API] MIME message created');
       
       console.log('📤 [GMAIL API] Sending email via Gmail API...');
       const gmailResponse = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/${serviceAccount.client_email}/messages/send`,
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`,
         {
           method: "POST",
           headers: {
