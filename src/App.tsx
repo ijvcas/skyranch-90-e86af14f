@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Index from '@/pages/Index';
@@ -23,79 +23,91 @@ import NotFound from '@/pages/NotFound';
 import GmailCallback from '@/pages/GmailCallback';
 import './App.css';
 
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/gmail-callback" element={<GmailCallback />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/animals" element={
-            <ProtectedRoute>
-              <AnimalList />
-            </ProtectedRoute>
-          } />
-          <Route path="/animals/new" element={
-            <ProtectedRoute>
-              <AnimalForm />
-            </ProtectedRoute>
-          } />
-          <Route path="/animals/:id/edit" element={
-            <ProtectedRoute>
-              <AnimalEdit />
-            </ProtectedRoute>
-          } />
-          <Route path="/animals/:id" element={
-            <ProtectedRoute>
-              <AnimalDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="/health" element={
-            <ProtectedRoute>
-              <HealthRecords />
-            </ProtectedRoute>
-          } />
-          <Route path="/breeding" element={
-            <ProtectedRoute>
-              <Breeding />
-            </ProtectedRoute>
-          } />
-          <Route path="/calendar" element={
-            <ProtectedRoute>
-              <Calendar />
-            </ProtectedRoute>
-          } />
-          <Route path="/reports" element={
-            <ProtectedRoute>
-              <Reports />
-            </ProtectedRoute>
-          } />
-          <Route path="/lots" element={
-            <ProtectedRoute>
-              <Lots />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          } />
-          <Route path="/notifications" element={
-            <ProtectedRoute>
-              <Notifications />
-            </ProtectedRoute>
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/gmail-callback" element={<GmailCallback />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/animals" element={
+              <ProtectedRoute>
+                <AnimalList />
+              </ProtectedRoute>
+            } />
+            <Route path="/animals/new" element={
+              <ProtectedRoute>
+                <AnimalForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/animals/:id/edit" element={
+              <ProtectedRoute>
+                <AnimalEdit />
+              </ProtectedRoute>
+            } />
+            <Route path="/animals/:id" element={
+              <ProtectedRoute>
+                <AnimalDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/health" element={
+              <ProtectedRoute>
+                <HealthRecords />
+              </ProtectedRoute>
+            } />
+            <Route path="/breeding" element={
+              <ProtectedRoute>
+                <Breeding />
+              </ProtectedRoute>
+            } />
+            <Route path="/calendar" element={
+              <ProtectedRoute>
+                <Calendar />
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/lots" element={
+              <ProtectedRoute>
+                <Lots />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </QueryClientProvider>
     </BrowserRouter>
   );
 }
