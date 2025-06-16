@@ -18,7 +18,7 @@ interface GmailRequest {
   };
 }
 
-// JWT helper functions for Google OAuth
+// Base64 URL encoding helper
 function base64UrlEncode(data: Uint8Array): string {
   const base64 = btoa(String.fromCharCode(...data));
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -26,6 +26,32 @@ function base64UrlEncode(data: Uint8Array): string {
 
 function base64UrlEncodeString(str: string): string {
   return base64UrlEncode(new TextEncoder().encode(str));
+}
+
+// Clean and format private key
+function formatPrivateKey(privateKey: string): string {
+  // Remove any extra whitespace and normalize line endings
+  let cleanKey = privateKey.replace(/\\n/g, '\n').trim();
+  
+  // Ensure proper PEM format
+  if (!cleanKey.includes('-----BEGIN PRIVATE KEY-----')) {
+    // If it's just the key content, wrap it
+    cleanKey = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
+  }
+  
+  return cleanKey;
+}
+
+// Convert PEM to DER format for crypto.subtle
+function pemToDer(pem: string): Uint8Array {
+  // Remove PEM headers and clean up
+  const pemContent = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s/g, '');
+  
+  // Decode base64 to get DER
+  return Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
 }
 
 async function createJWT(serviceAccount: any): Promise<string> {
@@ -48,34 +74,37 @@ async function createJWT(serviceAccount: any): Promise<string> {
   const encodedPayload = base64UrlEncodeString(JSON.stringify(payload));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
   
-  // Clean and format the private key
-  let privateKeyPem = serviceAccount.private_key;
-  if (typeof privateKeyPem === 'string') {
-    privateKeyPem = privateKeyPem.replace(/\\n/g, '\n');
+  try {
+    // Format and convert private key
+    const formattedKey = formatPrivateKey(serviceAccount.private_key);
+    const derKey = pemToDer(formattedKey);
+    
+    // Import the private key
+    const privateKey = await crypto.subtle.importKey(
+      "pkcs8",
+      derKey,
+      {
+        name: "RSASSA-PKCS1-v1_5",
+        hash: "SHA-256",
+      },
+      false,
+      ["sign"]
+    );
+    
+    // Sign the token
+    const signature = await crypto.subtle.sign(
+      "RSASSA-PKCS1-v1_5",
+      privateKey,
+      new TextEncoder().encode(unsignedToken)
+    );
+    
+    const encodedSignature = base64UrlEncode(new Uint8Array(signature));
+    return `${unsignedToken}.${encodedSignature}`;
+    
+  } catch (error) {
+    console.error('❌ [GMAIL API] JWT creation failed:', error);
+    throw new Error(`JWT creation failed: ${error.message}`);
   }
-  
-  // Import the private key
-  const privateKey = await crypto.subtle.importKey(
-    "pkcs8",
-    new TextEncoder().encode(privateKeyPem),
-    {
-      name: "RSASSA-PKCS1-v1_5",
-      hash: "SHA-256",
-    },
-    false,
-    ["sign"]
-  );
-  
-  // Sign the token
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    privateKey,
-    new TextEncoder().encode(unsignedToken)
-  );
-  
-  const encodedSignature = base64UrlEncode(new Uint8Array(signature));
-  
-  return `${unsignedToken}.${encodedSignature}`;
 }
 
 async function getAccessToken(serviceAccount: any): Promise<string> {
@@ -94,7 +123,7 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('OAuth token error:', response.status, errorText);
+    console.error('❌ [GMAIL API] OAuth token error:', response.status, errorText);
     throw new Error(`Failed to get access token: ${response.status} ${errorText}`);
   }
   
@@ -121,7 +150,7 @@ function createMimeMessage(to: string, subject: string, html: string, fromEmail:
     `--${boundary}--`
   ].join('\r\n');
   
-  // Convert to base64url
+  // Convert to base64url for Gmail API
   const base64Message = btoa(unescape(encodeURIComponent(message)));
   return base64Message.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
@@ -140,6 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log('📧 [GMAIL API] Environment check:', {
       hasServiceAccount: !!serviceAccountJson,
+      serviceAccountLength: serviceAccountJson?.length
     });
     
     if (!serviceAccountJson) {
@@ -162,6 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
         to: requestData.to,
         subject: requestData.subject?.substring(0, 50),
         hasHtml: !!requestData.html,
+        htmlLength: requestData.html?.length
       });
     } catch (parseError) {
       console.error('❌ [GMAIL API] Failed to parse request JSON:', parseError);
@@ -194,6 +225,7 @@ const handler = async (req: Request): Promise<Response> => {
       serviceAccount = JSON.parse(serviceAccountJson);
       console.log('📧 [GMAIL API] Service account parsed successfully:', {
         type: serviceAccount.type,
+        projectId: serviceAccount.project_id,
         clientEmail: serviceAccount.client_email?.substring(0, 30) + '...',
         hasPrivateKey: !!serviceAccount.private_key
       });
