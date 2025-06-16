@@ -18,6 +18,103 @@ interface GmailRequest {
   };
 }
 
+// JWT helper functions for Google OAuth
+function base64UrlEncode(str: string): string {
+  return btoa(str)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+async function createJWT(serviceAccount: any): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  
+  const header = {
+    alg: "RS256",
+    typ: "JWT"
+  };
+  
+  const payload = {
+    iss: serviceAccount.client_email,
+    scope: "https://www.googleapis.com/auth/gmail.send",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now
+  };
+  
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+  
+  // Import the private key
+  const privateKey = await crypto.subtle.importKey(
+    "pkcs8",
+    new TextEncoder().encode(serviceAccount.private_key.replace(/\\n/g, '\n')),
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      hash: "SHA-256",
+    },
+    false,
+    ["sign"]
+  );
+  
+  // Sign the token
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    privateKey,
+    new TextEncoder().encode(unsignedToken)
+  );
+  
+  const encodedSignature = base64UrlEncode(String.fromCharCode(...new Uint8Array(signature)));
+  
+  return `${unsignedToken}.${encodedSignature}`;
+}
+
+async function getAccessToken(serviceAccount: any): Promise<string> {
+  const jwt = await createJWT(serviceAccount);
+  
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to get access token: ${response.status} ${errorText}`);
+  }
+  
+  const tokenData = await response.json();
+  return tokenData.access_token;
+}
+
+function createMimeMessage(to: string, subject: string, html: string, senderName: string): string {
+  const boundary = "boundary_" + Math.random().toString(36).substring(2);
+  
+  const message = [
+    `To: ${to}`,
+    `From: ${senderName} <${senderName.toLowerCase().replace(/\s+/g, '.')}@gmail.com>`,
+    `Subject: ${subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: quoted-printable`,
+    '',
+    html,
+    '',
+    `--${boundary}--`
+  ].join('\r\n');
+  
+  return btoa(message).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -28,33 +125,21 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('📧 [GMAIL API] Function called');
     console.log('📧 [GMAIL API] Method:', req.method);
     
-    // Get Google credentials from environment with better debugging
+    // Get Google credentials from environment
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-    const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
-    const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
     
     console.log('📧 [GMAIL API] Environment check:', {
       hasServiceAccount: !!serviceAccountJson,
-      hasClientId: !!clientId,
-      hasClientSecret: !!clientSecret,
-      serviceAccountLength: serviceAccountJson?.length || 0,
-      availableEnvVars: Object.keys(Deno.env.toObject()).filter(key => key.startsWith('GOOGLE'))
+      serviceAccountLength: serviceAccountJson?.length || 0
     });
     
-    if (!serviceAccountJson || !clientId || !clientSecret) {
-      console.error('❌ [GMAIL API] Missing Google credentials');
-      console.error('❌ [GMAIL API] Available environment variables:', Object.keys(Deno.env.toObject()));
+    if (!serviceAccountJson) {
+      console.error('❌ [GMAIL API] Missing Google service account credentials');
       
       return new Response(JSON.stringify({
         success: false,
         error: 'Missing Google API credentials',
-        message: 'Please configure GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_OAUTH_CLIENT_ID, and GOOGLE_OAUTH_CLIENT_SECRET in Supabase Edge Function secrets',
-        details: {
-          hasServiceAccount: !!serviceAccountJson,
-          hasClientId: !!clientId,
-          hasClientSecret: !!clientSecret,
-          instructions: 'Go to Supabase Dashboard → Project Settings → Edge Functions → Add new secret'
-        }
+        message: 'Please configure GOOGLE_SERVICE_ACCOUNT_JSON in Supabase Edge Function secrets'
       }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -95,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Parse and validate service account credentials
+    // Parse service account credentials
     let serviceAccount;
     try {
       serviceAccount = JSON.parse(serviceAccountJson);
@@ -117,39 +202,100 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Since we have valid credentials, simulate sending the email
-    // In production, you would implement the actual Gmail API integration here
-    console.log('✅ [GMAIL API] All credentials validated - simulating email send');
-    
-    // Generate a realistic message ID for testing
-    const mockMessageId = `mock_gmail_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    const mockThreadId = `thread_gmail_${Date.now()}`;
-
-    console.log("✅ [GMAIL API] Email sent successfully (simulated):", {
-      messageId: mockMessageId,
-      threadId: mockThreadId,
-      to: requestData.to,
-      subject: requestData.subject
-    });
-    
-    return new Response(JSON.stringify({
-      success: true,
-      messageId: mockMessageId,
-      threadId: mockThreadId,
-      details: {
-        provider: 'gmail-api',
-        timestamp: new Date().toISOString(),
-        recipient: requestData.to,
-        credentialsValidated: true,
-        note: 'Gmail credentials validated successfully. This is a simulated response - implement actual Gmail API integration for production.'
+    try {
+      console.log('🔐 [GMAIL API] Getting access token...');
+      const accessToken = await getAccessToken(serviceAccount);
+      console.log('✅ [GMAIL API] Access token obtained successfully');
+      
+      console.log('📝 [GMAIL API] Creating MIME message...');
+      const senderName = requestData.senderName || "SkyRanch";
+      const mimeMessage = createMimeMessage(
+        requestData.to,
+        requestData.subject,
+        requestData.html,
+        senderName
+      );
+      console.log('✅ [GMAIL API] MIME message created');
+      
+      console.log('📤 [GMAIL API] Sending email via Gmail API...');
+      const gmailResponse = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/${serviceAccount.client_email}/messages/send`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            raw: mimeMessage,
+          }),
+        }
+      );
+      
+      if (!gmailResponse.ok) {
+        const errorText = await gmailResponse.text();
+        console.error('❌ [GMAIL API] Gmail API error:', {
+          status: gmailResponse.status,
+          statusText: gmailResponse.statusText,
+          error: errorText
+        });
+        
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Gmail API error',
+          message: `Failed to send email: ${gmailResponse.status} ${errorText}`
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
-    }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+      
+      const gmailResult = await gmailResponse.json();
+      console.log('✅ [GMAIL API] Email sent successfully via Gmail API:', {
+        messageId: gmailResult.id,
+        threadId: gmailResult.threadId,
+        to: requestData.to,
+        subject: requestData.subject
+      });
+      
+      return new Response(JSON.stringify({
+        success: true,
+        messageId: gmailResult.id,
+        threadId: gmailResult.threadId,
+        details: {
+          provider: 'gmail-api',
+          timestamp: new Date().toISOString(),
+          recipient: requestData.to,
+          sentViaGmailAPI: true
+        }
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+      
+    } catch (apiError: any) {
+      console.error('❌ [GMAIL API] API integration error:', {
+        message: apiError.message,
+        name: apiError.name,
+        stack: apiError.stack?.substring(0, 500)
+      });
+      
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Gmail API integration error',
+        message: apiError.message,
+        details: {
+          errorType: 'GMAIL_API_ERROR',
+          timestamp: new Date().toISOString()
+        }
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
   } catch (error: any) {
     console.error("❌ [GMAIL API] Unexpected error:", error);
