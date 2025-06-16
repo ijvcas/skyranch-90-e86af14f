@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { emailServiceV2 } from '@/services/email/v2/EmailServiceV2';
 import { supabase } from '@/integrations/supabase/client';
+import GmailOAuthTestButton from './GmailOAuthTestButton';
 
 const EmailTestButton = () => {
   const [isTesting, setIsTesting] = useState(false);
@@ -278,33 +279,41 @@ const EmailTestButton = () => {
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button 
-        onClick={handleTestEmail} 
-        disabled={isTesting}
-        variant="outline"
-        size="sm"
-      >
-        {isTesting ? 'Testing V2...' : 'Test Email V2'}
-      </Button>
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button 
+          onClick={handleTestEmail} 
+          disabled={isTesting}
+          variant="outline"
+          size="sm"
+        >
+          {isTesting ? 'Testing V2...' : 'Test Email V2'}
+        </Button>
+        
+        <Button 
+          onClick={handleDirectEdgeFunctionTest} 
+          disabled={isDirectTesting}
+          variant="outline"
+          size="sm"
+        >
+          {isDirectTesting ? 'Testing Direct...' : 'Direct Edge Test'}
+        </Button>
+        
+        <Button 
+          onClick={handleHealthCheck} 
+          disabled={isHealthChecking}
+          variant="outline"
+          size="sm"
+        >
+          {isHealthChecking ? 'Checking...' : 'Health Check V2'}
+        </Button>
+      </div>
       
-      <Button 
-        onClick={handleDirectEdgeFunctionTest} 
-        disabled={isDirectTesting}
-        variant="outline"
-        size="sm"
-      >
-        {isDirectTesting ? 'Testing Direct...' : 'Direct Edge Test'}
-      </Button>
-      
-      <Button 
-        onClick={handleHealthCheck} 
-        disabled={isHealthChecking}
-        variant="outline"
-        size="sm"
-      >
-        {isHealthChecking ? 'Checking...' : 'Health Check V2'}
-      </Button>
+      {/* Gmail OAuth Testing Section */}
+      <div className="border-t pt-4">
+        <h4 className="text-sm font-medium mb-2">Gmail OAuth Testing</h4>
+        <GmailOAuthTestButton />
+      </div>
     </div>
   );
 };

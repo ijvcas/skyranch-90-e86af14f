@@ -18,117 +18,57 @@ interface GmailRequest {
   };
 }
 
-// Base64 URL encoding helper
-function base64UrlEncode(data: Uint8Array): string {
-  const base64 = btoa(String.fromCharCode(...data));
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+interface OAuthRequest extends GmailRequest {
+  accessToken?: string;
 }
 
-function base64UrlEncodeString(str: string): string {
-  return base64UrlEncode(new TextEncoder().encode(str));
+interface AuthUrlRequest {
+  redirectUri: string;
 }
 
-// Clean and format private key
-function formatPrivateKey(privateKey: string): string {
-  // Remove any extra whitespace and normalize line endings
-  let cleanKey = privateKey.replace(/\\n/g, '\n').trim();
+// Generate OAuth authorization URL
+function generateAuthUrl(clientId: string, redirectUri: string): string {
+  const scope = 'https://www.googleapis.com/auth/gmail.send';
+  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   
-  // Ensure proper PEM format
-  if (!cleanKey.includes('-----BEGIN PRIVATE KEY-----')) {
-    // If it's just the key content, wrap it
-    cleanKey = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
-  }
+  authUrl.searchParams.set('client_id', clientId);
+  authUrl.searchParams.set('redirect_uri', redirectUri);
+  authUrl.searchParams.set('scope', scope);
+  authUrl.searchParams.set('response_type', 'code');
+  authUrl.searchParams.set('access_type', 'offline');
+  authUrl.searchParams.set('prompt', 'consent');
   
-  return cleanKey;
+  return authUrl.toString();
 }
 
-// Convert PEM to DER format for crypto.subtle
-function pemToDer(pem: string): Uint8Array {
-  // Remove PEM headers and clean up
-  const pemContent = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\s/g, '');
-  
-  // Decode base64 to get DER
-  return Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
-}
-
-async function createJWT(serviceAccount: any): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  
-  const header = {
-    alg: "RS256",
-    typ: "JWT"
-  };
-  
-  const payload = {
-    iss: serviceAccount.client_email,
-    scope: "https://www.googleapis.com/auth/gmail.send",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now
-  };
-  
-  const encodedHeader = base64UrlEncodeString(JSON.stringify(header));
-  const encodedPayload = base64UrlEncodeString(JSON.stringify(payload));
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-  
-  try {
-    // Format and convert private key
-    const formattedKey = formatPrivateKey(serviceAccount.private_key);
-    const derKey = pemToDer(formattedKey);
-    
-    // Import the private key
-    const privateKey = await crypto.subtle.importKey(
-      "pkcs8",
-      derKey,
-      {
-        name: "RSASSA-PKCS1-v1_5",
-        hash: "SHA-256",
-      },
-      false,
-      ["sign"]
-    );
-    
-    // Sign the token
-    const signature = await crypto.subtle.sign(
-      "RSASSA-PKCS1-v1_5",
-      privateKey,
-      new TextEncoder().encode(unsignedToken)
-    );
-    
-    const encodedSignature = base64UrlEncode(new Uint8Array(signature));
-    return `${unsignedToken}.${encodedSignature}`;
-    
-  } catch (error) {
-    console.error('❌ [GMAIL API] JWT creation failed:', error);
-    throw new Error(`JWT creation failed: ${error.message}`);
-  }
-}
-
-async function getAccessToken(serviceAccount: any): Promise<string> {
-  const jwt = await createJWT(serviceAccount);
-  
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
+// Exchange authorization code for access token
+async function exchangeCodeForToken(
+  clientId: string,
+  clientSecret: string,
+  code: string,
+  redirectUri: string
+): Promise<{ access_token: string; refresh_token?: string }> {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
+      client_id: clientId,
+      client_secret: clientSecret,
+      code: code,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
     }),
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('❌ [GMAIL API] OAuth token error:', response.status, errorText);
-    throw new Error(`Failed to get access token: ${response.status} ${errorText}`);
+    console.error('❌ [GMAIL OAUTH] Token exchange error:', response.status, errorText);
+    throw new Error(`Failed to exchange code for token: ${response.status} ${errorText}`);
   }
-  
-  const tokenData = await response.json();
-  return tokenData.access_token;
+
+  return await response.json();
 }
 
 function createMimeMessage(to: string, subject: string, html: string, fromEmail: string): string {
@@ -162,43 +102,86 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log('📧 [GMAIL API] Function called');
+    console.log('📧 [GMAIL OAUTH] Function called');
     
-    // Get Google credentials from environment
-    const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+    // Get OAuth credentials from environment
+    const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+    const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
     
-    console.log('📧 [GMAIL API] Environment check:', {
-      hasServiceAccount: !!serviceAccountJson,
-      serviceAccountLength: serviceAccountJson?.length
+    console.log('📧 [GMAIL OAUTH] Environment check:', {
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
     });
     
-    if (!serviceAccountJson) {
-      console.error('❌ [GMAIL API] Missing Google service account credentials');
+    if (!clientId || !clientSecret) {
+      console.error('❌ [GMAIL OAUTH] Missing Google OAuth credentials');
       
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing Google API credentials',
-        message: 'Please configure GOOGLE_SERVICE_ACCOUNT_JSON in Supabase Edge Function secrets'
+        error: 'missing_oauth_credentials',
+        message: 'Please configure GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in Supabase Edge Function secrets'
       }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    let requestData: GmailRequest;
+    const url = new URL(req.url);
+    const path = url.pathname;
+
+    // Handle different endpoints
+    if (path.endsWith('/auth-url')) {
+      // Generate OAuth authorization URL
+      const requestData: AuthUrlRequest = await req.json();
+      
+      const authUrl = generateAuthUrl(clientId, requestData.redirectUri);
+      
+      console.log('📧 [GMAIL OAUTH] Generated auth URL for redirect:', requestData.redirectUri);
+      
+      return new Response(JSON.stringify({
+        success: true,
+        authUrl: authUrl
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    
+    if (path.endsWith('/exchange-token')) {
+      // Exchange authorization code for access token
+      const { code, redirectUri } = await req.json();
+      
+      console.log('📧 [GMAIL OAUTH] Exchanging code for token...');
+      
+      const tokenData = await exchangeCodeForToken(clientId, clientSecret, code, redirectUri);
+      
+      console.log('✅ [GMAIL OAUTH] Token exchange successful');
+      
+      return new Response(JSON.stringify({
+        success: true,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Default endpoint - send email with access token
+    let requestData: OAuthRequest;
     try {
       requestData = await req.json();
-      console.log('📧 [GMAIL API] Request data received:', {
+      console.log('📧 [GMAIL OAUTH] Send email request received:', {
         to: requestData.to,
         subject: requestData.subject?.substring(0, 50),
         hasHtml: !!requestData.html,
-        htmlLength: requestData.html?.length
+        hasAccessToken: !!requestData.accessToken
       });
     } catch (parseError) {
-      console.error('❌ [GMAIL API] Failed to parse request JSON:', parseError);
+      console.error('❌ [GMAIL OAUTH] Failed to parse request JSON:', parseError);
       return new Response(JSON.stringify({
         success: false,
-        error: 'Invalid JSON in request body',
+        error: 'invalid_json',
         message: parseError.message
       }), {
         status: 400,
@@ -207,34 +190,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Validate required fields
-    if (!requestData.to || !requestData.subject || !requestData.html) {
-      console.error('❌ [GMAIL API] Missing required fields');
+    if (!requestData.to || !requestData.subject || !requestData.html || !requestData.accessToken) {
+      console.error('❌ [GMAIL OAUTH] Missing required fields');
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing required fields',
-        message: 'to, subject, and html are required'
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    // Parse service account credentials
-    let serviceAccount;
-    try {
-      serviceAccount = JSON.parse(serviceAccountJson);
-      console.log('📧 [GMAIL API] Service account parsed successfully:', {
-        type: serviceAccount.type,
-        projectId: serviceAccount.project_id,
-        clientEmail: serviceAccount.client_email?.substring(0, 30) + '...',
-        hasPrivateKey: !!serviceAccount.private_key
-      });
-    } catch (error) {
-      console.error('❌ [GMAIL API] Invalid service account JSON:', error);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Invalid service account JSON',
-        message: 'Please check GOOGLE_SERVICE_ACCOUNT_JSON format'
+        error: 'missing_required_fields',
+        message: 'to, subject, html, and accessToken are required'
       }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -242,26 +203,22 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     try {
-      console.log('🔐 [GMAIL API] Getting access token...');
-      const accessToken = await getAccessToken(serviceAccount);
-      console.log('✅ [GMAIL API] Access token obtained successfully');
-      
-      console.log('📝 [GMAIL API] Creating MIME message...');
+      console.log('📝 [GMAIL OAUTH] Creating MIME message...');
       const mimeMessage = createMimeMessage(
         requestData.to,
         requestData.subject,
         requestData.html,
-        serviceAccount.client_email
+        'me' // Gmail API uses 'me' for authenticated user
       );
-      console.log('✅ [GMAIL API] MIME message created');
+      console.log('✅ [GMAIL OAUTH] MIME message created');
       
-      console.log('📤 [GMAIL API] Sending email via Gmail API...');
+      console.log('📤 [GMAIL OAUTH] Sending email via Gmail API...');
       const gmailResponse = await fetch(
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`,
         {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${accessToken}`,
+            "Authorization": `Bearer ${requestData.accessToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -272,7 +229,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (!gmailResponse.ok) {
         const errorText = await gmailResponse.text();
-        console.error('❌ [GMAIL API] Gmail API error:', {
+        console.error('❌ [GMAIL OAUTH] Gmail API error:', {
           status: gmailResponse.status,
           statusText: gmailResponse.statusText,
           error: errorText
@@ -280,7 +237,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         return new Response(JSON.stringify({
           success: false,
-          error: 'Gmail API error',
+          error: 'gmail_api_error',
           message: `Failed to send email: ${gmailResponse.status} ${errorText}`
         }), {
           status: 500,
@@ -289,7 +246,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       const gmailResult = await gmailResponse.json();
-      console.log('✅ [GMAIL API] Email sent successfully via Gmail API:', {
+      console.log('✅ [GMAIL OAUTH] Email sent successfully via Gmail API:', {
         messageId: gmailResult.id,
         threadId: gmailResult.threadId,
         to: requestData.to,
@@ -301,7 +258,7 @@ const handler = async (req: Request): Promise<Response> => {
         messageId: gmailResult.id,
         threadId: gmailResult.threadId,
         details: {
-          provider: 'gmail-api',
+          provider: 'gmail-oauth',
           timestamp: new Date().toISOString(),
           recipient: requestData.to,
           sentViaGmailAPI: true
@@ -315,7 +272,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
       
     } catch (apiError: any) {
-      console.error('❌ [GMAIL API] API integration error:', {
+      console.error('❌ [GMAIL OAUTH] API integration error:', {
         message: apiError.message,
         name: apiError.name,
         stack: apiError.stack?.substring(0, 500)
@@ -323,7 +280,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       return new Response(JSON.stringify({
         success: false,
-        error: 'Gmail API integration error',
+        error: 'gmail_api_integration_error',
         message: apiError.message,
         details: {
           errorType: 'GMAIL_API_ERROR',
@@ -336,12 +293,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
   } catch (error: any) {
-    console.error("❌ [GMAIL API] Unexpected error:", error);
-    console.error("❌ [GMAIL API] Error stack:", error.stack);
+    console.error("❌ [GMAIL OAUTH] Unexpected error:", error);
+    console.error("❌ [GMAIL OAUTH] Error stack:", error.stack);
     
     return new Response(JSON.stringify({
       success: false,
-      error: 'Internal server error',
+      error: 'internal_server_error',
       message: error.message,
       details: {
         timestamp: new Date().toISOString(),
