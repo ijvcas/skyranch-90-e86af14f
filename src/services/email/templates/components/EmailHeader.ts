@@ -3,7 +3,7 @@ export class EmailHeader {
   static render(logoUrl: string, organizationName: string): string {
     return `
       <!-- Elegant SkyRanch Header with App Branding -->
-      <div style="background: linear-gradient(135deg, #047857 0%, #059669 25%, #10b981 75%, #34d399 100%); padding: 0; position: relative; overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #34d399 25%, #6ee7b7 75%, #a7f3d0 100%); padding: 0; position: relative; overflow: hidden;">
         <!-- Subtle ranch pattern overlay with opacity -->
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"80\" height=\"80\" viewBox=\"0 0 80 80\"><circle cx=\"40\" cy=\"40\" r=\"2\" fill=\"%23ffffff\" opacity=\"0.08\"/><circle cx=\"15\" cy=\"15\" r=\"1.5\" fill=\"%23ffffff\" opacity=\"0.12\"/><circle cx=\"65\" cy=\"65\" r=\"1.5\" fill=\"%23ffffff\" opacity=\"0.12\"/><circle cx=\"15\" cy=\"65\" r=\"1\" fill=\"%23ffffff\" opacity=\"0.1\"/><circle cx=\"65\" cy=\"15\" r=\"1\" fill=\"%23ffffff\" opacity=\"0.1\"/></svg>'); opacity: 0.4;"></div>
         
