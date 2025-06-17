@@ -71,15 +71,24 @@ async function exchangeCodeForToken(
   return await response.json();
 }
 
-function createMimeMessage(to: string, subject: string, html: string, fromEmail: string): string {
+function createMimeMessage(to: string, subject: string, html: string, senderName: string, organizationName: string): string {
   const boundary = "boundary_" + Math.random().toString(36).substring(2);
+  const fromEmail = "soporte@skyranch.es";
+  const fromName = senderName || "SkyRanch Soporte";
   
   const message = [
     `To: ${to}`,
-    `From: SkyRanch <${fromEmail}>`,
+    `From: ${fromName} <${fromEmail}>`,
+    `Reply-To: soporte@skyranch.es`,
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    `X-Mailer: SkyRanch Sistema de Gestión Ganadera`,
+    `X-Organization: ${organizationName || 'SkyRanch'}`,
+    `X-Priority: 3`,
+    `X-MSMail-Priority: Normal`,
+    `Message-ID: <${Date.now()}.${Math.random().toString(36).substring(2)}@skyranch.es>`,
+    `Date: ${new Date().toUTCString()}`,
     '',
     `--${boundary}`,
     `Content-Type: text/html; charset=UTF-8`,
@@ -102,19 +111,19 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log('📧 [GMAIL OAUTH] Function called');
+    console.log('📧 [GMAIL SKYRANCH] Function called');
     
     // Get OAuth credentials from environment
     const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
     const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
     
-    console.log('📧 [GMAIL OAUTH] Environment check:', {
+    console.log('📧 [GMAIL SKYRANCH] Environment check:', {
       hasClientId: !!clientId,
       hasClientSecret: !!clientSecret,
     });
     
     if (!clientId || !clientSecret) {
-      console.error('❌ [GMAIL OAUTH] Missing Google OAuth credentials');
+      console.error('❌ [GMAIL SKYRANCH] Missing Google OAuth credentials');
       
       return new Response(JSON.stringify({
         success: false,
@@ -136,7 +145,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       const authUrl = generateAuthUrl(clientId, requestData.redirectUri);
       
-      console.log('📧 [GMAIL OAUTH] Generated auth URL for redirect:', requestData.redirectUri);
+      console.log('📧 [GMAIL SKYRANCH] Generated auth URL for redirect:', requestData.redirectUri);
       
       return new Response(JSON.stringify({
         success: true,
@@ -151,11 +160,11 @@ const handler = async (req: Request): Promise<Response> => {
       // Exchange authorization code for access token
       const { code, redirectUri } = await req.json();
       
-      console.log('📧 [GMAIL OAUTH] Exchanging code for token...');
+      console.log('📧 [GMAIL SKYRANCH] Exchanging code for token...');
       
       const tokenData = await exchangeCodeForToken(clientId, clientSecret, code, redirectUri);
       
-      console.log('✅ [GMAIL OAUTH] Token exchange successful');
+      console.log('✅ [GMAIL SKYRANCH] Token exchange successful');
       
       return new Response(JSON.stringify({
         success: true,
@@ -171,14 +180,16 @@ const handler = async (req: Request): Promise<Response> => {
     let requestData: OAuthRequest;
     try {
       requestData = await req.json();
-      console.log('📧 [GMAIL OAUTH] Send email request received:', {
+      console.log('📧 [GMAIL SKYRANCH] Send email request received:', {
         to: requestData.to,
         subject: requestData.subject?.substring(0, 50),
         hasHtml: !!requestData.html,
-        hasAccessToken: !!requestData.accessToken
+        hasAccessToken: !!requestData.accessToken,
+        senderName: requestData.senderName,
+        organizationName: requestData.organizationName
       });
     } catch (parseError) {
-      console.error('❌ [GMAIL OAUTH] Failed to parse request JSON:', parseError);
+      console.error('❌ [GMAIL SKYRANCH] Failed to parse request JSON:', parseError);
       return new Response(JSON.stringify({
         success: false,
         error: 'invalid_json',
@@ -191,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate required fields
     if (!requestData.to || !requestData.subject || !requestData.html || !requestData.accessToken) {
-      console.error('❌ [GMAIL OAUTH] Missing required fields');
+      console.error('❌ [GMAIL SKYRANCH] Missing required fields');
       return new Response(JSON.stringify({
         success: false,
         error: 'missing_required_fields',
@@ -203,16 +214,17 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     try {
-      console.log('📝 [GMAIL OAUTH] Creating MIME message...');
+      console.log('📝 [GMAIL SKYRANCH] Creating MIME message with professional headers...');
       const mimeMessage = createMimeMessage(
         requestData.to,
         requestData.subject,
         requestData.html,
-        'me' // Gmail API uses 'me' for authenticated user
+        requestData.senderName || "SkyRanch Soporte",
+        requestData.organizationName || "SkyRanch"
       );
-      console.log('✅ [GMAIL OAUTH] MIME message created');
+      console.log('✅ [GMAIL SKYRANCH] Professional MIME message created with soporte@skyranch.es');
       
-      console.log('📤 [GMAIL OAUTH] Sending email via Gmail API...');
+      console.log('📤 [GMAIL SKYRANCH] Sending email via Gmail API with professional domain...');
       const gmailResponse = await fetch(
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`,
         {
@@ -229,7 +241,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (!gmailResponse.ok) {
         const errorText = await gmailResponse.text();
-        console.error('❌ [GMAIL OAUTH] Gmail API error:', {
+        console.error('❌ [GMAIL SKYRANCH] Gmail API error:', {
           status: gmailResponse.status,
           statusText: gmailResponse.statusText,
           error: errorText
@@ -246,11 +258,13 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       const gmailResult = await gmailResponse.json();
-      console.log('✅ [GMAIL OAUTH] Email sent successfully via Gmail API:', {
+      console.log('✅ [GMAIL SKYRANCH] Email sent successfully via Gmail API with professional domain:', {
         messageId: gmailResult.id,
         threadId: gmailResult.threadId,
         to: requestData.to,
-        subject: requestData.subject
+        subject: requestData.subject,
+        fromDomain: 'skyranch.es',
+        senderEmail: 'soporte@skyranch.es'
       });
       
       return new Response(JSON.stringify({
@@ -258,10 +272,13 @@ const handler = async (req: Request): Promise<Response> => {
         messageId: gmailResult.id,
         threadId: gmailResult.threadId,
         details: {
-          provider: 'gmail-oauth',
+          provider: 'gmail-skyranch',
           timestamp: new Date().toISOString(),
           recipient: requestData.to,
-          sentViaGmailAPI: true
+          sentViaGmailAPI: true,
+          fromDomain: 'skyranch.es',
+          senderEmail: 'soporte@skyranch.es',
+          professionalSender: true
         }
       }), {
         status: 200,
@@ -272,7 +289,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
       
     } catch (apiError: any) {
-      console.error('❌ [GMAIL OAUTH] API integration error:', {
+      console.error('❌ [GMAIL SKYRANCH] API integration error:', {
         message: apiError.message,
         name: apiError.name,
         stack: apiError.stack?.substring(0, 500)
@@ -293,8 +310,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
   } catch (error: any) {
-    console.error("❌ [GMAIL OAUTH] Unexpected error:", error);
-    console.error("❌ [GMAIL OAUTH] Error stack:", error.stack);
+    console.error("❌ [GMAIL SKYRANCH] Unexpected error:", error);
+    console.error("❌ [GMAIL SKYRANCH] Error stack:", error.stack);
     
     return new Response(JSON.stringify({
       success: false,

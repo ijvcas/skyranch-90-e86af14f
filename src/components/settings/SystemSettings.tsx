@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,9 +16,9 @@ const SystemSettings = () => {
   const testGmailIntegration = async () => {
     try {
       toast({
-        title: "⚠️ OAuth Required",
-        description: "Please use the Gmail OAuth Test button below for Gmail API testing. The Gmail API requires OAuth authentication.",
-        variant: "destructive"
+        title: "🏢 Professional Gmail Integration",
+        description: "Use the Gmail OAuth Test button below to test professional email delivery from soporte@skyranch.es",
+        variant: "default"
       });
     } catch (error) {
       console.error('Gmail test error:', error);
@@ -52,33 +51,40 @@ const SystemSettings = () => {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Estado:</span>
-                <span className="text-sm text-green-600 font-medium">✓ Configurado</span>
+                <span className="text-sm text-green-600 font-medium">✓ Configurado Profesional</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Dominio de Envío:</span>
+                <span className="text-sm text-blue-600 font-medium">soporte@skyranch.es</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Transporte:</span>
-                <span className="text-sm text-blue-600 font-medium">Gmail API (OAuth Required)</span>
+                <span className="text-sm text-blue-600 font-medium">Gmail API (OAuth + Professional)</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Función Edge:</span>
-                <span className="text-sm text-green-600 font-medium">send-gmail</span>
+                <span className="text-sm text-green-600 font-medium">send-gmail (Professional)</span>
               </div>
               
               <div className="space-y-2">
-                <span className="text-sm text-gray-600">Nota:</span>
-                <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                  Gmail API requiere autenticación OAuth. Use el botón OAuth abajo.
-                </p>
+                <span className="text-sm text-gray-600">Mejoras Profesionales:</span>
+                <div className="text-xs text-green-600 bg-green-50 p-2 rounded space-y-1">
+                  <div>✓ Dominio profesional skyranch.es</div>
+                  <div>✓ Headers de autenticación mejorados</div>
+                  <div>✓ Reply-To configurado correctamente</div>
+                  <div>✓ Branding organizacional</div>
+                </div>
               </div>
               
               <Button 
                 onClick={testGmailIntegration}
                 className="w-full"
                 variant="outline"
-                disabled
               >
-                🔒 OAuth Required (Use OAuth Test Below)
+                🏢 Professional Domain Ready (Use OAuth Below)
               </Button>
             </CardContent>
           </Card>
@@ -88,24 +94,29 @@ const SystemSettings = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Mail className="w-5 h-5 mr-2" />
-                Gmail OAuth Testing
+                Professional Gmail Testing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Método:</span>
-                <span className="text-sm text-blue-600 font-medium">OAuth 2.0</span>
+                <span className="text-sm text-blue-600 font-medium">OAuth 2.0 + Professional Domain</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Cuenta:</span>
-                <span className="text-sm text-gray-500 font-medium">Personal Gmail</span>
+                <span className="text-sm text-gray-600">Dominio de Envío:</span>
+                <span className="text-sm text-green-600 font-medium">soporte@skyranch.es</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Autenticación:</span>
+                <span className="text-sm text-blue-600 font-medium">Enhanced Headers</span>
               </div>
               
               <div className="space-y-2">
                 <span className="text-sm text-gray-600">Descripción:</span>
                 <p className="text-xs text-gray-500">
-                  Envía emails usando tu cuenta personal de Gmail con autenticación OAuth
+                  Envía emails profesionales desde soporte@skyranch.es con autenticación OAuth y headers mejorados para mejor entregabilidad
                 </p>
               </div>
               

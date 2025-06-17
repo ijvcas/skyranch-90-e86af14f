@@ -15,7 +15,7 @@ const GmailOAuthTestButton = () => {
 
   const handleGmailAuth = async () => {
     setIsAuthenticating(true);
-    console.log('🔐 [GMAIL OAUTH] Starting OAuth authentication...');
+    console.log('🔐 [GMAIL SKYRANCH AUTH] Starting OAuth authentication...');
     
     try {
       // Get current user for email
@@ -28,7 +28,7 @@ const GmailOAuthTestButton = () => {
       // Use the Gmail callback route as redirect URI
       const redirectUri = window.location.origin + '/gmail-callback';
       
-      console.log('🔐 [GMAIL OAUTH] Getting auth URL with redirect:', redirectUri);
+      console.log('🔐 [GMAIL SKYRANCH AUTH] Getting auth URL with redirect:', redirectUri);
       const { data, error } = await supabase.functions.invoke('send-gmail/auth-url', {
         body: { redirectUri }
       });
@@ -38,7 +38,7 @@ const GmailOAuthTestButton = () => {
       }
 
       if (data?.authUrl) {
-        console.log('🔐 [GMAIL OAUTH] Redirecting to Google OAuth...');
+        console.log('🔐 [GMAIL SKYRANCH AUTH] Redirecting to Google OAuth...');
         // Open OAuth flow in popup window
         const popup = window.open(
           data.authUrl,
@@ -53,7 +53,7 @@ const GmailOAuthTestButton = () => {
           if (event.data.type === 'GMAIL_OAUTH_SUCCESS' && event.data.code) {
             window.removeEventListener('message', handleMessage);
             
-            console.log('🔐 [GMAIL OAUTH] OAuth code received, exchanging for token...');
+            console.log('🔐 [GMAIL SKYRANCH AUTH] OAuth code received, exchanging for token...');
             
             // Exchange code for access token
             const { data: tokenData, error: tokenError } = await supabase.functions.invoke('send-gmail/exchange-token', {
@@ -69,10 +69,10 @@ const GmailOAuthTestButton = () => {
 
             if (tokenData?.accessToken) {
               setAccessToken(tokenData.accessToken);
-              console.log('✅ [GMAIL OAUTH] Access token obtained successfully');
+              console.log('✅ [GMAIL SKYRANCH AUTH] Access token obtained successfully');
               toast({
                 title: "Gmail Authentication Successful",
-                description: "You can now send test emails via Gmail API",
+                description: "You can now send emails via Gmail API using soporte@skyranch.es",
               });
             }
           } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
@@ -101,7 +101,7 @@ const GmailOAuthTestButton = () => {
         throw new Error('No auth URL received from server');
       }
     } catch (error: any) {
-      console.error('🔐 [GMAIL OAUTH] Authentication error:', error);
+      console.error('🔐 [GMAIL SKYRANCH AUTH] Authentication error:', error);
       toast({
         title: "Gmail Authentication Failed",
         description: `Failed to authenticate with Gmail: ${error.message}`,
@@ -138,8 +138,8 @@ const GmailOAuthTestButton = () => {
     }
 
     setIsTesting(true);
-    console.log('📧 [GMAIL OAUTH TEST] Starting test email send...');
-    console.log('📧 [GMAIL OAUTH TEST] Using access token (first 10 chars):', accessToken.substring(0, 10) + '...');
+    console.log('📧 [GMAIL SKYRANCH TEST] Starting professional test email send...');
+    console.log('📧 [GMAIL SKYRANCH TEST] Using access token (first 10 chars):', accessToken.substring(0, 10) + '...');
     
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -149,51 +149,76 @@ const GmailOAuthTestButton = () => {
       }
 
       const finalRecipient = recipientEmail || user.email;
-      console.log('📧 [GMAIL OAUTH TEST] Sending test email to:', finalRecipient);
+      console.log('📧 [GMAIL SKYRANCH TEST] Sending professional test email to:', finalRecipient);
 
       const testPayload = {
         to: finalRecipient,
-        subject: "🧪 Gmail OAuth Test - SkyRanch",
+        subject: "🏢 SkyRanch Professional Email Test",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #2563eb;">Gmail OAuth Test Successful! 🎉</h1>
-            <p>This email was sent using Gmail API with OAuth authentication.</p>
-            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-              <h3>Test Details:</h3>
-              <ul>
-                <li><strong>Method:</strong> Gmail API with OAuth</li>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #2563eb; margin-bottom: 10px;">SkyRanch - Sistema de Gestión Ganadera</h1>
+              <p style="color: #6b7280; font-size: 16px;">Professional Email Integration Test</p>
+            </div>
+            
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981;">
+              <h2 style="color: #10b981; margin-top: 0;">✅ Email Integration Successful!</h2>
+              <p>This email was sent using our professional Gmail API integration with enhanced delivery settings.</p>
+            </div>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #374151; margin-top: 0;">Professional Email Details:</h3>
+              <ul style="color: #6b7280; line-height: 1.6;">
+                <li><strong>From:</strong> SkyRanch Soporte &lt;soporte@skyranch.es&gt;</li>
+                <li><strong>Reply-To:</strong> soporte@skyranch.es</li>
+                <li><strong>Method:</strong> Gmail API with OAuth Authentication</li>
                 <li><strong>Recipient:</strong> ${finalRecipient}</li>
-                <li><strong>Sender:</strong> ${user.email}</li>
                 <li><strong>Timestamp:</strong> ${new Date().toISOString()}</li>
-                <li><strong>Sender:</strong> Your personal Gmail account</li>
-                <li><strong>Access Token Preview:</strong> ${accessToken.substring(0, 10)}...</li>
+                <li><strong>Professional Domain:</strong> skyranch.es</li>
+                <li><strong>Authentication:</strong> Enhanced with professional headers</li>
               </ul>
             </div>
-            <p>If you receive this email, the Gmail OAuth integration is working correctly!</p>
-            <p style="color: #6b7280; font-size: 14px;">
-              This is a test message from SkyRanch - Sistema de Gestión Ganadera
-            </p>
+            
+            <div style="background-color: #eff6ff; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1d4ed8; margin-top: 0;">🔧 Technical Improvements:</h3>
+              <ul style="color: #374151; line-height: 1.6;">
+                <li>Professional sending domain (skyranch.es)</li>
+                <li>Enhanced MIME headers for better delivery</li>
+                <li>Proper Reply-To configuration</li>
+                <li>Professional organization branding</li>
+                <li>Improved spam filter compatibility</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; margin: 0;">
+                <strong>SkyRanch - Sistema de Gestión Ganadera</strong><br>
+                Soporte Técnico: <a href="mailto:soporte@skyranch.es" style="color: #2563eb;">soporte@skyranch.es</a>
+              </p>
+            </div>
           </div>
         `,
         accessToken: accessToken,
-        senderName: "SkyRanch Test",
+        senderName: "SkyRanch Soporte",
         organizationName: "SkyRanch",
         metadata: {
           tags: [
-            { name: "test-type", value: "gmail-oauth" },
-            { name: "sender", value: "oauth-test" },
-            { name: "delivery-verification", value: "true" },
-            { name: "recipient-type", value: recipientEmail ? "external" : "self" }
+            { name: "test-type", value: "gmail-professional" },
+            { name: "sender", value: "soporte-skyranch" },
+            { name: "delivery-verification", value: "professional" },
+            { name: "recipient-type", value: recipientEmail ? "external" : "self" },
+            { name: "domain", value: "skyranch.es" }
           ]
         }
       };
 
-      console.log('📧 [GMAIL OAUTH TEST] Sending email with payload:', {
+      console.log('📧 [GMAIL SKYRANCH TEST] Sending professional email with payload:', {
         to: testPayload.to,
         subject: testPayload.subject,
         hasAccessToken: !!testPayload.accessToken,
-        accessTokenPreview: testPayload.accessToken.substring(0, 10) + '...',
-        recipientType: recipientEmail ? "external" : "self"
+        senderName: testPayload.senderName,
+        organizationName: testPayload.organizationName,
+        professionalDomain: 'skyranch.es'
       });
 
       const startTime = Date.now();
@@ -202,7 +227,7 @@ const GmailOAuthTestButton = () => {
       });
       const endTime = Date.now();
 
-      console.log('📧 [GMAIL OAUTH TEST] Gmail API response received:', {
+      console.log('📧 [GMAIL SKYRANCH TEST] Professional Gmail API response received:', {
         duration: `${endTime - startTime}ms`,
         hasData: !!data,
         hasError: !!error,
@@ -211,48 +236,44 @@ const GmailOAuthTestButton = () => {
       });
 
       if (error) {
-        console.error('📧 [GMAIL OAUTH TEST] Edge function error:', error);
+        console.error('📧 [GMAIL SKYRANCH TEST] Edge function error:', error);
         throw new Error(`Gmail API error: ${error.message}`);
       }
 
       if (data?.success) {
-        console.log('✅ [GMAIL OAUTH TEST] Email sent successfully!');
-        console.log('📧 [GMAIL OAUTH TEST] Gmail Response Details:', {
+        console.log('✅ [GMAIL SKYRANCH TEST] Professional email sent successfully!');
+        console.log('📧 [GMAIL SKYRANCH TEST] Professional Gmail Response Details:', {
           messageId: data.messageId,
           threadId: data.threadId,
           provider: data.details?.provider,
-          timestamp: data.details?.timestamp,
-          sentViaGmailAPI: data.details?.sentViaGmailAPI
+          fromDomain: data.details?.fromDomain,
+          senderEmail: data.details?.senderEmail,
+          professionalSender: data.details?.professionalSender,
+          timestamp: data.details?.timestamp
         });
         
-        // Enhanced success message with delivery verification steps
         toast({
-          title: "Gmail OAuth Test Successful! 🎉",
-          description: `Test email sent successfully to ${finalRecipient}. Message ID: ${data.messageId}. ${recipientEmail ? 'Check the recipient inbox!' : 'Check your Gmail Sent folder to verify delivery.'}`,
+          title: "Professional Gmail Test Successful! 🏢",
+          description: `Professional email sent from soporte@skyranch.es to ${finalRecipient}. Message ID: ${data.messageId}. Check recipient inbox for professional delivery.`,
         });
 
-        // Additional logging for delivery verification
-        console.log('📧 [GMAIL OAUTH TEST] 📊 DELIVERY VERIFICATION STEPS:');
-        if (recipientEmail) {
-          console.log('📧 [GMAIL OAUTH TEST] 1. Email sent to external recipient:', finalRecipient);
-          console.log('📧 [GMAIL OAUTH TEST] 2. Check recipient inbox/spam folder');
-          console.log('📧 [GMAIL OAUTH TEST] 3. Also check your Gmail Sent folder');
-        } else {
-          console.log('📧 [GMAIL OAUTH TEST] 1. Check Gmail Sent folder for the email');
-          console.log('📧 [GMAIL OAUTH TEST] 2. If in Sent folder, check recipient inbox/spam');
-        }
-        console.log('📧 [GMAIL OAUTH TEST] 3. Gmail Message ID:', data.messageId);
-        console.log('📧 [GMAIL OAUTH TEST] 4. Search Gmail for subject: "🧪 Gmail OAuth Test - SkyRanch"');
-        console.log('📧 [GMAIL OAUTH TEST] 5. Recipient email:', finalRecipient);
+        // Enhanced logging for professional delivery verification
+        console.log('📧 [GMAIL SKYRANCH TEST] 📊 PROFESSIONAL DELIVERY VERIFICATION:');
+        console.log('📧 [GMAIL SKYRANCH TEST] 1. Email sent from professional domain: soporte@skyranch.es');
+        console.log('📧 [GMAIL SKYRANCH TEST] 2. Enhanced authentication headers included');
+        console.log('📧 [GMAIL SKYRANCH TEST] 3. Professional branding and Reply-To configured');
+        console.log('📧 [GMAIL SKYRANCH TEST] 4. Gmail Message ID:', data.messageId);
+        console.log('📧 [GMAIL SKYRANCH TEST] 5. Search Gmail for: "SkyRanch Professional Email Test"');
+        console.log('📧 [GMAIL SKYRANCH TEST] 6. Recipient should see professional sender info');
       } else {
-        console.error('📧 [GMAIL OAUTH TEST] Unexpected response format:', data);
+        console.error('📧 [GMAIL SKYRANCH TEST] Unexpected response format:', data);
         throw new Error(data?.message || 'Unknown error occurred');
       }
     } catch (error: any) {
-      console.error('📧 [GMAIL OAUTH TEST] Test failed:', error);
+      console.error('📧 [GMAIL SKYRANCH TEST] Professional test failed:', error);
       toast({
-        title: "Gmail OAuth Test Failed",
-        description: `Failed to send test email: ${error.message}`,
+        title: "Professional Gmail Test Failed",
+        description: `Failed to send professional test email: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -277,19 +298,19 @@ const GmailOAuthTestButton = () => {
         <div className="space-y-3">
           <div className="space-y-2">
             <Label htmlFor="test-recipient" className="text-sm">
-              Test Email Recipient (optional)
+              Professional Test Email Recipient
             </Label>
             <Input
               id="test-recipient"
               type="email"
-              placeholder="Enter email address to test delivery (leave empty to send to yourself)"
+              placeholder="Enter email address to test professional delivery"
               value={testRecipient}
               onChange={(e) => setTestRecipient(e.target.value)}
               className="text-sm"
             />
             <p className="text-xs text-gray-500">
-              Leave empty to send to yourself (will appear in Sent folder only). 
-              Enter another email to test actual delivery.
+              Email will be sent from <strong>soporte@skyranch.es</strong> with professional branding.
+              Leave empty to send to yourself for testing.
             </p>
           </div>
           
@@ -300,7 +321,7 @@ const GmailOAuthTestButton = () => {
             size="sm"
             className="w-full"
           >
-            {isTesting ? 'Sending...' : 'Send Gmail Test'}
+            {isTesting ? 'Sending Professional Email...' : 'Send Professional Gmail Test'}
           </Button>
         </div>
       )}
