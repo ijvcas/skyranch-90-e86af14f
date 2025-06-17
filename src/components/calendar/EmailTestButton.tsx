@@ -259,12 +259,15 @@ const EmailTestButton = () => {
       const health = await emailServiceV2.healthCheck();
       console.log('🏥 [EMAIL HEALTH CHECK V2]', health);
       
+      // Fix: Check for status instead of healthy property
+      const isHealthy = health.status === 'healthy';
+      
       toast({
-        title: health.healthy ? "Email System Healthy (V2)" : "Email System Issues",
-        description: health.healthy 
+        title: isHealthy ? "Email System Healthy (V2)" : "Email System Issues",
+        description: isHealthy 
           ? "All email components are working properly with improved diagnostics" 
           : "Some email components may have issues",
-        variant: health.healthy ? "default" : "destructive"
+        variant: isHealthy ? "default" : "destructive"
       });
     } catch (error) {
       console.error('🏥 [EMAIL HEALTH CHECK V2] Failed:', error);

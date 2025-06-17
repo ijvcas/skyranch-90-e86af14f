@@ -27,6 +27,13 @@ export class NotificationEmailService {
       userName
     });
 
+    console.log('🔥 [DEBUG] sendEventNotification parameters:', {
+      to,
+      eventType,
+      eventDetails,
+      userName
+    });
+
     try {
       console.log('📧 [DEBUG] About to send calendar event email:', {
         to,
@@ -35,6 +42,7 @@ export class NotificationEmailService {
         eventDate: eventDetails.eventDate
       });
 
+      // Fix: Use proper interface for calendar template
       const emailContent = this.calendarTemplate.render({
         eventType,
         eventDetails,
@@ -87,6 +95,7 @@ export class NotificationEmailService {
     try {
       console.log('📧 [DEBUG] About to send test email to:', to);
 
+      // Fix: Use proper interface for test template
       const emailContent = this.testTemplate.render({ recipientEmail: to });
 
       console.log('📧 [DEBUG] Test email content generated:', {
