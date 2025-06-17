@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Animal } from '@/stores/animalStore';
 import { useTimezone } from '@/hooks/useTimezone';
-import { DatePickerField } from '@/components/calendar/DatePickerField';
+import DatePickerField from '@/components/calendar/DatePickerField';
 
 interface BreedingBasicInfoProps {
   formData: {
@@ -26,13 +26,8 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
 }) => {
   const { parseDateInput } = useTimezone();
 
-  const handleDateChange = (field: string, date: Date | undefined) => {
-    if (date) {
-      const isoDate = date.toISOString().split('T')[0];
-      onInputChange(field, isoDate);
-    } else {
-      onInputChange(field, '');
-    }
+  const handleDateChange = (field: string, date: string) => {
+    onInputChange(field, date);
   };
 
   const femaleAnimals = animals.filter(animal => animal.gender === 'female');
@@ -79,11 +74,12 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="breedingDate">Fecha de Apareamiento *</Label>
             <DatePickerField
-              value={formData.breedingDate ? new Date(formData.breedingDate + 'T00:00:00') : undefined}
+              value={formData.breedingDate}
               onChange={(date) => handleDateChange('breedingDate', date)}
+              label="Fecha de Apareamiento"
               placeholder="Seleccionar fecha"
+              required
             />
           </div>
           <div>

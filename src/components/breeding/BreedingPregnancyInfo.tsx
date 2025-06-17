@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Info } from 'lucide-react';
 import { getSpeciesDisplayName, getGestationPeriod, calculateActualGestationDuration } from '@/services/gestationService';
-import { DatePickerField } from '@/components/calendar/DatePickerField';
+import DatePickerField from '@/components/calendar/DatePickerField';
 
 interface BreedingPregnancyInfoProps {
   formData: {
@@ -27,13 +27,8 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
   motherSpecies,
   onInputChange
 }) => {
-  const handleDateChange = (field: string, date: Date | undefined) => {
-    if (date) {
-      const isoDate = date.toISOString().split('T')[0];
-      onInputChange(field, isoDate);
-    } else {
-      onInputChange(field, '');
-    }
+  const handleDateChange = (field: string, date: string) => {
+    onInputChange(field, date);
   };
 
   const gestationDuration = formData.breedingDate && formData.actualBirthDate 
@@ -59,10 +54,10 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
         {formData.pregnancyConfirmed && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="pregnancyConfirmationDate">Fecha de Confirmación</Label>
               <DatePickerField
-                value={formData.pregnancyConfirmationDate ? new Date(formData.pregnancyConfirmationDate + 'T00:00:00') : undefined}
+                value={formData.pregnancyConfirmationDate}
                 onChange={(date) => handleDateChange('pregnancyConfirmationDate', date)}
+                label="Fecha de Confirmación"
                 placeholder="Seleccionar fecha"
               />
             </div>
@@ -85,10 +80,10 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="actualBirthDate">Fecha de Nacimiento</Label>
             <DatePickerField
-              value={formData.actualBirthDate ? new Date(formData.actualBirthDate + 'T00:00:00') : undefined}
+              value={formData.actualBirthDate}
               onChange={(date) => handleDateChange('actualBirthDate', date)}
+              label="Fecha de Nacimiento"
               placeholder="Seleccionar fecha"
             />
           </div>

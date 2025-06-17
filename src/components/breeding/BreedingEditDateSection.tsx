@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
 import { Animal } from '@/stores/animalStore';
-import { DatePickerField } from '@/components/calendar/DatePickerField';
+import DatePickerField from '@/components/calendar/DatePickerField';
 
 interface BreedingEditDateSectionProps {
   formData: {
@@ -25,13 +25,8 @@ const BreedingEditDateSection: React.FC<BreedingEditDateSectionProps> = ({
   onInputChange,
   onRecalculateDate
 }) => {
-  const handleDateChange = (field: string, date: Date | undefined) => {
-    if (date) {
-      const isoDate = date.toISOString().split('T')[0];
-      onInputChange(field, isoDate);
-    } else {
-      onInputChange(field, '');
-    }
+  const handleDateChange = (field: string, date: string) => {
+    onInputChange(field, date);
   };
 
   return (
@@ -40,8 +35,9 @@ const BreedingEditDateSection: React.FC<BreedingEditDateSectionProps> = ({
         <Label htmlFor="expectedDueDate">Fecha Esperada de Parto</Label>
         <div className="space-y-2">
           <DatePickerField
-            value={formData.expectedDueDate ? new Date(formData.expectedDueDate + 'T00:00:00') : undefined}
+            value={formData.expectedDueDate}
             onChange={(date) => handleDateChange('expectedDueDate', date)}
+            label=""
             placeholder="Seleccionar fecha"
           />
           {formData.motherId && formData.breedingDate && (
@@ -59,10 +55,10 @@ const BreedingEditDateSection: React.FC<BreedingEditDateSectionProps> = ({
         </div>
       </div>
       <div>
-        <Label htmlFor="actualBirthDate">Fecha Real de Parto</Label>
         <DatePickerField
-          value={formData.actualBirthDate ? new Date(formData.actualBirthDate + 'T00:00:00') : undefined}
+          value={formData.actualBirthDate}
           onChange={(date) => handleDateChange('actualBirthDate', date)}
+          label="Fecha Real de Parto"
           placeholder="Seleccionar fecha"
         />
       </div>
