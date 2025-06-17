@@ -67,7 +67,7 @@ export class CalendarNotificationProcessor {
     // Create in-app notification
     await this.notificationManager.createInAppNotification(eventTitle, eventDate);
 
-    // Process email notifications using the proven EmailServiceV2 directly
+    // Process email notifications using EmailServiceV2 directly
     let notificationsSent = 0;
     let notificationsFailed = 0;
     const emailFailures: string[] = [];
@@ -87,9 +87,13 @@ export class CalendarNotificationProcessor {
           veterinarian: veterinarian
         };
 
-        console.log(`📧 [CALENDAR NOTIFICATION PROCESSOR] Sending email to ${user.email} using EmailServiceV2`);
+        console.log(`📧 [CALENDAR NOTIFICATION PROCESSOR] ===== SENDING EMAIL =====`);
+        console.log(`📧 [CALENDAR NOTIFICATION PROCESSOR] To: ${user.email}`);
+        console.log(`📧 [CALENDAR NOTIFICATION PROCESSOR] Subject: ${subject}`);
+        console.log(`📧 [CALENDAR NOTIFICATION PROCESSOR] Event Details:`, eventDetails);
         
-        // Use the proven EmailServiceV2 directly
+        // Use EmailServiceV2 directly - this is the proven working path
+        console.log('📧 [CALENDAR NOTIFICATION PROCESSOR] Calling emailServiceV2.sendEmail...');
         const success = await emailServiceV2.sendEmail(
           user.email,
           subject,
@@ -97,20 +101,32 @@ export class CalendarNotificationProcessor {
           eventDetails
         );
         
+        console.log(`📧 [CALENDAR NOTIFICATION PROCESSOR] EmailServiceV2 returned:`, success);
+        
         if (success) {
           notificationsSent++;
-          console.log(`✅ Email sent successfully to ${user.email}`);
+          console.log(`✅ [CALENDAR NOTIFICATION PROCESSOR] Email sent successfully to ${user.email}`);
         } else {
           notificationsFailed++;
-          emailFailures.push(`${user.email}: Email sending failed`);
-          console.error(`❌ Email failed for ${user.email}`);
+          emailFailures.push(`${user.email}: Email sending returned false`);
+          console.error(`❌ [CALENDAR NOTIFICATION PROCESSOR] Email returned false for ${user.email}`);
         }
       } catch (error) {
         notificationsFailed++;
         emailFailures.push(`${user.email}: ${error.message}`);
-        console.error(`❌ Email error for ${user.email}:`, error);
+        console.error(`❌ [CALENDAR NOTIFICATION PROCESSOR] Email error for ${user.email}:`, error);
+        console.error(`❌ [CALENDAR NOTIFICATION PROCESSOR] Full error details:`, {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
       }
     }
+
+    console.log(`📊 [CALENDAR NOTIFICATION PROCESSOR] ===== FINAL RESULTS =====`);
+    console.log(`📊 [CALENDAR NOTIFICATION PROCESSOR] Notifications sent: ${notificationsSent}`);
+    console.log(`📊 [CALENDAR NOTIFICATION PROCESSOR] Notifications failed: ${notificationsFailed}`);
+    console.log(`📊 [CALENDAR NOTIFICATION PROCESSOR] Failures:`, emailFailures);
 
     // Show results
     this.resultHandler.showNotificationResults(notificationsSent, notificationsFailed, emailFailures);

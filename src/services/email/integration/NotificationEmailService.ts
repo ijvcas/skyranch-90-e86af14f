@@ -1,41 +1,129 @@
 
 import { emailEngine } from '../core/EmailEngine';
-import { EventDetails, EmailResult } from '../interfaces/EmailTypes';
+import { EmailResult, EventDetails } from '../interfaces/EmailTypes';
+import { CalendarEventTemplate } from '../templates/CalendarEventTemplate';
+import { TestEmailTemplate } from '../templates/TestEmailTemplate';
 import { emailLogger } from '../core/EmailLogger';
 
 export class NotificationEmailService {
+  private calendarTemplate: CalendarEventTemplate;
+  private testTemplate: TestEmailTemplate;
+
+  constructor() {
+    this.calendarTemplate = new CalendarEventTemplate();
+    this.testTemplate = new TestEmailTemplate();
+  }
+
   async sendEventNotification(
-    userEmail: string,
+    to: string,
     eventType: 'created' | 'updated' | 'deleted' | 'reminder',
     eventDetails: EventDetails,
     userName?: string
   ): Promise<EmailResult> {
-    emailLogger.info('Sending event notification', { 
-      userEmail, 
-      eventType, 
-      eventTitle: eventDetails.title 
+    emailLogger.info('📅 [NOTIFICATION EMAIL] sendEventNotification called', {
+      to,
+      eventType,
+      eventTitle: eventDetails.title,
+      userName
     });
 
     try {
-      return await emailEngine.sendCalendarEventEmail(
-        userEmail, 
-        eventType, 
-        eventDetails, 
-        userName
-      );
+      console.log('📧 [DEBUG] About to send calendar event email:', {
+        to,
+        eventType,
+        eventTitle: eventDetails.title,
+        eventDate: eventDetails.eventDate
+      });
+
+      const emailContent = this.calendarTemplate.render({
+        eventType,
+        eventDetails,
+        userName: userName || to.split('@')[0]
+      });
+
+      console.log('📧 [DEBUG] Email content generated:', {
+        subject: emailContent.subject,
+        htmlLength: emailContent.html.length
+      });
+
+      const request = {
+        to: { email: to },
+        content: emailContent,
+        metadata: {
+          senderName: "SkyRanch - Sistema de Gestión Ganadera",
+          organizationName: "SkyRanch",
+          tags: [
+            { name: "category", value: "calendar_event" },
+            { name: "event_type", value: eventType },
+            { name: "recipient_domain", value: to.split('@')[1] }
+          ]
+        }
+      };
+
+      console.log('📧 [DEBUG] Calling emailEngine.sendCustomEmail...');
+      const result = await emailEngine.sendCustomEmail(request);
+      console.log('📧 [DEBUG] Email engine result:', result);
+
+      emailLogger.info('✅ [NOTIFICATION EMAIL] Event notification sent successfully', {
+        messageId: result.messageId,
+        recipient: to
+      });
+
+      return result;
     } catch (error) {
-      emailLogger.error('Event notification failed', { userEmail, eventType, error });
+      console.error('❌ [DEBUG] Error in sendEventNotification:', error);
+      emailLogger.error('❌ [NOTIFICATION EMAIL] sendEventNotification failed', {
+        errorMessage: error.message,
+        errorName: error.name,
+        recipient: to
+      });
       throw error;
     }
   }
 
-  async sendTestNotification(userEmail: string): Promise<EmailResult> {
-    emailLogger.info('Sending test notification', { userEmail });
+  async sendTestNotification(to: string): Promise<EmailResult> {
+    emailLogger.info('🧪 [NOTIFICATION EMAIL] sendTestNotification called', { to });
 
     try {
-      return await emailEngine.sendTestEmail(userEmail, 'integration');
+      console.log('📧 [DEBUG] About to send test email to:', to);
+
+      const emailContent = this.testTemplate.render({ recipientEmail: to });
+
+      console.log('📧 [DEBUG] Test email content generated:', {
+        subject: emailContent.subject,
+        htmlLength: emailContent.html.length
+      });
+
+      const request = {
+        to: { email: to },
+        content: emailContent,
+        metadata: {
+          senderName: "SkyRanch - Sistema de Gestión Ganadera",
+          organizationName: "SkyRanch",
+          tags: [
+            { name: "category", value: "test_email" },
+            { name: "recipient_domain", value: to.split('@')[1] }
+          ]
+        }
+      };
+
+      console.log('📧 [DEBUG] Calling emailEngine.sendCustomEmail for test...');
+      const result = await emailEngine.sendCustomEmail(request);
+      console.log('📧 [DEBUG] Test email result:', result);
+
+      emailLogger.info('✅ [NOTIFICATION EMAIL] Test notification sent successfully', {
+        messageId: result.messageId,
+        recipient: to
+      });
+
+      return result;
     } catch (error) {
-      emailLogger.error('Test notification failed', { userEmail, error });
+      console.error('❌ [DEBUG] Error in sendTestNotification:', error);
+      emailLogger.error('❌ [NOTIFICATION EMAIL] sendTestNotification failed', {
+        errorMessage: error.message,
+        errorName: error.name,
+        recipient: to
+      });
       throw error;
     }
   }
