@@ -5,7 +5,7 @@ export class DeploymentDetector {
   private lastCheckedUrl: string = '';
   private lastCheckedId: string = '';
   private lastCheckedTime: number = 0;
-  private readonly MINIMUM_CHANGE_INTERVAL = 30000; // 30 seconds minimum between changes
+  private readonly MINIMUM_CHANGE_INTERVAL = 15000; // 15 seconds minimum between changes (reduced from 30)
 
   constructor() {
     const currentDeployment = this.getCurrentDeploymentInfo();
@@ -60,10 +60,10 @@ export class DeploymentDetector {
   }
 
   private generateDeploymentId(url: string): string {
-    // Use a more stable ID generation that doesn't change on every check
+    // Use a more stable ID generation that changes when there's a real deployment
     const baseHash = this.hashString(url);
-    const hourlyStamp = Math.floor(Date.now() / (1000 * 60 * 60)); // Changes every hour
-    const combinedHash = this.hashString(baseHash.toString() + hourlyStamp.toString());
+    const deploymentStamp = Math.floor(Date.now() / (1000 * 60 * 30)); // Changes every 30 minutes
+    const combinedHash = this.hashString(baseHash.toString() + deploymentStamp.toString());
     return combinedHash.toString(36).substring(0, 8);
   }
 
@@ -71,7 +71,7 @@ export class DeploymentDetector {
     const now = Date.now();
     const currentDeployment = this.getCurrentDeploymentInfo();
     
-    console.log('🔍 Conservative deployment check:', {
+    console.log('🔍 Deployment check:', {
       currentUrl: currentDeployment.url,
       storedUrl: stored?.deploymentUrl,
       timeSinceLastCheck: now - this.lastCheckedTime,
@@ -111,15 +111,15 @@ export class DeploymentDetector {
       };
     }
 
-    // For same URL, be much more conservative - only update if there's a significant time gap
-    // indicating a real publish event rather than live editing
+    // For same URL, check deployment ID changes (indicating a publish)
     const storedTime = new Date(stored.lastDeploymentTime).getTime();
     const timeDiff = now - storedTime;
     
-    if (timeDiff > 300000) { // Only if more than 5 minutes since last update
+    // Check for deployment ID changes more frequently but still with some stability
+    if (timeDiff > 120000) { // Only if more than 2 minutes since last update (reduced from 5)
       const currentId = this.generateDeploymentId(currentDeployment.url);
       if (stored.deploymentId !== currentId) {
-        console.log('🚀 Stable deployment detected after time gap:', {
+        console.log('🚀 Deployment detected after time gap:', {
           oldId: stored.deploymentId,
           newId: currentId,
           timeDiff: timeDiff / 1000 + ' seconds'
@@ -128,7 +128,7 @@ export class DeploymentDetector {
         return {
           isNewDeployment: true,
           currentDeployment,
-          reason: 'Stable deployment after time gap'
+          reason: 'Deployment after time gap'
         };
       }
     }

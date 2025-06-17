@@ -8,8 +8,8 @@ export class PeriodicChecker {
   private versionManager: VersionManager;
   private onNewDeploymentCallback: (deploymentInfo: any) => void;
   private lastStableCheck: number = 0;
-  private readonly STABLE_DELAY = 60000; // 60 seconds between checks
-  private readonly MIN_CHECK_INTERVAL = 30000; // Minimum 30 seconds between actual checks
+  private readonly STABLE_DELAY = 30000; // 30 seconds between checks (reduced from 60)
+  private readonly MIN_CHECK_INTERVAL = 15000; // Minimum 15 seconds between actual checks (reduced from 30)
 
   constructor(
     deploymentDetector: DeploymentDetector,
@@ -27,11 +27,11 @@ export class PeriodicChecker {
       clearInterval(this.checkInterval);
     }
     
-    // Check for deployment changes every 60 seconds (much less frequent)
+    // Check for deployment changes every 30 seconds (more responsive)
     this.checkInterval = window.setInterval(() => {
       const now = Date.now();
       if (now - this.lastStableCheck >= this.MIN_CHECK_INTERVAL) {
-        console.log('🔍 Stable deployment check...');
+        console.log('🔍 Automatic deployment check...');
         this.checkForDeployment();
         this.lastStableCheck = now;
       }
