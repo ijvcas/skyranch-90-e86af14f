@@ -42,11 +42,12 @@ export class NotificationEmailService {
         eventDate: eventDetails.eventDate
       });
 
-      // Fix: Use proper interface for calendar template
+      // Fix: Use proper interface structure for calendar template
       const emailContent = this.calendarTemplate.render({
         eventType,
-        eventDetails,
-        userName: userName || to.split('@')[0]
+        event: eventDetails,
+        userName: userName || to.split('@')[0],
+        organizationName: "SkyRanch"
       });
 
       console.log('📧 [DEBUG] Email content generated:', {
@@ -95,8 +96,11 @@ export class NotificationEmailService {
     try {
       console.log('📧 [DEBUG] About to send test email to:', to);
 
-      // Fix: Use proper interface for test template
-      const emailContent = this.testTemplate.render({ recipientEmail: to });
+      // Fix: Use proper interface structure for test template
+      const emailContent = this.testTemplate.render({ 
+        userName: to.split('@')[0],
+        organizationName: "SkyRanch"
+      });
 
       console.log('📧 [DEBUG] Test email content generated:', {
         subject: emailContent.subject,
