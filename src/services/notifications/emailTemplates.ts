@@ -53,36 +53,35 @@ export const buildEmailTemplate = (
     <body style="margin: 0; padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #f8fafc; line-height: 1.6; color: #334155;">
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
         
-        <!-- Clean SkyRanch Header - Light Background -->
-        <div style="background: #ffffff; padding: 40px 24px; text-align: center; position: relative; border-bottom: 1px solid #e5e7eb;">
-          <!-- Logo -->
+        <!-- Enhanced Header - Bigger Logo/Branding Section -->
+        <div style="background: #ffffff; padding: 50px 24px; text-align: center; position: relative; border-bottom: 1px solid #e5e7eb;">
           <div style="position: relative; z-index: 1;">
-            <div style="display: inline-block; margin-bottom: 16px; padding: 8px; background: #f0f9f4; border-radius: 16px; border: 2px solid #d1fae5;">
-              <img src="${logoUrl}" alt="SkyRanch Logo" style="width: 60px; height: 60px; border-radius: 12px; display: block;">
+            <div style="display: inline-block; margin-bottom: 20px; padding: 12px; background: #f0f9f4; border-radius: 20px; border: 2px solid #d1fae5;">
+              <img src="${logoUrl}" alt="SkyRanch Logo" style="width: 80px; height: 80px; border-radius: 16px; display: block;">
             </div>
             
             <!-- Brand Title -->
-            <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #10b981; font-family: 'Inter', sans-serif; letter-spacing: 1px;">
+            <h1 style="margin: 0 0 12px 0; font-size: 32px; font-weight: 700; color: #10b981; font-family: 'Inter', sans-serif; letter-spacing: 2px;">
               SKYRANCH
             </h1>
             
             <!-- Divider -->
-            <div style="width: 60px; height: 1px; background: #d1fae5; margin: 12px auto;"></div>
+            <div style="width: 100px; height: 2px; background: #10b981; margin: 16px auto;"></div>
             
             <!-- Subtitle -->
-            <p style="margin: 0; font-size: 11px; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 500;">
+            <p style="margin: 0; font-size: 16px; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 500;">
               Sistema de Gestión Ganadera
             </p>
           </div>
         </div>
 
-        <!-- Event Notification Banner - Light Background -->
-        <div style="padding: 24px; text-align: center; background: #ffffff; border-bottom: 1px solid #e5e7eb;">
-          <div style="display: inline-block; background: ${actionColor}; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 2px 8px ${actionColor}40;">
-            <h2 style="margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.3px;">
+        <!-- Smaller Event Notification Banner -->
+        <div style="padding: 12px; text-align: center; background: #ffffff; border-bottom: 1px solid #e5e7eb;">
+          <div style="display: inline-block; background: ${actionColor}; color: white; padding: 6px 12px; border-radius: 4px; box-shadow: 0 2px 8px ${actionColor}40;">
+            <h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.3px;">
               SKYRANCH
             </h2>
-            <p style="margin: 4px 0 0 0; font-size: 14px; font-weight: 500;">
+            <p style="margin: 4px 0 0 0; font-size: 10px; font-weight: 500;">
               Notificación de Evento
             </p>
           </div>

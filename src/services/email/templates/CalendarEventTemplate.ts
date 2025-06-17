@@ -40,23 +40,24 @@ export class CalendarEventTemplate extends BaseEmailTemplate {
       <body style="margin: 0; padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background-color: #f8fafc; line-height: 1.6; color: #334155;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
           
-          <!-- Clean Header - No Dark Green Background -->
-          <div style="background-color: #ffffff; padding: 30px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: inline-block; margin-bottom: 12px;">
-              <img src="https://id-preview--d956216c-86a1-4ff3-9df4-bdfbbabf459a.lovable.app/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" alt="SkyRanch Logo" style="width: 50px; height: 50px; border-radius: 8px;">
+          <!-- Enhanced Header - Bigger Logo/Branding Section -->
+          <div style="background-color: #ffffff; padding: 50px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: inline-block; margin-bottom: 20px;">
+              <img src="https://id-preview--d956216c-86a1-4ff3-9df4-bdfbbabf459a.lovable.app/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" alt="SkyRanch Logo" style="width: 80px; height: 80px; border-radius: 12px;">
             </div>
-            <h1 style="margin: 0; font-size: 22px; font-weight: 600; color: #10b981; letter-spacing: 0.5px;">
+            <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #10b981; letter-spacing: 1px;">
               SKYRANCH
             </h1>
-            <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280; font-weight: 500;">
+            <div style="width: 100px; height: 2px; background: #10b981; margin: 16px auto;"></div>
+            <p style="margin: 12px 0 0 0; font-size: 16px; color: #6b7280; font-weight: 500;">
               Sistema de Gestión Ganadera
             </p>
           </div>
 
-          <!-- Event Notification Header - Light Background -->
-          <div style="background-color: #f0f9f4; padding: 20px; text-align: center; border-bottom: 1px solid #d1fae5;">
-            <div style="display: inline-block; background-color: #10b981; color: white; padding: 8px 16px; border-radius: 6px;">
-              <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #ffffff;">
+          <!-- Smaller Event Notification Header -->
+          <div style="background-color: #f0f9f4; padding: 12px; text-align: center; border-bottom: 1px solid #d1fae5;">
+            <div style="display: inline-block; background-color: #10b981; color: white; padding: 6px 12px; border-radius: 4px;">
+              <h2 style="margin: 0; font-size: 12px; font-weight: 600; color: #ffffff;">
                 🔔 NOTIFICACIÓN DE EVENTO
               </h2>
             </div>
