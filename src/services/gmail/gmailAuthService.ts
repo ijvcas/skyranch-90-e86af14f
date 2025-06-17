@@ -20,54 +20,59 @@ export class GmailAuthService {
       }
 
       console.log('🔐 [GMAIL AUTH] No valid token found, starting OAuth process...');
-      
-      // Use the current domain for redirect URI
-      const currentDomain = window.location.origin;
-      const redirectUri = `${currentDomain}/gmail-callback`;
-      
-      console.log('🔐 [GMAIL AUTH] Using redirect URI:', redirectUri);
-      
-      // Get the OAuth authorization URL
-      const { data: authUrlData, error: authUrlError } = await supabase.functions.invoke('send-gmail/auth-url', {
-        body: {
-          redirectUri: redirectUri
-        }
-      });
-
-      if (authUrlError || !authUrlData?.authUrl) {
-        console.error('❌ [GMAIL AUTH] Failed to get auth URL:', authUrlError);
-        
-        // Show helpful error message about Google Cloud Console configuration
-        this.toast({
-          title: "🔧 Configuración OAuth Requerida",
-          description: `Agrega esta URL como URI de redirección autorizado en Google Cloud Console: ${redirectUri}`,
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      console.log('🔐 [GMAIL AUTH] Opening OAuth popup...');
-      
-      // Open OAuth popup
-      const popup = window.open(authUrlData.authUrl, 'gmail-auth', 'width=500,height=600');
-      
-      if (!popup) {
-        console.error('❌ [GMAIL AUTH] Popup blocked by browser');
-        this.toast({
-          title: "Error de Popup",
-          description: "Por favor permite popups para este sitio y vuelve a intentar",
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      // Wait for OAuth callback
-      return this.waitForOAuthCallback(popup, redirectUri);
+      return await this.startOAuthFlow();
       
     } catch (error) {
       console.error('❌ [GMAIL AUTH] Unexpected error during OAuth:', error);
+      // Clear any potentially corrupted tokens
+      tokenStorage.clear();
       return null;
     }
+  }
+
+  private async startOAuthFlow(): Promise<string | null> {
+    // Use the current domain for redirect URI
+    const currentDomain = window.location.origin;
+    const redirectUri = `${currentDomain}/gmail-callback`;
+    
+    console.log('🔐 [GMAIL AUTH] Starting fresh OAuth flow with redirect URI:', redirectUri);
+    
+    // Get the OAuth authorization URL
+    const { data: authUrlData, error: authUrlError } = await supabase.functions.invoke('send-gmail/auth-url', {
+      body: {
+        redirectUri: redirectUri
+      }
+    });
+
+    if (authUrlError || !authUrlData?.authUrl) {
+      console.error('❌ [GMAIL AUTH] Failed to get auth URL:', authUrlError);
+      
+      // Show helpful error message about Google Cloud Console configuration
+      this.toast({
+        title: "🔧 Configuración OAuth Requerida",
+        description: `Agrega esta URL como URI de redirección autorizado en Google Cloud Console: ${redirectUri}`,
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    console.log('🔐 [GMAIL AUTH] Opening OAuth popup...');
+    
+    // Open OAuth popup
+    const popup = window.open(authUrlData.authUrl, 'gmail-auth', 'width=500,height=600');
+    
+    if (!popup) {
+      console.error('❌ [GMAIL AUTH] Popup blocked by browser');
+      this.toast({
+        title: "Error de Popup",
+        description: "Por favor permite popups para este sitio y vuelve a intentar",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    // Wait for OAuth callback
+    return this.waitForOAuthCallback(popup, redirectUri);
   }
 
   private async waitForOAuthCallback(popup: Window, redirectUri: string): Promise<string | null> {
@@ -75,6 +80,7 @@ export class GmailAuthService {
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          console.log('🔐 [GMAIL AUTH] Popup closed by user');
           resolve(null);
         }
       }, 1000);
@@ -122,6 +128,8 @@ export class GmailAuthService {
 
   private async exchangeCodeForToken(code: string, redirectUri: string): Promise<string | null> {
     try {
+      console.log('🔐 [GMAIL AUTH] Exchanging authorization code for access token...');
+      
       const { data: tokenData, error: tokenError } = await supabase.functions.invoke('send-gmail/exchange-token', {
         body: {
           code: code,
@@ -129,8 +137,24 @@ export class GmailAuthService {
         }
       });
 
-      if (tokenError || !tokenData?.accessToken) {
-        console.error('❌ [GMAIL AUTH] Token exchange failed:', tokenError);
+      if (tokenError) {
+        console.error('❌ [GMAIL AUTH] Token exchange failed - Supabase error:', tokenError);
+        
+        // Handle specific error cases
+        if (tokenError.message?.includes('invalid_grant')) {
+          console.log('🔐 [GMAIL AUTH] Invalid grant error - clearing stored tokens and showing user message');
+          tokenStorage.clear();
+          this.toast({
+            title: "⚠️ Sesión Expirada",
+            description: "La autorización ha expirado. Por favor, intenta de nuevo.",
+            variant: "destructive"
+          });
+        }
+        return null;
+      }
+
+      if (!tokenData?.accessToken) {
+        console.error('❌ [GMAIL AUTH] No access token received from exchange');
         return null;
       }
 
@@ -146,6 +170,43 @@ export class GmailAuthService {
       return tokenData.accessToken;
     } catch (error) {
       console.error('❌ [GMAIL AUTH] Token exchange error:', error);
+      
+      // Clear any potentially corrupted tokens
+      tokenStorage.clear();
+      
+      // Show user-friendly error message
+      this.toast({
+        title: "❌ Error de Autenticación",
+        description: "No se pudo completar la autenticación. Por favor, intenta de nuevo.",
+        variant: "destructive"
+      });
+      
+      return null;
+    }
+  }
+
+  // Method to refresh token if we have a refresh token
+  async refreshAccessToken(): Promise<string | null> {
+    try {
+      const storedData = localStorage.getItem('gmail_oauth_token');
+      if (!storedData) return null;
+
+      const tokenData = JSON.parse(storedData);
+      if (!tokenData.refreshToken) {
+        console.log('🔐 [GMAIL AUTH] No refresh token available, need full OAuth flow');
+        return null;
+      }
+
+      console.log('🔐 [GMAIL AUTH] Attempting to refresh access token...');
+      
+      // This would require adding a refresh endpoint to our edge function
+      // For now, we'll just clear the token and require re-auth
+      tokenStorage.clear();
+      return null;
+      
+    } catch (error) {
+      console.error('❌ [GMAIL AUTH] Token refresh error:', error);
+      tokenStorage.clear();
       return null;
     }
   }

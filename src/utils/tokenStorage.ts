@@ -10,45 +10,70 @@ const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes buffer before expiry
 
 export const tokenStorage = {
   save: (tokenData: { accessToken: string; refreshToken?: string; expiresIn?: number }) => {
-    const expiresAt = Date.now() + ((tokenData.expiresIn || 3600) * 1000);
-    const data: TokenData = {
-      accessToken: tokenData.accessToken,
-      expiresAt,
-      refreshToken: tokenData.refreshToken
-    };
-    localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(data));
-    console.log('🔐 [TOKEN STORAGE] Token saved with expiry:', new Date(expiresAt).toISOString());
+    try {
+      const expiresAt = Date.now() + ((tokenData.expiresIn || 3600) * 1000);
+      const data: TokenData = {
+        accessToken: tokenData.accessToken,
+        expiresAt,
+        refreshToken: tokenData.refreshToken
+      };
+      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(data));
+      console.log('🔐 [TOKEN STORAGE] Token saved with expiry:', new Date(expiresAt).toISOString());
+    } catch (error) {
+      console.error('🔐 [TOKEN STORAGE] Error saving token:', error);
+    }
   },
 
   get: (): string | null => {
     try {
       const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
-      if (!stored) return null;
+      if (!stored) {
+        console.log('🔐 [TOKEN STORAGE] No stored token found');
+        return null;
+      }
 
       const data: TokenData = JSON.parse(stored);
       const now = Date.now();
       
       if (now >= (data.expiresAt - TOKEN_EXPIRY_BUFFER)) {
-        console.log('🔐 [TOKEN STORAGE] Token expired, removing from storage');
+        console.log('🔐 [TOKEN STORAGE] Token expired or about to expire, removing from storage');
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         return null;
       }
 
-      console.log('🔐 [TOKEN STORAGE] Valid token found, expires at:', new Date(data.expiresAt).toISOString());
+      const timeUntilExpiry = Math.round((data.expiresAt - now) / 1000 / 60);
+      console.log(`🔐 [TOKEN STORAGE] Valid token found, expires in ${timeUntilExpiry} minutes`);
       return data.accessToken;
     } catch (error) {
       console.error('🔐 [TOKEN STORAGE] Error retrieving token:', error);
+      // Clear corrupted data
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       return null;
     }
   },
 
   clear: () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    console.log('🔐 [TOKEN STORAGE] Token cleared from storage');
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      console.log('🔐 [TOKEN STORAGE] Token cleared from storage');
+    } catch (error) {
+      console.error('🔐 [TOKEN STORAGE] Error clearing token:', error);
+    }
   },
 
   isValid: (): boolean => {
     return tokenStorage.get() !== null;
+  },
+
+  // Get the raw token data for debugging
+  getRaw: (): TokenData | null => {
+    try {
+      const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (!stored) return null;
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error('🔐 [TOKEN STORAGE] Error getting raw token data:', error);
+      return null;
+    }
   }
 };
