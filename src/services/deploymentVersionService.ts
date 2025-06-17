@@ -11,14 +11,23 @@ interface DeploymentVersion {
 
 class DeploymentVersionService {
   private readonly VERSION_KEY = 'skyranch-deployment-version';
-  private readonly BASE_VERSION = '2.3.0';
+  private readonly BASE_VERSION = '2.4.0';
+  private checkInterval: number | null = null;
 
   constructor() {
     this.initializeVersion();
+    this.startPeriodicCheck();
+  }
+
+  private startPeriodicCheck(): void {
+    // Check for deployment changes every 30 seconds
+    this.checkInterval = window.setInterval(() => {
+      this.checkForNewDeployment();
+    }, 30000);
   }
 
   private initializeVersion(): void {
-    // Check if this is a new deployment by analyzing the current URL
+    // Always check for new deployment on initialization
     const currentDeployment = this.getCurrentDeploymentInfo();
     const stored = this.getStoredVersion();
     
@@ -30,45 +39,59 @@ class DeploymentVersionService {
   private getCurrentDeploymentInfo() {
     const currentUrl = window.location.origin;
     const deploymentNumber = this.extractDeploymentNumber(currentUrl);
+    const deploymentId = this.generateDeploymentId(currentUrl);
     
     return {
       url: currentUrl,
       number: deploymentNumber,
       timestamp: new Date().toISOString(),
-      id: this.generateDeploymentId(currentUrl)
+      id: deploymentId
     };
   }
 
   private extractDeploymentNumber(url: string): number {
-    // Extract deployment number from Lovable URLs like skyranch-90.lovable.app
-    const match = url.match(/skyranch-(\d+)\.lovable\.app/);
-    if (match) {
-      return parseInt(match[1], 10);
+    // Extract deployment number from Lovable URLs like d956216c-86a1-4ff3-9df4-bdfbbabf459a.lovableproject.com
+    const lovableMatch = url.match(/([a-f0-9-]{36})\.lovableproject\.com/);
+    if (lovableMatch) {
+      // Use a hash of the full UUID for the deployment number
+      return this.hashString(lovableMatch[1]) % 10000;
+    }
+    
+    // Extract from legacy skyranch URLs like skyranch-90.lovable.app
+    const legacyMatch = url.match(/skyranch-(\d+)\.lovable\.app/);
+    if (legacyMatch) {
+      return parseInt(legacyMatch[1], 10);
     }
     
     // For localhost or other URLs, use a hash-based approach
     const hash = this.hashUrl(url);
-    return hash % 1000; // Keep it reasonable
+    return hash % 1000;
   }
 
-  private hashUrl(url: string): number {
+  private hashString(str: string): number {
     let hash = 0;
-    for (let i = 0; i < url.length; i++) {
-      const char = url.charCodeAt(i);
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);
   }
 
+  private hashUrl(url: string): number {
+    return this.hashString(url);
+  }
+
   private generateDeploymentId(url: string): string {
-    return btoa(url).substring(0, 8);
+    // Create a shorter, more readable deployment ID
+    const hash = this.hashString(url);
+    return hash.toString(36).substring(0, 8);
   }
 
   private isNewDeployment(stored: DeploymentVersion, current: any): boolean {
-    // Check if deployment URL changed
+    // Check if deployment URL changed (most reliable for Lovable)
     if (stored.deploymentUrl !== current.url) {
-      console.log('🚀 New deployment detected:', {
+      console.log('🚀 New deployment detected (URL change):', {
         old: stored.deploymentUrl,
         new: current.url,
         oldNumber: stored.deploymentNumber,
@@ -77,9 +100,18 @@ class DeploymentVersionService {
       return true;
     }
     
-    // Check if deployment number changed (for Lovable URLs)
+    // Check if deployment ID changed
+    if (stored.deploymentId !== current.id) {
+      console.log('🚀 New deployment detected (ID change):', {
+        oldId: stored.deploymentId,
+        newId: current.id
+      });
+      return true;
+    }
+    
+    // Check if deployment number changed
     if (stored.deploymentNumber !== current.number) {
-      console.log('🚀 Deployment number changed:', {
+      console.log('🚀 New deployment detected (number change):', {
         old: stored.deploymentNumber,
         new: current.number
       });
@@ -125,7 +157,7 @@ class DeploymentVersionService {
       deploymentNumber: deploymentInfo.number,
       lastDeploymentTime: deploymentInfo.timestamp,
       deploymentId: deploymentInfo.id,
-      lastChange: 'Nueva versión publicada automáticamente'
+      lastChange: 'Nueva versión publicada desde Lovable'
     };
 
     this.saveVersion(deploymentVersion);
@@ -206,6 +238,18 @@ class DeploymentVersionService {
     return false;
   }
 
+  public forceRefresh(): void {
+    // Force check for new deployment
+    const foundNew = this.checkForNewDeployment();
+    if (!foundNew) {
+      // If no new deployment found, just refresh the stored data
+      const current = this.getCurrentVersion();
+      window.dispatchEvent(new CustomEvent('deployment-version-updated', { 
+        detail: current 
+      }));
+    }
+  }
+
   public getDeploymentInfo() {
     const version = this.getCurrentVersion();
     return {
@@ -214,6 +258,13 @@ class DeploymentVersionService {
       id: version.deploymentId,
       lastDeployment: version.lastDeploymentTime
     };
+  }
+
+  public destroy(): void {
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+      this.checkInterval = null;
+    }
   }
 }
 
