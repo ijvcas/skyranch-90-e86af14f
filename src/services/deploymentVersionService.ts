@@ -26,10 +26,11 @@ class DeploymentVersionService {
     const stored = this.versionManager.getStoredVersion();
     console.log('🔄 Initializing deployment version service...');
     
-    // Only check for new deployment on initialization, don't auto-update
+    // Check for new deployment on initialization
     const result = this.deploymentDetector.checkForNewDeployment(stored);
     
-    if (result.isNewDeployment && result.reason === 'No stored version found') {
+    if (result.isNewDeployment) {
+      console.log('🚀 Initial deployment detected:', result.reason);
       this.handleNewDeployment(result.currentDeployment);
     }
     
@@ -86,12 +87,16 @@ class DeploymentVersionService {
   }
 
   public checkForNewDeployment(): boolean {
+    console.log('🔍 Manual deployment check triggered');
     const stored = this.versionManager.getStoredVersion();
     const result = this.deploymentDetector.checkForNewDeployment(stored);
     
     if (result.isNewDeployment) {
+      console.log('🚀 Manual check found new deployment');
       this.handleNewDeployment(result.currentDeployment);
       return true;
+    } else {
+      console.log('ℹ️ Manual check found no new deployment');
     }
     
     return false;
@@ -99,6 +104,9 @@ class DeploymentVersionService {
 
   public forceRefresh(): void {
     console.log('🔄 Force refresh triggered');
+    
+    // Reset the last check time to allow immediate check
+    this.deploymentDetector.updateTrackingInfo(this.deploymentDetector.getCurrentDeploymentInfo());
     
     // Force check for new deployment with fresh data
     const foundNew = this.checkForNewDeployment();
