@@ -8,6 +8,7 @@ class DeploymentVersionService {
   private deploymentDetector: DeploymentDetector;
   private versionManager: VersionManager;
   private periodicChecker: PeriodicChecker;
+  private isInitialized: boolean = false;
 
   constructor() {
     this.deploymentDetector = new DeploymentDetector();
@@ -17,18 +18,23 @@ class DeploymentVersionService {
       this.versionManager,
       (deploymentInfo) => this.handleNewDeployment(deploymentInfo)
     );
-    
-    this.initializeVersion();
-    this.periodicChecker.start();
   }
 
   private initializeVersion(): void {
+    if (this.isInitialized) return;
+    
     const stored = this.versionManager.getStoredVersion();
+    console.log('🔄 Initializing deployment version service...');
+    
+    // Only check for new deployment on initialization, don't auto-update
     const result = this.deploymentDetector.checkForNewDeployment(stored);
     
-    if (result.isNewDeployment) {
+    if (result.isNewDeployment && result.reason === 'No stored version found') {
       this.handleNewDeployment(result.currentDeployment);
     }
+    
+    this.periodicChecker.start();
+    this.isInitialized = true;
   }
 
   private handleNewDeployment(deploymentInfo: any): void {
@@ -54,6 +60,9 @@ class DeploymentVersionService {
   }
 
   public getCurrentVersion(): DeploymentVersion {
+    if (!this.isInitialized) {
+      this.initializeVersion();
+    }
     return this.versionManager.getCurrentVersion();
   }
 
