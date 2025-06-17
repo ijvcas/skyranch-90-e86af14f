@@ -56,11 +56,11 @@ const HeaderWithDropdown = () => {
           {/* Logo with Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-3 hover:bg-green-50 h-12 px-3">
+              <Button variant="ghost" className="flex items-center space-x-3 hover:bg-green-50 h-14 px-3">
                 <img 
                   src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
                   alt="SkyRanch" 
-                  className="h-12 w-12 flex-shrink-0"
+                  className="h-16 w-16 flex-shrink-0"
                 />
                 <div className="flex items-center">
                   <span className="text-2xl font-bold text-gray-900 whitespace-nowrap uppercase leading-none">SKYRANCH</span>
