@@ -56,7 +56,7 @@ export class CalendarNotificationProcessor {
       return;
     }
 
-    console.log(`📢 [CALENDAR NOTIFICATION PROCESSOR] Processing Gmail notifications for ${selectedUserIds.length} users`);
+    console.log(`📢 [CALENDAR NOTIFICATION PROCESSOR] Processing notifications for ${selectedUserIds.length} users`);
     
     const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
     console.log('🔄 [CALENDAR NOTIFICATION PROCESSOR] Found matching users:', selectedUsers.map(u => ({ id: u.id, email: u.email })));
@@ -69,31 +69,80 @@ export class CalendarNotificationProcessor {
     // Create in-app notification
     await this.notificationManager.createInAppNotification(eventTitle, eventDate);
 
-    // Get Gmail access token
+    // Try to get Gmail access token first
+    console.log('🔐 [CALENDAR NOTIFICATION PROCESSOR] Attempting Gmail authentication...');
     const accessToken = await this.gmailAuthService.getAccessToken();
-    if (!accessToken) {
-      this.toast({
-        title: "❌ Error de Autenticación",
-        description: "No se pudo autenticar con Gmail. Las notificaciones no se enviaron.",
-        variant: "destructive"
+    
+    if (accessToken) {
+      console.log('✅ [CALENDAR NOTIFICATION PROCESSOR] Gmail token obtained, using Gmail API');
+      
+      // Process email notifications via Gmail
+      const result = await this.emailProcessor.processEmailNotifications(selectedUsers, {
+        eventTitle,
+        eventDate,
+        eventDescription,
+        eventType,
+        location,
+        veterinarian,
+        isUpdate,
+        accessToken
       });
-      return;
+
+      // Show results
+      this.resultHandler.showNotificationResults(result.sent, result.failed, result.failures);
+    } else {
+      console.log('❌ [CALENDAR NOTIFICATION PROCESSOR] No Gmail token available, falling back to Resend');
+      
+      // Fall back to using the email notification service (Resend)
+      try {
+        // Import the email service dynamically to avoid circular dependencies
+        const { emailServiceV2 } = await import('@/services/email/v2/EmailServiceV2');
+        
+        let notificationsSent = 0;
+        let notificationsFailed = 0;
+        const emailFailures: string[] = [];
+
+        for (const user of selectedUsers) {
+          try {
+            const actionType = isUpdate ? "actualizado" : "creado";
+            const subject = `Evento ${actionType}: ${eventTitle}`;
+            const body = `
+              <h2>Evento ${actionType}</h2>
+              <p><strong>Título:</strong> ${eventTitle}</p>
+              <p><strong>Fecha:</strong> ${eventDate}</p>
+              ${eventDescription ? `<p><strong>Descripción:</strong> ${eventDescription}</p>` : ''}
+              ${eventType ? `<p><strong>Tipo:</strong> ${eventType}</p>` : ''}
+              ${location ? `<p><strong>Ubicación:</strong> ${location}</p>` : ''}
+              ${veterinarian ? `<p><strong>Veterinario:</strong> ${veterinarian}</p>` : ''}
+            `;
+
+            const success = await emailServiceV2.sendEmail(user.email, subject, body);
+            
+            if (success) {
+              notificationsSent++;
+              console.log(`✅ Email sent successfully to ${user.email}`);
+            } else {
+              notificationsFailed++;
+              emailFailures.push(`${user.email}: Email sending failed`);
+              console.error(`❌ Email failed for ${user.email}`);
+            }
+          } catch (error) {
+            notificationsFailed++;
+            emailFailures.push(`${user.email}: ${error.message}`);
+            console.error(`❌ Email error for ${user.email}:`, error);
+          }
+        }
+
+        this.resultHandler.showNotificationResults(notificationsSent, notificationsFailed, emailFailures);
+      } catch (error) {
+        console.error('❌ [CALENDAR NOTIFICATION PROCESSOR] Fallback email service failed:', error);
+        this.toast({
+          title: "❌ Error de Notificación",
+          description: "No se pudieron enviar las notificaciones por correo.",
+          variant: "destructive"
+        });
+      }
     }
-
-    // Process email notifications
-    const result = await this.emailProcessor.processEmailNotifications(selectedUsers, {
-      eventTitle,
-      eventDate,
-      eventDescription,
-      eventType,
-      location,
-      veterinarian,
-      isUpdate,
-      accessToken
-    });
-
-    // Show results
-    this.resultHandler.showNotificationResults(result.sent, result.failed, result.failures);
 
     // Show permission warning if needed
     this.notificationManager.checkNotificationPermissions();
