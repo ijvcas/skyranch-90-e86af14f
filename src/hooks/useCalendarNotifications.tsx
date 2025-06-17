@@ -16,6 +16,97 @@ export const useCalendarNotifications = (users: any[]) => {
     return u?.name || u?.full_name || u?.email?.split('@')[0] || 'Usuario';
   };
 
+  // Function to get Gmail OAuth access token
+  const getGmailAccessToken = async (): Promise<string | null> => {
+    try {
+      console.log('🔐 [GMAIL AUTH] Starting Gmail OAuth process...');
+      
+      // Get the OAuth authorization URL
+      const { data: authUrlData, error: authUrlError } = await supabase.functions.invoke('send-gmail/auth-url', {
+        body: {
+          redirectUri: `${window.location.origin}/gmail-callback`
+        }
+      });
+
+      if (authUrlError || !authUrlData?.authUrl) {
+        console.error('❌ [GMAIL AUTH] Failed to get auth URL:', authUrlError);
+        return null;
+      }
+
+      console.log('🔐 [GMAIL AUTH] Opening OAuth popup...');
+      
+      // Open OAuth popup
+      const popup = window.open(authUrlData.authUrl, 'gmail-auth', 'width=500,height=600');
+      
+      if (!popup) {
+        console.error('❌ [GMAIL AUTH] Popup blocked by browser');
+        toast({
+          title: "Error de Popup",
+          description: "Por favor permite popups para este sitio y vuelve a intentar",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      // Wait for OAuth callback
+      return new Promise((resolve) => {
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            resolve(null);
+          }
+        }, 1000);
+
+        const messageHandler = async (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'GMAIL_OAUTH_SUCCESS') {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', messageHandler);
+            popup.close();
+            
+            console.log('✅ [GMAIL AUTH] OAuth authorization received, exchanging for token...');
+            
+            // Exchange code for access token
+            const { data: tokenData, error: tokenError } = await supabase.functions.invoke('send-gmail/exchange-token', {
+              body: {
+                code: event.data.code,
+                redirectUri: `${window.location.origin}/gmail-callback`
+              }
+            });
+
+            if (tokenError || !tokenData?.accessToken) {
+              console.error('❌ [GMAIL AUTH] Token exchange failed:', tokenError);
+              resolve(null);
+              return;
+            }
+
+            console.log('✅ [GMAIL AUTH] Access token obtained successfully');
+            resolve(tokenData.accessToken);
+          } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', messageHandler);
+            popup.close();
+            
+            console.error('❌ [GMAIL AUTH] OAuth error:', event.data.error);
+            toast({
+              title: "Error de Autenticación Gmail",
+              description: event.data.error,
+              variant: "destructive"
+            });
+            resolve(null);
+          }
+        };
+
+        window.addEventListener('message', messageHandler);
+      });
+      
+    } catch (error) {
+      console.error('❌ [GMAIL AUTH] Unexpected error during OAuth:', error);
+      return null;
+    }
+  };
+
   const sendNotificationsToUsers = async (
     selectedUserIds: string[],
     eventTitle: string,
@@ -51,6 +142,22 @@ export const useCalendarNotifications = (users: any[]) => {
       console.log('🔄 [CALENDAR NOTIFICATION - GMAIL] Available users:', users.map(u => ({ id: u.id, email: u.email })));
       return;
     }
+
+    // Get Gmail access token first
+    console.log('🔐 [CALENDAR NOTIFICATION - GMAIL] Obtaining Gmail OAuth access token...');
+    const accessToken = await getGmailAccessToken();
+    
+    if (!accessToken) {
+      console.error('❌ [CALENDAR NOTIFICATION - GMAIL] Failed to obtain Gmail access token');
+      toast({
+        title: "❌ Error de Autenticación",
+        description: "No se pudo autenticar con Gmail. Las notificaciones no se enviaron.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('✅ [CALENDAR NOTIFICATION - GMAIL] Gmail access token obtained, proceeding with notifications...');
     
     const actionType = isUpdate ? "updated" : "created";
     const notificationTitle = `Evento ${actionType}: ${eventTitle}`;
@@ -89,15 +196,6 @@ export const useCalendarNotifications = (users: any[]) => {
           continue;
         }
 
-        // Get authenticated user
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-
-        if (authError || !authUser) {
-          console.error(`❌ [CALENDAR NOTIFICATION - GMAIL] Authentication failed for ${user.email}:`, authError);
-          notificationsFailed++;
-          continue;
-        }
-
         // Use the CalendarEventTemplate to generate professional email HTML
         const template = new CalendarEventTemplate();
         const emailContent = template.render({
@@ -116,11 +214,12 @@ export const useCalendarNotifications = (users: any[]) => {
           },
         });
 
-        // Use Gmail edge function to send email with template
+        // Use Gmail edge function to send email with access token
         const payload = {
           to: user.email,
           subject: emailContent.subject,
           html: emailContent.html,
+          accessToken: accessToken, // Now include the access token
           senderName: "SkyRanch - Sistema de Gestión Ganadera",
           organizationName: "SkyRanch",
           metadata: {
@@ -135,7 +234,7 @@ export const useCalendarNotifications = (users: any[]) => {
           }
         };
 
-        console.log(`📧 [CALENDAR NOTIFICATION - GMAIL] Calling Gmail edge function for ${user.email}...`);
+        console.log(`📧 [CALENDAR NOTIFICATION - GMAIL] Calling Gmail edge function for ${user.email} with access token...`);
         const { data, error } = await supabase.functions.invoke('send-gmail', {
           body: payload
         });
@@ -200,7 +299,7 @@ export const useCalendarNotifications = (users: any[]) => {
       if (notificationsSent === 0) {
         toast({
           title: "❌ Error de Notificaciones",
-          description: `No se pudieron enviar ${notificationsFailed} notificación(es). Revisa la configuración de Gmail OAuth.`,
+          description: `No se pudieron enviar ${notificationsFailed} notificación(es). Verifica la autenticación OAuth de Gmail.`,
           variant: "destructive"
         });
       } else {
