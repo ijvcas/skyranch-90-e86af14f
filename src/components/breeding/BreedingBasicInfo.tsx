@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Animal } from '@/stores/animalStore';
 import { useTimezone } from '@/hooks/useTimezone';
+import { DatePickerField } from '@/components/calendar/DatePickerField';
 
 interface BreedingBasicInfoProps {
   formData: {
@@ -24,11 +24,15 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
   animals,
   onInputChange
 }) => {
-  const { formatDateInput, parseDateInput } = useTimezone();
+  const { parseDateInput } = useTimezone();
 
-  const handleDateChange = (field: string, displayValue: string) => {
-    const isoDate = parseDateInput(displayValue);
-    onInputChange(field, isoDate);
+  const handleDateChange = (field: string, date: Date | undefined) => {
+    if (date) {
+      const isoDate = date.toISOString().split('T')[0];
+      onInputChange(field, isoDate);
+    } else {
+      onInputChange(field, '');
+    }
   };
 
   const femaleAnimals = animals.filter(animal => animal.gender === 'female');
@@ -50,7 +54,7 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
               <SelectContent>
                 {femaleAnimals.map((animal) => (
                   <SelectItem key={animal.id} value={animal.id}>
-                    {animal.name} (#{animal.earTag || animal.id.slice(-4)}) - {animal.species}
+                    {animal.name} (#{animal.id.slice(-4)}) - {animal.species}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -65,7 +69,7 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
               <SelectContent>
                 {maleAnimals.map((animal) => (
                   <SelectItem key={animal.id} value={animal.id}>
-                    {animal.name} (#{animal.earTag || animal.id.slice(-4)}) - {animal.species}
+                    {animal.name} (#{animal.id.slice(-4)}) - {animal.species}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -76,13 +80,10 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="breedingDate">Fecha de Apareamiento *</Label>
-            <Input
-              id="breedingDate"
-              type="text"
-              placeholder={formatDateInput('').includes('/') ? 'dd/mm/yyyy' : 'mm/dd/yyyy'}
-              value={formatDateInput(formData.breedingDate)}
-              onChange={(e) => handleDateChange('breedingDate', e.target.value)}
-              maxLength={10}
+            <DatePickerField
+              value={formData.breedingDate ? new Date(formData.breedingDate + 'T00:00:00') : undefined}
+              onChange={(date) => handleDateChange('breedingDate', date)}
+              placeholder="Seleccionar fecha"
             />
           </div>
           <div>

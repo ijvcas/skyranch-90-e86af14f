@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Info } from 'lucide-react';
 import { getSpeciesDisplayName, getGestationPeriod, calculateActualGestationDuration } from '@/services/gestationService';
-import { useTimezone } from '@/hooks/useTimezone';
+import { DatePickerField } from '@/components/calendar/DatePickerField';
 
 interface BreedingPregnancyInfoProps {
   formData: {
@@ -27,11 +27,13 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
   motherSpecies,
   onInputChange
 }) => {
-  const { formatDateInput, parseDateInput } = useTimezone();
-
-  const handleDateChange = (field: string, displayValue: string) => {
-    const isoDate = parseDateInput(displayValue);
-    onInputChange(field, isoDate);
+  const handleDateChange = (field: string, date: Date | undefined) => {
+    if (date) {
+      const isoDate = date.toISOString().split('T')[0];
+      onInputChange(field, isoDate);
+    } else {
+      onInputChange(field, '');
+    }
   };
 
   const gestationDuration = formData.breedingDate && formData.actualBirthDate 
@@ -39,7 +41,6 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
     : null;
 
   const expectedGestationPeriod = motherSpecies ? getGestationPeriod(motherSpecies) : null;
-  const placeholder = formatDateInput('').includes('/') ? 'dd/mm/yyyy' : 'mm/dd/yyyy';
 
   return (
     <Card>
@@ -59,13 +60,10 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="pregnancyConfirmationDate">Fecha de Confirmación</Label>
-              <Input
-                id="pregnancyConfirmationDate"
-                type="text"
-                placeholder={placeholder}
-                value={formatDateInput(formData.pregnancyConfirmationDate)}
-                onChange={(e) => handleDateChange('pregnancyConfirmationDate', e.target.value)}
-                maxLength={10}
+              <DatePickerField
+                value={formData.pregnancyConfirmationDate ? new Date(formData.pregnancyConfirmationDate + 'T00:00:00') : undefined}
+                onChange={(date) => handleDateChange('pregnancyConfirmationDate', date)}
+                placeholder="Seleccionar fecha"
               />
             </div>
             <div>
@@ -88,13 +86,10 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="actualBirthDate">Fecha de Nacimiento</Label>
-            <Input
-              id="actualBirthDate"
-              type="text"
-              placeholder={placeholder}
-              value={formatDateInput(formData.actualBirthDate)}
-              onChange={(e) => handleDateChange('actualBirthDate', e.target.value)}
-              maxLength={10}
+            <DatePickerField
+              value={formData.actualBirthDate ? new Date(formData.actualBirthDate + 'T00:00:00') : undefined}
+              onChange={(date) => handleDateChange('actualBirthDate', date)}
+              placeholder="Seleccionar fecha"
             />
           </div>
           <div>
