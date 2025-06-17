@@ -36,9 +36,6 @@ export const buildEmailTemplate = (
                      eventType === 'updated' ? 'se ha actualizado correctamente' : 
                      eventType === 'deleted' ? 'se ha cancelado' : 'está próximo';
 
-  const actionColor = eventType === 'deleted' ? '#dc2626' : '#10b981';
-  const actionBgColor = eventType === 'deleted' ? '#fef2f2' : '#f0fdf4';
-
   const logoUrl = "/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png";
 
   return `
@@ -54,45 +51,36 @@ export const buildEmailTemplate = (
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
         
         <!-- Enhanced Header - Bigger Logo/Branding Section -->
-        <div style="background: #ffffff; padding: 50px 24px; text-align: center; position: relative; border-bottom: 1px solid #e5e7eb;">
+        <div style="background: #ffffff; padding: 60px 24px; text-align: center; position: relative; border-bottom: 1px solid #e5e7eb;">
           <div style="position: relative; z-index: 1;">
-            <div style="display: inline-block; margin-bottom: 20px; padding: 12px; background: #f0f9f4; border-radius: 20px; border: 2px solid #d1fae5;">
-              <img src="${logoUrl}" alt="SkyRanch Logo" style="width: 80px; height: 80px; border-radius: 16px; display: block;">
+            <div style="display: inline-block; margin-bottom: 24px; padding: 12px; background: #f0f9f4; border-radius: 20px; border: 2px solid #d1fae5;">
+              <img src="${logoUrl}" alt="SkyRanch Logo" style="width: 100px; height: 100px; border-radius: 16px; display: block;">
             </div>
             
             <!-- Brand Title -->
-            <h1 style="margin: 0 0 12px 0; font-size: 32px; font-weight: 700; color: #10b981; font-family: 'Inter', sans-serif; letter-spacing: 2px;">
+            <h1 style="margin: 0 0 12px 0; font-size: 36px; font-weight: 700; color: #10b981; font-family: 'Inter', sans-serif; letter-spacing: 2px;">
               SKYRANCH
             </h1>
             
             <!-- Divider -->
-            <div style="width: 100px; height: 2px; background: #10b981; margin: 16px auto;"></div>
+            <div style="width: 120px; height: 3px; background: #10b981; margin: 20px auto;"></div>
             
             <!-- Subtitle -->
-            <p style="margin: 0; font-size: 16px; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 500;">
+            <p style="margin: 0; font-size: 18px; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 500;">
               Sistema de Gestión Ganadera
             </p>
           </div>
         </div>
 
         <!-- Smaller Event Notification Banner -->
-        <div style="padding: 12px; text-align: center; background: #ffffff; border-bottom: 1px solid #e5e7eb;">
-          <div style="display: inline-block; background: ${actionColor}; color: white; padding: 6px 12px; border-radius: 4px; box-shadow: 0 2px 8px ${actionColor}40;">
-            <h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.3px;">
+        <div style="padding: 8px; text-align: center; background: #ffffff; border-bottom: 1px solid #e5e7eb;">
+          <div style="display: inline-block; background: #10b981; color: white; padding: 4px 8px; border-radius: 3px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">
+            <h2 style="margin: 0; font-size: 10px; font-weight: 600;">
               SKYRANCH
             </h2>
-            <p style="margin: 4px 0 0 0; font-size: 10px; font-weight: 500;">
+            <p style="margin: 2px 0 0 0; font-size: 8px; font-weight: 500;">
               Notificación de Evento
             </p>
-          </div>
-        </div>
-
-        <!-- Event Status - Light Background -->
-        <div style="padding: 20px 24px; text-align: center; background: #ffffff; border-bottom: 1px solid #e5e7eb;">
-          <div style="display: inline-block; border: 2px solid ${actionColor}; color: ${actionColor}; padding: 10px 20px; border-radius: 20px; background: ${actionBgColor};">
-            <h3 style="margin: 0; font-size: 14px; font-weight: 600;">
-              Evento ${eventType === 'updated' ? 'actualizado' : eventType === 'created' ? 'creado' : eventType === 'deleted' ? 'cancelado' : 'recordatorio'}: ${event.title}
-            </h3>
           </div>
         </div>
 
@@ -106,10 +94,20 @@ export const buildEmailTemplate = (
             Te informamos que el evento <strong style="color: #10b981;">${event.title}</strong> ${actionText} en el sistema.
           </p>
 
+          <!-- Event Title - Clean styling without frames -->
+          <div style="background: #f8fafc; padding: 20px; text-align: center; margin-bottom: 24px; border-radius: 8px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 20px; color: #10b981; font-weight: 600;">
+              ${event.title}
+            </h3>
+            <p style="margin: 0; color: #6b7280; font-weight: 500; font-size: 14px;">
+              ${actionText}
+            </p>
+          </div>
+
           <!-- Event Details Card -->
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <div style="display: flex; align-items: center; margin-bottom: 16px;">
-              <div style="width: 32px; height: 32px; background: ${actionColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+              <div style="width: 32px; height: 32px; background: #10b981; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
                 <span style="color: #ffffff; font-size: 16px;">📋</span>
               </div>
               <h4 style="color: #374151; margin: 0; font-size: 16px; font-weight: 600;">
