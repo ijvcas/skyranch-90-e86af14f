@@ -5,6 +5,7 @@ import { supabaseNotificationService } from '@/services/notifications/supabaseNo
 import { pushService } from '@/services/notifications/pushService';
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarEventTemplate } from '@/services/email/templates/CalendarEventTemplate';
+import { tokenStorage } from '@/utils/tokenStorage';
 
 export const useCalendarNotifications = (users: any[]) => {
   const { toast } = useToast();
@@ -16,10 +17,17 @@ export const useCalendarNotifications = (users: any[]) => {
     return u?.name || u?.full_name || u?.email?.split('@')[0] || 'Usuario';
   };
 
-  // Function to get Gmail OAuth access token
+  // Function to get Gmail OAuth access token with persistence
   const getGmailAccessToken = async (): Promise<string | null> => {
     try {
-      console.log('🔐 [GMAIL AUTH] Starting Gmail OAuth process...');
+      // First check if we have a valid stored token
+      const existingToken = tokenStorage.get();
+      if (existingToken) {
+        console.log('🔐 [GMAIL AUTH] Using existing valid token from storage');
+        return existingToken;
+      }
+
+      console.log('🔐 [GMAIL AUTH] No valid token found, starting OAuth process...');
       
       // Get the OAuth authorization URL
       const { data: authUrlData, error: authUrlError } = await supabase.functions.invoke('send-gmail/auth-url', {
@@ -82,6 +90,14 @@ export const useCalendarNotifications = (users: any[]) => {
             }
 
             console.log('✅ [GMAIL AUTH] Access token obtained successfully');
+            
+            // Store the token for future use
+            tokenStorage.save({
+              accessToken: tokenData.accessToken,
+              refreshToken: tokenData.refreshToken,
+              expiresIn: 3600 // 1 hour default
+            });
+            
             resolve(tokenData.accessToken);
           } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
             clearInterval(checkClosed);
@@ -143,7 +159,7 @@ export const useCalendarNotifications = (users: any[]) => {
       return;
     }
 
-    // Get Gmail access token first
+    // Get Gmail access token (will use stored token if valid)
     console.log('🔐 [CALENDAR NOTIFICATION - GMAIL] Obtaining Gmail OAuth access token...');
     const accessToken = await getGmailAccessToken();
     
@@ -219,7 +235,7 @@ export const useCalendarNotifications = (users: any[]) => {
           to: user.email,
           subject: emailContent.subject,
           html: emailContent.html,
-          accessToken: accessToken, // Now include the access token
+          accessToken: accessToken,
           senderName: "SkyRanch - Sistema de Gestión Ganadera",
           organizationName: "SkyRanch",
           metadata: {
@@ -234,7 +250,7 @@ export const useCalendarNotifications = (users: any[]) => {
           }
         };
 
-        console.log(`📧 [CALENDAR NOTIFICATION - GMAIL] Calling Gmail edge function for ${user.email} with access token...`);
+        console.log(`📧 [CALENDAR NOTIFICATION - GMAIL] Calling Gmail edge function for ${user.email} with stored token...`);
         const { data, error } = await supabase.functions.invoke('send-gmail', {
           body: payload
         });

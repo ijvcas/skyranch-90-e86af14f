@@ -18,7 +18,7 @@ const SystemSettings = () => {
     try {
       toast({
         title: "✅ Gmail Integration Active",
-        description: "Professional Gmail notifications are now enabled for all calendar events from soporte@skyranch.es",
+        description: "Professional Gmail notifications with persistent authentication are now enabled for all calendar events from soporte@skyranch.es",
         variant: "default"
       });
     } catch (error) {
@@ -52,7 +52,7 @@ const SystemSettings = () => {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Estado:</span>
-                <span className="text-sm text-green-600 font-medium">✅ ACTIVO - Todos los usuarios</span>
+                <span className="text-sm text-green-600 font-medium">✅ ACTIVO - Autenticación Persistente</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -62,7 +62,7 @@ const SystemSettings = () => {
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Transporte:</span>
-                <span className="text-sm text-blue-600 font-medium">Gmail API (OAuth + Professional)</span>
+                <span className="text-sm text-blue-600 font-medium">Gmail API (OAuth + Branding Premium)</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -72,12 +72,15 @@ const SystemSettings = () => {
               
               <div className="space-y-2">
                 <span className="text-sm text-gray-600">Funcionalidades Activas:</span>
-                <div className="text-xs text-green-600 bg-green-50 p-2 rounded space-y-1">
-                  <div>✅ Notificaciones de eventos del calendario</div>
+                <div className="text-xs text-green-600 bg-green-50 p-3 rounded space-y-1">
+                  <div>✅ Autenticación OAuth persistente (sin popups repetidos)</div>
+                  <div>✅ Emails premium con branding profesional SkyRanch</div>
+                  <div>✅ Logo oficial y diseño elegante personalizado</div>
+                  <div>✅ Notificaciones automáticas de eventos del calendario</div>
                   <div>✅ Envío profesional desde skyranch.es</div>
                   <div>✅ Headers de autenticación mejorados</div>
                   <div>✅ Reply-To configurado correctamente</div>
-                  <div>✅ Branding organizacional completo</div>
+                  <div>✅ Branding organizacional completo con fuentes premium</div>
                   <div>✅ Habilitado para todos los usuarios</div>
                 </div>
               </div>
@@ -87,7 +90,7 @@ const SystemSettings = () => {
                 className="w-full"
                 variant="default"
               >
-                ✅ Gmail Notifications Active for All Users
+                ✅ Gmail Premium Notifications Active for All Users
               </Button>
             </CardContent>
           </Card>
@@ -97,13 +100,13 @@ const SystemSettings = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Mail className="w-5 h-5 mr-2" />
-                Gmail OAuth Testing & Setup
+                Gmail OAuth - Autenticación Inteligente
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">OAuth Status:</span>
-                <span className="text-sm text-green-600 font-medium">✅ Configurado y Funcionando</span>
+                <span className="text-sm text-green-600 font-medium">✅ Persistente y Automático</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -112,15 +115,31 @@ const SystemSettings = () => {
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Redirect URI:</span>
-                <span className="text-sm text-blue-600 font-medium">✅ Verificado</span>
+                <span className="text-sm text-gray-600">Token Storage:</span>
+                <span className="text-sm text-blue-600 font-medium">✅ LocalStorage Inteligente</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Experiencia de Usuario:</span>
+                <span className="text-sm text-green-600 font-medium">🚀 Sin Popups Repetidos</span>
+              </div>
+              
+              <div className="space-y-2">
+                <span className="text-sm text-gray-600">Mejoras Implementadas:</span>
+                <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded space-y-1">
+                  <div>🔐 Tokens se guardan automáticamente tras autenticación</div>
+                  <div>⏰ Detección inteligente de expiración de tokens</div>
+                  <div>🔄 Re-autenticación automática solo cuando es necesario</div>
+                  <div>💾 Persistencia segura entre sesiones del navegador</div>
+                  <div>🎨 Emails con branding premium y logo oficial</div>
+                </div>
               </div>
               
               <div className="space-y-2">
                 <span className="text-sm text-gray-600">Uso:</span>
                 <p className="text-xs text-gray-500">
-                  Las notificaciones de calendario se envían automáticamente via Gmail OAuth. 
-                  Usa el botón de abajo solo para pruebas adicionales.
+                  Las notificaciones de calendario ahora funcionan sin interrupciones. 
+                  La primera vez se autentica una sola vez, después funciona automáticamente.
                 </p>
               </div>
               
@@ -133,7 +152,6 @@ const SystemSettings = () => {
           {/* Timezone Settings */}
           <TimezoneSettings />
           
-          {/* Project URL */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -172,7 +190,6 @@ const SystemSettings = () => {
             </CardContent>
           </Card>
           
-          {/* Platform Status */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
