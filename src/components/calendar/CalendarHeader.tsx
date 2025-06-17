@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, Plus } from 'lucide-react';
 import EventForm from './EventForm';
-import EmailTestButton from './EmailTestButton';
 
 interface CalendarHeaderProps {
   selectedDate: Date | undefined;
@@ -35,7 +34,6 @@ const CalendarHeader = ({
           <h1 className="text-3xl font-bold text-gray-800">Calendario de Eventos</h1>
         </div>
         <div className="flex gap-2">
-          <EmailTestButton />
           <Dialog open={isDialogOpen} onOpenChange={(open) => open ? onOpenDialog() : onCloseDialog()}>
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700">
