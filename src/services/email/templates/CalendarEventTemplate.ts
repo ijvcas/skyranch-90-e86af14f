@@ -1,4 +1,3 @@
-
 import { EmailContent } from '../interfaces/EmailTypes';
 import { BaseEmailTemplate, BaseTemplateData } from './BaseEmailTemplate';
 
@@ -16,7 +15,7 @@ export interface CalendarEventData extends BaseTemplateData {
 
 export class CalendarEventTemplate extends BaseEmailTemplate {
   render(data: CalendarEventData): EmailContent {
-    console.log('🎨 [CALENDAR EMAIL TEMPLATE] Rendering clean light green template');
+    console.log('🎨 [CALENDAR EMAIL TEMPLATE] Rendering clean light template without dark green headers');
     
     const eventDate = new Date(data.event.eventDate).toLocaleDateString('es-ES', {
       weekday: 'long',
@@ -38,31 +37,38 @@ export class CalendarEventTemplate extends BaseEmailTemplate {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${subject}</title>
       </head>
-      <body style="margin: 0; padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background-color: #f0f9f4; line-height: 1.6; color: #334155;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d1fae5;">
+      <body style="margin: 0; padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background-color: #f8fafc; line-height: 1.6; color: #334155;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
           
-          <!-- Clean Header -->
-          <div style="background-color: #10b981; padding: 20px; text-align: center;">
-            <div style="display: inline-block; margin-bottom: 8px;">
-              <img src="https://id-preview--d956216c-86a1-4ff3-9df4-bdfbbabf459a.lovable.app/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" alt="SkyRanch Logo" style="width: 40px; height: 40px; border-radius: 8px;">
+          <!-- Clean Header - No Dark Green Background -->
+          <div style="background-color: #ffffff; padding: 30px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: inline-block; margin-bottom: 12px;">
+              <img src="https://id-preview--d956216c-86a1-4ff3-9df4-bdfbbabf459a.lovable.app/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" alt="SkyRanch Logo" style="width: 50px; height: 50px; border-radius: 8px;">
             </div>
-            <h1 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px;">
+            <h1 style="margin: 0; font-size: 22px; font-weight: 600; color: #10b981; letter-spacing: 0.5px;">
               SKYRANCH
             </h1>
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280; font-weight: 500;">
+              Sistema de Gestión Ganadera
+            </p>
           </div>
 
-          <!-- Event Notification Header -->
-          <div style="background-color: #10b981; padding: 15px; text-align: center;">
-            <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #ffffff;">
-              🔔 NOTIFICACIÓN DE EVENTO
-            </h2>
+          <!-- Event Notification Header - Light Background -->
+          <div style="background-color: #f0f9f4; padding: 20px; text-align: center; border-bottom: 1px solid #d1fae5;">
+            <div style="display: inline-block; background-color: #10b981; color: white; padding: 8px 16px; border-radius: 6px;">
+              <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #ffffff;">
+                🔔 NOTIFICACIÓN DE EVENTO
+              </h2>
+            </div>
           </div>
 
-          <!-- Status Banner -->
-          <div style="background-color: #f0f9f4; padding: 15px; text-align: center; border-bottom: 2px solid #10b981;">
-            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #10b981;">
-              ${actionText.toUpperCase()}
-            </h3>
+          <!-- Status Banner - Light Background -->
+          <div style="background-color: #ffffff; padding: 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: inline-block; border: 2px solid #10b981; color: #10b981; padding: 12px 20px; border-radius: 8px; background-color: #f0f9f4;">
+              <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #10b981;">
+                ${actionText.toUpperCase()}
+              </h3>
+            </div>
           </div>
 
           <!-- Main Content -->
@@ -75,12 +81,12 @@ export class CalendarEventTemplate extends BaseEmailTemplate {
               en el sistema de gestión ganadera SkyRanch.
             </p>
 
-            <!-- Event Title -->
-            <div style="background-color: #10b981; color: white; padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px;">
-              <h3 style="margin: 0 0 10px 0; font-size: 20px; color: white; font-weight: 600;">
+            <!-- Event Title - Light Styling -->
+            <div style="background-color: #f0f9f4; border: 2px solid #10b981; color: #10b981; padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px;">
+              <h3 style="margin: 0 0 10px 0; font-size: 20px; color: #10b981; font-weight: 600;">
                 ${data.event.title}
               </h3>
-              <div style="background-color: rgba(255,255,255,0.2); padding: 8px 15px; display: inline-block; border-radius: 4px;">
+              <div style="background-color: #10b981; color: white; padding: 8px 15px; display: inline-block; border-radius: 4px;">
                 <p style="margin: 0; color: white; font-weight: 500; font-size: 12px;">
                   ${actionText}
                 </p>
@@ -190,7 +196,7 @@ export class CalendarEventTemplate extends BaseEmailTemplate {
     // Generate simple text version
     const text = `${subject}\n\nEstimado/a ${data.userName || 'Usuario'},\n\nTe informamos que el evento "${data.event.title}" ${actionText.toLowerCase()} en el sistema de gestión ganadera SkyRanch.\n\nDetalles del evento:\n- Título: ${data.event.title}\n- Fecha: ${eventDate}\n${data.event.description ? `- Descripción: ${data.event.description}\n` : ''}${data.event.location ? `- Ubicación: ${data.event.location}\n` : ''}${data.event.veterinarian ? `- Veterinario: ${data.event.veterinarian}\n` : ''}\n\n© ${new Date().getFullYear()} SkyRanch - Sistema de Gestión Ganadera\n\nContacto: soporte@skyranch.es`;
 
-    console.log('✅ [CALENDAR EMAIL TEMPLATE] Clean light green template rendered');
+    console.log('✅ [CALENDAR EMAIL TEMPLATE] Clean light template rendered without dark green headers');
     
     return {
       subject,
