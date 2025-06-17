@@ -1,7 +1,7 @@
 
-import { emailNotificationService } from './emailNotificationService';
 import { pushNotificationService } from './pushNotificationService';
 import { userNotificationService } from './userNotificationService';
+import { emailServiceV2 } from '../../email/v2/EmailServiceV2';
 
 export class NotificationOrchestrator {
   async sendNotification(
@@ -21,7 +21,7 @@ export class NotificationOrchestrator {
         console.log('📢 [ORCHESTRATOR] Sending email...');
         
         try {
-          const emailSuccess = await emailNotificationService.sendEmailNotification(userEmail, title, message, eventDetails);
+          const emailSuccess = await emailServiceV2.sendEmail(userEmail, title, message, eventDetails);
           console.log('📢 [ORCHESTRATOR] Email result:', emailSuccess);
           
           await userNotificationService.logNotification({

@@ -1,19 +1,19 @@
 
-import { emailNotificationService } from './core/emailNotificationService';
 import { pushNotificationService } from './core/pushNotificationService';
 import { userNotificationService } from './core/userNotificationService';
 import { notificationOrchestrator } from './core/notificationOrchestrator';
+import { emailServiceV2 } from '../email/v2/EmailServiceV2';
 import { NotificationPreferences, NotificationTemplate, NotificationLog } from './interfaces';
 
 class NotificationService {
-  // Delegate to email notification service
+  // Delegate to email service V2 directly
   async sendEmailNotification(
     to: string, 
     subject: string, 
     body: string, 
     eventDetails?: { title: string; description?: string; eventDate: string }
   ): Promise<boolean> {
-    return emailNotificationService.sendEmailNotification(to, subject, body, eventDetails);
+    return emailServiceV2.sendEmail(to, subject, body, eventDetails);
   }
 
   // Delegate to push notification service
