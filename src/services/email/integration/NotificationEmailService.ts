@@ -47,7 +47,13 @@ export class NotificationEmailService {
         eventType,
         event: eventDetails,
         userName: userName || to.split('@')[0],
-        organizationName: "SkyRanch"
+        organizationName: "SkyRanch",
+        title: `${eventType === 'created' ? 'Nuevo evento' : 
+                 eventType === 'updated' ? 'Evento actualizado' : 
+                 eventType === 'deleted' ? 'Evento cancelado' : 'Recordatorio'}: ${eventDetails.title}`,
+        content: `Te informamos que el evento ${eventDetails.title} ${eventType === 'created' ? 'se ha creado' : 
+                 eventType === 'updated' ? 'se ha actualizado' : 
+                 eventType === 'deleted' ? 'se ha cancelado' : 'está programado'} en el sistema.`
       });
 
       console.log('📧 [DEBUG] Email content generated:', {
@@ -99,7 +105,9 @@ export class NotificationEmailService {
       // Fix: Use proper interface structure for test template
       const emailContent = this.testTemplate.render({ 
         userName: to.split('@')[0],
-        organizationName: "SkyRanch"
+        organizationName: "SkyRanch",
+        title: "Email de Prueba - SkyRanch",
+        content: "Este es un email de prueba del sistema SkyRanch. Si recibes este mensaje, el sistema de correo está funcionando correctamente."
       });
 
       console.log('📧 [DEBUG] Test email content generated:', {
