@@ -13,6 +13,8 @@ class DeploymentVersionService {
   private readonly VERSION_KEY = 'skyranch-deployment-version';
   private readonly BASE_VERSION = '2.4.0';
   private checkInterval: number | null = null;
+  private lastCheckedUrl: string = '';
+  private lastCheckedId: string = '';
 
   constructor() {
     this.initializeVersion();
@@ -20,16 +22,33 @@ class DeploymentVersionService {
   }
 
   private startPeriodicCheck(): void {
-    // Check for deployment changes every 30 seconds
+    // Clear any existing interval
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+    }
+    
+    // Check for deployment changes every 15 seconds (more frequent)
     this.checkInterval = window.setInterval(() => {
+      console.log('🔍 Checking for new deployment...');
       this.checkForNewDeployment();
-    }, 30000);
+    }, 15000);
+    
+    // Also check when the page becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('🔍 Page became visible, checking for deployment...');
+        setTimeout(() => this.checkForNewDeployment(), 1000);
+      }
+    });
   }
 
   private initializeVersion(): void {
-    // Always check for new deployment on initialization
     const currentDeployment = this.getCurrentDeploymentInfo();
     const stored = this.getStoredVersion();
+    
+    // Store initial values for comparison
+    this.lastCheckedUrl = currentDeployment.url;
+    this.lastCheckedId = currentDeployment.id;
     
     if (!stored || this.isNewDeployment(stored, currentDeployment)) {
       this.handleNewDeployment(currentDeployment);
@@ -50,20 +69,19 @@ class DeploymentVersionService {
   }
 
   private extractDeploymentNumber(url: string): number {
-    // Extract deployment number from Lovable URLs like d956216c-86a1-4ff3-9df4-bdfbbabf459a.lovableproject.com
+    // Extract deployment number from Lovable URLs
     const lovableMatch = url.match(/([a-f0-9-]{36})\.lovableproject\.com/);
     if (lovableMatch) {
-      // Use a hash of the full UUID for the deployment number
       return this.hashString(lovableMatch[1]) % 10000;
     }
     
-    // Extract from legacy skyranch URLs like skyranch-90.lovable.app
+    // Extract from legacy skyranch URLs
     const legacyMatch = url.match(/skyranch-(\d+)\.lovable\.app/);
     if (legacyMatch) {
       return parseInt(legacyMatch[1], 10);
     }
     
-    // For localhost or other URLs, use a hash-based approach
+    // For localhost or other URLs
     const hash = this.hashUrl(url);
     return hash % 1000;
   }
@@ -73,7 +91,7 @@ class DeploymentVersionService {
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
+      hash = hash & hash;
     }
     return Math.abs(hash);
   }
@@ -83,15 +101,24 @@ class DeploymentVersionService {
   }
 
   private generateDeploymentId(url: string): string {
-    // Create a shorter, more readable deployment ID
-    const hash = this.hashString(url);
+    const hash = this.hashString(url + Date.now().toString());
     return hash.toString(36).substring(0, 8);
   }
 
   private isNewDeployment(stored: DeploymentVersion, current: any): boolean {
-    // Check if deployment URL changed (most reliable for Lovable)
+    // Check if we're on a different URL than what we last checked
+    if (this.lastCheckedUrl !== current.url) {
+      console.log('🚀 New deployment detected (URL change from periodic check):', {
+        oldUrl: this.lastCheckedUrl,
+        newUrl: current.url
+      });
+      this.lastCheckedUrl = current.url;
+      return true;
+    }
+    
+    // Check if deployment URL changed from stored version
     if (stored.deploymentUrl !== current.url) {
-      console.log('🚀 New deployment detected (URL change):', {
+      console.log('🚀 New deployment detected (URL change from stored):', {
         old: stored.deploymentUrl,
         new: current.url,
         oldNumber: stored.deploymentNumber,
@@ -101,19 +128,22 @@ class DeploymentVersionService {
     }
     
     // Check if deployment ID changed
-    if (stored.deploymentId !== current.id) {
+    if (stored.deploymentId !== current.id && this.lastCheckedId !== current.id) {
       console.log('🚀 New deployment detected (ID change):', {
         oldId: stored.deploymentId,
         newId: current.id
       });
+      this.lastCheckedId = current.id;
       return true;
     }
     
-    // Check if deployment number changed
-    if (stored.deploymentNumber !== current.number) {
-      console.log('🚀 New deployment detected (number change):', {
+    // Check if deployment number changed significantly
+    const numberDiff = Math.abs(stored.deploymentNumber - current.number);
+    if (numberDiff > 10) {
+      console.log('🚀 New deployment detected (significant number change):', {
         old: stored.deploymentNumber,
-        new: current.number
+        new: current.number,
+        difference: numberDiff
       });
       return true;
     }
@@ -138,12 +168,10 @@ class DeploymentVersionService {
   private handleNewDeployment(deploymentInfo: any): void {
     const stored = this.getStoredVersion();
     
-    // Increment version if we have a previous version, otherwise start fresh
     let newVersion = this.BASE_VERSION;
     let newBuildNumber = 1;
     
     if (stored) {
-      // Parse current version and increment patch number
       const versionParts = stored.version.split('.');
       const patch = parseInt(versionParts[2] || '0', 10) + 1;
       newVersion = `${versionParts[0]}.${versionParts[1]}.${patch}`;
@@ -157,12 +185,15 @@ class DeploymentVersionService {
       deploymentNumber: deploymentInfo.number,
       lastDeploymentTime: deploymentInfo.timestamp,
       deploymentId: deploymentInfo.id,
-      lastChange: 'Nueva versión publicada desde Lovable'
+      lastChange: 'Nueva versión detectada automáticamente'
     };
 
     this.saveVersion(deploymentVersion);
-    console.log(`🚀 New deployment detected! Version incremented to v${newVersion} (Build #${newBuildNumber})`);
-    console.log('Deployment info:', deploymentInfo);
+    console.log(`🚀 New deployment handled! Version: v${newVersion} (Build #${newBuildNumber})`);
+    
+    // Update our tracking variables
+    this.lastCheckedUrl = deploymentInfo.url;
+    this.lastCheckedId = deploymentInfo.id;
     
     // Dispatch event to notify components
     window.dispatchEvent(new CustomEvent('deployment-version-updated', { 
@@ -176,7 +207,6 @@ class DeploymentVersionService {
       return stored;
     }
 
-    // Fallback for first time
     const currentDeployment = this.getCurrentDeploymentInfo();
     return {
       version: this.BASE_VERSION,
@@ -209,7 +239,7 @@ class DeploymentVersionService {
       deploymentNumber: stored.deploymentNumber,
       lastDeploymentTime: new Date().toISOString(),
       deploymentId: stored.deploymentId,
-      lastChange: 'Incremento manual por el usuario'
+      lastChange: 'Incrementó manual por el usuario'
     };
 
     this.saveVersion(newVersion);
@@ -226,8 +256,17 @@ class DeploymentVersionService {
     const currentDeployment = this.getCurrentDeploymentInfo();
     const stored = this.getStoredVersion();
     
+    console.log('🔍 Manual deployment check:', {
+      currentUrl: currentDeployment.url,
+      storedUrl: stored?.deploymentUrl,
+      currentId: currentDeployment.id,
+      storedId: stored?.deploymentId
+    });
+    
     if (!stored) {
-      return false;
+      console.log('⚠️ No stored version found, initializing...');
+      this.handleNewDeployment(currentDeployment);
+      return true;
     }
     
     if (this.isNewDeployment(stored, currentDeployment)) {
@@ -239,11 +278,14 @@ class DeploymentVersionService {
   }
 
   public forceRefresh(): void {
-    // Force check for new deployment
+    console.log('🔄 Force refresh triggered');
+    
+    // Force check for new deployment with fresh data
     const foundNew = this.checkForNewDeployment();
     if (!foundNew) {
-      // If no new deployment found, just refresh the stored data
+      // If no new deployment found, refresh the stored data
       const current = this.getCurrentVersion();
+      console.log('🔄 No new deployment, refreshing current data');
       window.dispatchEvent(new CustomEvent('deployment-version-updated', { 
         detail: current 
       }));
