@@ -26,6 +26,41 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
   motherSpecies,
   onInputChange
 }) => {
+  // Format date for display (dd/mm/yyyy)
+  const formatDateForDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Parse date from display format (dd/mm/yyyy) to ISO format
+  const parseDateFromDisplay = (displayValue: string) => {
+    if (!displayValue || displayValue.length !== 10) return '';
+    
+    const parts = displayValue.split('/');
+    if (parts.length !== 3) return '';
+    
+    const day = parseInt(parts[0]);
+    const month = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+    if (day < 1 || day > 31 || month < 1 || month > 12) return '';
+    
+    const date = new Date(year, month - 1, day);
+    return date.toISOString().split('T')[0];
+  };
+
+  const handleDateChange = (field: string, displayValue: string) => {
+    const isoDate = parseDateFromDisplay(displayValue);
+    onInputChange(field, isoDate);
+  };
+
   const gestationDuration = formData.breedingDate && formData.actualBirthDate 
     ? calculateActualGestationDuration(formData.breedingDate, formData.actualBirthDate)
     : null;
@@ -52,9 +87,11 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
               <Label htmlFor="pregnancyConfirmationDate">Fecha de Confirmación</Label>
               <Input
                 id="pregnancyConfirmationDate"
-                type="date"
-                value={formData.pregnancyConfirmationDate}
-                onChange={(e) => onInputChange('pregnancyConfirmationDate', e.target.value)}
+                type="text"
+                placeholder="dd/mm/yyyy"
+                value={formatDateForDisplay(formData.pregnancyConfirmationDate)}
+                onChange={(e) => handleDateChange('pregnancyConfirmationDate', e.target.value)}
+                maxLength={10}
               />
             </div>
             <div>
@@ -79,9 +116,11 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
             <Label htmlFor="actualBirthDate">Fecha de Nacimiento</Label>
             <Input
               id="actualBirthDate"
-              type="date"
-              value={formData.actualBirthDate}
-              onChange={(e) => onInputChange('actualBirthDate', e.target.value)}
+              type="text"
+              placeholder="dd/mm/yyyy"
+              value={formatDateForDisplay(formData.actualBirthDate)}
+              onChange={(e) => handleDateChange('actualBirthDate', e.target.value)}
+              maxLength={10}
             />
           </div>
           <div>
