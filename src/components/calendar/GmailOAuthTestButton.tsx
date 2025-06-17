@@ -25,20 +25,50 @@ const GmailOAuthTestButton = () => {
         throw new Error('No authenticated user found');
       }
 
-      // Use the Gmail callback route as redirect URI
-      const redirectUri = window.location.origin + '/gmail-callback';
+      // Use a more flexible redirect URI approach
+      const currentOrigin = window.location.origin;
+      const redirectUri = `${currentOrigin}/gmail-callback`;
       
       console.log('🔐 [GMAIL SKYRANCH AUTH] Getting auth URL with redirect:', redirectUri);
+      
+      // Show user that they need to complete Google verification
+      toast({
+        title: "⚠️ Google Verification Required",
+        description: "Your Google Cloud project needs verification. Please contact the developer to add you as a test user, or complete the Google verification process.",
+        variant: "destructive"
+      });
+
+      // For now, let's try to get the auth URL anyway
       const { data, error } = await supabase.functions.invoke('send-gmail/auth-url', {
         body: { redirectUri }
       });
 
       if (error) {
-        throw new Error(`Failed to get auth URL: ${error.message}`);
+        console.error('🔐 [GMAIL SKYRANCH AUTH] Auth URL error:', error);
+        
+        // Provide helpful error message about Google verification
+        toast({
+          title: "🔧 Configuration Issue",
+          description: "Gmail OAuth needs Google Cloud project verification. Please add your email as a test user in Google Cloud Console, or complete the app verification process.",
+          variant: "destructive"
+        });
+        return;
       }
 
       if (data?.authUrl) {
         console.log('🔐 [GMAIL SKYRANCH AUTH] Redirecting to Google OAuth...');
+        
+        // Show warning about verification before opening popup
+        const userConfirmed = confirm(
+          "Gmail OAuth requires Google verification. This may show an 'access blocked' error. " +
+          "To fix this, add your email as a test user in Google Cloud Console. Continue anyway?"
+        );
+        
+        if (!userConfirmed) {
+          setIsAuthenticating(false);
+          return;
+        }
+        
         // Open OAuth flow in popup window
         const popup = window.open(
           data.authUrl,
@@ -71,7 +101,7 @@ const GmailOAuthTestButton = () => {
               setAccessToken(tokenData.accessToken);
               console.log('✅ [GMAIL SKYRANCH AUTH] Access token obtained successfully');
               toast({
-                title: "Gmail Authentication Successful",
+                title: "✅ Gmail Authentication Successful",
                 description: "You can now send emails via Gmail API using soporte@skyranch.es",
               });
             }
@@ -90,8 +120,8 @@ const GmailOAuthTestButton = () => {
             window.removeEventListener('message', handleMessage);
             if (!accessToken) {
               toast({
-                title: "Authentication Cancelled",
-                description: "Gmail OAuth authentication was cancelled",
+                title: "🔧 Authentication Issue",
+                description: "If you saw 'access blocked', you need to be added as a test user in Google Cloud Console",
                 variant: "destructive"
               });
             }
@@ -139,7 +169,6 @@ const GmailOAuthTestButton = () => {
 
     setIsTesting(true);
     console.log('📧 [GMAIL SKYRANCH TEST] Starting professional test email send...');
-    console.log('📧 [GMAIL SKYRANCH TEST] Using access token (first 10 chars):', accessToken.substring(0, 10) + '...');
     
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -179,17 +208,6 @@ const GmailOAuthTestButton = () => {
               </ul>
             </div>
             
-            <div style="background-color: #eff6ff; padding: 16px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #1d4ed8; margin-top: 0;">🔧 Technical Improvements:</h3>
-              <ul style="color: #374151; line-height: 1.6;">
-                <li>Professional sending domain (skyranch.es)</li>
-                <li>Enhanced MIME headers for better delivery</li>
-                <li>Proper Reply-To configuration</li>
-                <li>Professional organization branding</li>
-                <li>Improved spam filter compatibility</li>
-              </ul>
-            </div>
-            
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; margin: 0;">
                 <strong>SkyRanch - Sistema de Gestión Ganadera</strong><br>
@@ -200,16 +218,7 @@ const GmailOAuthTestButton = () => {
         `,
         accessToken: accessToken,
         senderName: "SkyRanch Soporte",
-        organizationName: "SkyRanch",
-        metadata: {
-          tags: [
-            { name: "test-type", value: "gmail-professional" },
-            { name: "sender", value: "soporte-skyranch" },
-            { name: "delivery-verification", value: "professional" },
-            { name: "recipient-type", value: recipientEmail ? "external" : "self" },
-            { name: "domain", value: "skyranch.es" }
-          ]
-        }
+        organizationName: "SkyRanch"
       };
 
       console.log('📧 [GMAIL SKYRANCH TEST] Sending professional email with payload:', {
@@ -242,29 +251,11 @@ const GmailOAuthTestButton = () => {
 
       if (data?.success) {
         console.log('✅ [GMAIL SKYRANCH TEST] Professional email sent successfully!');
-        console.log('📧 [GMAIL SKYRANCH TEST] Professional Gmail Response Details:', {
-          messageId: data.messageId,
-          threadId: data.threadId,
-          provider: data.details?.provider,
-          fromDomain: data.details?.fromDomain,
-          senderEmail: data.details?.senderEmail,
-          professionalSender: data.details?.professionalSender,
-          timestamp: data.details?.timestamp
-        });
         
         toast({
           title: "Professional Gmail Test Successful! 🏢",
           description: `Professional email sent from soporte@skyranch.es to ${finalRecipient}. Message ID: ${data.messageId}. Check recipient inbox for professional delivery.`,
         });
-
-        // Enhanced logging for professional delivery verification
-        console.log('📧 [GMAIL SKYRANCH TEST] 📊 PROFESSIONAL DELIVERY VERIFICATION:');
-        console.log('📧 [GMAIL SKYRANCH TEST] 1. Email sent from professional domain: soporte@skyranch.es');
-        console.log('📧 [GMAIL SKYRANCH TEST] 2. Enhanced authentication headers included');
-        console.log('📧 [GMAIL SKYRANCH TEST] 3. Professional branding and Reply-To configured');
-        console.log('📧 [GMAIL SKYRANCH TEST] 4. Gmail Message ID:', data.messageId);
-        console.log('📧 [GMAIL SKYRANCH TEST] 5. Search Gmail for: "SkyRanch Professional Email Test"');
-        console.log('📧 [GMAIL SKYRANCH TEST] 6. Recipient should see professional sender info');
       } else {
         console.error('📧 [GMAIL SKYRANCH TEST] Unexpected response format:', data);
         throw new Error(data?.message || 'Unknown error occurred');
@@ -283,6 +274,27 @@ const GmailOAuthTestButton = () => {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <span className="text-yellow-600">⚠️</span>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-yellow-800">
+              Google Verification Required
+            </h3>
+            <div className="mt-2 text-sm text-yellow-700">
+              <p>Your Google Cloud project needs verification. To use Gmail OAuth:</p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>Add your email as a test user in Google Cloud Console</li>
+                <li>Or complete the Google app verification process</li>
+                <li>Contact the developer for assistance</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div className="flex flex-wrap gap-2">
         <Button 
           onClick={handleGmailAuth} 
@@ -290,7 +302,7 @@ const GmailOAuthTestButton = () => {
           variant="outline"
           size="sm"
         >
-          {isAuthenticating ? 'Authenticating...' : accessToken ? '✓ Gmail Authenticated' : 'Authenticate Gmail'}
+          {isAuthenticating ? 'Authenticating...' : accessToken ? '✓ Gmail Authenticated' : 'Try Gmail Auth (May Fail)'}
         </Button>
       </div>
       
