@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Info } from 'lucide-react';
 import { getSpeciesDisplayName, getGestationPeriod, calculateActualGestationDuration } from '@/services/gestationService';
+import { useTimezone } from '@/hooks/useTimezone';
 
 interface BreedingPregnancyInfoProps {
   formData: {
@@ -26,38 +27,10 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
   motherSpecies,
   onInputChange
 }) => {
-  // Format date for display (dd/mm/yyyy)
-  const formatDateForDisplay = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  // Parse date from display format (dd/mm/yyyy) to ISO format
-  const parseDateFromDisplay = (displayValue: string) => {
-    if (!displayValue || displayValue.length !== 10) return '';
-    
-    const parts = displayValue.split('/');
-    if (parts.length !== 3) return '';
-    
-    const day = parseInt(parts[0]);
-    const month = parseInt(parts[1]);
-    const year = parseInt(parts[2]);
-    
-    if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
-    if (day < 1 || day > 31 || month < 1 || month > 12) return '';
-    
-    const date = new Date(year, month - 1, day);
-    return date.toISOString().split('T')[0];
-  };
+  const { formatDateInput, parseDateInput } = useTimezone();
 
   const handleDateChange = (field: string, displayValue: string) => {
-    const isoDate = parseDateFromDisplay(displayValue);
+    const isoDate = parseDateInput(displayValue);
     onInputChange(field, isoDate);
   };
 
@@ -66,6 +39,7 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
     : null;
 
   const expectedGestationPeriod = motherSpecies ? getGestationPeriod(motherSpecies) : null;
+  const placeholder = formatDateInput('').includes('/') ? 'dd/mm/yyyy' : 'mm/dd/yyyy';
 
   return (
     <Card>
@@ -88,8 +62,8 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
               <Input
                 id="pregnancyConfirmationDate"
                 type="text"
-                placeholder="dd/mm/yyyy"
-                value={formatDateForDisplay(formData.pregnancyConfirmationDate)}
+                placeholder={placeholder}
+                value={formatDateInput(formData.pregnancyConfirmationDate)}
                 onChange={(e) => handleDateChange('pregnancyConfirmationDate', e.target.value)}
                 maxLength={10}
               />
@@ -117,8 +91,8 @@ const BreedingPregnancyInfo: React.FC<BreedingPregnancyInfoProps> = ({
             <Input
               id="actualBirthDate"
               type="text"
-              placeholder="dd/mm/yyyy"
-              value={formatDateForDisplay(formData.actualBirthDate)}
+              placeholder={placeholder}
+              value={formatDateInput(formData.actualBirthDate)}
               onChange={(e) => handleDateChange('actualBirthDate', e.target.value)}
               maxLength={10}
             />
