@@ -35,10 +35,20 @@ export class CalendarEmailProcessor {
     const emailFailures: string[] = [];
 
     for (const user of selectedUsers) {
-      const result = await this.emailNotificationService.sendEmailNotification({
+      // Fix the parameter structure to match the service signature
+      const emailParams = {
         user,
-        ...params
-      }, selectedUsers);
+        eventTitle: params.eventTitle,
+        eventDate: params.eventDate,
+        eventDescription: params.eventDescription,
+        eventType: params.eventType,
+        location: params.location,
+        veterinarian: params.veterinarian,
+        isUpdate: params.isUpdate,
+        accessToken: params.accessToken
+      };
+
+      const result = await this.emailNotificationService.sendEmailNotification(emailParams, selectedUsers);
 
       if (result.success) {
         notificationsSent++;

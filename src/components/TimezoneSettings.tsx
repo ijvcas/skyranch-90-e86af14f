@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTimezone } from '@/hooks/useTimezone';
+import { Clock } from 'lucide-react';
 
 const TimezoneSettings = () => {
   const { timezone, setTimezone } = useTimezone();
@@ -20,9 +21,12 @@ const TimezoneSettings = () => {
   ];
 
   return (
-    <Card className="w-full max-w-md">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Configuración de Zona Horaria</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="w-5 h-5 text-blue-600" />
+          Configuración de Zona Horaria
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -41,9 +45,9 @@ const TimezoneSettings = () => {
           </Select>
         </div>
         
-        <div className="text-sm text-gray-600">
-          <p>Zona horaria actual: {timezone}</p>
-          <p>Hora local: {new Date().toLocaleString('es-ES', { timeZone: timezone })}</p>
+        <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+          <p><strong>Zona horaria actual:</strong> {timezone}</p>
+          <p><strong>Hora local:</strong> {new Date().toLocaleString('es-ES', { timeZone: timezone })}</p>
         </div>
       </CardContent>
     </Card>

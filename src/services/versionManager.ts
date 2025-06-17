@@ -8,7 +8,7 @@ export interface VersionInfo {
 
 class VersionManager {
   private readonly VERSION_KEY = 'skyranch-version-info';
-  private readonly BASE_VERSION = '2.3.0';
+  private readonly BASE_VERSION = '2.4.0'; // Updated version
 
   constructor() {
     this.initializeVersion();
@@ -24,6 +24,18 @@ class VersionManager {
         lastPublishTime: new Date().toISOString()
       };
       this.saveVersionInfo(initialVersion);
+    } else {
+      // Update to new version if stored version is outdated
+      if (stored.version === '2.3.0') {
+        const updatedVersion: VersionInfo = {
+          ...stored,
+          version: this.BASE_VERSION,
+          buildNumber: stored.buildNumber + 1,
+          publishCount: stored.publishCount + 1,
+          lastPublishTime: new Date().toISOString()
+        };
+        this.saveVersionInfo(updatedVersion);
+      }
     }
   }
 

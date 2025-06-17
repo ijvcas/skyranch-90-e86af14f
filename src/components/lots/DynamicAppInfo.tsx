@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Info, Calendar, GitBranch, Monitor } from 'lucide-react';
+import { versionManager } from '@/services/versionManager';
 
 interface BuildInfo {
   version: string;
@@ -14,18 +15,32 @@ interface BuildInfo {
 
 const DynamicAppInfo = () => {
   const [buildInfo, setBuildInfo] = useState<BuildInfo>({
-    version: 'v2.3.0',
+    version: versionManager.getFormattedVersion(),
     buildTime: new Date().toISOString(),
-    lastChange: 'Corregidos controles de mapa, selector de usuarios real, edición de eventos, prevención de duplicados y fecha en formularios',
+    lastChange: 'Restored email notifications, timezone settings, and app version functionality',
     buildStatus: 'success',
     environment: import.meta.env.MODE === 'production' ? 'production' : 'development'
   });
 
   useEffect(() => {
+    const currentVersion = versionManager.getCurrentVersion();
+    
     // Log build information for debugging
-    console.log('Build version: v2.3.0 - Map controls fixed, real user selector, event editing, duplicate prevention, and form date field');
+    console.log(`Build version: ${currentVersion.version} - Email notifications fixed, timezone restored, app version updated`);
     console.log('Build environment:', import.meta.env.MODE);
     console.log('Build time:', new Date().toISOString());
+    
+    // Listen for version updates
+    const handleVersionUpdate = (event: CustomEvent) => {
+      setBuildInfo(prev => ({
+        ...prev,
+        version: `v${event.detail.version}`,
+        buildTime: event.detail.lastPublishTime,
+        lastChange: 'Fixed broken functionality: email notifications, timezone settings, app version'
+      }));
+    };
+
+    window.addEventListener('version-updated', handleVersionUpdate as EventListener);
     
     // Update build time every minute to show activity
     const interval = setInterval(() => {
@@ -35,7 +50,10 @@ const DynamicAppInfo = () => {
       }));
     }, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('version-updated', handleVersionUpdate as EventListener);
+      clearInterval(interval);
+    };
   }, []);
 
   const getStatusColor = (status: string) => {
