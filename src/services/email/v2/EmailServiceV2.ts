@@ -3,8 +3,49 @@ import { notificationEmailService } from '../integration/NotificationEmailServic
 import { emailEngine } from '../core/EmailEngine';
 import { EmailResult, EventDetails } from '../interfaces/EmailTypes';
 import { emailLogger } from '../core/EmailLogger';
+import { supabase } from '@/integrations/supabase/client';
 
 export class EmailServiceV2 {
+  private async getUserFullName(email: string): Promise<string> {
+    try {
+      emailLogger.debug('🔍 [EMAIL SERVICE V2] Fetching user full name for email:', email);
+      
+      // First try to get from app_users table
+      const { data: appUser, error: appUserError } = await supabase
+        .from('app_users')
+        .select('name')
+        .eq('email', email)
+        .single();
+
+      if (appUser && appUser.name) {
+        emailLogger.debug('✅ [EMAIL SERVICE V2] Found full name in app_users:', appUser.name);
+        return appUser.name;
+      }
+
+      // If not found in app_users, try profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('email', email)
+        .single();
+
+      if (profile && profile.full_name) {
+        emailLogger.debug('✅ [EMAIL SERVICE V2] Found full name in profiles:', profile.full_name);
+        return profile.full_name;
+      }
+
+      // If no full name found, fallback to email username
+      const fallbackName = email.split('@')[0];
+      emailLogger.debug('⚠️ [EMAIL SERVICE V2] No full name found, using fallback:', fallbackName);
+      return fallbackName;
+      
+    } catch (error) {
+      emailLogger.error('❌ [EMAIL SERVICE V2] Error fetching user full name:', error);
+      // Fallback to email username on error
+      return email.split('@')[0];
+    }
+  }
+
   async sendEmail(
     to: string, 
     subject: string, 
@@ -23,10 +64,10 @@ export class EmailServiceV2 {
       let result: EmailResult;
 
       if (eventDetails) {
-        // This is a calendar event email
+        // This is a calendar event email - fetch the user's full name
         emailLogger.debug('📅 [EMAIL SERVICE V2] Sending calendar event email', { eventDetails });
         
-        const userName = to.split('@')[0];
+        const userName = await this.getUserFullName(to);
         
         // Determine event type from subject
         let eventType: 'created' | 'updated' | 'deleted' | 'reminder' = 'reminder';
@@ -103,9 +144,12 @@ export class EmailServiceV2 {
     emailLogger.info('🧪 [EMAIL SERVICE V2] EmailServiceV2.testEmail called', { to });
     
     try {
-      emailLogger.debug('🧪 [EMAIL SERVICE V2] Calling notificationEmailService.sendTestNotification', { to });
+      // Fetch the user's full name for test email too
+      const userName = await this.getUserFullName(to);
       
-      const result = await notificationEmailService.sendTestNotification(to);
+      emailLogger.debug('🧪 [EMAIL SERVICE V2] Calling notificationEmailService.sendTestNotification', { to, userName });
+      
+      const result = await notificationEmailService.sendTestNotification(to, userName);
       
       emailLogger.debug('🧪 [EMAIL SERVICE V2] notificationEmailService.sendTestNotification result', result);
 
@@ -135,7 +179,6 @@ export class EmailServiceV2 {
     return await emailEngine.healthCheck();
   }
 
-  // Get logs for debugging
   getLogs(level?: 'info' | 'warn' | 'error' | 'debug') {
     return emailEngine.getLogger().getLogs(level);
   }

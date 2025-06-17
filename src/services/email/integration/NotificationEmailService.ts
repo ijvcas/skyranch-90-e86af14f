@@ -39,14 +39,17 @@ export class NotificationEmailService {
         to,
         eventType,
         eventTitle: eventDetails.title,
-        eventDate: eventDetails.eventDate
+        eventDate: eventDetails.eventDate,
+        userName
       });
 
-      // Fix: Use proper interface structure for calendar template
+      // Use the provided userName or fallback to email username
+      const displayName = userName || to.split('@')[0];
+
       const emailContent = this.calendarTemplate.render({
         eventType,
         event: eventDetails,
-        userName: userName || to.split('@')[0],
+        userName: displayName,
         organizationName: "SkyRanch",
         title: `${eventType === 'created' ? 'Nuevo evento' : 
                  eventType === 'updated' ? 'Evento actualizado' : 
@@ -56,9 +59,10 @@ export class NotificationEmailService {
                  eventType === 'deleted' ? 'se ha cancelado' : 'está programado'} en el sistema.`
       });
 
-      console.log('📧 [DEBUG] Email content generated:', {
+      console.log('📧 [DEBUG] Email content generated with userName:', {
         subject: emailContent.subject,
-        htmlLength: emailContent.html.length
+        htmlLength: emailContent.html.length,
+        userName: displayName
       });
 
       const request = {
@@ -96,23 +100,26 @@ export class NotificationEmailService {
     }
   }
 
-  async sendTestNotification(to: string): Promise<EmailResult> {
-    emailLogger.info('🧪 [NOTIFICATION EMAIL] sendTestNotification called', { to });
+  async sendTestNotification(to: string, userName?: string): Promise<EmailResult> {
+    emailLogger.info('🧪 [NOTIFICATION EMAIL] sendTestNotification called', { to, userName });
 
     try {
-      console.log('📧 [DEBUG] About to send test email to:', to);
+      console.log('📧 [DEBUG] About to send test email to:', to, 'with userName:', userName);
 
-      // Fix: Use proper interface structure for test template
+      // Use the provided userName or fallback to email username
+      const displayName = userName || to.split('@')[0];
+
       const emailContent = this.testTemplate.render({ 
-        userName: to.split('@')[0],
+        userName: displayName,
         organizationName: "SkyRanch",
         title: "Email de Prueba - SkyRanch",
         content: "Este es un email de prueba del sistema SkyRanch. Si recibes este mensaje, el sistema de correo está funcionando correctamente."
       });
 
-      console.log('📧 [DEBUG] Test email content generated:', {
+      console.log('📧 [DEBUG] Test email content generated with userName:', {
         subject: emailContent.subject,
-        htmlLength: emailContent.html.length
+        htmlLength: emailContent.html.length,
+        userName: displayName
       });
 
       const request = {
