@@ -10,9 +10,6 @@ export const useCalendarNotifications = (users: any[]) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Verified email for testing (Gmail API)
-  const VERIFIED_EMAIL = 'jvcas@mac.com';
-
   // Helper to get userName
   const getUserNameByEmail = (email: string) => {
     const u = users.find(user => user.email === email);
@@ -80,7 +77,6 @@ export const useCalendarNotifications = (users: any[]) => {
     let notificationsSent = 0;
     let notificationsFailed = 0;
     let emailFailures: string[] = [];
-    let testModeErrors: string[] = [];
 
     for (const user of selectedUsers) {
       try {
@@ -90,14 +86,6 @@ export const useCalendarNotifications = (users: any[]) => {
           console.error(`❌ [CALENDAR NOTIFICATION - GMAIL] User ${user.id} has no email address - skipping`);
           notificationsFailed++;
           emailFailures.push(`${user.id}: No email address`);
-          continue;
-        }
-
-        // TESTING MODE: Only send emails to verified email address
-        if (user.email !== VERIFIED_EMAIL) {
-          console.log(`🧪 [CALENDAR NOTIFICATION - GMAIL] TESTING MODE: Skipping ${user.email} (not verified email)`);
-          testModeErrors.push(user.email);
-          notificationsFailed++;
           continue;
         }
 
@@ -196,39 +184,32 @@ export const useCalendarNotifications = (users: any[]) => {
     console.log(`🔄 [CALENDAR NOTIFICATION - GMAIL] Total users processed: ${selectedUsers.length}`);
     console.log(`🔄 [CALENDAR NOTIFICATION - GMAIL] Notifications sent via Gmail: ${notificationsSent}`);
     console.log(`🔄 [CALENDAR NOTIFICATION - GMAIL] Notifications failed: ${notificationsFailed}`);
-    console.log(`🔄 [CALENDAR NOTIFICATION - GMAIL] Test mode skipped: ${testModeErrors.length}`);
     if (emailFailures.length > 0) {
       console.log(`🔄 [CALENDAR NOTIFICATION - GMAIL] Email failures:`, emailFailures);
     }
 
-    // Enhanced success/failure reporting for Gmail testing mode
+    // Enhanced success/failure reporting
     if (notificationsSent > 0) {
-      let description = `✅ Se enviaron ${notificationsSent} notificación(es) correctamente via Gmail a ${VERIFIED_EMAIL}`;
-      if (testModeErrors.length > 0) {
-        description += `. ${testModeErrors.length} usuarios omitidos (modo de prueba - solo emails a ${VERIFIED_EMAIL})`;
+      toast({
+        title: "✅ Notificaciones Enviadas",
+        description: `Se enviaron ${notificationsSent} notificación(es) correctamente via Gmail desde soporte@skyranch.es`,
+      });
+    }
+
+    if (notificationsFailed > 0) {
+      if (notificationsSent === 0) {
+        toast({
+          title: "❌ Error de Notificaciones",
+          description: `No se pudieron enviar ${notificationsFailed} notificación(es). Revisa la configuración de Gmail OAuth.`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "⚠️ Notificaciones Parciales",
+          description: `${notificationsSent} enviadas, ${notificationsFailed} fallaron. Algunos usuarios pueden no haber recibido la notificación.`,
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "🧪 Modo de Prueba - Gmail - Notificaciones enviadas",
-        description,
-      });
-    }
-
-    if (notificationsFailed > 0 && notificationsSent === 0) {
-      toast({
-        title: "🧪 Modo de Prueba - Gmail - Error",
-        description: `En modo de prueba solo se envían emails via Gmail a ${VERIFIED_EMAIL}. ${testModeErrors.length} usuarios omitidos.`,
-        variant: "destructive"
-      });
-    }
-
-    // Show testing mode info if users were skipped
-    if (testModeErrors.length > 0) {
-      toast({
-        title: "🧪 Modo de Prueba Gmail Activo",
-        description: `Solo se envían emails via Gmail a ${VERIFIED_EMAIL} para testing. ${testModeErrors.length} usuarios omitidos. Configure los permisos de Gmail para enviar a todos.`,
-        variant: "default"
-      });
     }
 
     // Show permission warning if needed

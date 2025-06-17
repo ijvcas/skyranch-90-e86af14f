@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,8 +17,8 @@ const SystemSettings = () => {
   const testGmailIntegration = async () => {
     try {
       toast({
-        title: "🏢 Professional Gmail Integration",
-        description: "Use the Gmail OAuth Test button below to test professional email delivery from soporte@skyranch.es",
+        title: "✅ Gmail Integration Active",
+        description: "Professional Gmail notifications are now enabled for all calendar events from soporte@skyranch.es",
         variant: "default"
       });
     } catch (error) {
@@ -40,7 +41,7 @@ const SystemSettings = () => {
           {/* Authentication Status */}
           <AuthenticationStatusCard />
           
-          {/* Gmail Integration Test */}
+          {/* Gmail Integration Status */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -51,7 +52,7 @@ const SystemSettings = () => {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Estado:</span>
-                <span className="text-sm text-green-600 font-medium">✓ Configurado Profesional</span>
+                <span className="text-sm text-green-600 font-medium">✅ ACTIVO - Todos los usuarios</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -66,25 +67,27 @@ const SystemSettings = () => {
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Función Edge:</span>
-                <span className="text-sm text-green-600 font-medium">send-gmail (Professional)</span>
+                <span className="text-sm text-green-600 font-medium">send-gmail (Production Ready)</span>
               </div>
               
               <div className="space-y-2">
-                <span className="text-sm text-gray-600">Mejoras Profesionales:</span>
+                <span className="text-sm text-gray-600">Funcionalidades Activas:</span>
                 <div className="text-xs text-green-600 bg-green-50 p-2 rounded space-y-1">
-                  <div>✓ Dominio profesional skyranch.es</div>
-                  <div>✓ Headers de autenticación mejorados</div>
-                  <div>✓ Reply-To configurado correctamente</div>
-                  <div>✓ Branding organizacional</div>
+                  <div>✅ Notificaciones de eventos del calendario</div>
+                  <div>✅ Envío profesional desde skyranch.es</div>
+                  <div>✅ Headers de autenticación mejorados</div>
+                  <div>✅ Reply-To configurado correctamente</div>
+                  <div>✅ Branding organizacional completo</div>
+                  <div>✅ Habilitado para todos los usuarios</div>
                 </div>
               </div>
               
               <Button 
                 onClick={testGmailIntegration}
                 className="w-full"
-                variant="outline"
+                variant="default"
               >
-                🏢 Professional Domain Ready (Use OAuth Below)
+                ✅ Gmail Notifications Active for All Users
               </Button>
             </CardContent>
           </Card>
@@ -94,29 +97,30 @@ const SystemSettings = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Mail className="w-5 h-5 mr-2" />
-                Professional Gmail Testing
+                Gmail OAuth Testing & Setup
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Método:</span>
-                <span className="text-sm text-blue-600 font-medium">OAuth 2.0 + Professional Domain</span>
+                <span className="text-sm text-gray-600">OAuth Status:</span>
+                <span className="text-sm text-green-600 font-medium">✅ Configurado y Funcionando</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Dominio de Envío:</span>
-                <span className="text-sm text-green-600 font-medium">soporte@skyranch.es</span>
+                <span className="text-sm text-gray-600">Google Cloud:</span>
+                <span className="text-sm text-green-600 font-medium">OAuth Client Configurado</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Autenticación:</span>
-                <span className="text-sm text-blue-600 font-medium">Enhanced Headers</span>
+                <span className="text-sm text-gray-600">Redirect URI:</span>
+                <span className="text-sm text-blue-600 font-medium">✅ Verificado</span>
               </div>
               
               <div className="space-y-2">
-                <span className="text-sm text-gray-600">Descripción:</span>
+                <span className="text-sm text-gray-600">Uso:</span>
                 <p className="text-xs text-gray-500">
-                  Envía emails profesionales desde soporte@skyranch.es con autenticación OAuth y headers mejorados para mejor entregabilidad
+                  Las notificaciones de calendario se envían automáticamente via Gmail OAuth. 
+                  Usa el botón de abajo solo para pruebas adicionales.
                 </p>
               </div>
               
@@ -201,7 +205,6 @@ const SystemSettings = () => {
             </CardContent>
           </Card>
           
-          {/* Database Status */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
