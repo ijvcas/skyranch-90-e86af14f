@@ -3,8 +3,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { GmailAuthService } from '@/services/gmail/gmailAuthService';
 import { CalendarNotificationManager } from './core/CalendarNotificationManager';
-import { CalendarEmailProcessor } from './core/CalendarEmailProcessor';
 import { CalendarNotificationResultHandler } from './core/CalendarNotificationResultHandler';
+import { emailServiceV2 } from '@/services/email/v2/EmailServiceV2';
 
 interface NotificationUser {
   id: string;
@@ -18,7 +18,6 @@ export class CalendarNotificationProcessor {
   private queryClient: ReturnType<typeof useQueryClient>;
   private gmailAuthService: GmailAuthService;
   private notificationManager: CalendarNotificationManager;
-  private emailProcessor: CalendarEmailProcessor;
   private resultHandler: CalendarNotificationResultHandler;
 
   constructor(toast: ReturnType<typeof useToast>['toast'], queryClient: ReturnType<typeof useQueryClient>) {
@@ -26,7 +25,6 @@ export class CalendarNotificationProcessor {
     this.queryClient = queryClient;
     this.gmailAuthService = new GmailAuthService(toast);
     this.notificationManager = new CalendarNotificationManager(toast, queryClient);
-    this.emailProcessor = new CalendarEmailProcessor();
     this.resultHandler = new CalendarNotificationResultHandler(toast);
   }
 
@@ -69,80 +67,53 @@ export class CalendarNotificationProcessor {
     // Create in-app notification
     await this.notificationManager.createInAppNotification(eventTitle, eventDate);
 
-    // Try to get Gmail access token first
-    console.log('🔐 [CALENDAR NOTIFICATION PROCESSOR] Attempting Gmail authentication...');
-    const accessToken = await this.gmailAuthService.getAccessToken();
-    
-    if (accessToken) {
-      console.log('✅ [CALENDAR NOTIFICATION PROCESSOR] Gmail token obtained, using Gmail API');
-      
-      // Process email notifications via Gmail
-      const result = await this.emailProcessor.processEmailNotifications(selectedUsers, {
-        eventTitle,
-        eventDate,
-        eventDescription,
-        eventType,
-        location,
-        veterinarian,
-        isUpdate,
-        accessToken
-      });
+    // Process email notifications using the proven EmailServiceV2 directly
+    let notificationsSent = 0;
+    let notificationsFailed = 0;
+    const emailFailures: string[] = [];
 
-      // Show results
-      this.resultHandler.showNotificationResults(result.sent, result.failed, result.failures);
-    } else {
-      console.log('❌ [CALENDAR NOTIFICATION PROCESSOR] No Gmail token available, falling back to Resend');
-      
-      // Fall back to using the email notification service (Resend)
+    for (const user of selectedUsers) {
       try {
-        // Import the email service dynamically to avoid circular dependencies
-        const { emailServiceV2 } = await import('@/services/email/v2/EmailServiceV2');
+        const actionType = isUpdate ? "actualizado" : "creado";
+        const subject = `Evento ${actionType}: ${eventTitle}`;
         
-        let notificationsSent = 0;
-        let notificationsFailed = 0;
-        const emailFailures: string[] = [];
+        // Create event details object for EmailServiceV2
+        const eventDetails = {
+          title: eventTitle,
+          description: eventDescription,
+          eventDate: eventDate,
+          eventType: eventType,
+          location: location,
+          veterinarian: veterinarian
+        };
 
-        for (const user of selectedUsers) {
-          try {
-            const actionType = isUpdate ? "actualizado" : "creado";
-            const subject = `Evento ${actionType}: ${eventTitle}`;
-            const body = `
-              <h2>Evento ${actionType}</h2>
-              <p><strong>Título:</strong> ${eventTitle}</p>
-              <p><strong>Fecha:</strong> ${eventDate}</p>
-              ${eventDescription ? `<p><strong>Descripción:</strong> ${eventDescription}</p>` : ''}
-              ${eventType ? `<p><strong>Tipo:</strong> ${eventType}</p>` : ''}
-              ${location ? `<p><strong>Ubicación:</strong> ${location}</p>` : ''}
-              ${veterinarian ? `<p><strong>Veterinario:</strong> ${veterinarian}</p>` : ''}
-            `;
-
-            const success = await emailServiceV2.sendEmail(user.email, subject, body);
-            
-            if (success) {
-              notificationsSent++;
-              console.log(`✅ Email sent successfully to ${user.email}`);
-            } else {
-              notificationsFailed++;
-              emailFailures.push(`${user.email}: Email sending failed`);
-              console.error(`❌ Email failed for ${user.email}`);
-            }
-          } catch (error) {
-            notificationsFailed++;
-            emailFailures.push(`${user.email}: ${error.message}`);
-            console.error(`❌ Email error for ${user.email}:`, error);
-          }
+        console.log(`📧 [CALENDAR NOTIFICATION PROCESSOR] Sending email to ${user.email} using EmailServiceV2`);
+        
+        // Use the proven EmailServiceV2 directly
+        const success = await emailServiceV2.sendEmail(
+          user.email,
+          subject,
+          '', // Empty body as EmailServiceV2 will generate from eventDetails
+          eventDetails
+        );
+        
+        if (success) {
+          notificationsSent++;
+          console.log(`✅ Email sent successfully to ${user.email}`);
+        } else {
+          notificationsFailed++;
+          emailFailures.push(`${user.email}: Email sending failed`);
+          console.error(`❌ Email failed for ${user.email}`);
         }
-
-        this.resultHandler.showNotificationResults(notificationsSent, notificationsFailed, emailFailures);
       } catch (error) {
-        console.error('❌ [CALENDAR NOTIFICATION PROCESSOR] Fallback email service failed:', error);
-        this.toast({
-          title: "❌ Error de Notificación",
-          description: "No se pudieron enviar las notificaciones por correo.",
-          variant: "destructive"
-        });
+        notificationsFailed++;
+        emailFailures.push(`${user.email}: ${error.message}`);
+        console.error(`❌ Email error for ${user.email}:`, error);
       }
     }
+
+    // Show results
+    this.resultHandler.showNotificationResults(notificationsSent, notificationsFailed, emailFailures);
 
     // Show permission warning if needed
     this.notificationManager.checkNotificationPermissions();
