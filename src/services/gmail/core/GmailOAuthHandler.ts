@@ -13,8 +13,6 @@ export class GmailOAuthHandler {
     
     const { data, error } = await supabase.functions.invoke('send-gmail', {
       body: { redirectUri: this.redirectUri }
-    }, {
-      headers: { 'Content-Type': 'application/json' }
     });
 
     if (error || !data?.authUrl) {
@@ -34,8 +32,6 @@ export class GmailOAuthHandler {
         code, 
         redirectUri: this.redirectUri 
       }
-    }, {
-      headers: { 'Content-Type': 'application/json' }
     });
 
     if (error || !data?.accessToken) {
