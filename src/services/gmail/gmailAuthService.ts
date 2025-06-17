@@ -21,15 +21,28 @@ export class GmailAuthService {
 
       console.log('🔐 [GMAIL AUTH] No valid token found, starting OAuth process...');
       
+      // Use the current domain for redirect URI
+      const currentDomain = window.location.origin;
+      const redirectUri = `${currentDomain}/gmail-callback`;
+      
+      console.log('🔐 [GMAIL AUTH] Using redirect URI:', redirectUri);
+      
       // Get the OAuth authorization URL
       const { data: authUrlData, error: authUrlError } = await supabase.functions.invoke('send-gmail/auth-url', {
         body: {
-          redirectUri: `${window.location.origin}/gmail-callback`
+          redirectUri: redirectUri
         }
       });
 
       if (authUrlError || !authUrlData?.authUrl) {
         console.error('❌ [GMAIL AUTH] Failed to get auth URL:', authUrlError);
+        
+        // Show helpful error message about Google Cloud Console configuration
+        this.toast({
+          title: "🔧 Configuración OAuth Requerida",
+          description: `Agrega esta URL como URI de redirección autorizado en Google Cloud Console: ${redirectUri}`,
+          variant: "destructive"
+        });
         return null;
       }
 
@@ -49,7 +62,7 @@ export class GmailAuthService {
       }
 
       // Wait for OAuth callback
-      return this.waitForOAuthCallback(popup);
+      return this.waitForOAuthCallback(popup, redirectUri);
       
     } catch (error) {
       console.error('❌ [GMAIL AUTH] Unexpected error during OAuth:', error);
@@ -57,7 +70,7 @@ export class GmailAuthService {
     }
   }
 
-  private async waitForOAuthCallback(popup: Window): Promise<string | null> {
+  private async waitForOAuthCallback(popup: Window, redirectUri: string): Promise<string | null> {
     return new Promise((resolve) => {
       const checkClosed = setInterval(() => {
         if (popup.closed) {
@@ -76,7 +89,7 @@ export class GmailAuthService {
           
           console.log('✅ [GMAIL AUTH] OAuth authorization received, exchanging for token...');
           
-          const token = await this.exchangeCodeForToken(event.data.code);
+          const token = await this.exchangeCodeForToken(event.data.code, redirectUri);
           resolve(token);
         } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
           clearInterval(checkClosed);
@@ -84,11 +97,21 @@ export class GmailAuthService {
           popup.close();
           
           console.error('❌ [GMAIL AUTH] OAuth error:', event.data.error);
-          this.toast({
-            title: "Error de Autenticación Gmail",
-            description: event.data.error,
-            variant: "destructive"
-          });
+          
+          // Show specific error message for redirect URI mismatch
+          if (event.data.error?.includes('redirect_uri_mismatch')) {
+            this.toast({
+              title: "🔧 Error de Configuración OAuth",
+              description: `Agrega ${redirectUri} como URI de redirección autorizado en tu Google Cloud Console`,
+              variant: "destructive"
+            });
+          } else {
+            this.toast({
+              title: "Error de Autenticación Gmail",
+              description: event.data.error,
+              variant: "destructive"
+            });
+          }
           resolve(null);
         }
       };
@@ -97,12 +120,12 @@ export class GmailAuthService {
     });
   }
 
-  private async exchangeCodeForToken(code: string): Promise<string | null> {
+  private async exchangeCodeForToken(code: string, redirectUri: string): Promise<string | null> {
     try {
       const { data: tokenData, error: tokenError } = await supabase.functions.invoke('send-gmail/exchange-token', {
         body: {
           code: code,
-          redirectUri: `${window.location.origin}/gmail-callback`
+          redirectUri: redirectUri
         }
       });
 
