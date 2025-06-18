@@ -6,8 +6,8 @@ export class PayloadBuilder {
   static build(request: EmailRequestV2): EmailPayload {
     const recipientDomain = request.to.split('@')[1];
     
-    // Use Resend's verified default domain
-    const fromEmail = "onboarding@resend.dev";
+    // Use your verified skyranch.es domain
+    const fromEmail = "noreply@skyranch.es";
     const fromName = request.senderName || "SkyRanch - Sistema de Gestión Ganadera";
 
     const finalTags = TagManager.prepareTags(request.metadata?.tags);
