@@ -15,7 +15,7 @@ export interface BreedingRecord {
   breedingNotes?: string;
   veterinarian?: string;
   cost?: number;
-  status: 'planned' | 'in_progress' | 'success' | 'failed' | 'birth_completed';
+  status: 'planned' | 'failed' | 'birth_completed' | 'completed' | 'confirmed_pregnant' | 'not_pregnant';
   createdAt: string;
   updatedAt: string;
 }

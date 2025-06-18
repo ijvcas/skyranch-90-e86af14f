@@ -17,13 +17,9 @@ class PregnancyNotificationService {
       
       console.log('✅ Pregnancy notification check completed:', data);
       
-      // If notifications were created, also send browser push notifications
-      if (data && data.notifications_sent > 0) {
-        console.log(`📱 ${data.notifications_sent} notifications sent, triggering browser notifications...`);
-        await this.sendBrowserNotifications();
-      } else {
-        console.log('📋 No new notifications were sent');
-      }
+      // Always trigger browser notifications regardless of server response
+      console.log('📱 Triggering browser notifications...');
+      await this.sendBrowserNotifications();
       
       return true;
     } catch (error) {
@@ -42,6 +38,20 @@ class PregnancyNotificationService {
       if (!user) {
         console.log('❌ No authenticated user for push notifications');
         return;
+      }
+
+      // Send a test notification first
+      console.log('📱 Sending test notification...');
+      const testSuccess = await pushService.sendPushNotification(
+        user.id, 
+        '🧪 Test de Notificaciones - SkyRanch', 
+        'Esta es una notificación de prueba para verificar que el sistema funciona correctamente.'
+      );
+      
+      if (testSuccess) {
+        console.log('✅ Test notification sent successfully');
+      } else {
+        console.log('❌ Test notification failed');
       }
 
       // Check for pregnancies due within the next 7 days or overdue
