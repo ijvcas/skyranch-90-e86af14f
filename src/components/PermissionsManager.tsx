@@ -15,7 +15,6 @@ interface Permission {
   description: string;
   category: string;
   icon: React.ReactNode;
-  enabled: boolean;
 }
 
 interface Role {
@@ -35,80 +34,70 @@ const PermissionsManager = () => {
       name: 'Ver Animales',
       description: 'Permite visualizar la lista y detalles de animales',
       category: 'animals',
-      icon: <Eye className="w-4 h-4" />,
-      enabled: true
+      icon: <Eye className="w-4 h-4" />
     },
     {
       id: 'animals_edit',
       name: 'Editar Animales',
       description: 'Permite modificar información de animales',
       category: 'animals',
-      icon: <Edit className="w-4 h-4" />,
-      enabled: true
+      icon: <Edit className="w-4 h-4" />
     },
     {
       id: 'animals_delete',
       name: 'Eliminar Animales',
       description: 'Permite eliminar animales del sistema',
       category: 'animals',
-      icon: <Trash2 className="w-4 h-4" />,
-      enabled: false
+      icon: <Trash2 className="w-4 h-4" />
     },
     {
       id: 'animals_create',
       name: 'Crear Animales',
       description: 'Permite agregar nuevos animales',
       category: 'animals',
-      icon: <Plus className="w-4 h-4" />,
-      enabled: true
+      icon: <Plus className="w-4 h-4" />
     },
     {
       id: 'lots_manage',
       name: 'Gestionar Lotes',
       description: 'Permite crear, editar y eliminar lotes',
       category: 'lots',
-      icon: <MapPin className="w-4 h-4" />,
-      enabled: true
+      icon: <MapPin className="w-4 h-4" />
     },
     {
       id: 'health_records',
       name: 'Registros de Salud',
       description: 'Permite gestionar registros médicos',
       category: 'health',
-      icon: <FileText className="w-4 h-4" />,
-      enabled: true
+      icon: <FileText className="w-4 h-4" />
     },
     {
       id: 'breeding_records',
       name: 'Registros de Reproducción',
       description: 'Permite gestionar registros reproductivos',
       category: 'breeding',
-      icon: <Database className="w-4 h-4" />,
-      enabled: true
+      icon: <Database className="w-4 h-4" />
     },
     {
       id: 'calendar_manage',
       name: 'Gestionar Calendario',
       description: 'Permite crear y editar eventos del calendario',
       category: 'calendar',
-      icon: <Calendar className="w-4 h-4" />,
-      enabled: true
+      icon: <Calendar className="w-4 h-4" />
     },
     {
       id: 'users_manage',
       name: 'Gestionar Usuarios',
       description: 'Permite crear, editar y eliminar usuarios',
       category: 'users',
-      icon: <Users className="w-4 h-4" />,
-      enabled: false
+      icon: <Users className="w-4 h-4" />
     },
     {
       id: 'system_settings',
       name: 'Configuración del Sistema',
       description: 'Permite acceder a configuraciones avanzadas',
       category: 'system',
-      icon: <Settings className="w-4 h-4" />,
-      enabled: false
+      icon: <Settings className="w-4 h-4" />
     }
   ]);
 
@@ -199,84 +188,90 @@ const PermissionsManager = () => {
         <h2 className="text-2xl font-bold">Gestión de Permisos</h2>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Roles Column */}
-        <div className="space-y-4">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Roles del Sistema</h3>
-          
-          {roles.map((role) => (
-            <Card key={role.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    {role.name}
-                  </CardTitle>
-                  <Badge className={role.color}>
-                    {role.permissions.length} permisos
-                  </Badge>
-                </div>
-                <p className="text-sm text-gray-600">{role.description}</p>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {Object.entries(categorizedPermissions).map(([category, categoryPermissions]) => (
-                  <div key={category}>
-                    <h4 className="font-medium text-sm mb-2">{getCategoryName(category)}</h4>
-                    <div className="space-y-2 pl-2">
-                      {categoryPermissions.map((permission) => (
-                        <div key={permission.id} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {permission.icon}
-                            <Label htmlFor={`${role.id}-${permission.id}`} className="text-sm">
+          <p className="text-sm text-gray-600">
+            Configure los permisos específicos para cada rol de usuario
+          </p>
+        </div>
+        
+        {roles.map((role) => (
+          <Card key={role.id}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  {role.name}
+                </CardTitle>
+                <Badge className={role.color}>
+                  {role.permissions.length} permisos activos
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-600">{role.description}</p>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              {Object.entries(categorizedPermissions).map(([category, categoryPermissions]) => (
+                <div key={category}>
+                  <h4 className="font-medium text-sm mb-3 text-gray-700 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    {getCategoryName(category)}
+                  </h4>
+                  <div className="space-y-3 pl-4">
+                    {categoryPermissions.map((permission) => (
+                      <div key={permission.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-start gap-3 flex-1">
+                          {permission.icon}
+                          <div>
+                            <Label htmlFor={`${role.id}-${permission.id}`} className="font-medium">
                               {permission.name}
                             </Label>
+                            <p className="text-xs text-gray-600 mt-1">{permission.description}</p>
                           </div>
-                          <Switch
-                            id={`${role.id}-${permission.id}`}
-                            checked={role.permissions.includes(permission.id)}
-                            onCheckedChange={(checked: boolean) => 
-                              updateRolePermissions(role.id, permission.id, checked)
-                            }
-                          />
                         </div>
-                      ))}
-                    </div>
-                    <Separator className="mt-3" />
+                        <Switch
+                          id={`${role.id}-${permission.id}`}
+                          checked={role.permissions.includes(permission.id)}
+                          onCheckedChange={(checked: boolean) => 
+                            updateRolePermissions(role.id, permission.id, checked)
+                          }
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Permissions Overview */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Permisos Disponibles</h3>
-          
-          {Object.entries(categorizedPermissions).map(([category, categoryPermissions]) => (
-            <Card key={category}>
-              <CardHeader>
-                <CardTitle className="text-base">{getCategoryName(category)}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {categoryPermissions.map((permission) => (
-                  <div key={permission.id} className="flex items-start gap-3 p-2 bg-gray-50 rounded">
-                    {permission.icon}
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{permission.name}</div>
-                      <div className="text-xs text-gray-600">{permission.description}</div>
-                    </div>
-                    <Badge variant={permission.enabled ? "default" : "secondary"}>
-                      {permission.enabled ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  {category !== Object.keys(categorizedPermissions)[Object.keys(categorizedPermissions).length - 1] && (
+                    <Separator className="mt-4" />
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {/* Summary Card */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-600" />
+            Resumen de Permisos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {roles.map((role) => (
+              <div key={role.id} className="text-center">
+                <Badge className={`${role.color} mb-2`}>
+                  {role.name}
+                </Badge>
+                <p className="text-2xl font-bold text-gray-800">{role.permissions.length}</p>
+                <p className="text-sm text-gray-600">permisos asignados</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
