@@ -60,36 +60,41 @@ const UpcomingEvents = ({ events, animals, onEventClick }: UpcomingEventsProps) 
 
   return (
     <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle>Próximos Eventos</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg sm:text-xl">Próximos Eventos</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <CardContent className="p-3 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {upcomingEvents.map(event => (
             <div 
               key={event.id} 
-              className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-200"
+              className="p-3 sm:p-4 border rounded-lg cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-200"
               onClick={() => onEventClick(event)}
             >
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-sm truncate">{event.title}</h4>
-                <Badge className={`${getEventTypeColor(event.eventType)} text-xs`}>
+              <div className="flex items-start justify-between mb-2 gap-2">
+                <h4 className="font-semibold text-xs sm:text-sm truncate flex-1">{event.title}</h4>
+                <Badge className={`${getEventTypeColor(event.eventType)} text-xs flex-shrink-0`}>
                   {getEventTypeLabel(event.eventType)}
                 </Badge>
               </div>
-              <p className="text-sm text-gray-600 mb-1">
+              <p className="text-xs sm:text-sm text-gray-600 mb-1">
                 {new Date(event.eventDate).toLocaleDateString('es-ES')}
               </p>
               {event.animalId && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 mb-2 truncate">
                   Animal: {animals.find(a => a.id === event.animalId)?.name || 'N/A'}
                 </p>
               )}
-              <div className="mt-2 text-xs text-blue-600 hover:text-blue-800">
+              <div className="text-xs text-blue-600 hover:text-blue-800">
                 Click para ver detalles →
               </div>
             </div>
           ))}
+          {upcomingEvents.length === 0 && (
+            <div className="col-span-full text-center text-gray-500 py-8">
+              <p className="text-sm">No hay eventos próximos</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

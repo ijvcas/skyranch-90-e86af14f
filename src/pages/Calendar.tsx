@@ -79,7 +79,7 @@ const CalendarPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-4 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-2 sm:p-4 pb-20 sm:pb-24">
       <div className="absolute inset-0 opacity-5">
         <img 
           src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
