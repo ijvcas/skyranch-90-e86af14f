@@ -81,16 +81,19 @@ export const syncAuthUsersToAppUsers = async (): Promise<void> => {
       return;
     }
 
-    // Prepare users for insertion
-    const usersForInsertion = usersToInsert.map(authUser => ({
-      id: authUser.id,
-      name: authUser.raw_user_meta_data?.full_name || authUser.email?.split('@')[0] || 'Usuario',
-      email: authUser.email,
-      role: 'worker' as const,
-      is_active: true,
-      created_by: authUser.id,
-      phone: authUser.raw_user_meta_data?.phone || ''
-    }));
+    // Prepare users for insertion with proper type handling
+    const usersForInsertion = usersToInsert.map(authUser => {
+      const metadata = authUser.raw_user_meta_data as any;
+      return {
+        id: authUser.id,
+        name: metadata?.full_name || authUser.email?.split('@')[0] || 'Usuario',
+        email: authUser.email,
+        role: 'worker' as const,
+        is_active: true,
+        created_by: authUser.id,
+        phone: metadata?.phone || ''
+      };
+    });
 
     // Insert new users
     const { error: insertError } = await supabase

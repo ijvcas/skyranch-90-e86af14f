@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import SupportInfoSettings from './SupportInfoSettings';
 import TimezoneSettings from '@/components/TimezoneSettings';
-import DeploymentVersionDisplay from '@/components/app-info/DeploymentVersionDisplay';
+import DatabaseVersionDisplay from '@/components/app-info/DatabaseVersionDisplay';
 
 const SystemSettings = () => {
   const { user } = useAuth();
@@ -17,8 +17,8 @@ const SystemSettings = () => {
       {/* Timezone Settings */}
       <TimezoneSettings />
       
-      {/* Deployment Version Display - this is the one that should work with Publish Update */}
-      <DeploymentVersionDisplay />
+      {/* Database Version Display - manual version system with description field */}
+      <DatabaseVersionDisplay />
     </div>
   );
 };
