@@ -13,6 +13,7 @@ import BreedingForm from '@/components/BreedingForm';
 import BreedingRecordsList from '@/components/BreedingRecordsList';
 import BreedingDetail from '@/components/BreedingDetail';
 import BreedingCalendarView from '@/components/BreedingCalendarView';
+import BreedingPlanningTab from '@/components/breeding-planning/BreedingPlanningTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Breeding: React.FC = () => {
@@ -231,19 +232,7 @@ const Breeding: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="planning">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5" />
-                  <span>Planificación de Apareamientos</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Funciones de planificación avanzada próximamente...</p>
-                </div>
-              </CardContent>
-            </Card>
+            <BreedingPlanningTab />
           </TabsContent>
         </Tabs>
       </div>
