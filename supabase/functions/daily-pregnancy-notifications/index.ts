@@ -48,17 +48,18 @@ const handler = async (req: Request): Promise<Response> => {
     const sevenDaysString = sevenDaysFromNow.toISOString().split('T')[0];
 
     console.log(`📅 Today: ${todayString}`);
-    console.log(`📅 Checking for due dates up to 7 days from now: ${sevenDaysString}`);
+    console.log(`📅 Checking for pregnancies due from today up to: ${sevenDaysString}`);
 
     // Get confirmed pregnancies that:
-    // 1. Are due within the next 7 days OR are overdue (past due date)
+    // 1. Are due within the next 7 days OR are overdue (due date >= today AND due date <= 7 days from now)
     // 2. Haven't given birth yet (no actual_birth_date AND status != 'birth_completed')
     // 3. Are confirmed pregnancies
     const { data: breedingRecords, error: breedingError } = await supabase
       .from('breeding_records')
       .select('id, expected_due_date, mother_id, pregnancy_confirmed, status, actual_birth_date')
       .eq('pregnancy_confirmed', true)
-      .lte('expected_due_date', sevenDaysString) // Due within 7 days or overdue
+      .gte('expected_due_date', todayString) // Due today or in the future
+      .lte('expected_due_date', sevenDaysString) // Due within 7 days
       .is('actual_birth_date', null) // No birth recorded yet
       .neq('status', 'birth_completed'); // Status is not birth completed
 
@@ -84,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ 
         message: 'No pregnancies requiring notifications',
         debugInfo: {
-          dateRange: `up to ${sevenDaysString}`,
+          dateRange: `from ${todayString} to ${sevenDaysString}`,
           allPregnancies: allPregnancies
         },
         notifications_sent: 0
@@ -231,7 +232,7 @@ const handler = async (req: Request): Promise<Response> => {
       pregnancies_checked: breedingRecords.length,
       notifications_sent: notificationsSent,
       notifications_failed: notificationsFailed,
-      date_range: `up to ${sevenDaysString}`,
+      date_range: `from ${todayString} to ${sevenDaysString}`,
       details: breedingRecords.map(record => ({
         breeding_record_id: record.id,
         mother_name: motherMap[record.mother_id] || 'Unknown',
