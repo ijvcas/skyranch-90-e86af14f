@@ -33,6 +33,13 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
   const femaleAnimals = animals.filter(animal => animal.gender === 'female');
   const maleAnimals = animals.filter(animal => animal.gender === 'male');
 
+  console.log('🐄 BreedingBasicInfo - Animals loaded:', {
+    totalAnimals: animals.length,
+    femaleAnimals: femaleAnimals.length,
+    maleAnimals: maleAnimals.length,
+    formData: formData
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -40,40 +47,60 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="motherId">Madre *</Label>
-            <Select value={formData.motherId} onValueChange={(value) => onInputChange('motherId', value)}>
-              <SelectTrigger>
+            <Select 
+              value={formData.motherId} 
+              onValueChange={(value) => {
+                console.log('🐄 Mother selected:', value);
+                onInputChange('motherId', value);
+              }}
+            >
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccionar madre" />
               </SelectTrigger>
-              <SelectContent>
-                {femaleAnimals.map((animal) => (
-                  <SelectItem key={animal.id} value={animal.id}>
-                    {animal.name} (#{animal.id.slice(-4)}) - {animal.species}
-                  </SelectItem>
-                ))}
+              <SelectContent className="max-h-[200px] overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
+                {femaleAnimals.length === 0 ? (
+                  <div className="p-2 text-gray-500 text-sm">No hay hembras disponibles</div>
+                ) : (
+                  femaleAnimals.map((animal) => (
+                    <SelectItem key={animal.id} value={animal.id} className="cursor-pointer hover:bg-gray-100">
+                      {animal.name} (#{animal.id.slice(-4)}) - {animal.species}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="fatherId">Padre *</Label>
-            <Select value={formData.fatherId} onValueChange={(value) => onInputChange('fatherId', value)}>
-              <SelectTrigger>
+            <Select 
+              value={formData.fatherId} 
+              onValueChange={(value) => {
+                console.log('🐄 Father selected:', value);
+                onInputChange('fatherId', value);
+              }}
+            >
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccionar padre" />
               </SelectTrigger>
-              <SelectContent>
-                {maleAnimals.map((animal) => (
-                  <SelectItem key={animal.id} value={animal.id}>
-                    {animal.name} (#{animal.id.slice(-4)}) - {animal.species}
-                  </SelectItem>
-                ))}
+              <SelectContent className="max-h-[200px] overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
+                {maleAnimals.length === 0 ? (
+                  <div className="p-2 text-gray-500 text-sm">No hay machos disponibles</div>
+                ) : (
+                  maleAnimals.map((animal) => (
+                    <SelectItem key={animal.id} value={animal.id} className="cursor-pointer hover:bg-gray-100">
+                      {animal.name} (#{animal.id.slice(-4)}) - {animal.species}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
+          <div className="space-y-2">
             <DatePickerField
               value={formData.breedingDate}
               onChange={(date) => handleDateChange('breedingDate', date)}
@@ -82,26 +109,26 @@ const BreedingBasicInfo: React.FC<BreedingBasicInfoProps> = ({
               required
             />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="breedingMethod">Método de Apareamiento</Label>
             <Select value={formData.breedingMethod} onValueChange={(value) => onInputChange('breedingMethod', value)}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-white border border-gray-200 shadow-lg">
                 <SelectItem value="natural">Natural</SelectItem>
                 <SelectItem value="artificial_insemination">Inseminación Artificial</SelectItem>
                 <SelectItem value="embryo_transfer">Transferencia de Embriones</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>
             <Select value={formData.status} onValueChange={(value) => onInputChange('status', value)}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-white border border-gray-200 shadow-lg">
                 <SelectItem value="planned">Planificado</SelectItem>
                 <SelectItem value="confirmed_pregnant">Embarazo Confirmado</SelectItem>
                 <SelectItem value="not_pregnant">No Embarazada</SelectItem>
