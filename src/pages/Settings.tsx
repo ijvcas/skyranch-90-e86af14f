@@ -5,6 +5,7 @@ import UserSettings from '@/components/settings/UserSettings';
 import BackupSettings from '@/components/settings/BackupSettings';
 import PermissionsSettings from '@/components/settings/PermissionsSettings';
 import SystemSettings from '@/components/settings/SystemSettings';
+import PermissionGuard from '@/components/PermissionGuard';
 import { TabsContent } from '@/components/ui/tabs';
 
 const Settings = () => {
@@ -13,19 +14,27 @@ const Settings = () => {
   return (
     <SettingsLayout activeTab={activeTab} onTabChange={setActiveTab}>
       <TabsContent value="users">
-        <UserSettings />
+        <PermissionGuard permission="users_manage">
+          <UserSettings />
+        </PermissionGuard>
       </TabsContent>
       
       <TabsContent value="backup">
-        <BackupSettings />
+        <PermissionGuard permission="system_settings">
+          <BackupSettings />
+        </PermissionGuard>
       </TabsContent>
       
       <TabsContent value="permissions">
-        <PermissionsSettings />
+        <PermissionGuard permission="system_settings">
+          <PermissionsSettings />
+        </PermissionGuard>
       </TabsContent>
       
       <TabsContent value="system">
-        <SystemSettings />
+        <PermissionGuard permission="system_settings">
+          <SystemSettings />
+        </PermissionGuard>
       </TabsContent>
     </SettingsLayout>
   );
