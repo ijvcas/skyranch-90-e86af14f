@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, Layers, ChevronDown, ChevronUp, Minimize2 } from 'lucide-react';
+import { Eye, Layers, ChevronDown, ChevronUp, Minimize2, Building, Handshake, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type Lot } from '@/stores/lotStore';
 
@@ -33,6 +33,12 @@ const LotVisibilityControls = ({
 
   const handleShowAll = () => {
     onVisibilityChange(lots.map(lot => lot.id));
+  };
+
+  const handleShowByStatus = (status: string) => {
+    const lotsWithStatus = lots.filter(lot => lot.status === status);
+    const lotIds = lotsWithStatus.map(lot => lot.id);
+    onVisibilityChange([...new Set([...visibleLotIds, ...lotIds])]);
   };
 
   if (isMinimized) {
@@ -93,6 +99,40 @@ const LotVisibilityControls = ({
                 <Eye className="w-3 h-3 mr-1" />
                 Mostrar Todos
               </Button>
+            </div>
+            
+            {/* Status filter buttons */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-600">Filtros por Estado:</div>
+              <div className="grid grid-cols-1 gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleShowByStatus('property')}
+                  className="justify-start text-xs h-8"
+                >
+                  <Building className="w-3 h-3 mr-2" />
+                  Ver Propiedad
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleShowByStatus('negociando')}
+                  className="justify-start text-xs h-8"
+                >
+                  <Handshake className="w-3 h-3 mr-2" />
+                  Ver Negociando
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleShowByStatus('lista de compra')}
+                  className="justify-start text-xs h-8"
+                >
+                  <ShoppingCart className="w-3 h-3 mr-2" />
+                  Ver Lista de Compra
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-2 max-h-60 overflow-y-auto">
