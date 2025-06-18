@@ -21,25 +21,34 @@ export const useBreedingNotifications = () => {
 
   const triggerNotificationCheck = useCallback(async () => {
     try {
+      console.log('🔄 Triggering pregnancy notification test...');
+      
       const success = await pregnancyNotificationService.triggerPregnancyNotificationCheck();
+      
       if (success) {
         toast({
-          title: "Verificación completada",
-          description: "Se ha ejecutado la verificación de notificaciones de embarazo",
+          title: "✅ Verificación completada",
+          description: "Se ejecutó la verificación de notificaciones de embarazo. Revisa el panel de notificaciones para ver los resultados.",
+          duration: 5000,
         });
+        
+        // Show additional info in console for debugging
+        console.log('✅ Pregnancy notification check completed successfully');
       } else {
         toast({
-          title: "Error",
-          description: "No se pudo ejecutar la verificación de notificaciones",
-          variant: "destructive"
+          title: "❌ Error en verificación",
+          description: "No se pudo ejecutar la verificación de notificaciones. Revisa la consola para más detalles.",
+          variant: "destructive",
+          duration: 5000,
         });
       }
     } catch (error) {
-      console.error('Error triggering notification check:', error);
+      console.error('❌ Error triggering notification check:', error);
       toast({
-        title: "Error",
-        description: "Error al ejecutar la verificación de notificaciones",
-        variant: "destructive"
+        title: "❌ Error",
+        description: `Error al ejecutar la verificación: ${error.message || 'Error desconocido'}`,
+        variant: "destructive",
+        duration: 5000,
       });
     }
   }, [toast]);

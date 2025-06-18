@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { pregnancyNotificationService } from '@/services/pregnancyNotificationService';
 
@@ -111,6 +112,16 @@ export const updateBreedingRecord = async (
   id: string, 
   updatedData: Partial<Omit<BreedingRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 ): Promise<boolean> => {
+  // Auto-update status to birth_completed when actual birth date is set
+  let finalStatus = updatedData.status;
+  if (updatedData.actualBirthDate && !finalStatus) {
+    finalStatus = 'birth_completed';
+    console.log('🍼 Auto-updating status to birth_completed because birth date was set');
+  } else if (updatedData.actualBirthDate && finalStatus !== 'birth_completed') {
+    finalStatus = 'birth_completed';
+    console.log('🍼 Overriding status to birth_completed because birth date was set');
+  }
+
   const { error } = await supabase
     .from('breeding_records')
     .update({
@@ -127,7 +138,7 @@ export const updateBreedingRecord = async (
       ...(updatedData.breedingNotes !== undefined && { breeding_notes: updatedData.breedingNotes || null }),
       ...(updatedData.veterinarian !== undefined && { veterinarian: updatedData.veterinarian || null }),
       ...(updatedData.cost !== undefined && { cost: updatedData.cost || null }),
-      ...(updatedData.status && { status: updatedData.status }),
+      status: finalStatus || updatedData.status,
       updated_at: new Date().toISOString()
     })
     .eq('id', id);
@@ -137,12 +148,28 @@ export const updateBreedingRecord = async (
     return false;
   }
 
-  // Check if pregnancy was just confirmed or birth was completed
-  if (updatedData.pregnancyConfirmed === true) {
+  // Handle notification logic based on changes
+  if (updatedData.pregnancyConfirmed === true && !updatedData.actualBirthDate) {
     console.log('🤰 Pregnancy confirmed, setting up notifications');
     await pregnancyNotificationService.checkAndSetupNotifications(id);
-  } else if (updatedData.status === 'birth_completed' || updatedData.actualBirthDate) {
-    console.log('👶 Birth completed, notifications will stop automatically');
+  } else if (updatedData.actualBirthDate || finalStatus === 'birth_completed') {
+    console.log('👶 Birth completed, notifications will stop automatically due to status/birth date');
+    
+    // Mark related notifications as read to reduce noise
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('type', 'breeding')
+          .like('metadata', `%"breeding_record_id":"${id}"%`);
+        console.log('📝 Marked related pregnancy notifications as read');
+      }
+    } catch (notificationError) {
+      console.error('Error marking notifications as read:', notificationError);
+      // Don't fail the update for notification errors
+    }
   }
 
   return true;
@@ -156,6 +183,13 @@ export const createBreedingRecord = async (
   if (!user) {
     console.error('No authenticated user');
     return null;
+  }
+
+  // Auto-update status to birth_completed if birth date is provided on creation
+  let finalStatus = recordData.status || 'planned';
+  if (recordData.actualBirthDate) {
+    finalStatus = 'birth_completed';
+    console.log('🍼 Auto-setting status to birth_completed because birth date was provided');
   }
 
   const { data, error } = await supabase
@@ -175,7 +209,7 @@ export const createBreedingRecord = async (
       breeding_notes: recordData.breedingNotes || null,
       veterinarian: recordData.veterinarian || null,
       cost: recordData.cost || null,
-      status: recordData.status || 'planned'
+      status: finalStatus
     })
     .select('id')
     .single();
@@ -187,8 +221,8 @@ export const createBreedingRecord = async (
 
   const recordId = data.id;
 
-  // Check if pregnancy is confirmed on creation
-  if (recordData.pregnancyConfirmed) {
+  // Check if pregnancy is confirmed on creation and no birth date
+  if (recordData.pregnancyConfirmed && !recordData.actualBirthDate) {
     console.log('🤰 New pregnancy confirmed, setting up notifications');
     await pregnancyNotificationService.checkAndSetupNotifications(recordId);
   }

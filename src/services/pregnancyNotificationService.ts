@@ -19,7 +19,10 @@ class PregnancyNotificationService {
       
       // If notifications were created, also send browser push notifications
       if (data && data.notifications_sent > 0) {
+        console.log(`📱 ${data.notifications_sent} notifications sent, triggering browser notifications...`);
         await this.sendBrowserNotifications();
+      } else {
+        console.log('📋 No new notifications were sent');
       }
       
       return true;
@@ -41,7 +44,7 @@ class PregnancyNotificationService {
         return;
       }
 
-      // Check for pregnancies due within the next 7 days (not exactly 7 days)
+      // Check for pregnancies due within the next 7 days or overdue
       const today = new Date();
       const sevenDaysFromNow = new Date(today);
       sevenDaysFromNow.setDate(today.getDate() + 7);
@@ -49,9 +52,9 @@ class PregnancyNotificationService {
       const todayString = today.toISOString().split('T')[0];
       const sevenDaysString = sevenDaysFromNow.toISOString().split('T')[0];
 
-      console.log(`📅 Checking for pregnancies due between ${todayString} and ${sevenDaysString}`);
+      console.log(`📅 Checking for pregnancies due up to: ${sevenDaysString}`);
 
-      // Get pregnancies due within the next 7 days
+      // Get pregnancies due within the next 7 days or overdue that haven't given birth
       const { data: breedingRecords, error } = await supabase
         .from('breeding_records')
         .select(`
@@ -61,8 +64,8 @@ class PregnancyNotificationService {
           animals!breeding_records_mother_id_fkey(name)
         `)
         .eq('pregnancy_confirmed', true)
-        .gte('expected_due_date', todayString)
-        .lte('expected_due_date', sevenDaysString)
+        .lte('expected_due_date', sevenDaysString) // Due within 7 days or overdue
+        .is('actual_birth_date', null) // No birth recorded yet
         .neq('status', 'birth_completed');
 
       console.log('📋 Found breeding records for push notifications:', breedingRecords);
@@ -73,7 +76,7 @@ class PregnancyNotificationService {
       }
 
       if (!breedingRecords || breedingRecords.length === 0) {
-        console.log('📋 No pregnancies due within the next 7 days for push notifications');
+        console.log('📋 No pregnancies requiring push notifications');
         return;
       }
 
@@ -85,13 +88,25 @@ class PregnancyNotificationService {
         const dueDateString = dueDate.toLocaleDateString('es-ES');
         const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
-        console.log(`📱 Sending push notification for ${motherName}, due in ${daysUntilDue} days`);
+        const isOverdue = daysUntilDue < 0;
+        const daysDifference = Math.abs(daysUntilDue);
         
-        const success = await pushService.sendPushNotification(
-          user.id,
-          '🤰 Parto próximo - SkyRanch',
-          `${motherName} está programada para dar a luz en ${daysUntilDue} días (${dueDateString}). Prepara el área de parto.`
-        );
+        let title, message;
+        
+        if (isOverdue) {
+          title = '🚨 Parto vencido - SkyRanch';
+          message = `${motherName} tenía fecha de parto el ${dueDateString} (${daysDifference} días vencido). Revisar urgentemente.`;
+        } else if (daysUntilDue === 0) {
+          title = '🚨 Parto hoy - SkyRanch';
+          message = `${motherName} está programada para dar a luz HOY (${dueDateString}). Mantener vigilancia.`;
+        } else {
+          title = '🤰 Parto próximo - SkyRanch';
+          message = `${motherName} está programada para dar a luz en ${daysDifference} días (${dueDateString}). Preparar área de parto.`;
+        }
+        
+        console.log(`📱 Sending push notification for ${motherName}: ${isOverdue ? 'overdue' : 'upcoming'} (${daysDifference} days)`);
+        
+        const success = await pushService.sendPushNotification(user.id, title, message);
 
         if (success) {
           console.log(`✅ Push notification sent for ${motherName}`);
@@ -118,7 +133,7 @@ class PregnancyNotificationService {
       // Get the breeding record
       const { data: record, error } = await supabase
         .from('breeding_records')
-        .select('expected_due_date, pregnancy_confirmed, status, mother_id')
+        .select('expected_due_date, pregnancy_confirmed, status, mother_id, actual_birth_date')
         .eq('id', breedingRecordId)
         .single();
 
@@ -128,21 +143,23 @@ class PregnancyNotificationService {
       }
 
       // Only process confirmed pregnancies that haven't given birth yet
-      if (!record.pregnancy_confirmed || record.status === 'birth_completed') {
-        console.log('⏭️ Pregnancy not confirmed or already completed');
+      if (!record.pregnancy_confirmed || record.status === 'birth_completed' || record.actual_birth_date) {
+        console.log('⏭️ Pregnancy not confirmed, already completed, or birth recorded');
         return;
       }
 
-      // Check if due date is within 7 days
+      // Check if due date is within 7 days or overdue
       const dueDate = new Date(record.expected_due_date);
       const today = new Date();
       const daysDifference = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-      console.log(`📅 Days until due date: ${daysDifference}`);
+      console.log(`📅 Days until due date: ${daysDifference} (negative = overdue)`);
 
-      if (daysDifference <= 7 && daysDifference > 0) {
-        console.log('🚨 Pregnancy is due within 7 days, triggering immediate notification check');
+      if (daysDifference <= 7) {
+        console.log('🚨 Pregnancy is due within 7 days or overdue, triggering immediate notification check');
         await this.triggerPregnancyNotificationCheck();
+      } else {
+        console.log(`⏰ Pregnancy is due in ${daysDifference} days, will be picked up by daily checks when closer`);
       }
     } catch (error) {
       console.error('❌ Error in pregnancy notification setup:', error);
