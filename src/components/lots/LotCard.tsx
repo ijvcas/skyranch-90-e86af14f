@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Users, Grass, Trash2, Edit } from 'lucide-react';
+import { MapPin, Users, Leaf, Trash2, Edit } from 'lucide-react';
 import { type Lot } from '@/stores/lotStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import LotForm from './LotForm';
@@ -116,7 +116,7 @@ const LotCard = ({ lot, onClick, onDelete, calculatedAreaHectares }: LotCardProp
           </Badge>
           {lot.grassCondition && (
             <Badge className={getGrassConditionColor(lot.grassCondition)}>
-              <Grass className="w-3 h-3 mr-1" />
+              <Leaf className="w-3 h-3 mr-1" />
               {getGrassConditionLabel(lot.grassCondition)}
             </Badge>
           )}

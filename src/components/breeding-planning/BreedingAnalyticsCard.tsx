@@ -25,13 +25,13 @@ const BreedingAnalyticsCard: React.FC<BreedingAnalyticsCardProps> = ({ analytics
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Success Rate */}
+        {/* Main Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
-              {formatNumber(analytics.successRate)}%
+              {formatNumber(analytics.pregnancyRate)}%
             </div>
-            <div className="text-sm text-gray-600">Tasa de Éxito</div>
+            <div className="text-sm text-gray-600">Tasa de Embarazo</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
@@ -41,92 +41,51 @@ const BreedingAnalyticsCard: React.FC<BreedingAnalyticsCardProps> = ({ analytics
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
-              {formatNumber(analytics.averageGestationLength)}
+              {formatNumber(analytics.avgGestationLength)}
             </div>
             <div className="text-sm text-gray-600">Días Gestación</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">
-              {formatNumber(analytics.lineageStats.diversityScore)}%
+              {analytics.upcomingBirths}
             </div>
-            <div className="text-sm text-gray-600">Diversidad</div>
+            <div className="text-sm text-gray-600">Próximos Partos</div>
           </div>
         </div>
 
-        {/* Top Performers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium mb-2 flex items-center gap-2">
-              <Award className="w-4 h-4" />
-              Mejores Machos
-            </h4>
-            <div className="space-y-2">
-              {analytics.topPerformingMales.slice(0, 3).map((male, index) => (
-                <div key={male.id} className="flex justify-between items-center text-sm">
-                  <span className="truncate">{male.name}</span>
-                  <span className="text-green-600 font-medium">{male.successfulBreedings}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div>
-            <h4 className="font-medium mb-2 flex items-center gap-2">
-              <Heart className="w-4 h-4" />
-              Mejores Hembras
-            </h4>
-            <div className="space-y-2">
-              {analytics.topPerformingFemales.slice(0, 3).map((female, index) => (
-                <div key={female.id} className="flex justify-between items-center text-sm">
-                  <span className="truncate">{female.name}</span>
-                  <span className="text-pink-600 font-medium">{female.successfulBreedings}</span>
-                </div>
-              ))}
-            </div>
+        {/* Top Performing Females */}
+        <div>
+          <h4 className="font-medium mb-2 flex items-center gap-2">
+            <Heart className="w-4 h-4" />
+            Mejores Hembras
+          </h4>
+          <div className="space-y-2">
+            {analytics.topPerformingFemales.slice(0, 3).map((female, index) => (
+              <div key={female.animalId} className="flex justify-between items-center text-sm">
+                <span className="truncate">{female.animalName}</span>
+                <span className="text-pink-600 font-medium">{female.pregnancies}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Health Stats */}
+        {/* Breeding Status Chart */}
         <div>
           <h4 className="font-medium mb-2 flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Estadísticas de Salud
+            Estado de Reproducciones
           </h4>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-green-600">
-                {analytics.healthStats.healthyOffspring}
+          <div className="grid grid-cols-2 gap-4 text-center">
+            {analytics.breedingsByStatus.map((status, index) => (
+              <div key={index}>
+                <div className="text-lg font-bold text-blue-600">
+                  {status.count}
+                </div>
+                <div className="text-xs text-gray-600">{status.status}</div>
               </div>
-              <div className="text-xs text-gray-600">Crías Sanas</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-red-600">
-                {analytics.healthStats.complicatedDeliveries}
-              </div>
-              <div className="text-xs text-gray-600">Partos Complicados</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-blue-600">
-                {analytics.healthStats.totalOffspring}
-              </div>
-              <div className="text-xs text-gray-600">Total Crías</div>
-            </div>
+            ))}
           </div>
         </div>
-
-        {/* Inbreeding Warning */}
-        {analytics.lineageStats.inbredPercentage > 10 && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  <strong>Advertencia:</strong> Se detectó un {formatNumber(analytics.lineageStats.inbredPercentage)}% de consanguinidad en el rebaño. 
-                  Considere introducir nuevos reproductores para mejorar la diversidad genética.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
