@@ -1,74 +1,70 @@
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Star, Calendar, TrendingUp, Plus } from 'lucide-react';
-import { breedingAnalyticsService, BreedingRecommendation } from '@/services/breedingAnalyticsService';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Calendar, Heart, Stethoscope, CheckCircle } from 'lucide-react';
+import { BreedingAnalyticsService, type BreedingRecommendation } from '@/services/breedingAnalyticsService';
 
-const BreedingRecommendationsCard: React.FC = () => {
-  const [recommendations, setRecommendations] = useState<BreedingRecommendation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+const BreedingRecommendationsCard = () => {
+  const [recommendations, setRecommendations] = React.useState<BreedingRecommendation[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  useEffect(() => {
+  React.useEffect(() => {
+    const loadRecommendations = async () => {
+      try {
+        const data = await BreedingAnalyticsService.getRecommendations();
+        setRecommendations(data);
+      } catch (error) {
+        console.error('Error loading recommendations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadRecommendations();
   }, []);
 
-  const loadRecommendations = async () => {
-    try {
-      const data = await breedingAnalyticsService.getBreedingRecommendations();
-      setRecommendations(data);
-    } catch (error) {
-      console.error('Error loading recommendations:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las recomendaciones",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'breeding_window': return <Heart className="h-4 w-4" />;
+      case 'health_check': return <Stethoscope className="h-4 w-4" />;
+      case 'nutrition': return <AlertTriangle className="h-4 w-4" />;
+      case 'rest_period': return <Calendar className="h-4 w-4" />;
+      default: return <CheckCircle className="h-4 w-4" />;
     }
   };
 
-  const getCompatibilityColor = (score: number) => {
-    if (score >= 90) return 'bg-green-100 text-green-800';
-    if (score >= 80) return 'bg-blue-100 text-blue-800';
-    if (score >= 70) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-gray-100 text-gray-800';
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const getStarRating = (score: number) => {
-    const stars = Math.round(score / 20); // Convert to 1-5 scale
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star 
-        key={i} 
-        className={`w-4 h-4 ${i < stars ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-      />
-    ));
-  };
-
-  const handleCreateBreeding = (recommendation: BreedingRecommendation) => {
-    toast({
-      title: "Crear Apareamiento",
-      description: `Redirigiéndote para crear apareamiento entre ${recommendation.motherName} y ${recommendation.fatherName}`,
-    });
-    // Here you would typically navigate to the breeding form with pre-filled data
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'Alta';
+      case 'medium': return 'Media';
+      case 'low': return 'Baja';
+      default: return priority;
+    }
   };
 
   if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Heart className="w-5 h-5" />
-            <span>Recomendaciones de Apareamiento</span>
-          </CardTitle>
+          <CardTitle>Recomendaciones Reproductivas</CardTitle>
+          <CardDescription>
+            Sugerencias personalizadas para optimizar tu programa reproductivo
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="text-center py-8">
+            <div className="text-gray-500">Cargando recomendaciones...</div>
           </div>
         </CardContent>
       </Card>
@@ -78,95 +74,63 @@ const BreedingRecommendationsCard: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Heart className="w-5 h-5 text-red-500" />
-            <CardTitle>Recomendaciones de Apareamiento</CardTitle>
-          </div>
-          <Button variant="outline" size="sm" onClick={loadRecommendations}>
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Actualizar
-          </Button>
-        </div>
+        <CardTitle>Recomendaciones Reproductivas</CardTitle>
+        <CardDescription>
+          Sugerencias personalizadas para optimizar tu programa reproductivo
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {recommendations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Heart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No hay recomendaciones disponibles</p>
-              <p className="text-sm">Asegúrate de tener animales registrados con información completa</p>
-            </div>
-          ) : (
-            recommendations.map((rec, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getCompatibilityColor(rec.compatibilityScore)}>
-                      {rec.compatibilityScore.toFixed(0)}% Compatible
-                    </Badge>
-                    <div className="flex items-center space-x-1">
-                      {getStarRating(rec.compatibilityScore)}
+        {recommendations.length === 0 ? (
+          <div className="text-center py-8">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ¡Todo en orden!
+            </h3>
+            <p className="text-gray-500">
+              No hay recomendaciones pendientes en este momento.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recommendations.map((recommendation) => (
+              <div
+                key={recommendation.id}
+                className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3 flex-1">
+                    <div className="flex-shrink-0 mt-1">
+                      {getIcon(recommendation.type)}
                     </div>
-                  </div>
-                  <Button size="sm" onClick={() => handleCreateBreeding(rec)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Crear Apareamiento
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg flex items-center space-x-2">
-                      <span>♀</span>
-                      <span>{rec.motherName}</span>
-                    </h3>
-                    <p className="text-sm text-gray-600">Madre</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg flex items-center space-x-2">
-                      <span>♂</span>
-                      <span>{rec.fatherName}</span>
-                    </h3>
-                    <p className="text-sm text-gray-600">Padre</p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Análisis:</p>
-                  <p className="text-sm text-gray-700">{rec.reason}</p>
-                  
-                  <div className="grid grid-cols-2 gap-4 mt-3">
-                    <div>
-                      <p className="text-xs text-gray-500">Diversidad Genética</p>
-                      <p className="font-medium text-green-600">{rec.geneticDiversityScore.toFixed(0)}%</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4 text-blue-600" />
-                      <div>
-                        <p className="text-xs text-gray-500">Fecha estimada de parto</p>
-                        <p className="font-medium text-blue-600">
-                          {new Date(rec.estimatedDueDate).toLocaleDateString('es-ES')}
-                        </p>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className="font-medium text-gray-900">
+                          {recommendation.title}
+                        </h4>
+                        <Badge className={getPriorityColor(recommendation.priority)}>
+                          {getPriorityLabel(recommendation.priority)}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {recommendation.description}
+                      </p>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <span>Animal: {recommendation.animalName}</span>
+                        {recommendation.dueDate && (
+                          <>
+                            <span className="mx-2">•</span>
+                            <span>Fecha: {recommendation.dueDate}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
+                  <Button variant="outline" size="sm">
+                    Marcar como hecho
+                  </Button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        {recommendations.length > 0 && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">💡 Consejos de Apareamiento</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Las recomendaciones se basan en compatibilidad genética y diversidad</li>
-              <li>• Considera el historial de salud y rendimiento de ambos padres</li>
-              <li>• Verifica que los animales estén en edad reproductiva adecuada</li>
-              <li>• Programa los apareamientos según la estación y condiciones del rancho</li>
-            </ul>
+            ))}
           </div>
         )}
       </CardContent>

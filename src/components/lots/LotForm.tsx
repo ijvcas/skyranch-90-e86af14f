@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,6 +93,9 @@ const LotForm = ({ onClose, lot }: LotFormProps) => {
               <SelectItem value="resting">En Descanso</SelectItem>
               <SelectItem value="maintenance">Mantenimiento</SelectItem>
               <SelectItem value="property">Propiedad</SelectItem>
+              <SelectItem value="lista de compra">Lista de Compra</SelectItem>
+              <SelectItem value="por firmar">Por Firmar</SelectItem>
+              <SelectItem value="negociando">Negociando</SelectItem>
             </SelectContent>
           </Select>
         </div>
