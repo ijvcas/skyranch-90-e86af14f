@@ -1,6 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Edit } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import ImageEditorDialog from '@/components/image-editor/ImageEditorDialog';
@@ -100,6 +102,11 @@ const AnimalSidebar: React.FC<AnimalSidebarProps> = ({ animal }) => {
                 <ImageEditorDialog
                   src={animal.image}
                   alt={`Foto de ${animal.name}`}
+                  trigger={
+                    <Button size="sm" variant="outline" className="bg-black/50 text-white hover:bg-black/70 border-white/20">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  }
                 />
               </div>
             </div>

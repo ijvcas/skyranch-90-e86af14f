@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Eye, Trash2 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
+import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import type { Animal } from '@/stores/animalStore';
 
 interface AnimalCardProps {
@@ -32,10 +33,10 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
       <CardContent>
         {animal.image && (
           <div className="mb-4">
-            <img
+            <EnhancedImageViewer
               src={animal.image}
               alt={animal.name}
-              className="w-full h-32 object-cover rounded-lg"
+              className="w-full h-32 rounded-lg"
             />
           </div>
         )}
