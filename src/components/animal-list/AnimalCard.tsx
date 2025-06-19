@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Eye, Trash2 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
+import ImageEditorDialog from '@/components/image-editor/ImageEditorDialog';
 import type { Animal } from '@/stores/animalStore';
 
 interface AnimalCardProps {
@@ -16,6 +16,11 @@ interface AnimalCardProps {
 
 const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
   const navigate = useNavigate();
+
+  const handleImageEdit = (editedImageData: string) => {
+    // In a real implementation, you would save the edited image
+    console.log('Image edited:', editedImageData);
+  };
 
   return (
     <Card className="shadow hover:shadow-lg transition-shadow">
@@ -32,12 +37,24 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
       </CardHeader>
       <CardContent>
         {animal.image && (
-          <div className="mb-4">
+          <div className="mb-4 relative">
             <EnhancedImageViewer
               src={animal.image}
               alt={animal.name}
               className="w-full h-32 rounded-lg"
             />
+            <div className="absolute top-2 left-2">
+              <ImageEditorDialog
+                src={animal.image}
+                alt={`Foto de ${animal.name}`}
+                onSave={handleImageEdit}
+                trigger={
+                  <Button size="sm" variant="outline" className="bg-black/50 text-white hover:bg-black/70 border-white/20 h-8 w-8 p-0">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                }
+              />
+            </div>
           </div>
         )}
         <div className="space-y-2">
