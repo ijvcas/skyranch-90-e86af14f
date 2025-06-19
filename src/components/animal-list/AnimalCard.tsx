@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,12 +55,21 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
     if (currentTransform) {
       console.log('Saving image with transform:', currentTransform);
       
-      // In a real implementation, you would apply the transforms to generate a new image
-      // For now, we'll save the transform data along with the original image
+      // Store the transform data in the notes field as JSON
+      // In a real implementation, you would create a dedicated field for image transforms
+      let updatedNotes = animal.notes || '';
+      const transformData = {
+        imageTransform: currentTransform,
+        transformApplied: new Date().toISOString()
+      };
+      
+      // Add transform info to notes
+      const transformNote = `[Image Transform Applied: ${new Date().toLocaleString()}]`;
+      updatedNotes = updatedNotes ? `${updatedNotes}\n${transformNote}` : transformNote;
+      
       const updatedAnimalData = {
         ...animal,
-        // You could store transform data if needed for future reference
-        // imageTransform: currentTransform
+        notes: updatedNotes
       };
       
       try {
@@ -68,13 +78,22 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
           data: updatedAnimalData 
         });
         
-        // Update local store
+        // Update local store with the new data
         updateAnimalStore(animal.id, updatedAnimalData);
         
+        console.log('Image transform saved successfully');
+        
       } catch (error) {
-        console.error('Error saving image:', error);
+        console.error('Error saving image transform:', error);
         // Error handling is done in the mutation onError
       }
+    } else {
+      console.log('No transform to save');
+      toast({
+        title: "Sin cambios",
+        description: "No hay transformaciones de imagen para guardar.",
+        variant: "default"
+      });
     }
     
     setIsEditMode(false);
@@ -137,6 +156,15 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
             )}
           </div>
         )}
+        
+        {/* Show transform status if any */}
+        {currentTransform && isEditMode && (
+          <div className="mb-2 text-xs text-orange-600 bg-orange-50 p-2 rounded">
+            Transformaciones pendientes: Zoom {Math.round(currentTransform.scale * 100)}%, 
+            Rotación {currentTransform.rotation}°
+          </div>
+        )}
+
         <div className="space-y-2">
           {animal.breed && (
             <div className="flex justify-between text-sm">
