@@ -1,12 +1,13 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
 import { checkPermission } from '@/services/permissionService';
-import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import { dashboardBannerService } from '@/services/dashboardBannerService';
+import { Card, CardContent } from '@/components/ui/card';
+import ImageUpload from '@/components/ImageUpload';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
@@ -18,6 +19,23 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [bannerImage, setBannerImage] = useState<string>('/lovable-uploads/d3c33c19-f7cd-441e-884f-371ed6481179.png');
+  
+  // Load banner image
+  useEffect(() => {
+    const loadBanner = async () => {
+      try {
+        const bannerData = await dashboardBannerService.getBanner();
+        if (bannerData?.image_url) {
+          setBannerImage(bannerData.image_url);
+        }
+      } catch (error) {
+        console.error('Error loading banner:', error);
+        // Keep default fallback image
+      }
+    };
+    loadBanner();
+  }, []);
   
   // Enhanced query with better error handling and permission checking
   const { data: allAnimals = [], isLoading, error, refetch } = useQuery({
@@ -110,9 +128,19 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Full-width banner that breaks out of all containers */}
-      <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
-        <DashboardBanner />
+      {/* Full-width banner matching System Settings layout */}
+      <div className="w-full px-4 py-6 bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="max-w-7xl mx-auto">
+          <Card>
+            <CardContent className="p-4">
+              <ImageUpload
+                currentImage={bannerImage}
+                onImageChange={() => {}} // Read-only mode
+                disabled={true}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
       
       {/* Main content */}
