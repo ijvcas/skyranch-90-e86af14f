@@ -6,9 +6,10 @@ import HeaderWithDropdown from '@/components/HeaderWithDropdown';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  useCustomLayout?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, useCustomLayout = false }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -21,6 +22,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If using custom layout, don't apply default padding and background
+  if (useCustomLayout) {
+    return (
+      <div className="min-h-screen bg-background">
+        <HeaderWithDropdown />
+        {children}
+      </div>
+    );
   }
 
   return (

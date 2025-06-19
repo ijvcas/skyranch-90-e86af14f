@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -109,11 +110,19 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Full-width banner at the very top */}
-      <DashboardBanner />
+      {/* Header positioning - ensure it's above the banner */}
+      <div className="relative z-50">
+        {/* This creates space for the fixed header */}
+        <div className="h-16"></div>
+      </div>
       
-      {/* Main content with background and padding */}
-      <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-20 min-h-screen">
+      {/* Full-width banner positioned absolutely at the top */}
+      <div className="absolute top-16 left-0 right-0 z-10">
+        <DashboardBanner />
+      </div>
+      
+      {/* Main content with proper top margin to account for header + banner */}
+      <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-64 pb-20 min-h-screen relative z-20">
         <div className="max-w-7xl mx-auto px-4">
           <DashboardHeader 
             userEmail={user?.email}
