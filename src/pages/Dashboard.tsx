@@ -110,19 +110,13 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Header positioning - ensure it's above the banner */}
-      <div className="relative z-50">
-        {/* This creates space for the fixed header */}
-        <div className="h-16"></div>
-      </div>
-      
-      {/* Full-width banner positioned absolutely at the top */}
-      <div className="absolute top-16 left-0 right-0 z-10">
+      {/* Full-width banner that breaks out of container */}
+      <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
         <DashboardBanner />
       </div>
       
-      {/* Main content with proper top margin to account for header + banner */}
-      <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-64 pb-20 min-h-screen relative z-20">
+      {/* Main content with proper spacing */}
+      <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-8 pb-20 min-h-screen">
         <div className="max-w-7xl mx-auto px-4">
           <DashboardHeader 
             userEmail={user?.email}
