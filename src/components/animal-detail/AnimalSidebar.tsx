@@ -1,8 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
+import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
+import ImageEditorDialog from '@/components/image-editor/ImageEditorDialog';
 
 interface AnimalSidebarProps {
   animal: {
@@ -85,15 +86,23 @@ const AnimalSidebar: React.FC<AnimalSidebarProps> = ({ animal }) => {
 
   return (
     <div className="space-y-6">
-      {/* Image Card */}
+      {/* Enhanced Image Card */}
       {animal.image && (
         <Card className="shadow-lg">
           <CardContent className="p-0">
-            <img
-              src={animal.image}
-              alt={animal.name}
-              className="w-full h-64 object-cover rounded-t-lg"
-            />
+            <div className="relative">
+              <EnhancedImageViewer
+                src={animal.image}
+                alt={animal.name}
+                className="w-full h-64 rounded-t-lg"
+              />
+              <div className="absolute top-2 left-2">
+                <ImageEditorDialog
+                  src={animal.image}
+                  alt={`Foto de ${animal.name}`}
+                />
+              </div>
+            </div>
             <div className="p-4">
               <p className="text-sm text-gray-600 text-center">Foto de {animal.name}</p>
             </div>
