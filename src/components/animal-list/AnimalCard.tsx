@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Edit, Eye, Trash2 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
-import ImageEditorDialog from '@/components/image-editor/ImageEditorDialog';
 import { useAnimalStore } from '@/stores/animalStore';
 import type { Animal } from '@/stores/animalStore';
 
@@ -19,11 +19,10 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
   const navigate = useNavigate();
   const { updateAnimal } = useAnimalStore();
 
-  const handleImageEdit = (editedImageData: string) => {
-    // Update the animal with the new edited image
-    const updatedAnimal = { ...animal, image: editedImageData };
-    updateAnimal(animal.id, updatedAnimal);
-    console.log('Image edited and saved for animal:', animal.name);
+  const handleImageTransform = (transform: any) => {
+    // The transform changes are applied visually in real-time
+    // We could save these transforms if needed, but for now just log them
+    console.log('Image transform applied:', transform);
   };
 
   return (
@@ -41,24 +40,14 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
       </CardHeader>
       <CardContent>
         {animal.image && (
-          <div className="mb-4 relative">
+          <div className="mb-4">
             <EnhancedImageViewer
               src={animal.image}
               alt={animal.name}
               className="w-full h-32 rounded-lg"
+              editMode={true}
+              onTransformChange={handleImageTransform}
             />
-            <div className="absolute top-2 left-2">
-              <ImageEditorDialog
-                src={animal.image}
-                alt={`Foto de ${animal.name}`}
-                onSave={handleImageEdit}
-                trigger={
-                  <Button size="sm" variant="outline" className="bg-black/50 text-white hover:bg-black/70 border-white/20 h-8 w-8 p-0">
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                }
-              />
-            </div>
           </div>
         )}
         <div className="space-y-2">
