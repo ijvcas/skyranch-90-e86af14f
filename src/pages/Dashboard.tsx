@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -110,12 +109,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Full-width banner that breaks out of container */}
-      <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+      {/* Full-width banner */}
+      <div className="w-screen">
         <DashboardBanner />
       </div>
       
-      {/* Main content with proper spacing */}
+      {/* Main content */}
       <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-8 pb-20 min-h-screen">
         <div className="max-w-7xl mx-auto px-4">
           <DashboardHeader 

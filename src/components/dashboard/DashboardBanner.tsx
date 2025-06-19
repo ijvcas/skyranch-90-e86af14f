@@ -33,7 +33,7 @@ const DashboardBanner = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
+      <div className="w-screen h-48 bg-gray-200 animate-pulse"></div>
     );
   }
 
@@ -48,7 +48,7 @@ const DashboardBanner = () => {
   };
 
   return (
-    <div className="w-full h-48 overflow-hidden shadow-lg">
+    <div className="w-screen h-48 overflow-hidden shadow-lg">
       <EnhancedImageViewer
         src={bannerToShow.image_url}
         alt={bannerToShow.alt_text}
