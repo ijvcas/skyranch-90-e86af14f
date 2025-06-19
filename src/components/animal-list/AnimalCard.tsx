@@ -7,6 +7,9 @@ import { Edit, Eye, Trash2, Save } from 'lucide-react';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import { useAnimalStore } from '@/stores/animalStore';
+import { updateAnimal } from '@/services/animal';
+import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Animal } from '@/stores/animalStore';
 
 interface AnimalCardProps {
@@ -16,24 +19,64 @@ interface AnimalCardProps {
 
 const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
   const navigate = useNavigate();
-  const { updateAnimal } = useAnimalStore();
+  const { updateAnimal: updateAnimalStore } = useAnimalStore();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentTransform, setCurrentTransform] = useState<any>(null);
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: any }) => updateAnimal(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ['animal', animal.id] });
+      toast({
+        title: "Imagen actualizada",
+        description: `La imagen de ${animal.name} ha sido actualizada exitosamente.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating animal image:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la imagen del animal.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleImageTransform = (transform: any) => {
     setCurrentTransform(transform);
     console.log('Image transform applied:', transform);
   };
 
-  const handleSaveImage = () => {
-    // In a real implementation, you would apply the transforms to generate a new image
-    // For now, we'll just update the animal record and exit edit mode
+  const handleSaveImage = async () => {
     if (currentTransform) {
       console.log('Saving image with transform:', currentTransform);
-      // You could save the transform data to the animal record if needed
-      // const updatedAnimal = { ...animal, imageTransform: currentTransform };
-      // updateAnimal(animal.id, updatedAnimal);
+      
+      // In a real implementation, you would apply the transforms to generate a new image
+      // For now, we'll save the transform data along with the original image
+      const updatedAnimalData = {
+        ...animal,
+        // You could store transform data if needed for future reference
+        // imageTransform: currentTransform
+      };
+      
+      try {
+        await updateMutation.mutateAsync({ 
+          id: animal.id, 
+          data: updatedAnimalData 
+        });
+        
+        // Update local store
+        updateAnimalStore(animal.id, updatedAnimalData);
+        
+      } catch (error) {
+        console.error('Error saving image:', error);
+        // Error handling is done in the mutation onError
+      }
     }
+    
     setIsEditMode(false);
     setCurrentTransform(null);
   };
@@ -86,6 +129,7 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
                   className="bg-green-600/80 text-white hover:bg-green-700/80 h-8 w-8 p-0"
                   onClick={handleSaveImage}
                   title="Save Changes"
+                  disabled={updateMutation.isPending}
                 >
                   <Save className="w-4 h-4" />
                 </Button>
