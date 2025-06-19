@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useCalendarState } from '@/hooks/useCalendarState';
@@ -11,7 +11,6 @@ import CalendarDialogs from '@/components/calendar/CalendarDialogs';
 import PermissionGuard from '@/components/PermissionGuard';
 
 const CalendarPage = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   
   const {
@@ -33,24 +32,6 @@ const CalendarPage = () => {
   } = useCalendarState();
 
   const { events, createEvent, updateEvent, deleteEvent, getNotificationUsers, isSubmitting } = useCalendarEvents();
-
-  // Check calendar permissions on mount
-  useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        await checkPermission('calendar_manage');
-      } catch (error) {
-        toast({
-          title: "Acceso Denegado",
-          description: "No tienes permisos para gestionar el calendario",
-          variant: "destructive"
-        });
-        navigate('/');
-      }
-    };
-    
-    checkAccess();
-  }, [navigate, toast]);
 
   const handleCreateEvent = async (eventData: any, selectedUserIds: string[]) => {
     console.log('📅 Creating event with selected users:', selectedUserIds);
@@ -125,52 +106,57 @@ const CalendarPage = () => {
   };
 
   return (
-    <PermissionGuard permission="calendar_manage">
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-2 sm:p-4 pb-20 sm:pb-24">
-        <div className="absolute inset-0 opacity-5">
-          <img 
-            src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <CalendarHeader
-            selectedDate={selectedDate}
-            selectedUserIds={selectedUserIds}
-            onUserSelectionChange={setSelectedUserIds}
-            onSubmit={handleCreateEvent}
-            isSubmitting={isSubmitting}
-            isDialogOpen={isDialogOpen}
-            onOpenDialog={openCreateDialog}
-            onCloseDialog={closeCreateDialog}
-          />
-
-          <CalendarContent
-            selectedDate={selectedDate}
-            onSelectDate={setSelectedDate}
-            events={events}
-            onEditEvent={handleEditEvent}
-            onEventClick={handleEventClick}
-          />
-
-          <CalendarDialogs
-            selectedEventForEdit={selectedEventForEdit}
-            selectedEventForDetail={selectedEventForDetail}
-            isEditDialogOpen={isEditDialogOpen}
-            isDetailDialogOpen={isDetailDialogOpen}
-            selectedUserIds={selectedUserIds}
-            onUserSelectionChange={setSelectedUserIds}
-            onCloseEditDialog={closeEditDialog}
-            onCloseDetailDialog={closeDetailDialog}
-            onSaveEditedEvent={handleSaveEditedEvent}
-            onDeleteEvent={handleDeleteEvent}
-            onEditEvent={handleEditEvent}
-          />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden p-2 sm:p-4 pb-20 sm:pb-24">
+      <div className="absolute inset-0 opacity-5">
+        <img 
+          src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
+          alt="" 
+          className="w-full h-full object-cover"
+        />
       </div>
-    </PermissionGuard>
+      <div className="max-w-7xl mx-auto relative z-10">
+        <CalendarHeader
+          selectedDate={selectedDate}
+          selectedUserIds={selectedUserIds}
+          onUserSelectionChange={setSelectedUserIds}
+          onSubmit={handleCreateEvent}
+          isSubmitting={isSubmitting}
+          isDialogOpen={isDialogOpen}
+          onOpenDialog={openCreateDialog}
+          onCloseDialog={closeCreateDialog}
+        />
+
+        <CalendarContent
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          events={events}
+          onEditEvent={handleEditEvent}
+          onEventClick={handleEventClick}
+        />
+
+        <CalendarDialogs
+          selectedEventForEdit={selectedEventForEdit}
+          selectedEventForDetail={selectedEventForDetail}
+          isEditDialogOpen={isEditDialogOpen}
+          isDetailDialogOpen={isDetailDialogOpen}
+          selectedUserIds={selectedUserIds}
+          onUserSelectionChange={setSelectedUserIds}
+          onCloseEditDialog={closeEditDialog}
+          onCloseDetailDialog={closeDetailDialog}
+          onSaveEditedEvent={handleSaveEditedEvent}
+          onDeleteEvent={handleDeleteEvent}
+          onEditEvent={handleEditEvent}
+        />
+      </div>
+    </div>
   );
 };
 
-export default CalendarPage;
+// Wrap the calendar page with PermissionGuard
+const WrappedCalendarPage = () => (
+  <PermissionGuard permission="calendar_manage">
+    <CalendarPage />
+  </PermissionGuard>
+);
+
+export default WrappedCalendarPage;
