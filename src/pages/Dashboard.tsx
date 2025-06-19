@@ -108,24 +108,26 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 pt-20">
-      {/* Banner spans full width - outside of any container constraints */}
+    <div className="min-h-screen">
+      {/* Full-width banner at the very top */}
       <DashboardBanner />
       
-      {/* Rest of the content uses normal container constraints */}
-      <div className="max-w-7xl mx-auto px-4">
-        <DashboardHeader 
-          userEmail={user?.email}
-          totalAnimals={totalAnimals}
-          onForceRefresh={handleForceRefresh}
-        />
+      {/* Main content with background and padding */}
+      <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-20 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4">
+          <DashboardHeader 
+            userEmail={user?.email}
+            totalAnimals={totalAnimals}
+            onForceRefresh={handleForceRefresh}
+          />
 
-        <DashboardStats 
-          totalAnimals={totalAnimals}
-          speciesCounts={speciesCounts}
-        />
+          <DashboardStats 
+            totalAnimals={totalAnimals}
+            speciesCounts={speciesCounts}
+          />
 
-        <DashboardQuickActions />
+          <DashboardQuickActions />
+        </div>
       </div>
     </div>
   );
