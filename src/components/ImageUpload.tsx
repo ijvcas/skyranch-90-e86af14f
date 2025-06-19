@@ -120,16 +120,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 alt="Animal preview"
                 className="w-full h-48 object-cover rounded-lg"
               />
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={handleRemoveImage}
-                disabled={disabled}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              {!disabled && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={handleRemoveImage}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
