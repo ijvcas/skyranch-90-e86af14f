@@ -45,12 +45,26 @@ const DashboardBanner = () => {
 
   if (isLoading || !banner) {
     return (
-      <div className="w-screen h-48 bg-gray-200 mb-8 animate-pulse"></div>
+      <div 
+        className="h-48 bg-gray-200 mb-8 animate-pulse"
+        style={{
+          width: '100vw',
+          marginLeft: 'calc(-50vw + 50%)',
+          marginRight: 'calc(-50vw + 50%)'
+        }}
+      ></div>
     );
   }
 
   return (
-    <div className="w-screen h-48 overflow-hidden mb-8 shadow-lg">
+    <div 
+      className="h-48 overflow-hidden mb-8 shadow-lg"
+      style={{
+        width: '100vw',
+        marginLeft: 'calc(-50vw + 50%)',
+        marginRight: 'calc(-50vw + 50%)'
+      }}
+    >
       <EnhancedImageViewer
         src={banner.image_url}
         alt={banner.alt_text}
