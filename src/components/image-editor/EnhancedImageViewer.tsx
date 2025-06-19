@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, RotateCcw, RotateCw, Move } from 'lucide-react';
@@ -16,6 +15,7 @@ interface EnhancedImageViewerProps {
   className?: string;
   editMode?: boolean;
   onTransformChange?: (transform: Transform) => void;
+  initialTransform?: Transform | null;
 }
 
 const EnhancedImageViewer: React.FC<EnhancedImageViewerProps> = ({
@@ -23,7 +23,8 @@ const EnhancedImageViewer: React.FC<EnhancedImageViewerProps> = ({
   alt,
   className = '',
   editMode = false,
-  onTransformChange
+  onTransformChange,
+  initialTransform
 }) => {
   const [transform, setTransform] = useState<Transform>({
     scale: 1,
@@ -35,6 +36,18 @@ const EnhancedImageViewer: React.FC<EnhancedImageViewerProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+
+  // Apply initial transform when component mounts or initialTransform changes
+  useEffect(() => {
+    if (initialTransform) {
+      setTransform(initialTransform);
+      console.log('Applied initial transform:', initialTransform);
+    } else {
+      // Reset to default if no initial transform
+      const defaultTransform = { scale: 1, translateX: 0, translateY: 0, rotation: 0 };
+      setTransform(defaultTransform);
+    }
+  }, [initialTransform]);
 
   const updateTransform = useCallback((newTransform: Partial<Transform>) => {
     const updated = { ...transform, ...newTransform };

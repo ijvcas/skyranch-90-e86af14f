@@ -1,10 +1,9 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Eye, Trash2, Save } from 'lucide-react';
+import { Edit, Eye, Trash2, Save, X } from 'lucide-react';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import { useAnimalStore } from '@/stores/animalStore';
@@ -18,13 +17,38 @@ interface AnimalCardProps {
   onDelete: (animalId: string, animalName: string) => void;
 }
 
+interface ImageTransform {
+  scale: number;
+  translateX: number;
+  translateY: number;
+  rotation: number;
+}
+
 const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
   const navigate = useNavigate();
   const { updateAnimal: updateAnimalStore } = useAnimalStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [currentTransform, setCurrentTransform] = useState<any>(null);
+  const [currentTransform, setCurrentTransform] = useState<ImageTransform | null>(null);
+  const [savedTransform, setSavedTransform] = useState<ImageTransform | null>(null);
+
+  // Load saved transform data when component mounts
+  useEffect(() => {
+    if (animal.notes) {
+      try {
+        // Look for saved transform data in notes
+        const transformMatch = animal.notes.match(/\[Image Transform Data: (.*?)\]/);
+        if (transformMatch) {
+          const transformData = JSON.parse(transformMatch[1]);
+          setSavedTransform(transformData);
+          console.log('Loaded saved transform:', transformData);
+        }
+      } catch (error) {
+        console.error('Error parsing saved transform data:', error);
+      }
+    }
+  }, [animal.notes]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: any }) => updateAnimal(id, data),
@@ -46,7 +70,7 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
     }
   });
 
-  const handleImageTransform = (transform: any) => {
+  const handleImageTransform = (transform: ImageTransform) => {
     setCurrentTransform(transform);
     console.log('Image transform applied:', transform);
   };
@@ -55,16 +79,15 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
     if (currentTransform) {
       console.log('Saving image with transform:', currentTransform);
       
-      // Store the transform data in the notes field as JSON
-      // In a real implementation, you would create a dedicated field for image transforms
+      // Save the transform data properly in the notes field
       let updatedNotes = animal.notes || '';
-      const transformData = {
-        imageTransform: currentTransform,
-        transformApplied: new Date().toISOString()
-      };
       
-      // Add transform info to notes
-      const transformNote = `[Image Transform Applied: ${new Date().toLocaleString()}]`;
+      // Remove any existing transform data
+      updatedNotes = updatedNotes.replace(/\[Image Transform Data: .*?\]\n?/g, '');
+      
+      // Add new transform data
+      const transformDataString = JSON.stringify(currentTransform);
+      const transformNote = `[Image Transform Data: ${transformDataString}]`;
       updatedNotes = updatedNotes ? `${updatedNotes}\n${transformNote}` : transformNote;
       
       const updatedAnimalData = {
@@ -81,11 +104,13 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
         // Update local store with the new data
         updateAnimalStore(animal.id, updatedAnimalData);
         
+        // Update saved transform state
+        setSavedTransform(currentTransform);
+        
         console.log('Image transform saved successfully');
         
       } catch (error) {
         console.error('Error saving image transform:', error);
-        // Error handling is done in the mutation onError
       }
     } else {
       console.log('No transform to save');
@@ -102,7 +127,19 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
 
   const handleEditClick = () => {
     setIsEditMode(true);
+    // Start with saved transform if available
+    if (savedTransform) {
+      setCurrentTransform(savedTransform);
+    }
   };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setCurrentTransform(null);
+  };
+
+  // Determine which transform to use for display
+  const displayTransform = isEditMode ? currentTransform : savedTransform;
 
   return (
     <Card className="shadow hover:shadow-lg transition-shadow">
@@ -126,6 +163,7 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
               className="w-full h-32 rounded-lg"
               editMode={isEditMode}
               onTransformChange={handleImageTransform}
+              initialTransform={displayTransform}
             />
             {!isEditMode && (
               <div className="absolute top-2 right-2">
@@ -141,7 +179,7 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
               </div>
             )}
             {isEditMode && (
-              <div className="absolute top-2 left-2">
+              <div className="absolute top-2 left-2 flex gap-1">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -151,6 +189,15 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
                   disabled={updateMutation.isPending}
                 >
                   <Save className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="bg-red-600/80 text-white hover:bg-red-700/80 h-8 w-8 p-0"
+                  onClick={handleCancelEdit}
+                  title="Cancel"
+                >
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             )}
@@ -162,6 +209,14 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
           <div className="mb-2 text-xs text-orange-600 bg-orange-50 p-2 rounded">
             Transformaciones pendientes: Zoom {Math.round(currentTransform.scale * 100)}%, 
             Rotación {currentTransform.rotation}°
+          </div>
+        )}
+
+        {/* Show saved transform info */}
+        {savedTransform && !isEditMode && (
+          <div className="mb-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+            Imagen personalizada: Zoom {Math.round(savedTransform.scale * 100)}%, 
+            Rotación {savedTransform.rotation}°
           </div>
         )}
 
