@@ -33,7 +33,7 @@ const AnimalForm = () => {
     color: '',
     healthStatus: 'healthy',
     notes: '',
-    imageFile: null as File | null,
+    image: null as string | null,
     // Pedigree data
     motherId: '',
     fatherId: '',
@@ -92,8 +92,8 @@ const AnimalForm = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageChange = (file: File | null) => {
-    setFormData(prev => ({ ...prev, imageFile: file }));
+  const handleImageChange = (imageUrl: string) => {
+    setFormData(prev => ({ ...prev, image: imageUrl }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,11 +169,6 @@ const AnimalForm = () => {
             <PhotoUploadForm 
               formData={formData} 
               onImageChange={handleImageChange} 
-            />
-            
-            <NotesForm 
-              formData={formData} 
-              onInputChange={handleInputChange} 
             />
 
             <Card className="shadow-lg">
