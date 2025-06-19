@@ -1,10 +1,9 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Eye, Trash2 } from 'lucide-react';
+import { Edit, Eye, Trash2, Save } from 'lucide-react';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import { useAnimalStore } from '@/stores/animalStore';
@@ -18,11 +17,29 @@ interface AnimalCardProps {
 const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
   const navigate = useNavigate();
   const { updateAnimal } = useAnimalStore();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentTransform, setCurrentTransform] = useState<any>(null);
 
   const handleImageTransform = (transform: any) => {
-    // The transform changes are applied visually in real-time
-    // We could save these transforms if needed, but for now just log them
+    setCurrentTransform(transform);
     console.log('Image transform applied:', transform);
+  };
+
+  const handleSaveImage = () => {
+    // In a real implementation, you would apply the transforms to generate a new image
+    // For now, we'll just update the animal record and exit edit mode
+    if (currentTransform) {
+      console.log('Saving image with transform:', currentTransform);
+      // You could save the transform data to the animal record if needed
+      // const updatedAnimal = { ...animal, imageTransform: currentTransform };
+      // updateAnimal(animal.id, updatedAnimal);
+    }
+    setIsEditMode(false);
+    setCurrentTransform(null);
+  };
+
+  const handleEditClick = () => {
+    setIsEditMode(true);
   };
 
   return (
@@ -40,14 +57,40 @@ const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
       </CardHeader>
       <CardContent>
         {animal.image && (
-          <div className="mb-4">
+          <div className="mb-4 relative">
             <EnhancedImageViewer
               src={animal.image}
               alt={animal.name}
               className="w-full h-32 rounded-lg"
-              editMode={true}
+              editMode={isEditMode}
               onTransformChange={handleImageTransform}
             />
+            {!isEditMode && (
+              <div className="absolute top-2 right-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="bg-black/50 text-white hover:bg-black/70 h-8 w-8 p-0"
+                  onClick={handleEditClick}
+                  title="Edit Image"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            {isEditMode && (
+              <div className="absolute top-2 left-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="bg-green-600/80 text-white hover:bg-green-700/80 h-8 w-8 p-0"
+                  onClick={handleSaveImage}
+                  title="Save Changes"
+                >
+                  <Save className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
         <div className="space-y-2">
