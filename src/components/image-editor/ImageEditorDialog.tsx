@@ -70,6 +70,7 @@ const ImageEditorDialog: React.FC<ImageEditorDialogProps> = ({
             src={src}
             alt={alt}
             className="w-full h-full"
+            editMode={true}
             onTransformChange={handleTransformChange}
           />
         </div>
