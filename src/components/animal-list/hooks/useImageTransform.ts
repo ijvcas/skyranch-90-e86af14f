@@ -1,17 +1,12 @@
-
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateAnimal } from '@/services/animal';
 import { useToast } from '@/hooks/use-toast';
 import { useAnimalStore } from '@/stores/animalStore';
 import type { Animal } from '@/stores/animalStore';
+import type { Transform } from '@/components/image-editor';
 
-export interface ImageTransform {
-  scale: number;
-  translateX: number;
-  translateY: number;
-  rotation: number;
-}
+export interface ImageTransform extends Transform {}
 
 export const useImageTransform = (animal: Animal) => {
   const { updateAnimal: updateAnimalStore } = useAnimalStore();

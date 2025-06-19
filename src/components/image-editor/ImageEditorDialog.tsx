@@ -4,13 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Edit2, Save, X } from 'lucide-react';
 import EnhancedImageViewer from './EnhancedImageViewer';
-
-interface Transform {
-  scale: number;
-  translateX: number;
-  translateY: number;
-  rotation: number;
-}
+import { Transform } from './hooks/useImageViewer';
 
 interface ImageEditorDialogProps {
   src: string;
