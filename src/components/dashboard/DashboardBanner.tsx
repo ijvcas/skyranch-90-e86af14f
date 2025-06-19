@@ -50,7 +50,7 @@ const DashboardBanner = () => {
   }
 
   return (
-    <div className="w-full h-48 rounded-lg overflow-hidden mb-8 shadow-lg">
+    <div className="w-full h-48 rounded-lg overflow-hidden mb-8 shadow-lg -mx-4 sm:mx-0">
       <EnhancedImageViewer
         src={banner.image_url}
         alt={banner.alt_text}

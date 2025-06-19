@@ -109,10 +109,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pt-20">
-      <div className="max-w-7xl mx-auto">
-        <DashboardBanner />
-        
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 pt-20">
+      <div className="w-full px-4">
+        <div className="max-w-7xl mx-auto">
+          <DashboardBanner />
+        </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4">
         <DashboardHeader 
           userEmail={user?.email}
           totalAnimals={totalAnimals}
