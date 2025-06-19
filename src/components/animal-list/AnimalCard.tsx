@@ -7,6 +7,7 @@ import { Edit, Eye, Trash2 } from 'lucide-react';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import ImageEditorDialog from '@/components/image-editor/ImageEditorDialog';
+import { useAnimalStore } from '@/stores/animalStore';
 import type { Animal } from '@/stores/animalStore';
 
 interface AnimalCardProps {
@@ -16,10 +17,13 @@ interface AnimalCardProps {
 
 const AnimalCard = ({ animal, onDelete }: AnimalCardProps) => {
   const navigate = useNavigate();
+  const { updateAnimal } = useAnimalStore();
 
   const handleImageEdit = (editedImageData: string) => {
-    // In a real implementation, you would save the edited image
-    console.log('Image edited:', editedImageData);
+    // Update the animal with the new edited image
+    const updatedAnimal = { ...animal, image: editedImageData };
+    updateAnimal(animal.id, updatedAnimal);
+    console.log('Image edited and saved for animal:', animal.name);
   };
 
   return (
