@@ -1,14 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 
-export interface DashboardBanner {
-  id: string;
-  image_url: string;
-  alt_text: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export type DashboardBanner = Tables<'dashboard_banners'>;
 
 export class DashboardBannerService {
   async getBanner(): Promise<DashboardBanner | null> {

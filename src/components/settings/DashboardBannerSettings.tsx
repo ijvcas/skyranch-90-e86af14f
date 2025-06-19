@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { dashboardBannerService, DashboardBanner } from '@/services/dashboardBannerService';
+import { dashboardBannerService, type DashboardBanner } from '@/services/dashboardBannerService';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import { Save, Upload } from 'lucide-react';
 
@@ -120,7 +120,7 @@ const DashboardBannerSettings = () => {
               <EnhancedImageViewer
                 src={imageUrl}
                 alt={altText}
-                className="w-full h-32"
+                className="w-full h-48 object-cover"
                 editMode={false}
               />
             </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { dashboardBannerService, DashboardBanner } from '@/services/dashboardBannerService';
+import { dashboardBannerService, type DashboardBanner } from '@/services/dashboardBannerService';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 
 const DashboardBanner = () => {
@@ -45,16 +45,16 @@ const DashboardBanner = () => {
 
   if (isLoading || !banner) {
     return (
-      <div className="w-full h-32 bg-gray-200 rounded-lg mb-8 animate-pulse"></div>
+      <div className="w-full h-48 bg-gray-200 rounded-lg mb-8 animate-pulse"></div>
     );
   }
 
   return (
-    <div className="w-full h-32 rounded-lg overflow-hidden mb-8 shadow-lg">
+    <div className="w-full h-48 rounded-lg overflow-hidden mb-8 shadow-lg">
       <EnhancedImageViewer
         src={banner.image_url}
         alt={banner.alt_text}
-        className="w-full h-full"
+        className="w-full h-full object-cover"
         editMode={false}
       />
     </div>
