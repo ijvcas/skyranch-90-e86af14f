@@ -33,6 +33,14 @@ const AnimalForm = () => {
     maternalGrandfatherId: '',
     paternalGrandmotherId: '',
     paternalGrandfatherId: '',
+    maternalGreatGrandmotherMaternalId: '',
+    maternalGreatGrandfatherMaternalId: '',
+    maternalGreatGrandmotherPaternalId: '',
+    maternalGreatGrandfatherPaternalId: '',
+    paternalGreatGrandmotherMaternalId: '',
+    paternalGreatGrandfatherMaternalId: '',
+    paternalGreatGrandmotherPaternalId: '',
+    paternalGreatGrandfatherPaternalId: '',
     notes: '',
     healthStatus: 'healthy',
     image: null as string | null
@@ -238,15 +246,209 @@ const AnimalForm = () => {
               </CardContent>
             </Card>
 
-            {/* Pedigree Information */}
+            {/* Pedigree Information with 3 Generations */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-xl text-gray-900">Información de Pedigrí</CardTitle>
+                <CardTitle className="text-xl text-gray-900">Información de Pedigrí (3 Generaciones)</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Parents */}
+              <CardContent className="space-y-8">
+                {/* Great-Grandparents (3rd Generation) */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Padres</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Bisabuelos (3ra Generación)</h3>
+                  <div className="space-y-6">
+                    {/* Maternal Great-Grandparents */}
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-3">Línea Materna de la Madre</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="maternalGreatGrandmotherMaternalId">Bisabuela Materna (Madre)</Label>
+                          <Input
+                            id="maternalGreatGrandmotherMaternalId"
+                            type="text"
+                            value={formData.maternalGreatGrandmotherMaternalId}
+                            onChange={(e) => handleInputChange('maternalGreatGrandmotherMaternalId', e.target.value)}
+                            placeholder="Nombre de la bisabuela materna"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="maternalGreatGrandfatherMaternalId">Bisabuelo Materno (Madre)</Label>
+                          <Input
+                            id="maternalGreatGrandfatherMaternalId"
+                            type="text"
+                            value={formData.maternalGreatGrandfatherMaternalId}
+                            onChange={(e) => handleInputChange('maternalGreatGrandfatherMaternalId', e.target.value)}
+                            placeholder="Nombre del bisabuelo materno"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-3">Línea Paterna de la Madre</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="maternalGreatGrandmotherPaternalId">Bisabuela Paterna (Madre)</Label>
+                          <Input
+                            id="maternalGreatGrandmotherPaternalId"
+                            type="text"
+                            value={formData.maternalGreatGrandmotherPaternalId}
+                            onChange={(e) => handleInputChange('maternalGreatGrandmotherPaternalId', e.target.value)}
+                            placeholder="Nombre de la bisabuela paterna"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="maternalGreatGrandfatherPaternalId">Bisabuelo Paterno (Madre)</Label>
+                          <Input
+                            id="maternalGreatGrandfatherPaternalId"
+                            type="text"
+                            value={formData.maternalGreatGrandfatherPaternalId}
+                            onChange={(e) => handleInputChange('maternalGreatGrandfatherPaternalId', e.target.value)}
+                            placeholder="Nombre del bisabuelo paterno"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Paternal Great-Grandparents */}
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-3">Línea Materna del Padre</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="paternalGreatGrandmotherMaternalId">Bisabuela Materna (Padre)</Label>
+                          <Input
+                            id="paternalGreatGrandmotherMaternalId"
+                            type="text"
+                            value={formData.paternalGreatGrandmotherMaternalId}
+                            onChange={(e) => handleInputChange('paternalGreatGrandmotherMaternalId', e.target.value)}
+                            placeholder="Nombre de la bisabuela materna"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="paternalGreatGrandfatherMaternalId">Bisabuelo Materno (Padre)</Label>
+                          <Input
+                            id="paternalGreatGrandfatherMaternalId"
+                            type="text"
+                            value={formData.paternalGreatGrandfatherMaternalId}
+                            onChange={(e) => handleInputChange('paternalGreatGrandfatherMaternalId', e.target.value)}
+                            placeholder="Nombre del bisabuelo materno"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-3">Línea Paterna del Padre</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="paternalGreatGrandmotherPaternalId">Bisabuela Paterna (Padre)</Label>
+                          <Input
+                            id="paternalGreatGrandmotherPaternalId"
+                            type="text"
+                            value={formData.paternalGreatGrandmotherPaternalId}
+                            onChange={(e) => handleInputChange('paternalGreatGrandmotherPaternalId', e.target.value)}
+                            placeholder="Nombre de la bisabuela paterna"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="paternalGreatGrandfatherPaternalId">Bisabuelo Paterno (Padre)</Label>
+                          <Input
+                            id="paternalGreatGrandfatherPaternalId"
+                            type="text"
+                            value={formData.paternalGreatGrandfatherPaternalId}
+                            onChange={(e) => handleInputChange('paternalGreatGrandfatherPaternalId', e.target.value)}
+                            placeholder="Nombre del bisabuelo paterno"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grandparents (2nd Generation) */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Abuelos (2da Generación)</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-2">Línea Materna</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="maternalGrandmotherId">Abuela Materna</Label>
+                          <Input
+                            id="maternalGrandmotherId"
+                            type="text"
+                            value={formData.maternalGrandmotherId}
+                            onChange={(e) => handleInputChange('maternalGrandmotherId', e.target.value)}
+                            placeholder="Nombre de la abuela materna"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
+                          <Input
+                            id="maternalGrandfatherId"
+                            type="text"
+                            value={formData.maternalGrandfatherId}
+                            onChange={(e) => handleInputChange('maternalGrandfatherId', e.target.value)}
+                            placeholder="Nombre del abuelo materno"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-2">Línea Paterna</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="paternalGrandmotherId">Abuela Paterna</Label>
+                          <Input
+                            id="paternalGrandmotherId"
+                            type="text"
+                            value={formData.paternalGrandmotherId}
+                            onChange={(e) => handleInputChange('paternalGrandmotherId', e.target.value)}
+                            placeholder="Nombre de la abuela paterna"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
+                          <Input
+                            id="paternalGrandfatherId"
+                            type="text"
+                            value={formData.paternalGrandfatherId}
+                            onChange={(e) => handleInputChange('paternalGrandfatherId', e.target.value)}
+                            placeholder="Nombre del abuelo paterno"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Parents (1st Generation) */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Padres (1ra Generación)</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="motherId">Madre</Label>
@@ -275,72 +477,6 @@ const AnimalForm = () => {
                       <p className="text-xs text-gray-500 mt-1">
                         Escribe cualquier nombre, no necesita estar registrado
                       </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Grandparents */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Abuelos</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-md font-medium text-gray-700 mb-2">Línea Materna</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="maternalGrandmotherId">Abuela Materna</Label>
-                          <Input
-                            id="maternalGrandmotherId"
-                            type="text"
-                            value={formData.maternalGrandmotherId}
-                            onChange={(e) => handleInputChange('maternalGrandmotherId', e.target.value)}
-                            placeholder="Nombre o etiqueta de la abuela materna"
-                            className="mt-1"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
-                        </div>
-                        <div>
-                          <Label htmlFor="maternalGrandfatherId">Abuelo Materno</Label>
-                          <Input
-                            id="maternalGrandfatherId"
-                            type="text"
-                            value={formData.maternalGrandfatherId}
-                            onChange={(e) => handleInputChange('maternalGrandfatherId', e.target.value)}
-                            placeholder="Nombre o etiqueta del abuelo materno"
-                            className="mt-1"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-md font-medium text-gray-700 mb-2">Línea Paterna</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="paternalGrandmotherId">Abuela Paterna</Label>
-                          <Input
-                            id="paternalGrandmotherId"
-                            type="text"
-                            value={formData.paternalGrandmotherId}
-                            onChange={(e) => handleInputChange('paternalGrandmotherId', e.target.value)}
-                            placeholder="Nombre o etiqueta de la abuela paterna"
-                            className="mt-1"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
-                        </div>
-                        <div>
-                          <Label htmlFor="paternalGrandfatherId">Abuelo Paterno</Label>
-                          <Input
-                            id="paternalGrandfatherId"
-                            type="text"
-                            value={formData.paternalGrandfatherId}
-                            onChange={(e) => handleInputChange('paternalGrandfatherId', e.target.value)}
-                            placeholder="Nombre o etiqueta del abuelo paterno"
-                            className="mt-1"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Opcional</p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>

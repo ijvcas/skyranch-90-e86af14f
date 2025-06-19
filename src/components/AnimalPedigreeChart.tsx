@@ -18,6 +18,15 @@ interface AnimalPedigreeProps {
     maternalGrandfatherId?: string;
     paternalGrandmotherId?: string;
     paternalGrandfatherId?: string;
+    // New great-grandparent fields
+    maternalGreatGrandmotherMaternalId?: string;
+    maternalGreatGrandfatherMaternalId?: string;
+    maternalGreatGrandmotherPaternalId?: string;
+    maternalGreatGrandfatherPaternalId?: string;
+    paternalGreatGrandmotherMaternalId?: string;
+    paternalGreatGrandfatherMaternalId?: string;
+    paternalGreatGrandmotherPaternalId?: string;
+    paternalGreatGrandfatherPaternalId?: string;
   };
 }
 
@@ -37,7 +46,7 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
     
     if (!name) {
       return (
-        <div className="p-3 border-2 border-dashed border-gray-200 rounded-lg text-center text-gray-400 text-sm">
+        <div className="p-2 border-2 border-dashed border-gray-200 rounded-lg text-center text-gray-400 text-xs">
           {label}
           <br />
           <span className="text-xs">No registrado</span>
@@ -47,7 +56,7 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
 
     return (
       <Card className="shadow-sm hover:shadow-md transition-shadow">
-        <CardContent className="p-3">
+        <CardContent className="p-2">
           <div className="text-center">
             <div className="flex items-center justify-between mb-1">
               <Badge variant={gender === 'male' ? 'default' : 'secondary'} className="text-xs">
@@ -58,13 +67,13 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(`/animals/${id}`)}
-                  className="h-6 w-6 p-0"
+                  className="h-5 w-5 p-0"
                 >
-                  <Eye className="w-3 h-3" />
+                  <Eye className="w-2 h-2" />
                 </Button>
               )}
             </div>
-            <div className="font-medium text-sm truncate">{name}</div>
+            <div className="font-medium text-xs truncate">{name}</div>
             <div className="text-xs text-gray-500">{label}</div>
             {!isRegisteredAnimal && (
               <div className="text-xs text-blue-600 mt-1">Externo</div>
@@ -78,11 +87,65 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Árbol Genealógico</CardTitle>
+        <CardTitle className="text-lg">Árbol Genealógico (3 Generaciones)</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          {/* Grandparents Level */}
+        <div className="space-y-4">
+          {/* Great-Grandparents Level (3rd Generation) */}
+          <div className="grid grid-cols-8 gap-1">
+            <AnimalCard 
+              id={animal.maternalGreatGrandmotherMaternalId} 
+              label="Bisabuela MM" 
+              gender="female" 
+            />
+            <AnimalCard 
+              id={animal.maternalGreatGrandfatherMaternalId} 
+              label="Bisabuelo MM" 
+              gender="male" 
+            />
+            <AnimalCard 
+              id={animal.maternalGreatGrandmotherPaternalId} 
+              label="Bisabuela MP" 
+              gender="female" 
+            />
+            <AnimalCard 
+              id={animal.maternalGreatGrandfatherPaternalId} 
+              label="Bisabuelo MP" 
+              gender="male" 
+            />
+            <AnimalCard 
+              id={animal.paternalGreatGrandmotherMaternalId} 
+              label="Bisabuela PM" 
+              gender="female" 
+            />
+            <AnimalCard 
+              id={animal.paternalGreatGrandfatherMaternalId} 
+              label="Bisabuelo PM" 
+              gender="male" 
+            />
+            <AnimalCard 
+              id={animal.paternalGreatGrandmotherPaternalId} 
+              label="Bisabuela PP" 
+              gender="female" 
+            />
+            <AnimalCard 
+              id={animal.paternalGreatGrandfatherPaternalId} 
+              label="Bisabuelo PP" 
+              gender="male" 
+            />
+          </div>
+
+          {/* Connection Lines to Grandparents */}
+          <div className="relative">
+            <div className="grid grid-cols-4 gap-4">
+              <div className="h-6 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
+              <div className="h-6 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
+              <div className="h-6 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
+              <div className="h-6 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
+            </div>
+          </div>
+
+          {/* Grandparents Level (2nd Generation) */}
           <div className="grid grid-cols-4 gap-2">
             <AnimalCard 
               id={animal.maternalGrandfatherId} 
@@ -106,15 +169,15 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
             />
           </div>
 
-          {/* Connection Lines */}
+          {/* Connection Lines to Parents */}
           <div className="relative">
             <div className="grid grid-cols-2 gap-8">
-              <div className="h-8 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
-              <div className="h-8 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
+              <div className="h-6 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
+              <div className="h-6 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg"></div>
             </div>
           </div>
 
-          {/* Parents Level */}
+          {/* Parents Level (1st Generation) */}
           <div className="grid grid-cols-2 gap-8">
             <AnimalCard 
               id={animal.motherId} 
@@ -130,7 +193,7 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
 
           {/* Connection to Current Animal */}
           <div className="relative">
-            <div className="h-8 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg mx-auto w-1/2"></div>
+            <div className="h-6 border-l-2 border-r-2 border-t-2 border-gray-300 rounded-t-lg mx-auto w-1/2"></div>
           </div>
 
           {/* Current Animal */}
@@ -144,6 +207,16 @@ const AnimalPedigreeChart: React.FC<AnimalPedigreeProps> = ({ animal }) => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="mt-6 p-3 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium mb-2">Leyenda:</h4>
+          <div className="text-xs text-gray-600 space-y-1">
+            <div><strong>MM:</strong> Maternal-Materno, <strong>MP:</strong> Maternal-Paterno</div>
+            <div><strong>PM:</strong> Paternal-Materno, <strong>PP:</strong> Paternal-Paterno</div>
+            <div className="text-blue-600">Externo: Animal no registrado en el sistema</div>
           </div>
         </div>
       </CardContent>

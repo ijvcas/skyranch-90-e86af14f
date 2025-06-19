@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { getAllAnimals as fetchAllAnimals, getAnimal as fetchAnimal } from '@/services/animalService';
 
@@ -18,10 +17,18 @@ export interface Animal {
   maternalGrandfatherId?: string;
   paternalGrandmotherId?: string;
   paternalGrandfatherId?: string;
+  maternalGreatGrandmotherMaternalId?: string;
+  maternalGreatGrandfatherMaternalId?: string;
+  maternalGreatGrandmotherPaternalId?: string;
+  maternalGreatGrandfatherPaternalId?: string;
+  paternalGreatGrandmotherMaternalId?: string;
+  paternalGreatGrandfatherMaternalId?: string;
+  paternalGreatGrandmotherPaternalId?: string;
+  paternalGreatGrandfatherPaternalId?: string;
   healthStatus: string;
   notes: string;
   image: string | null;
-  current_lot_id?: string; // Added to match database schema
+  current_lot_id?: string;
 }
 
 interface AnimalStore {

@@ -26,6 +26,15 @@ export const useAnimalEdit = () => {
     maternalGrandfatherId: '',
     paternalGrandmotherId: '',
     paternalGrandfatherId: '',
+    // New great-grandparent fields
+    maternalGreatGrandmotherMaternalId: '',
+    maternalGreatGrandfatherMaternalId: '',
+    maternalGreatGrandmotherPaternalId: '',
+    maternalGreatGrandfatherPaternalId: '',
+    paternalGreatGrandmotherMaternalId: '',
+    paternalGreatGrandfatherMaternalId: '',
+    paternalGreatGrandmotherPaternalId: '',
+    paternalGreatGrandfatherPaternalId: '',
     notes: '',
     healthStatus: 'healthy',
     image: null as string | null
@@ -79,13 +88,21 @@ export const useAnimalEdit = () => {
           }
         };
 
-        // Load all parent display names - with better error handling
+        // Load all parent and great-grandparent display names
         let motherDisplayName = '';
         let fatherDisplayName = '';
         let maternalGrandmotherDisplayName = '';
         let maternalGrandfatherDisplayName = '';
         let paternalGrandmotherDisplayName = '';
         let paternalGrandfatherDisplayName = '';
+        let maternalGreatGrandmotherMaternalDisplayName = '';
+        let maternalGreatGrandfatherMaternalDisplayName = '';
+        let maternalGreatGrandmotherPaternalDisplayName = '';
+        let maternalGreatGrandfatherPaternalDisplayName = '';
+        let paternalGreatGrandmotherMaternalDisplayName = '';
+        let paternalGreatGrandfatherMaternalDisplayName = '';
+        let paternalGreatGrandmotherPaternalDisplayName = '';
+        let paternalGreatGrandfatherPaternalDisplayName = '';
 
         try {
           [
@@ -94,27 +111,50 @@ export const useAnimalEdit = () => {
             maternalGrandmotherDisplayName,
             maternalGrandfatherDisplayName,
             paternalGrandmotherDisplayName,
-            paternalGrandfatherDisplayName
+            paternalGrandfatherDisplayName,
+            maternalGreatGrandmotherMaternalDisplayName,
+            maternalGreatGrandfatherMaternalDisplayName,
+            maternalGreatGrandmotherPaternalDisplayName,
+            maternalGreatGrandfatherPaternalDisplayName,
+            paternalGreatGrandmotherMaternalDisplayName,
+            paternalGreatGrandfatherMaternalDisplayName,
+            paternalGreatGrandmotherPaternalDisplayName,
+            paternalGreatGrandfatherPaternalDisplayName
           ] = await Promise.all([
             loadDisplayName(animal.motherId),
             loadDisplayName(animal.fatherId),
             loadDisplayName(animal.maternalGrandmotherId),
             loadDisplayName(animal.maternalGrandfatherId),
             loadDisplayName(animal.paternalGrandmotherId),
-            loadDisplayName(animal.paternalGrandfatherId)
+            loadDisplayName(animal.paternalGrandfatherId),
+            loadDisplayName(animal.maternalGreatGrandmotherMaternalId),
+            loadDisplayName(animal.maternalGreatGrandfatherMaternalId),
+            loadDisplayName(animal.maternalGreatGrandmotherPaternalId),
+            loadDisplayName(animal.maternalGreatGrandfatherPaternalId),
+            loadDisplayName(animal.paternalGreatGrandmotherMaternalId),
+            loadDisplayName(animal.paternalGreatGrandfatherMaternalId),
+            loadDisplayName(animal.paternalGreatGrandmotherPaternalId),
+            loadDisplayName(animal.paternalGreatGrandfatherPaternalId)
           ]);
         } catch (error) {
-          console.error('Error loading parent display names:', error);
-          // Continue with empty strings if there are errors
+          console.error('Error loading ancestor display names:', error);
         }
 
-        console.log('🔍 Loaded display names:', {
+        console.log('🔍 Loaded all ancestor display names:', {
           mother: motherDisplayName,
           father: fatherDisplayName,
           maternalGrandmother: maternalGrandmotherDisplayName,
           maternalGrandfather: maternalGrandfatherDisplayName,
           paternalGrandmother: paternalGrandmotherDisplayName,
-          paternalGrandfather: paternalGrandfatherDisplayName
+          paternalGrandfather: paternalGrandfatherDisplayName,
+          maternalGreatGrandmotherMaternal: maternalGreatGrandmotherMaternalDisplayName,
+          maternalGreatGrandfatherMaternal: maternalGreatGrandfatherMaternalDisplayName,
+          maternalGreatGrandmotherPaternal: maternalGreatGrandmotherPaternalDisplayName,
+          maternalGreatGrandfatherPaternal: maternalGreatGrandfatherPaternalDisplayName,
+          paternalGreatGrandmotherMaternal: paternalGreatGrandmotherMaternalDisplayName,
+          paternalGreatGrandfatherMaternal: paternalGreatGrandfatherMaternalDisplayName,
+          paternalGreatGrandmotherPaternal: paternalGreatGrandmotherPaternalDisplayName,
+          paternalGreatGrandfatherPaternal: paternalGreatGrandfatherPaternalDisplayName
         });
         
         const newFormData = {
@@ -132,6 +172,14 @@ export const useAnimalEdit = () => {
           maternalGrandfatherId: maternalGrandfatherDisplayName,
           paternalGrandmotherId: paternalGrandmotherDisplayName,
           paternalGrandfatherId: paternalGrandfatherDisplayName,
+          maternalGreatGrandmotherMaternalId: maternalGreatGrandmotherMaternalDisplayName,
+          maternalGreatGrandfatherMaternalId: maternalGreatGrandfatherMaternalDisplayName,
+          maternalGreatGrandmotherPaternalId: maternalGreatGrandmotherPaternalDisplayName,
+          maternalGreatGrandfatherPaternalId: maternalGreatGrandfatherPaternalDisplayName,
+          paternalGreatGrandmotherMaternalId: paternalGreatGrandmotherMaternalDisplayName,
+          paternalGreatGrandfatherMaternalId: paternalGreatGrandfatherMaternalDisplayName,
+          paternalGreatGrandmotherPaternalId: paternalGreatGrandmotherPaternalDisplayName,
+          paternalGreatGrandfatherPaternalId: paternalGreatGrandfatherPaternalDisplayName,
           notes: animal.notes || '',
           healthStatus: animal.healthStatus || 'healthy',
           image: animal.image
@@ -163,16 +211,23 @@ export const useAnimalEdit = () => {
     
     console.log('🔄 Form data being submitted:', formData);
     
-    // Ensure we're sending the parent data correctly
+    // Ensure we're sending all parent data correctly including great-grandparents
     const submitData = {
       ...formData,
-      // Make sure parent fields are properly included
       motherId: formData.motherId || '',
       fatherId: formData.fatherId || '',
       maternalGrandmotherId: formData.maternalGrandmotherId || '',
       maternalGrandfatherId: formData.maternalGrandfatherId || '',
       paternalGrandmotherId: formData.paternalGrandmotherId || '',
-      paternalGrandfatherId: formData.paternalGrandfatherId || ''
+      paternalGrandfatherId: formData.paternalGrandfatherId || '',
+      maternalGreatGrandmotherMaternalId: formData.maternalGreatGrandmotherMaternalId || '',
+      maternalGreatGrandfatherMaternalId: formData.maternalGreatGrandfatherMaternalId || '',
+      maternalGreatGrandmotherPaternalId: formData.maternalGreatGrandmotherPaternalId || '',
+      maternalGreatGrandfatherPaternalId: formData.maternalGreatGrandfatherPaternalId || '',
+      paternalGreatGrandmotherMaternalId: formData.paternalGreatGrandmotherMaternalId || '',
+      paternalGreatGrandfatherMaternalId: formData.paternalGreatGrandfatherMaternalId || '',
+      paternalGreatGrandmotherPaternalId: formData.paternalGreatGrandmotherPaternalId || '',
+      paternalGreatGrandfatherPaternalId: formData.paternalGreatGrandfatherPaternalId || ''
     };
     
     console.log('🔄 Final submit data:', submitData);

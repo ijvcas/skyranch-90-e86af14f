@@ -24,6 +24,15 @@ export const transformAnimalData = (data: any): Animal => {
     maternalGrandfatherId: data.maternal_grandfather_id || '',
     paternalGrandmotherId: data.paternal_grandmother_id || '',
     paternalGrandfatherId: data.paternal_grandfather_id || '',
+    // New great-grandparent fields (3rd generation)
+    maternalGreatGrandmotherMaternalId: data.maternal_great_grandmother_maternal_id || '',
+    maternalGreatGrandfatherMaternalId: data.maternal_great_grandfather_maternal_id || '',
+    maternalGreatGrandmotherPaternalId: data.maternal_great_grandmother_paternal_id || '',
+    maternalGreatGrandfatherPaternalId: data.maternal_great_grandfather_paternal_id || '',
+    paternalGreatGrandmotherMaternalId: data.paternal_great_grandmother_maternal_id || '',
+    paternalGreatGrandfatherMaternalId: data.paternal_great_grandfather_maternal_id || '',
+    paternalGreatGrandmotherPaternalId: data.paternal_great_grandmother_paternal_id || '',
+    paternalGreatGrandfatherPaternalId: data.paternal_great_grandfather_paternal_id || '',
   };
 
   console.log('Transformed animal:', animal);

@@ -113,11 +113,19 @@ export type Database = {
           image_url: string | null
           maternal_grandfather_id: string | null
           maternal_grandmother_id: string | null
+          maternal_great_grandfather_maternal_id: string | null
+          maternal_great_grandfather_paternal_id: string | null
+          maternal_great_grandmother_maternal_id: string | null
+          maternal_great_grandmother_paternal_id: string | null
           mother_id: string | null
           name: string
           notes: string | null
           paternal_grandfather_id: string | null
           paternal_grandmother_id: string | null
+          paternal_great_grandfather_maternal_id: string | null
+          paternal_great_grandfather_paternal_id: string | null
+          paternal_great_grandmother_maternal_id: string | null
+          paternal_great_grandmother_paternal_id: string | null
           species: string
           tag: string
           updated_at: string | null
@@ -137,11 +145,19 @@ export type Database = {
           image_url?: string | null
           maternal_grandfather_id?: string | null
           maternal_grandmother_id?: string | null
+          maternal_great_grandfather_maternal_id?: string | null
+          maternal_great_grandfather_paternal_id?: string | null
+          maternal_great_grandmother_maternal_id?: string | null
+          maternal_great_grandmother_paternal_id?: string | null
           mother_id?: string | null
           name: string
           notes?: string | null
           paternal_grandfather_id?: string | null
           paternal_grandmother_id?: string | null
+          paternal_great_grandfather_maternal_id?: string | null
+          paternal_great_grandfather_paternal_id?: string | null
+          paternal_great_grandmother_maternal_id?: string | null
+          paternal_great_grandmother_paternal_id?: string | null
           species: string
           tag: string
           updated_at?: string | null
@@ -161,11 +177,19 @@ export type Database = {
           image_url?: string | null
           maternal_grandfather_id?: string | null
           maternal_grandmother_id?: string | null
+          maternal_great_grandfather_maternal_id?: string | null
+          maternal_great_grandfather_paternal_id?: string | null
+          maternal_great_grandmother_maternal_id?: string | null
+          maternal_great_grandmother_paternal_id?: string | null
           mother_id?: string | null
           name?: string
           notes?: string | null
           paternal_grandfather_id?: string | null
           paternal_grandmother_id?: string | null
+          paternal_great_grandfather_maternal_id?: string | null
+          paternal_great_grandfather_paternal_id?: string | null
+          paternal_great_grandmother_maternal_id?: string | null
+          paternal_great_grandmother_paternal_id?: string | null
           species?: string
           tag?: string
           updated_at?: string | null

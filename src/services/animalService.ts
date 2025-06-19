@@ -14,7 +14,6 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
 
     if (error) {
       console.error('❌ Error fetching animals:', error);
-      // Instead of throwing, return empty array to prevent app crash
       return [];
     }
 
@@ -22,7 +21,6 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
     return (data || []).map(transformAnimalData);
   } catch (error) {
     console.error('❌ Unexpected error in getAllAnimals:', error);
-    // Return empty array instead of throwing
     return [];
   }
 };
@@ -58,7 +56,15 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> =>
     maternalGrandmotherId: animal.maternalGrandmotherId,
     maternalGrandfatherId: animal.maternalGrandfatherId,
     paternalGrandmotherId: animal.paternalGrandmotherId,
-    paternalGrandfatherId: animal.paternalGrandfatherId
+    paternalGrandfatherId: animal.paternalGrandfatherId,
+    maternalGreatGrandmotherMaternalId: animal.maternalGreatGrandmotherMaternalId,
+    maternalGreatGrandfatherMaternalId: animal.maternalGreatGrandfatherMaternalId,
+    maternalGreatGrandmotherPaternalId: animal.maternalGreatGrandmotherPaternalId,
+    maternalGreatGrandfatherPaternalId: animal.maternalGreatGrandfatherPaternalId,
+    paternalGreatGrandmotherMaternalId: animal.paternalGreatGrandmotherMaternalId,
+    paternalGreatGrandfatherMaternalId: animal.paternalGreatGrandfatherMaternalId,
+    paternalGreatGrandmotherPaternalId: animal.paternalGreatGrandmotherPaternalId,
+    paternalGreatGrandfatherPaternalId: animal.paternalGreatGrandfatherPaternalId
   });
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -68,23 +74,54 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> =>
     return false;
   }
 
-  // Process parent and grandparent IDs concurrently for better performance
-  const [motherId, fatherId, maternalGrandmotherId, maternalGrandfatherId, paternalGrandmotherId, paternalGrandfatherId] = await Promise.all([
+  // Process all parent and ancestor IDs concurrently for better performance
+  const [
+    motherId, 
+    fatherId, 
+    maternalGrandmotherId, 
+    maternalGrandfatherId, 
+    paternalGrandmotherId, 
+    paternalGrandfatherId,
+    maternalGreatGrandmotherMaternalId,
+    maternalGreatGrandfatherMaternalId,
+    maternalGreatGrandmotherPaternalId,
+    maternalGreatGrandfatherPaternalId,
+    paternalGreatGrandmotherMaternalId,
+    paternalGreatGrandfatherMaternalId,
+    paternalGreatGrandmotherPaternalId,
+    paternalGreatGrandfatherPaternalId
+  ] = await Promise.all([
     processParentId(animal.motherId),
     processParentId(animal.fatherId),
     processParentId(animal.maternalGrandmotherId),
     processParentId(animal.maternalGrandfatherId),
     processParentId(animal.paternalGrandmotherId),
-    processParentId(animal.paternalGrandfatherId)
+    processParentId(animal.paternalGrandfatherId),
+    processParentId(animal.maternalGreatGrandmotherMaternalId),
+    processParentId(animal.maternalGreatGrandfatherMaternalId),
+    processParentId(animal.maternalGreatGrandmotherPaternalId),
+    processParentId(animal.maternalGreatGrandfatherPaternalId),
+    processParentId(animal.paternalGreatGrandmotherMaternalId),
+    processParentId(animal.paternalGreatGrandfatherMaternalId),
+    processParentId(animal.paternalGreatGrandmotherPaternalId),
+    processParentId(animal.paternalGreatGrandfatherPaternalId)
   ]);
 
-  console.log('🔄 Processed parent IDs:', {
+  console.log('🔄 Processed all ancestor IDs:', {
     motherId,
     fatherId,
     maternalGrandmotherId,
     maternalGrandfatherId,
     paternalGrandmotherId,
-    paternalGrandfatherId
+    paternalGrandfatherId,
+    maternalGreatGrandmotherMaternalId,
+    maternalGreatGrandfatherMaternalId,
+    maternalGreatGrandmotherPaternalId,
+    maternalGreatGrandfatherPaternalId,
+    paternalGreatGrandmotherMaternalId,
+    paternalGreatGrandfatherMaternalId,
+    paternalGreatGrandmotherPaternalId,
+    paternalGreatGrandfatherPaternalId
   });
 
   const databaseData = {
@@ -95,6 +132,14 @@ export const addAnimal = async (animal: Omit<Animal, 'id'>): Promise<boolean> =>
     maternal_grandfather_id: maternalGrandfatherId,
     paternal_grandmother_id: paternalGrandmotherId,
     paternal_grandfather_id: paternalGrandfatherId,
+    maternal_great_grandmother_maternal_id: maternalGreatGrandmotherMaternalId,
+    maternal_great_grandfather_maternal_id: maternalGreatGrandfatherMaternalId,
+    maternal_great_grandmother_paternal_id: maternalGreatGrandmotherPaternalId,
+    maternal_great_grandfather_paternal_id: maternalGreatGrandfatherPaternalId,
+    paternal_great_grandmother_maternal_id: paternalGreatGrandmotherMaternalId,
+    paternal_great_grandfather_maternal_id: paternalGreatGrandfatherMaternalId,
+    paternal_great_grandmother_paternal_id: paternalGreatGrandmotherPaternalId,
+    paternal_great_grandfather_paternal_id: paternalGreatGrandfatherPaternalId,
   };
 
   console.log('🔄 Final database data:', databaseData);
@@ -119,26 +164,65 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     maternalGrandmotherId: animal.maternalGrandmotherId,
     maternalGrandfatherId: animal.maternalGrandfatherId,
     paternalGrandmotherId: animal.paternalGrandmotherId,
-    paternalGrandfatherId: animal.paternalGrandfatherId
+    paternalGrandfatherId: animal.paternalGrandfatherId,
+    maternalGreatGrandmotherMaternalId: animal.maternalGreatGrandmotherMaternalId,
+    maternalGreatGrandfatherMaternalId: animal.maternalGreatGrandfatherMaternalId,
+    maternalGreatGrandmotherPaternalId: animal.maternalGreatGrandmotherPaternalId,
+    maternalGreatGrandfatherPaternalId: animal.maternalGreatGrandfatherPaternalId,
+    paternalGreatGrandmotherMaternalId: animal.paternalGreatGrandmotherMaternalId,
+    paternalGreatGrandfatherMaternalId: animal.paternalGreatGrandfatherMaternalId,
+    paternalGreatGrandmotherPaternalId: animal.paternalGreatGrandmotherPaternalId,
+    paternalGreatGrandfatherPaternalId: animal.paternalGreatGrandfatherPaternalId
   });
 
-  // Process parent and grandparent IDs concurrently for better performance
-  const [motherId, fatherId, maternalGrandmotherId, maternalGrandfatherId, paternalGrandmotherId, paternalGrandfatherId] = await Promise.all([
+  // Process all parent and ancestor IDs concurrently for better performance
+  const [
+    motherId, 
+    fatherId, 
+    maternalGrandmotherId, 
+    maternalGrandfatherId, 
+    paternalGrandmotherId, 
+    paternalGrandfatherId,
+    maternalGreatGrandmotherMaternalId,
+    maternalGreatGrandfatherMaternalId,
+    maternalGreatGrandmotherPaternalId,
+    maternalGreatGrandfatherPaternalId,
+    paternalGreatGrandmotherMaternalId,
+    paternalGreatGrandfatherMaternalId,
+    paternalGreatGrandmotherPaternalId,
+    paternalGreatGrandfatherPaternalId
+  ] = await Promise.all([
     processParentId(animal.motherId),
     processParentId(animal.fatherId),
     processParentId(animal.maternalGrandmotherId),
     processParentId(animal.maternalGrandfatherId),
     processParentId(animal.paternalGrandmotherId),
-    processParentId(animal.paternalGrandfatherId)
+    processParentId(animal.paternalGrandfatherId),
+    processParentId(animal.maternalGreatGrandmotherMaternalId),
+    processParentId(animal.maternalGreatGrandfatherMaternalId),
+    processParentId(animal.maternalGreatGrandmotherPaternalId),
+    processParentId(animal.maternalGreatGrandfatherPaternalId),
+    processParentId(animal.paternalGreatGrandmotherMaternalId),
+    processParentId(animal.paternalGreatGrandfatherMaternalId),
+    processParentId(animal.paternalGreatGrandmotherPaternalId),
+    processParentId(animal.paternalGreatGrandfatherPaternalId)
   ]);
 
-  console.log('🔄 Processed parent IDs for update:', {
+  console.log('🔄 Processed all ancestor IDs for update:', {
     motherId,
     fatherId,
     maternalGrandmotherId,
     maternalGrandfatherId,
     paternalGrandmotherId,
-    paternalGrandfatherId
+    paternalGrandfatherId,
+    maternalGreatGrandmotherMaternalId,
+    maternalGreatGrandfatherMaternalId,
+    maternalGreatGrandmotherPaternalId,
+    maternalGreatGrandfatherPaternalId,
+    paternalGreatGrandmotherMaternalId,
+    paternalGreatGrandfatherMaternalId,
+    paternalGreatGrandmotherPaternalId,
+    paternalGreatGrandfatherPaternalId
   });
 
   const updateData = {
@@ -149,6 +233,14 @@ export const updateAnimal = async (id: string, animal: Omit<Animal, 'id'>): Prom
     maternal_grandfather_id: maternalGrandfatherId,
     paternal_grandmother_id: paternalGrandmotherId,
     paternal_grandfather_id: paternalGrandfatherId,
+    maternal_great_grandmother_maternal_id: maternalGreatGrandmotherMaternalId,
+    maternal_great_grandfather_maternal_id: maternalGreatGrandfatherMaternalId,
+    maternal_great_grandmother_paternal_id: maternalGreatGrandmotherPaternalId,
+    maternal_great_grandfather_paternal_id: maternalGreatGrandfatherPaternalId,
+    paternal_great_grandmother_maternal_id: paternalGreatGrandmotherMaternalId,
+    paternal_great_grandfather_maternal_id: paternalGreatGrandfatherMaternalId,
+    paternal_great_grandmother_paternal_id: paternalGreatGrandmotherPaternalId,
+    paternal_great_grandfather_paternal_id: paternalGreatGrandfatherPaternalId,
   };
 
   console.log('🔄 Final update data:', updateData);
@@ -199,7 +291,6 @@ export const getAnimalCounts = async () => {
   return data || [];
 };
 
-// Helper function to get animal display name (for edit forms)
 export const getAnimalDisplayName = async (animalId: string): Promise<string> => {
   console.log('🔍 Getting display name for animal ID:', animalId);
   return await getAnimalNameById(animalId);
