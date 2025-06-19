@@ -14,24 +14,12 @@ const DashboardBanner = () => {
   const loadBanner = async () => {
     try {
       const bannerData = await dashboardBannerService.getBanner();
-      if (bannerData) {
-        setBanner(bannerData);
-      } else {
-        // Set default banner
-        setBanner({
-          id: 'default',
-          image_url: '/lovable-uploads/d3c33c19-f7cd-441e-884f-371ed6481179.png',
-          alt_text: 'Dashboard Banner',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-      }
+      setBanner(bannerData);
     } catch (error) {
       console.error('Error loading banner:', error);
-      // Show default banner on error
+      // Set fallback banner on error
       setBanner({
-        id: 'default',
+        id: 'fallback',
         image_url: '/lovable-uploads/d3c33c19-f7cd-441e-884f-371ed6481179.png',
         alt_text: 'Dashboard Banner',
         is_active: true,
@@ -43,17 +31,27 @@ const DashboardBanner = () => {
     }
   };
 
-  if (isLoading || !banner) {
+  if (isLoading) {
     return (
       <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
     );
   }
 
+  // If no banner is configured, use the default fallback
+  const bannerToShow = banner || {
+    id: 'default',
+    image_url: '/lovable-uploads/d3c33c19-f7cd-441e-884f-371ed6481179.png',
+    alt_text: 'Dashboard Banner',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
   return (
     <div className="w-full h-48 overflow-hidden shadow-lg">
       <EnhancedImageViewer
-        src={banner.image_url}
-        alt={banner.alt_text}
+        src={bannerToShow.image_url}
+        alt={bannerToShow.alt_text}
         className="w-full h-full object-cover"
         editMode={false}
       />
