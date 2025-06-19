@@ -27,25 +27,44 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 
 export const getCurrentUserRole = async (): Promise<UserRole | null> => {
   try {
+    console.log('🔍 Getting current user role...');
     const currentUser = await getCurrentUser();
-    if (!currentUser) return null;
     
+    if (!currentUser) {
+      console.log('❌ No current user found');
+      return null;
+    }
+    
+    console.log('✅ Current user role:', currentUser.role);
     return currentUser.role as UserRole;
   } catch (error) {
-    console.error('Error getting current user role:', error);
+    console.error('❌ Error getting current user role:', error);
     return null;
   }
 };
 
 export const hasPermission = async (permission: Permission): Promise<boolean> => {
   try {
+    console.log('🔍 Checking permission:', permission);
     const userRole = await getCurrentUserRole();
-    if (!userRole) return false;
+    
+    if (!userRole) {
+      console.log('❌ No user role found, defaulting to no permission');
+      return false;
+    }
     
     const rolePermissions = ROLE_PERMISSIONS[userRole];
-    return rolePermissions.includes(permission);
+    const hasAccess = rolePermissions.includes(permission);
+    
+    console.log(`${hasAccess ? '✅' : '❌'} Permission check result:`, {
+      permission,
+      userRole,
+      hasAccess
+    });
+    
+    return hasAccess;
   } catch (error) {
-    console.error('Error checking permission:', error);
+    console.error('❌ Error checking permission:', error);
     return false;
   }
 };
@@ -53,7 +72,11 @@ export const hasPermission = async (permission: Permission): Promise<boolean> =>
 export const checkPermission = async (permission: Permission): Promise<void> => {
   const allowed = await hasPermission(permission);
   if (!allowed) {
-    throw new Error(`Acceso denegado: No tienes permisos para ${permission}`);
+    const userRole = await getCurrentUserRole();
+    const errorMessage = userRole 
+      ? `Acceso denegado: Tu rol '${userRole}' no tiene permisos para ${permission}`
+      : `Acceso denegado: No se pudo determinar tu rol de usuario para ${permission}`;
+    throw new Error(errorMessage);
   }
 };
 

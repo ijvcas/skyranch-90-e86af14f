@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLotStore } from '@/stores/lotStore';
 import { toast } from 'sonner';
+import { checkPermission } from '@/services/permissionService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface LotFormProps {
   onClose: () => void;
@@ -29,12 +31,18 @@ const LotForm = ({ onClose, lot }: LotFormProps) => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setPermissionError(null);
 
     try {
+      // Check permissions before proceeding
+      console.log('🔍 Checking lots_manage permission...');
+      await checkPermission('lots_manage');
+      
       const lotData = {
         name: formData.name,
         description: formData.description || undefined,
@@ -46,6 +54,8 @@ const LotForm = ({ onClose, lot }: LotFormProps) => {
         grassCondition: formData.grassCondition,
       };
 
+      console.log('🔄 Submitting lot data:', lotData);
+
       const success = isEditing 
         ? await updateLot(lot.id, lotData)
         : await addLot(lotData);
@@ -56,9 +66,15 @@ const LotForm = ({ onClose, lot }: LotFormProps) => {
       } else {
         toast.error('Error al guardar el lote');
       }
-    } catch (error) {
-      console.error('Error saving lot:', error);
-      toast.error('Error al guardar el lote');
+    } catch (error: any) {
+      console.error('❌ Error in lot form submission:', error);
+      
+      if (error.message?.includes('Acceso denegado')) {
+        setPermissionError(error.message);
+        toast.error('No tienes permisos para esta acción');
+      } else {
+        toast.error('Error al guardar el lote');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -67,6 +83,22 @@ const LotForm = ({ onClose, lot }: LotFormProps) => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  if (permissionError) {
+    return (
+      <div className="p-4">
+        <Alert className="border-red-200 bg-red-50 mb-4">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {permissionError}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={onClose} variant="outline" className="w-full">
+          Cerrar
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
+import { checkPermission } from '@/services/permissionService';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
@@ -17,14 +18,29 @@ const Dashboard = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Enhanced query with better error handling
+  // Enhanced query with better error handling and permission checking
   const { data: allAnimals = [], isLoading, error, refetch } = useQuery({
     queryKey: ['animals', 'all-users'],
     queryFn: async () => {
       try {
-        return await getAllAnimals();
+        console.log('🔍 Checking animals_view permission before fetching...');
+        
+        // Check permission before fetching data
+        try {
+          await checkPermission('animals_view');
+          console.log('✅ Permission granted for animals_view');
+        } catch (permissionError) {
+          console.log('❌ Permission denied for animals_view:', permissionError);
+          // Return empty array instead of throwing to prevent app crash
+          return [];
+        }
+        
+        console.log('🔄 Fetching animals data...');
+        const animals = await getAllAnimals();
+        console.log('✅ Animals fetched successfully:', animals.length);
+        return animals;
       } catch (error) {
-        console.error('Error fetching animals:', error);
+        console.error('❌ Error fetching animals:', error);
         // Return empty array instead of throwing to prevent app crash
         return [];
       }

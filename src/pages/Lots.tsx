@@ -6,6 +6,7 @@ import LotDetail from '@/components/lots/LotDetail';
 import LotForm from '@/components/lots/LotForm';
 import LotMapView from '@/components/lots/LotMapView';
 import LotsOverview from '@/components/lots/LotsOverview';
+import PermissionGuard from '@/components/PermissionGuard';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -33,13 +34,14 @@ const Lots = () => {
 
   // Load lots and polygon data
   useEffect(() => {
+    console.log('🔄 Loading lots and polygon data...');
     loadLots();
     loadPolygonData();
     
     // Sync polygon areas with lot sizes to ensure consistency
     syncAllLotAreasWithPolygons().then(success => {
       if (success) {
-        console.log('Successfully synchronized all lot areas with polygons');
+        console.log('✅ Successfully synchronized all lot areas with polygons');
       }
     });
   }, [loadLots]);
@@ -49,7 +51,7 @@ const Lots = () => {
       const data = await getPolygonDataForLots();
       setPolygonData(data);
     } catch (error) {
-      console.error('Error loading polygon data:', error);
+      console.error('❌ Error loading polygon data:', error);
     }
   };
 
@@ -63,6 +65,7 @@ const Lots = () => {
   };
 
   const handleCreateLot = () => {
+    console.log('🔄 Opening lot creation form...');
     setShowCreateForm(true);
   };
 
@@ -111,9 +114,11 @@ const Lots = () => {
             <h1 className="text-2xl font-bold tracking-tight">Gestión de Lotes</h1>
             <p className="text-gray-500">Administra los lotes de tu finca</p>
           </div>
-          <Button onClick={handleCreateLot} className="mt-4 md:mt-0">
-            Crear Lote
-          </Button>
+          <PermissionGuard permission="lots_manage">
+            <Button onClick={handleCreateLot} className="mt-4 md:mt-0">
+              Crear Lote
+            </Button>
+          </PermissionGuard>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -154,13 +159,15 @@ const Lots = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Create Lot Dialog */}
+        {/* Create Lot Dialog with Permission Guard */}
         <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Crear Nuevo Lote</DialogTitle>
             </DialogHeader>
-            <LotForm onClose={handleFormClose} />
+            <PermissionGuard permission="lots_manage">
+              <LotForm onClose={handleFormClose} />
+            </PermissionGuard>
           </DialogContent>
         </Dialog>
         
@@ -181,12 +188,14 @@ const Lots = () => {
               <DialogClose asChild>
                 <Button variant="outline">Cancelar</Button>
               </DialogClose>
-              <Button 
-                variant="destructive" 
-                onClick={confirmDeleteLot}
-              >
-                Eliminar
-              </Button>
+              <PermissionGuard permission="lots_manage">
+                <Button 
+                  variant="destructive" 
+                  onClick={confirmDeleteLot}
+                >
+                  Eliminar
+                </Button>
+              </PermissionGuard>
             </div>
           </DialogContent>
         </Dialog>

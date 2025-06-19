@@ -3,7 +3,7 @@ import React from 'react';
 import { Permission } from '@/services/permissionService';
 import { usePermissionCheck } from '@/hooks/usePermissions';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield } from 'lucide-react';
+import { Shield, AlertTriangle } from 'lucide-react';
 
 interface PermissionGuardProps {
   permission: Permission;
@@ -18,13 +18,25 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
   fallback,
   showError = true
 }) => {
-  const { hasAccess, loading } = usePermissionCheck(permission);
+  const { hasAccess, loading, error } = usePermissionCheck(permission);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+        <span className="ml-2 text-sm text-gray-600">Verificando permisos...</span>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert className="border-orange-200 bg-orange-50">
+        <AlertTriangle className="h-4 w-4 text-orange-600" />
+        <AlertDescription className="text-orange-800">
+          Error al verificar permisos: {error}
+        </AlertDescription>
+      </Alert>
     );
   }
 
