@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAnimalById, updateAnimal } from '@/services/animalService';
+import { getAnimal, updateAnimal } from '@/services/animalService';
 import { checkPermission } from '@/services/permissionService';
 import PermissionGuard from '@/components/PermissionGuard';
 import BasicInformationForm from '@/components/animal-edit/BasicInformationForm';
@@ -52,7 +53,7 @@ const AnimalEdit = () => {
 
   const { data: animal, isLoading, error } = useQuery({
     queryKey: ['animal', id],
-    queryFn: () => getAnimalById(id!),
+    queryFn: () => getAnimal(id!),
     enabled: !!id
   });
 
