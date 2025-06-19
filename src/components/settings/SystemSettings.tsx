@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import SupportInfoSettings from './SupportInfoSettings';
+import DashboardBannerSettings from './DashboardBannerSettings';
 import TimezoneSettings from '@/components/TimezoneSettings';
 import DatabaseVersionDisplay from '@/components/app-info/DatabaseVersionDisplay';
 
@@ -13,6 +14,9 @@ const SystemSettings = () => {
     <div className="space-y-6">
       {/* Support Info Panel at the top */}
       <SupportInfoSettings isAdmin={isAdmin} />
+      
+      {/* Dashboard Banner Settings */}
+      <DashboardBannerSettings />
       
       {/* Timezone Settings */}
       <TimezoneSettings />

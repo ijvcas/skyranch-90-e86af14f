@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
 import { checkPermission } from '@/services/permissionService';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
@@ -110,6 +111,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pt-20">
       <div className="max-w-7xl mx-auto">
+        <DashboardBanner />
+        
         <DashboardHeader 
           userEmail={user?.email}
           totalAnimals={totalAnimals}
