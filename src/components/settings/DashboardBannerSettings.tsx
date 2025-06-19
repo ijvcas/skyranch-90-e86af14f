@@ -2,17 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { dashboardBannerService, type DashboardBanner } from '@/services/dashboardBannerService';
-import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
-import { Save, Upload } from 'lucide-react';
+import ImageUpload from '@/components/ImageUpload';
+import { Save } from 'lucide-react';
 
 const DashboardBannerSettings = () => {
   const [banner, setBanner] = useState<DashboardBanner | null>(null);
   const [imageUrl, setImageUrl] = useState('');
-  const [altText, setAltText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -27,11 +24,9 @@ const DashboardBannerSettings = () => {
       if (bannerData) {
         setBanner(bannerData);
         setImageUrl(bannerData.image_url);
-        setAltText(bannerData.alt_text);
       } else {
         // Set default values
         setImageUrl('/lovable-uploads/d3c33c19-f7cd-441e-884f-371ed6481179.png');
-        setAltText('Dashboard Banner');
       }
     } catch (error) {
       console.error('Error loading banner:', error);
@@ -46,18 +41,27 @@ const DashboardBannerSettings = () => {
   };
 
   const handleSave = async () => {
+    if (!imageUrl) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona una imagen para el banner.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       const result = await dashboardBannerService.updateBanner({
         image_url: imageUrl,
-        alt_text: altText
+        alt_text: 'Dashboard Banner'
       });
 
       if (result) {
         setBanner(result);
         toast({
           title: "Guardado",
-          description: "Configuración del banner actualizada correctamente.",
+          description: "Banner actualizado correctamente.",
         });
       } else {
         throw new Error('Failed to update banner');
@@ -66,12 +70,16 @@ const DashboardBannerSettings = () => {
       console.error('Error saving banner:', error);
       toast({
         title: "Error",
-        description: "No se pudo guardar la configuración del banner.",
+        description: "No se pudo guardar el banner.",
         variant: "destructive"
       });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleImageChange = (newImageUrl: string | null) => {
+    setImageUrl(newImageUrl || '');
   };
 
   if (isLoading) {
@@ -94,42 +102,16 @@ const DashboardBannerSettings = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="imageUrl">URL de la Imagen</Label>
-          <Input
-            id="imageUrl"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="URL de la imagen del banner"
+          <ImageUpload
+            currentImage={imageUrl}
+            onImageChange={handleImageChange}
+            disabled={isSaving}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="altText">Texto Alternativo</Label>
-          <Input
-            id="altText"
-            value={altText}
-            onChange={(e) => setAltText(e.target.value)}
-            placeholder="Descripción de la imagen"
-          />
-        </div>
-
-        {imageUrl && (
-          <div className="space-y-2">
-            <Label>Vista Previa</Label>
-            <div className="border rounded-lg overflow-hidden">
-              <EnhancedImageViewer
-                src={imageUrl}
-                alt={altText}
-                className="w-full h-48 object-cover"
-                editMode={false}
-              />
-            </div>
-          </div>
-        )}
-
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
+        <Button onClick={handleSave} disabled={isSaving || !imageUrl} className="w-full">
           <Save className="w-4 h-4 mr-2" />
-          {isSaving ? 'Guardando...' : 'Guardar Configuración'}
+          {isSaving ? 'Guardando...' : 'Guardar Banner'}
         </Button>
       </CardContent>
     </Card>
