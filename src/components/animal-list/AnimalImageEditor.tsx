@@ -91,13 +91,6 @@ const AnimalImageEditor: React.FC<AnimalImageEditorProps> = ({
           Rotación {currentTransform.rotation}°
         </div>
       )}
-
-      {savedTransform && !isEditMode && (
-        <div className="mb-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
-          Imagen personalizada: Zoom {Math.round(savedTransform.scale * 100)}%, 
-          Rotación {savedTransform.rotation}°
-        </div>
-      )}
     </div>
   );
 };
