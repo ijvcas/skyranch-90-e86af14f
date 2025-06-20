@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PermissionGuard from '@/components/PermissionGuard';
 import AnimalEditStates from '@/components/animal-edit/AnimalEditStates';
@@ -22,23 +23,45 @@ const AnimalEdit = () => {
   const handleCancel = () => navigate(`/animals/${id}`);
   const handleNavigateBack = () => navigate('/animals');
 
-  // Check if we need to show any special states (loading, error, permission)
-  const stateComponent = (
-    <AnimalEditStates
-      isLoading={isLoading}
-      error={error}
-      animal={animal}
-      permissionError={permissionError}
-      onNavigateBack={handleNavigateBack}
-    />
-  );
-
-  // If there's a state component to show, return it
-  if (stateComponent !== null) {
-    return stateComponent;
+  // Check for special states first
+  if (isLoading) {
+    return (
+      <div className="page-with-logo">
+        <div className="container mx-auto py-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <span className="ml-2">Cargando animal...</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Otherwise, show the normal edit form
+  if (error || !animal) {
+    return (
+      <AnimalEditStates
+        isLoading={false}
+        error={error}
+        animal={animal}
+        permissionError={permissionError}
+        onNavigateBack={handleNavigateBack}
+      />
+    );
+  }
+
+  if (permissionError) {
+    return (
+      <AnimalEditStates
+        isLoading={false}
+        error={null}
+        animal={animal}
+        permissionError={permissionError}
+        onNavigateBack={handleNavigateBack}
+      />
+    );
+  }
+
+  // Show the normal edit form when everything is okay
   return (
     <PermissionGuard permission="animals_edit">
       <AnimalEditFormContainer
