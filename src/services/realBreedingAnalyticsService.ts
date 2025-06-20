@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface RealBreedingAnalytics {
@@ -26,12 +25,18 @@ export interface RealBreedingAnalytics {
     worstMonths: string[];
     recommendations: string[];
   };
+  donkeySpecificData: {
+    totalDonkeyBreedings: number;
+    lunaBreedings: number;
+    lascauxBreedings: number;
+    frenchLineagePreservation: string;
+  };
 }
 
 export class RealBreedingAnalyticsService {
   
   static async getAnalytics(): Promise<RealBreedingAnalytics> {
-    console.log('📊 Getting real breeding analytics...');
+    console.log('📊 Getting real breeding analytics for donkeys...');
     
     try {
       // Get all breeding records
@@ -40,10 +45,11 @@ export class RealBreedingAnalyticsService {
         .select('*')
         .order('breeding_date', { ascending: false });
 
-      // Get all animals for name mapping
+      // Get all animals for name mapping, focusing on donkeys
       const { data: animals } = await supabase
         .from('animals')
-        .select('id, name');
+        .select('id, name, species')
+        .eq('species', 'equino');
 
       const animalNames = new Map(animals?.map(a => [a.id, a.name]) || []);
 
@@ -51,12 +57,19 @@ export class RealBreedingAnalyticsService {
         return this.getEmptyAnalytics();
       }
 
-      const totalBreedings = breedingRecords.length;
-      const confirmedPregnancies = breedingRecords.filter(r => r.pregnancy_confirmed).length;
+      // Filter breeding records for donkeys only
+      const donkeyBreedings = breedingRecords.filter(record => {
+        const motherName = animalNames.get(record.mother_id);
+        const fatherName = animalNames.get(record.father_id);
+        return motherName || fatherName; // At least one parent should be a registered donkey
+      });
+
+      const totalBreedings = donkeyBreedings.length;
+      const confirmedPregnancies = donkeyBreedings.filter(r => r.pregnancy_confirmed).length;
       const pregnancyRate = totalBreedings > 0 ? (confirmedPregnancies / totalBreedings) * 100 : 0;
 
-      // Calculate average gestation length
-      const completedBirths = breedingRecords.filter(r => r.actual_birth_date && r.breeding_date);
+      // Calculate average gestation length for donkeys (should be around 12-14 months)
+      const completedBirths = donkeyBreedings.filter(r => r.actual_birth_date && r.breeding_date);
       const gestationLengths = completedBirths.map(r => {
         const breedingDate = new Date(r.breeding_date);
         const birthDate = new Date(r.actual_birth_date!);
@@ -68,19 +81,19 @@ export class RealBreedingAnalyticsService {
 
       // Calculate upcoming births
       const now = new Date();
-      const upcomingBirths = breedingRecords.filter(r => {
+      const upcomingBirths = donkeyBreedings.filter(r => {
         if (!r.expected_due_date) return false;
         const dueDate = new Date(r.expected_due_date);
         const daysDiff = Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        return daysDiff >= 0 && daysDiff <= 30; // Within next 30 days
+        return daysDiff >= 0 && daysDiff <= 60; // Within next 60 days for donkeys
       }).length;
 
-      // Breedings by month
-      const breedingsByMonth = this.calculateBreedingsByMonth(breedingRecords);
+      // Breedings by month for donkeys
+      const breedingsByMonth = this.calculateBreedingsByMonth(donkeyBreedings);
 
       // Breedings by status
       const statusCounts = new Map<string, number>();
-      breedingRecords.forEach(r => {
+      donkeyBreedings.forEach(r => {
         statusCounts.set(r.status, (statusCounts.get(r.status) || 0) + 1);
       });
 
@@ -89,11 +102,14 @@ export class RealBreedingAnalyticsService {
         count
       }));
 
-      // Top performing females
-      const topPerformingFemales = this.calculateTopPerformingFemales(breedingRecords, animalNames);
+      // Top performing donkey females
+      const topPerformingFemales = this.calculateTopPerformingFemales(donkeyBreedings, animalNames);
 
       // Seasonal trends
       const seasonalTrends = this.analyzeSeasonalTrends(breedingsByMonth);
+
+      // Donkey-specific data
+      const donkeySpecificData = this.calculateDonkeySpecificData(donkeyBreedings, animalNames);
 
       return {
         totalBreedings,
@@ -103,12 +119,43 @@ export class RealBreedingAnalyticsService {
         breedingsByMonth,
         breedingsByStatus,
         topPerformingFemales,
-        seasonalTrends
+        seasonalTrends,
+        donkeySpecificData
       };
     } catch (error) {
       console.error('Error getting real breeding analytics:', error);
       return this.getEmptyAnalytics();
     }
+  }
+
+  private static calculateDonkeySpecificData(records: any[], animalNames: Map<string, string>) {
+    const lunaBreedings = records.filter(r => {
+      const motherName = animalNames.get(r.mother_id);
+      const fatherName = animalNames.get(r.father_id);
+      return (motherName && motherName.toUpperCase().includes('LUNA')) || 
+             (fatherName && fatherName.toUpperCase().includes('LUNA'));
+    }).length;
+
+    const lascauxBreedings = records.filter(r => {
+      const motherName = animalNames.get(r.mother_id);
+      const fatherName = animalNames.get(r.father_id);
+      return (motherName && motherName.toUpperCase().includes('LASCAUX')) || 
+             (fatherName && fatherName.toUpperCase().includes('LASCAUX'));
+    }).length;
+
+    let frenchLineagePreservation = 'No hay registros suficientes';
+    if (records.length > 0) {
+      frenchLineagePreservation = lunaBreedings + lascauxBreedings > 0 
+        ? 'Linaje francés DU VERN activo'
+        : 'Considerar apareamientos para preservar linaje francés';
+    }
+
+    return {
+      totalDonkeyBreedings: records.length,
+      lunaBreedings,
+      lascauxBreedings,
+      frenchLineagePreservation
+    };
   }
 
   private static getEmptyAnalytics(): RealBreedingAnalytics {
@@ -123,7 +170,13 @@ export class RealBreedingAnalyticsService {
       seasonalTrends: {
         bestMonths: [],
         worstMonths: [],
-        recommendations: ['Registra apareamientos para obtener análisis de tendencias']
+        recommendations: ['Registra apareamientos de burros para obtener análisis de tendencias']
+      },
+      donkeySpecificData: {
+        totalDonkeyBreedings: 0,
+        lunaBreedings: 0,
+        lascauxBreedings: 0,
+        frenchLineagePreservation: 'Registra apareamientos para análisis de linaje francés'
       }
     };
   }
@@ -204,29 +257,15 @@ export class RealBreedingAnalyticsService {
 
     const recommendations = [];
     if (bestMonths.length > 0) {
-      recommendations.push(`Mejores meses para apareamiento: ${bestMonths.join(', ')}`);
+      recommendations.push(`Mejores meses para apareamiento de burros: ${bestMonths.join(', ')}`);
     }
     if (worstMonths.length > 0) {
       recommendations.push(`Evitar apareamientos en: ${worstMonths.join(', ')}`);
     }
     
-    // Seasonal breeding recommendations
-    const springMonths = ['Mar', 'Abr', 'May'];
-    const fallMonths = ['Sep', 'Oct', 'Nov'];
-    
-    const springSuccess = monthlyData
-      .filter(m => springMonths.includes(m.month) && m.breedings > 0)
-      .reduce((sum, m) => sum + (m.pregnancies / m.breedings), 0) / springMonths.length;
-    
-    const fallSuccess = monthlyData
-      .filter(m => fallMonths.includes(m.month) && m.breedings > 0)
-      .reduce((sum, m) => sum + (m.pregnancies / m.breedings), 0) / fallMonths.length;
-
-    if (springSuccess > fallSuccess) {
-      recommendations.push('La primavera muestra mejores tasas de éxito');
-    } else if (fallSuccess > springSuccess) {
-      recommendations.push('El otoño muestra mejores tasas de éxito');
-    }
+    // Donkey-specific seasonal recommendations
+    recommendations.push('Para burros: la primavera (marzo-mayo) es óptima para apareamientos');
+    recommendations.push('Gestación de 12-14 meses: planificar nacimientos para primavera siguiente');
 
     return {
       bestMonths,

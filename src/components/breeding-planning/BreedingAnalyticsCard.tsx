@@ -29,12 +29,12 @@ const BreedingAnalyticsCard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Análisis de Reproducción
+            Análisis de Reproducción de Burros
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="text-gray-500">Cargando análisis real...</div>
+            <div className="text-gray-500">Cargando análisis de burros franceses...</div>
           </div>
         </CardContent>
       </Card>
@@ -47,7 +47,7 @@ const BreedingAnalyticsCard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Análisis de Reproducción
+            Análisis de Reproducción de Burros
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -64,7 +64,7 @@ const BreedingAnalyticsCard = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Análisis de Reproducción (Datos Reales)
+          Análisis de Reproducción de Burros Franceses
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -96,12 +96,44 @@ const BreedingAnalyticsCard = () => {
           </div>
         </div>
 
+        {/* Donkey-Specific Data */}
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium mb-2 flex items-center gap-2">
+            🐴 Datos Específicos de Burros Franceses
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-lg font-bold text-blue-600">
+                {analytics.donkeySpecificData.totalDonkeyBreedings}
+              </div>
+              <div className="text-xs text-gray-600">Apareamientos Burros</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-pink-600">
+                {analytics.donkeySpecificData.lunaBreedings}
+              </div>
+              <div className="text-xs text-gray-600">Apareamientos LUNA</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-green-600">
+                {analytics.donkeySpecificData.lascauxBreedings}
+              </div>
+              <div className="text-xs text-gray-600">Apareamientos LASCAUX</div>
+            </div>
+            <div className="col-span-2 md:col-span-1">
+              <div className="text-xs text-gray-600 mt-1">
+                {analytics.donkeySpecificData.frenchLineagePreservation}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Top Performing Females */}
         {analytics.topPerformingFemales.length > 0 && (
           <div>
             <h4 className="font-medium mb-2 flex items-center gap-2">
               <Heart className="w-4 h-4" />
-              Mejores Hembras Reproductoras
+              Mejores Hembras Reproductoras (Burras)
             </h4>
             <div className="space-y-2">
               {analytics.topPerformingFemales.slice(0, 3).map((female, index) => (
@@ -122,7 +154,7 @@ const BreedingAnalyticsCard = () => {
           <div>
             <h4 className="font-medium mb-2 flex items-center gap-2">
               <BarChart className="w-4 h-4" />
-              Estado de Reproducciones
+              Estado de Reproducciones de Burros
             </h4>
             <div className="grid grid-cols-2 gap-4 text-center">
               {analytics.breedingsByStatus.map((status, index) => (
@@ -137,12 +169,12 @@ const BreedingAnalyticsCard = () => {
           </div>
         )}
 
-        {/* Seasonal Trends */}
+        {/* Seasonal Trends for Donkeys */}
         {analytics.seasonalTrends.recommendations.length > 0 && (
           <div>
             <h4 className="font-medium mb-2 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              Tendencias Estacionales
+              Tendencias Estacionales para Burros
             </h4>
             <div className="space-y-1">
               {analytics.seasonalTrends.recommendations.map((recommendation, index) => (
@@ -157,7 +189,7 @@ const BreedingAnalyticsCard = () => {
         {/* Monthly Performance */}
         {analytics.breedingsByMonth.some(m => m.breedings > 0) && (
           <div>
-            <h4 className="font-medium mb-2">Rendimiento Mensual</h4>
+            <h4 className="font-medium mb-2">Rendimiento Mensual de Burros</h4>
             <div className="grid grid-cols-6 gap-1 text-xs">
               {analytics.breedingsByMonth
                 .filter(month => month.breedings > 0)
@@ -175,7 +207,8 @@ const BreedingAnalyticsCard = () => {
         {analytics.totalBreedings === 0 && (
           <div className="text-center py-4 text-gray-500">
             <Heart className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-            <p>Registra apareamientos para ver análisis detallados</p>
+            <p>Registra apareamientos de burros para ver análisis detallados</p>
+            <p className="text-sm mt-1">El sistema está optimizado para analizar el linaje francés de LUNA y LASCAUX DU VERN</p>
           </div>
         )}
       </CardContent>
