@@ -1,27 +1,70 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Heart, Calendar, Award } from 'lucide-react';
-import { BreedingAnalytics } from '@/services/breedingAnalyticsService';
+import { TrendingUp, Heart, Calendar, Award, BarChart } from 'lucide-react';
+import { RealBreedingAnalyticsService, type RealBreedingAnalytics } from '@/services/realBreedingAnalyticsService';
 
-interface BreedingAnalyticsCardProps {
-  analytics: BreedingAnalytics;
-}
+const BreedingAnalyticsCard = () => {
+  const [analytics, setAnalytics] = useState<RealBreedingAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const BreedingAnalyticsCard: React.FC<BreedingAnalyticsCardProps> = ({ analytics }) => {
-  const formatNumber = (value: number | string): string => {
-    if (typeof value === 'number') {
-      return value.toFixed(1);
-    }
-    return value;
-  };
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const data = await RealBreedingAnalyticsService.getAnalytics();
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Error loading real breeding analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAnalytics();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Análisis de Reproducción
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="text-gray-500">Cargando análisis real...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Análisis de Reproducción
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="text-gray-500">No se pudieron cargar los datos</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Análisis de Reproducción
+          Análisis de Reproducción (Datos Reales)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -29,7 +72,7 @@ const BreedingAnalyticsCard: React.FC<BreedingAnalyticsCardProps> = ({ analytics
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
-              {formatNumber(analytics.pregnancyRate)}%
+              {analytics.pregnancyRate}%
             </div>
             <div className="text-sm text-gray-600">Tasa de Embarazo</div>
           </div>
@@ -41,7 +84,7 @@ const BreedingAnalyticsCard: React.FC<BreedingAnalyticsCardProps> = ({ analytics
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
-              {formatNumber(analytics.avgGestationLength)}
+              {analytics.avgGestationLength || 'N/A'}
             </div>
             <div className="text-sm text-gray-600">Días Gestación</div>
           </div>
@@ -54,38 +97,87 @@ const BreedingAnalyticsCard: React.FC<BreedingAnalyticsCardProps> = ({ analytics
         </div>
 
         {/* Top Performing Females */}
-        <div>
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            <Heart className="w-4 h-4" />
-            Mejores Hembras
-          </h4>
-          <div className="space-y-2">
-            {analytics.topPerformingFemales.slice(0, 3).map((female, index) => (
-              <div key={female.animalId} className="flex justify-between items-center text-sm">
-                <span className="truncate">{female.animalName}</span>
-                <span className="text-pink-600 font-medium">{female.pregnancies}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Breeding Status Chart */}
-        <div>
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Estado de Reproducciones
-          </h4>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            {analytics.breedingsByStatus.map((status, index) => (
-              <div key={index}>
-                <div className="text-lg font-bold text-blue-600">
-                  {status.count}
+        {analytics.topPerformingFemales.length > 0 && (
+          <div>
+            <h4 className="font-medium mb-2 flex items-center gap-2">
+              <Heart className="w-4 h-4" />
+              Mejores Hembras Reproductoras
+            </h4>
+            <div className="space-y-2">
+              {analytics.topPerformingFemales.slice(0, 3).map((female, index) => (
+                <div key={female.animalId} className="flex justify-between items-center text-sm">
+                  <span className="truncate">{female.animalName}</span>
+                  <div className="flex gap-2">
+                    <span className="text-pink-600 font-medium">{female.pregnancies} embarazos</span>
+                    <span className="text-green-600">({female.successRate}%)</span>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-600">{status.status}</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Breeding Status Distribution */}
+        {analytics.breedingsByStatus.length > 0 && (
+          <div>
+            <h4 className="font-medium mb-2 flex items-center gap-2">
+              <BarChart className="w-4 h-4" />
+              Estado de Reproducciones
+            </h4>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              {analytics.breedingsByStatus.map((status, index) => (
+                <div key={index}>
+                  <div className="text-lg font-bold text-blue-600">
+                    {status.count}
+                  </div>
+                  <div className="text-xs text-gray-600">{status.status}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Seasonal Trends */}
+        {analytics.seasonalTrends.recommendations.length > 0 && (
+          <div>
+            <h4 className="font-medium mb-2 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Tendencias Estacionales
+            </h4>
+            <div className="space-y-1">
+              {analytics.seasonalTrends.recommendations.map((recommendation, index) => (
+                <div key={index} className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                  {recommendation}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Monthly Performance */}
+        {analytics.breedingsByMonth.some(m => m.breedings > 0) && (
+          <div>
+            <h4 className="font-medium mb-2">Rendimiento Mensual</h4>
+            <div className="grid grid-cols-6 gap-1 text-xs">
+              {analytics.breedingsByMonth
+                .filter(month => month.breedings > 0)
+                .slice(0, 6)
+                .map((month, index) => (
+                <div key={index} className="text-center p-1 bg-blue-50 rounded">
+                  <div className="font-medium">{month.month}</div>
+                  <div className="text-gray-600">{month.pregnancies}/{month.breedings}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {analytics.totalBreedings === 0 && (
+          <div className="text-center py-4 text-gray-500">
+            <Heart className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+            <p>Registra apareamientos para ver análisis detallados</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
