@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Heart, Calendar, Award, BarChart } from 'lucide-react';
@@ -14,7 +13,7 @@ const BreedingAnalyticsCard = () => {
         const data = await RealBreedingAnalyticsService.getAnalytics();
         setAnalytics(data);
       } catch (error) {
-        console.error('Error loading real breeding analytics:', error);
+        console.error('Error loading breeding analytics:', error);
       } finally {
         setLoading(false);
       }
@@ -29,12 +28,12 @@ const BreedingAnalyticsCard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Análisis de Reproducción de Burros
+            Análisis Universal de Reproducción
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="text-gray-500">Cargando análisis de burros franceses...</div>
+            <div className="text-gray-500">Cargando análisis para todas las especies...</div>
           </div>
         </CardContent>
       </Card>
@@ -47,7 +46,7 @@ const BreedingAnalyticsCard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Análisis de Reproducción de Burros
+            Análisis Universal de Reproducción
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -64,7 +63,7 @@ const BreedingAnalyticsCard = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Análisis de Reproducción de Burros Franceses
+          Análisis Universal de Reproducción Multi-Especies
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -96,17 +95,17 @@ const BreedingAnalyticsCard = () => {
           </div>
         </div>
 
-        {/* Donkey-Specific Data */}
+        {/* Multi-Species Data */}
         <div className="p-4 bg-blue-50 rounded-lg">
           <h4 className="font-medium mb-2 flex items-center gap-2">
-            🐴 Datos Específicos de Burros Franceses
+            🐾 Gestión Multi-Especies
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-lg font-bold text-blue-600">
                 {analytics.donkeySpecificData.totalDonkeyBreedings}
               </div>
-              <div className="text-xs text-gray-600">Apareamientos Burros</div>
+              <div className="text-xs text-gray-600">Total Apareamientos</div>
             </div>
             <div>
               <div className="text-lg font-bold text-pink-600">
@@ -122,9 +121,12 @@ const BreedingAnalyticsCard = () => {
             </div>
             <div className="col-span-2 md:col-span-1">
               <div className="text-xs text-gray-600 mt-1">
-                {analytics.donkeySpecificData.frenchLineagePreservation}
+                Razas Especiales Activas
               </div>
             </div>
+          </div>
+          <div className="mt-3 p-2 bg-white rounded text-sm text-gray-700">
+            {analytics.donkeySpecificData.frenchLineagePreservation}
           </div>
         </div>
 
@@ -207,8 +209,10 @@ const BreedingAnalyticsCard = () => {
         {analytics.totalBreedings === 0 && (
           <div className="text-center py-4 text-gray-500">
             <Heart className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-            <p>Registra apareamientos de burros para ver análisis detallados</p>
-            <p className="text-sm mt-1">El sistema está optimizado para analizar el linaje francés de LUNA y LASCAUX DU VERN</p>
+            <p>Registra apareamientos de cualquier especie para ver análisis detallados</p>
+            <p className="text-sm mt-1">
+              Sistema optimizado para Baudet de Poitou 🐴, Nez Noir du Valais 🐑, bovinos 🐄, caprinos 🐐 y más
+            </p>
           </div>
         )}
       </CardContent>
