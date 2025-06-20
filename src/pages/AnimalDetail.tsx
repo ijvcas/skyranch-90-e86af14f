@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Edit, Trash2, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -23,16 +22,6 @@ const AnimalDetail = () => {
     queryFn: () => getAnimal(id!),
     enabled: !!id,
   });
-
-  // Filter out ALL image transform related data from notes
-  const getFilteredNotes = (notes: string | null) => {
-    if (!notes) return '';
-    return notes
-      .replace(/\[Image Transform Data: .*?\]\n?/g, '')
-      .replace(/\[Image Transform Applied: .*?\]\n?/g, '')
-      .replace(/Image Transform Applied: .*?\n?/g, '')
-      .trim();
-  };
 
   if (!id) {
     return (
@@ -64,8 +53,6 @@ const AnimalDetail = () => {
       </div>
     );
   }
-
-  const filteredNotes = getFilteredNotes(animal.notes);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20 md:pb-4">
@@ -122,20 +109,8 @@ const AnimalDetail = () => {
               </TabsList>
               
               <TabsContent value="general" className="space-y-6">
-                {/* Basic Information */}
+                {/* Basic Information - Notes are included here */}
                 <AnimalBasicInfo animal={animal} />
-
-                {/* Notes Card - Only show if there are filtered notes */}
-                {filteredNotes && (
-                  <Card className="shadow-lg">
-                    <CardHeader>
-                      <CardTitle>Notas</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700 whitespace-pre-wrap">{filteredNotes}</p>
-                    </CardContent>
-                  </Card>
-                )}
               </TabsContent>
 
               <TabsContent value="health">

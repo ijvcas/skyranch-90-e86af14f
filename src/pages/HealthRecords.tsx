@@ -136,13 +136,17 @@ const HealthRecords: React.FC = () => {
         </Card>
       </div>
 
-      {/* Health Records List */}
+      {/* Enhanced Health Records List with Search */}
       <Card>
         <CardHeader>
           <CardTitle>Todos los Registros de Salud</CardTitle>
         </CardHeader>
         <CardContent>
-          <HealthRecordsListImproved records={allHealthRecords} showAnimalName={true} />
+          <HealthRecordsListImproved 
+            records={allHealthRecords} 
+            showAnimalName={true} 
+            showSearch={true} 
+          />
         </CardContent>
       </Card>
     </div>

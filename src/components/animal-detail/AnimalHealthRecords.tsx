@@ -141,12 +141,15 @@ const AnimalHealthRecords: React.FC<AnimalHealthRecordsProps> = ({ animalId, ani
           </div>
         )}
 
-        {/* Health Records List */}
+        {/* Enhanced Health Records List */}
         <div>
           <h4 className="font-medium text-gray-900 mb-3">
             Historial de Eventos de Salud
           </h4>
-          <HealthRecordsListImproved records={healthRecords} />
+          <HealthRecordsListImproved 
+            records={healthRecords} 
+            showSearch={false}
+          />
         </div>
       </CardContent>
     </Card>

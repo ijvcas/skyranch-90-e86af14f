@@ -10,8 +10,8 @@ interface NotesFormProps {
 }
 
 const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps) => {
-  // Filter out ALL image transform related data from notes when editing
-  const getFilteredNotes = (notes: string | null) => {
+  // Simple function to filter out image transform data for display only
+  const getDisplayNotes = (notes: string | null) => {
     if (!notes) return '';
     return notes
       .replace(/\[Image Transform Data: .*?\]\n?/g, '')
@@ -21,35 +21,16 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
       .trim();
   };
 
-  // When saving, preserve ALL the image transform data but clean user input
+  // Simplified change handler that doesn't interfere with typing
   const handleNotesChange = (newNotes: string) => {
-    const originalNotes = formData.notes || '';
-    
-    // Extract all transform-related data patterns
-    const transformDataMatches = originalNotes.match(/\[Image Transform Data: .*?\]/g) || [];
-    const transformAppliedMatches = originalNotes.match(/\[Image Transform Applied: .*?\]/g) || [];
-    const simpleTransformMatches = originalNotes.match(/Image Transform Applied: .*?\n?/g) || [];
-    const jsonTransformMatches = originalNotes.match(/\[Image Transform Data: \{.*?\}\]/g) || [];
-    
-    let finalNotes = newNotes.trim();
-    
-    // Preserve all transform data
-    const allTransformData = [
-      ...transformDataMatches,
-      ...transformAppliedMatches,
-      ...simpleTransformMatches,
-      ...jsonTransformMatches
-    ];
-    
-    if (allTransformData.length > 0) {
-      const transformString = allTransformData.join('\n');
-      finalNotes = finalNotes ? `${finalNotes}\n${transformString}` : transformString;
-    }
-    
-    onInputChange('notes', finalNotes);
+    // During editing, just pass through the raw input
+    // Image transform data preservation will be handled on save
+    onInputChange('notes', newNotes);
   };
 
-  const filteredNotes = getFilteredNotes(formData.notes);
+  // Use raw notes for editing to avoid input interference
+  const notesValue = formData.notes || '';
+  const displayValue = getDisplayNotes(notesValue);
 
   return (
     <Card className="shadow-lg">
@@ -58,19 +39,12 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
       </CardHeader>
       <CardContent>
         <Textarea
-          value={filteredNotes}
+          value={displayValue}
           onChange={(e) => handleNotesChange(e.target.value)}
           placeholder="Cualquier información adicional sobre el animal..."
           rows={6}
           disabled={disabled}
           className="resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          autoComplete="off"
-          data-lpignore="true"
-          data-1p-ignore="true"
-          data-bitwarden-ignore="true"
-          data-form-type="other"
-          spellCheck="false"
-          name="animal-notes-field"
         />
         <p className="text-sm text-gray-500 mt-2">
           Escribe cualquier información adicional relevante sobre el animal.
