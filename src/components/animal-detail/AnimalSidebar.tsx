@@ -1,14 +1,19 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
+import { Edit, Activity, AlertTriangle, Calendar } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useQuery } from '@tanstack/react-query';
+import { getHealthRecords } from '@/services/healthRecordService';
 import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
 import ImageEditorDialog from '@/components/image-editor/ImageEditorDialog';
 
 interface AnimalSidebarProps {
   animal: {
+    id: string;
     image?: string;
     name: string;
     tag: string;
@@ -20,6 +25,11 @@ interface AnimalSidebarProps {
 }
 
 const AnimalSidebar: React.FC<AnimalSidebarProps> = ({ animal }) => {
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ['health-records', animal.id],
+    queryFn: () => getHealthRecords(animal.id)
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'healthy':
@@ -86,6 +96,23 @@ const AnimalSidebar: React.FC<AnimalSidebarProps> = ({ animal }) => {
     }
   };
 
+  // Get upcoming health events
+  const upcomingEvents = healthRecords.filter(record => {
+    if (!record.nextDueDate) return false;
+    const dueDate = new Date(record.nextDueDate);
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    return dueDate <= thirtyDaysFromNow && dueDate >= new Date();
+  });
+
+  // Get recent records (last 30 days)
+  const recentRecords = healthRecords.filter(record => {
+    const recordDate = new Date(record.dateAdministered);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return recordDate >= thirtyDaysAgo;
+  });
+
   return (
     <div className="space-y-6">
       {/* Enhanced Image Card */}
@@ -151,6 +178,62 @@ const AnimalSidebar: React.FC<AnimalSidebarProps> = ({ animal }) => {
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Health Summary Card */}
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Activity className="w-5 h-5 text-green-500" />
+            <span>Resumen de Salud</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Registros:</span>
+              <span className="font-medium">{healthRecords.length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Recientes (30d):</span>
+              <span className="font-medium">{recentRecords.length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Próximos:</span>
+              <span className="font-medium flex items-center">
+                {upcomingEvents.length}
+                {upcomingEvents.length > 0 && (
+                  <AlertTriangle className="w-4 h-4 ml-1 text-orange-500" />
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Upcoming Events Alert */}
+          {upcomingEvents.length > 0 && (
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <h5 className="font-medium text-orange-800 text-sm mb-2">
+                Próximos Vencimientos:
+              </h5>
+              {upcomingEvents.slice(0, 2).map(record => (
+                <div key={record.id} className="text-xs text-orange-700 mb-1">
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="w-3 h-3" />
+                    <span className="truncate">{record.title}</span>
+                  </div>
+                  <div className="text-orange-600">
+                    {format(new Date(record.nextDueDate!), 'dd/MM/yyyy', { locale: es })}
+                  </div>
+                </div>
+              ))}
+              {upcomingEvents.length > 2 && (
+                <div className="text-xs text-orange-600 mt-1">
+                  +{upcomingEvents.length - 2} más...
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

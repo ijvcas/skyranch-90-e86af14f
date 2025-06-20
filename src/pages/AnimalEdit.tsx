@@ -10,6 +10,7 @@ import BasicInformationForm from '@/components/animal-edit/BasicInformationForm'
 import HealthStatusForm from '@/components/animal-edit/HealthStatusForm';
 import PedigreeForm from '@/components/animal-edit/PedigreeForm';
 import PhotoUploadForm from '@/components/animal-edit/PhotoUploadForm';
+import NotesForm from '@/components/animal-edit/NotesForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -240,6 +241,11 @@ const AnimalEdit = () => {
             <PhotoUploadForm 
               formData={formData} 
               onImageChange={handleImageChange} 
+            />
+
+            <NotesForm 
+              formData={formData} 
+              onInputChange={handleInputChange} 
             />
 
             <Card className="shadow-lg">

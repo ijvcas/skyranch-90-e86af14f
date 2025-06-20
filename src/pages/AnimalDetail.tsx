@@ -3,13 +3,15 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Edit, Trash2, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getAnimal } from '@/services/animalService';
 import AnimalDeleteDialog from '@/components/AnimalDeleteDialog';
 import AnimalPedigreeChart from '@/components/AnimalPedigreeChart';
 import AnimalBasicInfo from '@/components/animal-detail/AnimalBasicInfo';
 import AnimalSidebar from '@/components/animal-detail/AnimalSidebar';
+import AnimalHealthRecords from '@/components/animal-detail/AnimalHealthRecords';
 
 const AnimalDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -109,23 +111,44 @@ const AnimalDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Information */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Basic Information */}
-            <AnimalBasicInfo animal={animal} />
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="general">Información General</TabsTrigger>
+                <TabsTrigger value="health">
+                  <Activity className="w-4 h-4 mr-2" />
+                  Salud
+                </TabsTrigger>
+                <TabsTrigger value="pedigree">Pedigrí</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="general" className="space-y-6">
+                {/* Basic Information */}
+                <AnimalBasicInfo animal={animal} />
 
-            {/* Notes Card - Only show if there are filtered notes */}
-            {filteredNotes && (
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle>Notas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 whitespace-pre-wrap">{filteredNotes}</p>
-                </CardContent>
-              </Card>
-            )}
+                {/* Notes Card - Only show if there are filtered notes */}
+                {filteredNotes && (
+                  <Card className="shadow-lg">
+                    <CardHeader>
+                      <CardTitle>Notas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 whitespace-pre-wrap">{filteredNotes}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
 
-            {/* Pedigree Chart */}
-            <AnimalPedigreeChart animal={animal} />
+              <TabsContent value="health">
+                <AnimalHealthRecords 
+                  animalId={animal.id} 
+                  animalName={animal.name} 
+                />
+              </TabsContent>
+
+              <TabsContent value="pedigree">
+                <AnimalPedigreeChart animal={animal} />
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Sidebar */}
