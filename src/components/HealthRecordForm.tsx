@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { createHealthRecord, updateHealthRecord } from '@/services/healthRecordService';
+import { healthRecordService } from '@/services/healthRecordService';
 import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
 import { useHealthRecordNotifications } from '@/hooks/useHealthRecordNotifications';
@@ -51,7 +51,7 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
     veterinarian: record?.veterinarian || '',
     medication: record?.medication || '',
     dosage: record?.dosage || '',
-    cost: record?.cost || '',
+    cost: record?.cost?.toString() || '',
     dateAdministered: record?.dateAdministered || new Date().toISOString().split('T')[0],
     nextDueDate: record?.nextDueDate || '',
     notes: record?.notes || ''
@@ -63,7 +63,7 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
   });
 
   const createMutation = useMutation({
-    mutationFn: createHealthRecord,
+    mutationFn: healthRecordService.create,
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['health-records'] });
       queryClient.invalidateQueries({ queryKey: ['all-health-records'] });
@@ -94,7 +94,7 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: any }) => updateHealthRecord(id, data),
+    mutationFn: ({ id, data }: { id: string, data: any }) => healthRecordService.update(id, data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['health-records'] });
       queryClient.invalidateQueries({ queryKey: ['all-health-records'] });
@@ -140,7 +140,7 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
 
     const submitData = {
       ...formData,
-      cost: formData.cost ? parseFloat(formData.cost) : null,
+      cost: formData.cost ? parseFloat(formData.cost.toString()) : null,
       nextDueDate: formData.nextDueDate || null
     };
 
@@ -166,18 +166,24 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
       <BasicInfoSection 
         formData={formData}
         onInputChange={handleInputChange}
-        animals={animals}
         disabled={isLoading}
       />
       
       <MedicalDetailsSection 
-        formData={formData}
+        formData={{
+          veterinarian: formData.veterinarian,
+          medication: formData.medication,
+          dosage: formData.dosage,
+          cost: formData.cost,
+          nextDueDate: formData.nextDueDate,
+          notes: formData.notes
+        }}
         onInputChange={handleInputChange}
         disabled={isLoading}
       />
       
       <FormActions 
-        isLoading={isLoading}
+        isSubmitting={isLoading}
         isEdit={!!record}
         onCancel={handleCancel}
       />
