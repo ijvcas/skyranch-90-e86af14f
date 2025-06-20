@@ -22,6 +22,12 @@ const AnimalDetail = () => {
     enabled: !!id,
   });
 
+  // Filter out image transform data from notes
+  const getFilteredNotes = (notes: string | null) => {
+    if (!notes) return '';
+    return notes.replace(/\[Image Transform Data: .*?\]\n?/g, '').trim();
+  };
+
   if (!id) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
@@ -52,6 +58,8 @@ const AnimalDetail = () => {
       </div>
     );
   }
+
+  const filteredNotes = getFilteredNotes(animal.notes);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 pb-20 md:pb-4">
@@ -100,14 +108,14 @@ const AnimalDetail = () => {
             {/* Basic Information */}
             <AnimalBasicInfo animal={animal} />
 
-            {/* Notes Card */}
-            {animal.notes && (
+            {/* Notes Card - Only show if there are filtered notes */}
+            {filteredNotes && (
               <Card className="shadow-lg">
                 <CardHeader>
                   <CardTitle>Notas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 whitespace-pre-wrap">{animal.notes}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{filteredNotes}</p>
                 </CardContent>
               </Card>
             )}

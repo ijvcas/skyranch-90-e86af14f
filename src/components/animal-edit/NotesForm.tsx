@@ -10,6 +10,27 @@ interface NotesFormProps {
 }
 
 const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps) => {
+  // Filter out image transform data from notes when editing
+  const getFilteredNotes = (notes: string | null) => {
+    if (!notes) return '';
+    return notes.replace(/\[Image Transform Data: .*?\]\n?/g, '').trim();
+  };
+
+  // When saving, preserve the image transform data
+  const handleNotesChange = (newNotes: string) => {
+    const originalNotes = formData.notes || '';
+    const transformMatch = originalNotes.match(/\[Image Transform Data: .*?\]/);
+    
+    let finalNotes = newNotes;
+    if (transformMatch && transformMatch[0]) {
+      finalNotes = newNotes ? `${newNotes}\n${transformMatch[0]}` : transformMatch[0];
+    }
+    
+    onInputChange('notes', finalNotes);
+  };
+
+  const filteredNotes = getFilteredNotes(formData.notes);
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -17,8 +38,8 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
       </CardHeader>
       <CardContent>
         <Textarea
-          value={formData.notes || ''}
-          onChange={(e) => onInputChange('notes', e.target.value)}
+          value={filteredNotes}
+          onChange={(e) => handleNotesChange(e.target.value)}
           placeholder="Cualquier información adicional sobre el animal..."
           rows={4}
           disabled={disabled}
