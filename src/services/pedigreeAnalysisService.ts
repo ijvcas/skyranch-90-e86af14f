@@ -1,7 +1,7 @@
 
 // Re-export everything from the new modular structure for backward compatibility
 export {
-  PedigreeTreeBuilder as PedigreeAnalysisService,
+  PedigreeTreeBuilder,
   InbreedingCalculator,
   GeneticDiversityCalculator,
   BreedingRecommendationGenerator
@@ -12,6 +12,14 @@ export type {
   InbreedingAnalysis,
   GeneticDiversityScore,
   BreedingRecommendation
+} from './pedigree';
+
+// Import the classes for the main service
+import {
+  PedigreeTreeBuilder,
+  InbreedingCalculator,
+  GeneticDiversityCalculator,
+  BreedingRecommendationGenerator
 } from './pedigree';
 
 // Main service class that combines all functionality

@@ -35,3 +35,42 @@ export const createUpdateObject = (animal: Omit<Animal, 'id'>) => {
     image_url: animal.image,
   };
 };
+
+// Helper function to map database format to Animal interface
+export const fromDatabase = (dbAnimal: any): Animal => {
+  return {
+    id: dbAnimal.id,
+    name: dbAnimal.name,
+    tag: dbAnimal.tag,
+    species: dbAnimal.species,
+    breed: dbAnimal.breed || '',
+    birthDate: dbAnimal.birth_date,
+    gender: dbAnimal.gender,
+    weight: dbAnimal.weight ? dbAnimal.weight.toString() : '',
+    color: dbAnimal.color || '',
+    healthStatus: dbAnimal.health_status,
+    notes: dbAnimal.notes || '',
+    image: dbAnimal.image_url || '',
+    fatherId: dbAnimal.father_id || '',
+    motherId: dbAnimal.mother_id || '',
+    paternalGrandfatherId: dbAnimal.paternal_grandfather_id || '',
+    paternalGrandmotherId: dbAnimal.paternal_grandmother_id || '',
+    maternalGrandfatherId: dbAnimal.maternal_grandfather_id || '',
+    maternalGrandmotherId: dbAnimal.maternal_grandmother_id || '',
+    paternalGreatGrandfatherPaternalId: dbAnimal.paternal_great_grandfather_paternal_id || '',
+    paternalGreatGrandmotherPaternalId: dbAnimal.paternal_great_grandmother_paternal_id || '',
+    paternalGreatGrandfatherMaternalId: dbAnimal.paternal_great_grandfather_maternal_id || '',
+    paternalGreatGrandmotherMaternalId: dbAnimal.paternal_great_grandmother_maternal_id || '',
+    maternalGreatGrandfatherPaternalId: dbAnimal.maternal_great_grandfather_paternal_id || '',
+    maternalGreatGrandmotherPaternalId: dbAnimal.maternal_great_grandmother_paternal_id || '',
+    maternalGreatGrandfatherMaternalId: dbAnimal.maternal_great_grandfather_maternal_id || '',
+    maternalGreatGrandmotherMaternalId: dbAnimal.maternal_great_grandmother_maternal_id || ''
+  };
+};
+
+// Export as default object for backward compatibility
+export const animalDatabaseMapper = {
+  mapAnimalToDatabase,
+  createUpdateObject,
+  fromDatabase
+};
