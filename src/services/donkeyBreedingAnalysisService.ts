@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { animalDatabaseMapper } from '@/services/utils/animalDatabaseMapper';
 import type { Animal } from '@/stores/animalStore';
 
 export interface DonkeyPedigreeAnalysis {
@@ -47,8 +47,11 @@ export class DonkeyBreedingAnalysisService {
         return { males: [], females: [] };
       }
 
-      const males = animals.filter(a => a.gender === 'male' || a.gender === 'macho');
-      const females = animals.filter(a => a.gender === 'female' || a.gender === 'hembra');
+      // Convert database format to Animal format
+      const convertedAnimals = animals.map(animal => animalDatabaseMapper.fromDatabase(animal));
+
+      const males = convertedAnimals.filter(a => a.gender === 'male' || a.gender === 'macho');
+      const females = convertedAnimals.filter(a => a.gender === 'female' || a.gender === 'hembra');
 
       console.log(`Found ${males.length} male donkeys and ${females.length} female donkeys`);
       return { males, females };
@@ -106,22 +109,22 @@ export class DonkeyBreedingAnalysisService {
   private static extractFrenchLineage(animal: Animal): string[] {
     const lineage: string[] = [];
     
-    // Extract all pedigree information
+    // Extract all pedigree information using the correct Animal properties
     const pedigreeFields = [
-      animal.father_id,
-      animal.mother_id,
-      animal.paternal_grandfather_id,
-      animal.paternal_grandmother_id,
-      animal.maternal_grandfather_id,
-      animal.maternal_grandmother_id,
-      animal.paternal_great_grandfather_paternal_id,
-      animal.paternal_great_grandmother_paternal_id,
-      animal.paternal_great_grandfather_maternal_id,
-      animal.paternal_great_grandmother_maternal_id,
-      animal.maternal_great_grandfather_paternal_id,
-      animal.maternal_great_grandmother_paternal_id,
-      animal.maternal_great_grandfather_maternal_id,
-      animal.maternal_great_grandmother_maternal_id
+      animal.fatherId,
+      animal.motherId,
+      animal.paternalGrandfatherId,
+      animal.paternalGrandmotherId,
+      animal.maternalGrandfatherId,
+      animal.maternalGrandmotherId,
+      animal.paternalGreatGrandfatherPaternalId,
+      animal.paternalGreatGrandmotherPaternalId,
+      animal.paternalGreatGrandfatherMaternalId,
+      animal.paternalGreatGrandmotherMaternalId,
+      animal.maternalGreatGrandfatherPaternalId,
+      animal.maternalGreatGrandmotherPaternalId,
+      animal.maternalGreatGrandfatherMaternalId,
+      animal.maternalGreatGrandmotherMaternalId
     ];
 
     pedigreeFields.forEach(field => {
