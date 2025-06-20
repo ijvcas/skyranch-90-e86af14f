@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import { useImageTransform } from '@/components/animal-list/hooks/useImageTransform';
+import { useTimezone } from '@/hooks/useTimezone';
 import AnimalImageEditor from '@/components/animal-list/AnimalImageEditor';
 import type { Animal } from '@/stores/animalStore';
 
@@ -12,6 +13,7 @@ interface AnimalBasicInfoProps {
 }
 
 const AnimalBasicInfo: React.FC<AnimalBasicInfoProps> = ({ animal }) => {
+  const { formatDateInput } = useTimezone();
   const {
     isEditMode,
     currentTransform,
@@ -35,6 +37,12 @@ const AnimalBasicInfo: React.FC<AnimalBasicInfoProps> = ({ animal }) => {
   };
 
   const filteredNotes = getFilteredNotes(animal.notes);
+
+  // Format the birth date using the timezone settings
+  const formatBirthDate = (birthDate: string) => {
+    if (!birthDate) return 'No especificada';
+    return formatDateInput(birthDate);
+  };
 
   return (
     <Card className="shadow-lg">
@@ -75,7 +83,7 @@ const AnimalBasicInfo: React.FC<AnimalBasicInfoProps> = ({ animal }) => {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-600">Fecha de Nacimiento</label>
-            <p className="text-gray-900">{animal.birthDate}</p>
+            <p className="text-gray-900">{formatBirthDate(animal.birthDate)}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-600">Peso</label>
