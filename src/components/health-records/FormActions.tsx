@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 interface FormActionsProps {
   onCancel: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit?: (e: React.FormEvent) => void;
   isSubmitting: boolean;
   submitText?: string;
 }
@@ -13,7 +13,7 @@ const FormActions: React.FC<FormActionsProps> = ({
   onCancel,
   onSubmit,
   isSubmitting,
-  submitText = 'Actualizar Registro'
+  submitText = 'Guardar Registro'
 }) => {
   return (
     <div className="flex justify-end space-x-2">
@@ -21,7 +21,7 @@ const FormActions: React.FC<FormActionsProps> = ({
         Cancelar
       </Button>
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Actualizando...' : submitText}
+        {isSubmitting ? 'Guardando...' : submitText}
       </Button>
     </div>
   );
