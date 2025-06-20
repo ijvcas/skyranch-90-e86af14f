@@ -2,14 +2,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Edit, Activity, AlertTriangle, Calendar } from 'lucide-react';
+import { Activity, AlertTriangle, Calendar } from 'lucide-react';
 import { format, differenceInYears, differenceInMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import { getHealthRecords } from '@/services/healthRecordService';
-import EnhancedImageViewer from '@/components/image-editor/EnhancedImageViewer';
-import ImageEditorDialog from '@/components/image-editor/ImageEditorDialog';
 
 interface AnimalSidebarProps {
   animal: {
@@ -115,35 +112,6 @@ const AnimalSidebar: React.FC<AnimalSidebarProps> = ({ animal }) => {
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Image Card */}
-      {animal.image && (
-        <Card className="shadow-lg">
-          <CardContent className="p-0">
-            <div className="relative">
-              <EnhancedImageViewer
-                src={animal.image}
-                alt={animal.name}
-                className="w-full h-64 rounded-t-lg"
-              />
-              <div className="absolute top-2 left-2">
-                <ImageEditorDialog
-                  src={animal.image}
-                  alt={`Foto de ${animal.name}`}
-                  trigger={
-                    <Button size="sm" variant="outline" className="bg-black/50 text-white hover:bg-black/70 border-white/20">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  }
-                />
-              </div>
-            </div>
-            <div className="p-4">
-              <p className="text-sm text-gray-600 text-center">Foto de {animal.name}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Quick Stats Card */}
       <Card className="shadow-lg">
         <CardHeader>

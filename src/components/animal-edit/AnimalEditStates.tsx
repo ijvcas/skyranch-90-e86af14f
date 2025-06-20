@@ -19,6 +19,7 @@ const AnimalEditStates: React.FC<AnimalEditStatesProps> = ({
   permissionError,
   onNavigateBack
 }) => {
+  // Only return JSX if there's actually a state to show
   if (isLoading) {
     return (
       <div className="page-with-logo">
@@ -72,6 +73,7 @@ const AnimalEditStates: React.FC<AnimalEditStatesProps> = ({
     );
   }
 
+  // Return null when everything is normal - no special state to show
   return null;
 };
 

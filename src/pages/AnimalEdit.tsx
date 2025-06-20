@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PermissionGuard from '@/components/PermissionGuard';
 import AnimalEditStates from '@/components/animal-edit/AnimalEditStates';
@@ -23,7 +22,7 @@ const AnimalEdit = () => {
   const handleCancel = () => navigate(`/animals/${id}`);
   const handleNavigateBack = () => navigate('/animals');
 
-  // Handle loading, error, and permission states
+  // Check if we need to show any special states (loading, error, permission)
   const stateComponent = (
     <AnimalEditStates
       isLoading={isLoading}
@@ -34,10 +33,12 @@ const AnimalEdit = () => {
     />
   );
 
-  if (stateComponent) {
+  // If there's a state component to show, return it
+  if (stateComponent !== null) {
     return stateComponent;
   }
 
+  // Otherwise, show the normal edit form
   return (
     <PermissionGuard permission="animals_edit">
       <AnimalEditFormContainer
