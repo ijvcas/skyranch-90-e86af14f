@@ -53,7 +53,12 @@ const HealthStatusForm = ({
             onChange={(e) => onInputChange('notes', e.target.value)}
             placeholder="Notas adicionales sobre el animal..."
             disabled={disabled}
+            rows={6}
+            className="resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
+          <p className="text-sm text-gray-500 mt-2">
+            Escribe cualquier información adicional relevante sobre el animal.
+          </p>
         </div>
       </CardContent>
     </Card>
