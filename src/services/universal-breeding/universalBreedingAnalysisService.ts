@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { animalDatabaseMapper } from '@/services/utils/animalDatabaseMapper';
 import { SpeciesConfigService } from '@/services/species/speciesConfig';
@@ -65,10 +64,25 @@ export class UniversalBreedingAnalysisService {
 
       const convertedAnimals = animals.map(animal => animalDatabaseMapper.fromDatabase(animal));
 
-      const males = convertedAnimals.filter(a => a.gender === 'male' || a.gender === 'macho');
-      const females = convertedAnimals.filter(a => a.gender === 'female' || a.gender === 'hembra');
+      // Fixed gender filtering logic
+      const males = convertedAnimals.filter(a => 
+        a.gender === 'male' || 
+        a.gender === 'macho' ||
+        a.gender?.toLowerCase() === 'male' ||
+        a.gender?.toLowerCase() === 'macho'
+      );
+      
+      const females = convertedAnimals.filter(a => 
+        a.gender === 'female' || 
+        a.gender === 'hembra' ||
+        a.gender?.toLowerCase() === 'female' ||
+        a.gender?.toLowerCase() === 'hembra'
+      );
 
       console.log(`Found ${males.length} males and ${females.length} females`);
+      console.log('Males:', males.map(m => `${m.name} (${m.gender})`));
+      console.log('Females:', females.map(f => `${f.name} (${f.gender})`));
+      
       return { males, females };
     } catch (error) {
       console.error('Error getting breeding pairs:', error);
@@ -77,7 +91,15 @@ export class UniversalBreedingAnalysisService {
   }
 
   static async analyzeUniversalPair(male: Animal, female: Animal): Promise<UniversalPedigreeAnalysis> {
-    console.log(`🧬 Analyzing universal pair: ${male.name} (${male.species}) x ${female.name} (${female.species})`);
+    console.log(`🧬 Analyzing universal pair: ${male.name} (${male.species}, ${male.gender}) x ${female.name} (${female.species}, ${female.gender})`);
+    
+    // Validate that we have male x female pairing
+    const isMale = male.gender === 'male' || male.gender === 'macho' || male.gender?.toLowerCase() === 'male' || male.gender?.toLowerCase() === 'macho';
+    const isFemale = female.gender === 'female' || female.gender === 'hembra' || female.gender?.toLowerCase() === 'female' || female.gender?.toLowerCase() === 'hembra';
+    
+    if (!isMale || !isFemale) {
+      throw new Error(`Invalid breeding pair: ${male.name} (${male.gender}) x ${female.name} (${female.gender}). Only male x female pairings are allowed.`);
+    }
     
     // Ensure same species
     if (male.species !== female.species) {
@@ -275,6 +297,7 @@ export class UniversalBreedingAnalysisService {
       const { males, females } = await this.getBreedingPairsBySpecies();
       
       if (males.length === 0 || females.length === 0) {
+        console.log('No valid breeding pairs found - insufficient males or females');
         return [];
       }
 
@@ -287,6 +310,9 @@ export class UniversalBreedingAnalysisService {
         const speciesMales = males.filter(m => m.species === species);
         const speciesFemales = females.filter(f => f.species === species);
 
+        console.log(`Processing species ${species}: ${speciesMales.length} males, ${speciesFemales.length} females`);
+
+        // Only analyze valid male x female combinations
         for (const male of speciesMales) {
           for (const female of speciesFemales) {
             try {
@@ -315,12 +341,13 @@ export class UniversalBreedingAnalysisService {
 
               recommendations.push(recommendation);
             } catch (error) {
-              console.error(`Error analyzing pair ${male.name} x ${female.name}:`, error);
+              console.error(`Error analyzing pair ${male.name} (${male.gender}) x ${female.name} (${female.gender}):`, error);
             }
           }
         }
       }
 
+      console.log(`Generated ${recommendations.length} valid breeding recommendations`);
       return recommendations.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
     } catch (error) {
       console.error('Error generating universal breeding recommendations:', error);
