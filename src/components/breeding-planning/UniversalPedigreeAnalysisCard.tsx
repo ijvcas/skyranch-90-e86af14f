@@ -13,7 +13,7 @@ import { getStatusColor, getStatusText } from '@/utils/animalStatus';
 import AnimalSelectionWithStatus from './AnimalSelectionWithStatus';
 
 const UniversalPedigreeAnalysisCard: React.FC = () => {
-  const [selectedSpecies, setSelectedSpecies] = useState<string>('');
+  const [selectedSpecies, setSelectedSpecies] = useState<string>('ALL_SPECIES');
   const [selectedMaleId, setSelectedMaleId] = useState<string>('');
   const [selectedFemaleId, setSelectedFemaleId] = useState<string>('');
   const [analysis, setAnalysis] = useState<UniversalPedigreeAnalysis | null>(null);
@@ -21,8 +21,8 @@ const UniversalPedigreeAnalysisCard: React.FC = () => {
   const { toast } = useToast();
 
   const { data: breedingPairs } = useQuery({
-    queryKey: ['breeding-pairs', selectedSpecies],
-    queryFn: () => UniversalBreedingAnalysisService.getBreedingPairsBySpecies(selectedSpecies || undefined),
+    queryKey: ['breeding-pairs', selectedSpecies === 'ALL_SPECIES' ? undefined : selectedSpecies],
+    queryFn: () => UniversalBreedingAnalysisService.getBreedingPairsBySpecies(selectedSpecies === 'ALL_SPECIES' ? undefined : selectedSpecies),
     enabled: true
   });
 
@@ -33,11 +33,11 @@ const UniversalPedigreeAnalysisCard: React.FC = () => {
     ])] : [];
 
   const filteredMales = breedingPairs?.males.filter(m => 
-    !selectedSpecies || m.species === selectedSpecies
+    selectedSpecies === 'ALL_SPECIES' || m.species === selectedSpecies
   ) || [];
 
   const filteredFemales = breedingPairs?.females.filter(f => 
-    !selectedSpecies || f.species === selectedSpecies
+    selectedSpecies === 'ALL_SPECIES' || f.species === selectedSpecies
   ) || [];
 
   const handleAnalyze = async () => {
@@ -118,7 +118,7 @@ const UniversalPedigreeAnalysisCard: React.FC = () => {
               <SelectValue placeholder="Todas las especies" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las especies</SelectItem>
+              <SelectItem value="ALL_SPECIES">Todas las especies</SelectItem>
               {availableSpecies.map((species) => (
                 <SelectItem key={species} value={species}>
                   {species}
