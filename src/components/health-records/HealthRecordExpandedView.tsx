@@ -1,8 +1,6 @@
 
 import React from 'react';
-import { Calendar, User, DollarSign, Pill } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { User, DollarSign, Pill } from 'lucide-react';
 
 interface HealthRecord {
   id: string;
@@ -63,17 +61,7 @@ const HealthRecordExpandedView: React.FC<HealthRecordExpandedViewProps> = ({ rec
         )}
       </div>
 
-      {record.nextDueDate && (
-        <div className="p-2 bg-orange-50 border border-orange-200 rounded-lg">
-          <div className="flex items-center space-x-2 text-orange-700">
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm font-medium">
-              Próximo vencimiento: {format(new Date(record.nextDueDate), 'dd/MM/yyyy', { locale: es })}
-            </span>
-          </div>
-        </div>
-      )}
-
+      {/* Notes are now only shown in expanded view */}
       {record.notes && (
         <div className="p-3 bg-gray-50 rounded-lg">
           <p className="text-sm text-gray-700">

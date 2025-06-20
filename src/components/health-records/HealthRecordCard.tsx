@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import HealthRecordBadge from './HealthRecordBadge';
@@ -87,12 +87,24 @@ const HealthRecordCard: React.FC<HealthRecordCardProps> = ({
           </p>
         )}
 
+        {/* Show next due date in list view if available */}
+        {record.nextDueDate && (
+          <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center space-x-2 text-orange-700">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Próximo vencimiento: {format(new Date(record.nextDueDate), 'dd/MM/yyyy', { locale: es })}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Expanded view */}
         {isExpanded && (
           <HealthRecordExpandedView record={record} />
         )}
 
-        {/* Collapsed view - show key info */}
+        {/* Collapsed view - show key info but exclude notes */}
         {!isExpanded && (
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
             {record.veterinarian && (
