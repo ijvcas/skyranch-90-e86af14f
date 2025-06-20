@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { healthRecordService } from '@/services/healthRecordService';
+import { addHealthRecord, updateHealthRecord } from '@/services/healthRecordService';
 import { getAllAnimals } from '@/services/animalService';
 import { useToast } from '@/hooks/use-toast';
 import { useHealthRecordNotifications } from '@/hooks/useHealthRecordNotifications';
@@ -63,15 +63,10 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
   });
 
   const createMutation = useMutation({
-    mutationFn: healthRecordService.create,
-    onSuccess: async (data) => {
+    mutationFn: addHealthRecord,
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['health-records'] });
       queryClient.invalidateQueries({ queryKey: ['all-health-records'] });
-      
-      // Setup notifications for records with due dates
-      if (formData.nextDueDate && data?.id) {
-        await setupHealthRecordNotifications(data.id);
-      }
       
       toast({
         title: "Registro creado",
@@ -94,15 +89,10 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: any }) => healthRecordService.update(id, data),
+    mutationFn: ({ id, data }: { id: string, data: any }) => updateHealthRecord(id, data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['health-records'] });
       queryClient.invalidateQueries({ queryKey: ['all-health-records'] });
-      
-      // Setup notifications for updated records with due dates
-      if (formData.nextDueDate && record?.id) {
-        await setupHealthRecordNotifications(record.id);
-      }
       
       toast({
         title: "Registro actualizado",
@@ -139,9 +129,17 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
     }
 
     const submitData = {
-      ...formData,
-      cost: formData.cost ? parseFloat(formData.cost.toString()) : null,
-      nextDueDate: formData.nextDueDate || null
+      animalId: formData.animalId,
+      recordType: formData.recordType as any,
+      title: formData.title,
+      description: formData.description || undefined,
+      veterinarian: formData.veterinarian || undefined,
+      medication: formData.medication || undefined,
+      dosage: formData.dosage || undefined,
+      cost: formData.cost ? parseFloat(formData.cost.toString()) : undefined,
+      dateAdministered: formData.dateAdministered,
+      nextDueDate: formData.nextDueDate || undefined,
+      notes: formData.notes || undefined
     };
 
     if (record) {
@@ -166,7 +164,6 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
       <BasicInfoSection 
         formData={formData}
         onInputChange={handleInputChange}
-        disabled={isLoading}
       />
       
       <MedicalDetailsSection 
@@ -179,12 +176,10 @@ const HealthRecordForm: React.FC<HealthRecordFormProps> = ({
           notes: formData.notes
         }}
         onInputChange={handleInputChange}
-        disabled={isLoading}
       />
       
       <FormActions 
         isSubmitting={isLoading}
-        isEdit={!!record}
         onCancel={handleCancel}
       />
     </form>

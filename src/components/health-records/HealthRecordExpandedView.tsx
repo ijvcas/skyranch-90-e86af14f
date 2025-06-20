@@ -26,10 +26,6 @@ interface HealthRecordExpandedViewProps {
 const HealthRecordExpandedView: React.FC<HealthRecordExpandedViewProps> = ({ record }) => {
   return (
     <div className="space-y-3 border-t pt-3 mt-3">
-      {record.description && (
-        <p className="text-gray-700 leading-relaxed">{record.description}</p>
-      )}
-
       {/* Show next due date in expanded view with visual prominence */}
       {record.nextDueDate && (
         <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded-lg">
@@ -75,7 +71,7 @@ const HealthRecordExpandedView: React.FC<HealthRecordExpandedViewProps> = ({ rec
         )}
       </div>
 
-      {/* Notes are only shown in expanded view */}
+      {/* Notes are only shown once in expanded view */}
       {record.notes && (
         <div className="p-3 bg-gray-50 rounded-lg">
           <p className="text-sm text-gray-700">
