@@ -10,20 +10,37 @@ interface NotesFormProps {
 }
 
 const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps) => {
-  // Filter out image transform data from notes when editing
+  // Filter out ALL image transform related data from notes when editing
   const getFilteredNotes = (notes: string | null) => {
     if (!notes) return '';
-    return notes.replace(/\[Image Transform Data: .*?\]\n?/g, '').trim();
+    return notes
+      .replace(/\[Image Transform Data: .*?\]\n?/g, '')
+      .replace(/\[Image Transform Applied: .*?\]\n?/g, '')
+      .replace(/Image Transform Applied: .*?\n?/g, '')
+      .trim();
   };
 
-  // When saving, preserve the image transform data
+  // When saving, preserve ALL the image transform data
   const handleNotesChange = (newNotes: string) => {
     const originalNotes = formData.notes || '';
-    const transformMatch = originalNotes.match(/\[Image Transform Data: .*?\]/);
+    
+    // Extract all transform-related data
+    const transformDataMatches = originalNotes.match(/\[Image Transform Data: .*?\]/g) || [];
+    const transformAppliedMatches = originalNotes.match(/\[Image Transform Applied: .*?\]/g) || [];
+    const simpleTransformMatches = originalNotes.match(/Image Transform Applied: .*?\n?/g) || [];
     
     let finalNotes = newNotes;
-    if (transformMatch && transformMatch[0]) {
-      finalNotes = newNotes ? `${newNotes}\n${transformMatch[0]}` : transformMatch[0];
+    
+    // Preserve all transform data
+    const allTransformData = [
+      ...transformDataMatches,
+      ...transformAppliedMatches,
+      ...simpleTransformMatches
+    ];
+    
+    if (allTransformData.length > 0) {
+      const transformString = allTransformData.join('\n');
+      finalNotes = newNotes ? `${newNotes}\n${transformString}` : transformString;
     }
     
     onInputChange('notes', finalNotes);

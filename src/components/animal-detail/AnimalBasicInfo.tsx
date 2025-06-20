@@ -24,10 +24,14 @@ const AnimalBasicInfo: React.FC<AnimalBasicInfoProps> = ({ animal }) => {
     handleCancelEdit
   } = useImageTransform(animal);
 
-  // Filter out image transform data from notes
+  // Filter out ALL image transform related data from notes
   const getFilteredNotes = (notes: string | null) => {
     if (!notes) return '';
-    return notes.replace(/\[Image Transform Data: .*?\]\n?/g, '').trim();
+    return notes
+      .replace(/\[Image Transform Data: .*?\]\n?/g, '')
+      .replace(/\[Image Transform Applied: .*?\]\n?/g, '')
+      .replace(/Image Transform Applied: .*?\n?/g, '')
+      .trim();
   };
 
   const filteredNotes = getFilteredNotes(animal.notes);
