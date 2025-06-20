@@ -6,7 +6,6 @@ import BasicInformationForm from '@/components/animal-edit/BasicInformationForm'
 import HealthStatusForm from '@/components/animal-edit/HealthStatusForm';
 import PedigreeForm from '@/components/animal-edit/PedigreeForm';
 import PhotoUploadForm from '@/components/animal-edit/PhotoUploadForm';
-import NotesForm from '@/components/animal-edit/NotesForm';
 
 interface AnimalEditFormContainerProps {
   animal: any;
@@ -59,11 +58,6 @@ const AnimalEditFormContainer: React.FC<AnimalEditFormContainerProps> = ({
           <PhotoUploadForm 
             formData={formData} 
             onImageChange={onImageChange} 
-          />
-
-          <NotesForm 
-            formData={formData} 
-            onInputChange={onInputChange} 
           />
 
           <Card className="shadow-lg">
