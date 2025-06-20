@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getHealthRecords } from '@/services/healthRecordService';
 import { getAllAnimals } from '@/services/animalService';
 import HealthRecordForm from '@/components/HealthRecordForm';
-import HealthRecordsList from '@/components/HealthRecordsList';
+import HealthRecordsListImproved from '@/components/HealthRecordsListImproved';
 
 const HealthRecords: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
@@ -142,7 +142,7 @@ const HealthRecords: React.FC = () => {
           <CardTitle>Todos los Registros de Salud</CardTitle>
         </CardHeader>
         <CardContent>
-          <HealthRecordsList records={allHealthRecords} />
+          <HealthRecordsListImproved records={allHealthRecords} showAnimalName={true} />
         </CardContent>
       </Card>
     </div>

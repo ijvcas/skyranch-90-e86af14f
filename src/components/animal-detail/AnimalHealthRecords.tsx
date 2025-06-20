@@ -7,7 +7,7 @@ import { Plus, Activity, Calendar, AlertTriangle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getHealthRecords } from '@/services/healthRecordService';
 import HealthRecordForm from '@/components/HealthRecordForm';
-import HealthRecordsList from '@/components/HealthRecordsList';
+import HealthRecordsListImproved from '@/components/HealthRecordsListImproved';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -141,33 +141,13 @@ const AnimalHealthRecords: React.FC<AnimalHealthRecordsProps> = ({ animalId, ani
           </div>
         )}
 
-        {/* Recent Records */}
-        {healthRecords.length > 0 ? (
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">
-              Registros Recientes ({Math.min(healthRecords.length, 5)} de {healthRecords.length})
-            </h4>
-            <HealthRecordsList records={healthRecords.slice(0, 5)} />
-            {healthRecords.length > 5 && (
-              <div className="mt-4 text-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.open(`/health-records?animal=${animalId}`, '_blank')}
-                >
-                  Ver Todos los Registros ({healthRecords.length})
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay registros de salud</h3>
-            <p className="text-gray-500 mb-4">
-              Comienza agregando el primer registro médico para {animalName}.
-            </p>
-          </div>
-        )}
+        {/* Health Records List */}
+        <div>
+          <h4 className="font-medium text-gray-900 mb-3">
+            Historial de Eventos de Salud
+          </h4>
+          <HealthRecordsListImproved records={healthRecords} />
+        </div>
       </CardContent>
     </Card>
   );

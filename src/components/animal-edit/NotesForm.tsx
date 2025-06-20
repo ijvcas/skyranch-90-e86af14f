@@ -17,30 +17,33 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
       .replace(/\[Image Transform Data: .*?\]\n?/g, '')
       .replace(/\[Image Transform Applied: .*?\]\n?/g, '')
       .replace(/Image Transform Applied: .*?\n?/g, '')
+      .replace(/\[Image Transform Data: \{.*?\}\]\n?/g, '')
       .trim();
   };
 
-  // When saving, preserve ALL the image transform data
+  // When saving, preserve ALL the image transform data but clean user input
   const handleNotesChange = (newNotes: string) => {
     const originalNotes = formData.notes || '';
     
-    // Extract all transform-related data
+    // Extract all transform-related data patterns
     const transformDataMatches = originalNotes.match(/\[Image Transform Data: .*?\]/g) || [];
     const transformAppliedMatches = originalNotes.match(/\[Image Transform Applied: .*?\]/g) || [];
     const simpleTransformMatches = originalNotes.match(/Image Transform Applied: .*?\n?/g) || [];
+    const jsonTransformMatches = originalNotes.match(/\[Image Transform Data: \{.*?\}\]/g) || [];
     
-    let finalNotes = newNotes;
+    let finalNotes = newNotes.trim();
     
     // Preserve all transform data
     const allTransformData = [
       ...transformDataMatches,
       ...transformAppliedMatches,
-      ...simpleTransformMatches
+      ...simpleTransformMatches,
+      ...jsonTransformMatches
     ];
     
     if (allTransformData.length > 0) {
       const transformString = allTransformData.join('\n');
-      finalNotes = newNotes ? `${newNotes}\n${transformString}` : transformString;
+      finalNotes = finalNotes ? `${finalNotes}\n${transformString}` : transformString;
     }
     
     onInputChange('notes', finalNotes);
@@ -58,9 +61,10 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
           value={filteredNotes}
           onChange={(e) => handleNotesChange(e.target.value)}
           placeholder="Cualquier información adicional sobre el animal..."
-          rows={4}
+          rows={6}
           disabled={disabled}
-          autoComplete="new-password"
+          className="resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          autoComplete="off"
           data-lpignore="true"
           data-1p-ignore="true"
           data-bitwarden-ignore="true"
@@ -68,6 +72,9 @@ const NotesForm = ({ formData, onInputChange, disabled = false }: NotesFormProps
           spellCheck="false"
           name="animal-notes-field"
         />
+        <p className="text-sm text-gray-500 mt-2">
+          Escribe cualquier información adicional relevante sobre el animal.
+        </p>
       </CardContent>
     </Card>
   );
