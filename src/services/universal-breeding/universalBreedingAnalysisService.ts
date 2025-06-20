@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { animalDatabaseMapper } from '@/services/utils/animalDatabaseMapper';
 import { SpeciesConfigService } from '@/services/species/speciesConfig';
@@ -72,24 +71,34 @@ export class UniversalBreedingAnalysisService {
 
       const convertedAnimals = animals.map(animal => animalDatabaseMapper.fromDatabase(animal));
 
-      // Fixed gender filtering logic
-      const males = convertedAnimals.filter(a => 
-        a.gender === 'male' || 
-        a.gender === 'macho' ||
-        a.gender?.toLowerCase() === 'male' ||
-        a.gender?.toLowerCase() === 'macho'
-      );
+      // Enhanced gender filtering with better logging
+      const males = convertedAnimals.filter(a => {
+        const gender = a.gender?.toLowerCase().trim();
+        const isMale = gender === 'male' || gender === 'macho';
+        console.log(`🔍 Animal ${a.name} (${a.tag}) - Gender: "${a.gender}" -> Normalized: "${gender}" -> Is Male: ${isMale}`);
+        return isMale;
+      });
       
-      const females = convertedAnimals.filter(a => 
-        a.gender === 'female' || 
-        a.gender === 'hembra' ||
-        a.gender?.toLowerCase() === 'female' ||
-        a.gender?.toLowerCase() === 'hembra'
-      );
+      const females = convertedAnimals.filter(a => {
+        const gender = a.gender?.toLowerCase().trim();
+        const isFemale = gender === 'female' || gender === 'hembra';
+        console.log(`🔍 Animal ${a.name} (${a.tag}) - Gender: "${a.gender}" -> Normalized: "${gender}" -> Is Female: ${isFemale}`);
+        return isFemale;
+      });
 
       console.log(`Found ${males.length} males and ${females.length} females`);
       console.log('Males:', males.map(m => `${m.name} (${m.gender})`));
       console.log('Females:', females.map(f => `${f.name} (${f.gender})`));
+      
+      // Log animals that weren't categorized
+      const uncategorized = convertedAnimals.filter(a => {
+        const gender = a.gender?.toLowerCase().trim();
+        return !(gender === 'male' || gender === 'macho' || gender === 'female' || gender === 'hembra');
+      });
+      
+      if (uncategorized.length > 0) {
+        console.log('⚠️ Uncategorized animals (unknown gender):', uncategorized.map(a => `${a.name} (${a.gender || 'undefined'})`));
+      }
       
       return { males, females };
     } catch (error) {
@@ -216,8 +225,10 @@ export class UniversalBreedingAnalysisService {
     console.log(`🧬 Analyzing universal pair: ${male.name} (${male.species}, ${male.gender}) x ${female.name} (${female.species}, ${female.gender})`);
     
     // Validate that we have male x female pairing
-    const isMale = male.gender === 'male' || male.gender === 'macho' || male.gender?.toLowerCase() === 'male' || male.gender?.toLowerCase() === 'macho';
-    const isFemale = female.gender === 'female' || female.gender === 'hembra' || female.gender?.toLowerCase() === 'female' || female.gender?.toLowerCase() === 'hembra';
+    const maleGender = male.gender?.toLowerCase().trim();
+    const femaleGender = female.gender?.toLowerCase().trim();
+    const isMale = maleGender === 'male' || maleGender === 'macho';
+    const isFemale = femaleGender === 'female' || femaleGender === 'hembra';
     
     if (!isMale || !isFemale) {
       throw new Error(`Invalid breeding pair: ${male.name} (${male.gender}) x ${female.name} (${female.gender}). Only male x female pairings are allowed.`);
