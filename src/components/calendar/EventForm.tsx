@@ -34,7 +34,10 @@ const EventForm = ({
     eventType: 'appointment' as CalendarEvent['eventType'],
     animalId: '',
     eventDate: '',
+    startTime: '09:00',
+    endTime: '',
     allDay: false,
+    reminderMinutes: 60,
     veterinarian: '',
     location: '',
     cost: '',
@@ -59,13 +62,29 @@ const EventForm = ({
   const handleSubmit = () => {
     if (!newEvent.title || !newEvent.eventDate || isSubmitting) return;
 
+    // Combine date and time for the event
+    let eventDateTime = new Date(newEvent.eventDate);
+    let endDateTime = null;
+
+    if (!newEvent.allDay && newEvent.startTime) {
+      const [hours, minutes] = newEvent.startTime.split(':').map(Number);
+      eventDateTime.setHours(hours, minutes, 0, 0);
+    }
+
+    if (!newEvent.allDay && newEvent.endTime) {
+      const [endHours, endMinutes] = newEvent.endTime.split(':').map(Number);
+      endDateTime = new Date(newEvent.eventDate);
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
+    }
+
     const eventData = {
       ...newEvent,
-      eventDate: new Date(newEvent.eventDate).toISOString(),
+      eventDate: eventDateTime.toISOString(),
+      endDate: endDateTime ? endDateTime.toISOString() : undefined,
       status: 'scheduled' as const,
       allDay: newEvent.allDay,
       recurring: false,
-      reminderMinutes: 60,
+      reminderMinutes: Number(newEvent.reminderMinutes),
       cost: newEvent.cost ? parseFloat(newEvent.cost) : undefined
     };
 
@@ -79,13 +98,27 @@ const EventForm = ({
       eventType: 'appointment',
       animalId: '',
       eventDate: today,
+      startTime: '09:00',
+      endTime: '',
       allDay: false,
+      reminderMinutes: 60,
       veterinarian: '',
       location: '',
       cost: '',
       notes: ''
     });
   };
+
+  const reminderOptions = [
+    { value: 0, label: 'Sin recordatorio' },
+    { value: 15, label: '15 minutos antes' },
+    { value: 30, label: '30 minutos antes' },
+    { value: 60, label: '1 hora antes' },
+    { value: 120, label: '2 horas antes' },
+    { value: 1440, label: '1 día antes' },
+    { value: 2880, label: '2 días antes' },
+    { value: 10080, label: '1 semana antes' }
+  ];
 
   return (
     <div className="space-y-6">
@@ -114,6 +147,66 @@ const EventForm = ({
             onChange={(value) => setNewEvent(prev => ({ ...prev, eventType: value }))}
             label="Tipo de Evento"
           />
+        </div>
+
+        {/* Time Settings */}
+        <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="allDay"
+              checked={newEvent.allDay}
+              onChange={(e) => setNewEvent(prev => ({ ...prev, allDay: e.target.checked }))}
+              className="rounded"
+            />
+            <Label htmlFor="allDay">Todo el día</Label>
+          </div>
+
+          {!newEvent.allDay && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Hora de inicio</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={newEvent.startTime}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endTime">Hora de fin (opcional)</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={newEvent.endTime}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Reminder Settings */}
+        <div className="space-y-2">
+          <Label>Recordatorio</Label>
+          <Select 
+            value={newEvent.reminderMinutes.toString()} 
+            onValueChange={(value) => setNewEvent(prev => ({ ...prev, reminderMinutes: parseInt(value) }))}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleccionar recordatorio" />
+            </SelectTrigger>
+            <SelectContent>
+              {reminderOptions.map(option => (
+                <SelectItem key={option.value} value={option.value.toString()}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">

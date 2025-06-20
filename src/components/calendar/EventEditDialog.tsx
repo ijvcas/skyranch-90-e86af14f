@@ -37,6 +37,10 @@ const EventEditDialog = ({
     eventType: 'appointment' as CalendarEvent['eventType'],
     animalId: '',
     eventDate: '',
+    startTime: '09:00',
+    endTime: '',
+    allDay: false,
+    reminderMinutes: 60,
     veterinarian: '',
     location: '',
     cost: '',
@@ -50,12 +54,30 @@ const EventEditDialog = ({
 
   useEffect(() => {
     if (event) {
+      const eventDate = new Date(event.eventDate);
+      const eventDateOnly = eventDate.toISOString().split('T')[0];
+      
+      let startTime = '09:00';
+      let endTime = '';
+      
+      if (!event.allDay) {
+        startTime = eventDate.toTimeString().slice(0, 5);
+        if (event.endDate) {
+          const endDate = new Date(event.endDate);
+          endTime = endDate.toTimeString().slice(0, 5);
+        }
+      }
+
       setEditedEvent({
         title: event.title,
         description: event.description || '',
         eventType: event.eventType,
         animalId: event.animalId || '',
-        eventDate: event.eventDate.split('T')[0], // Extract date part
+        eventDate: eventDateOnly,
+        startTime: startTime,
+        endTime: endTime,
+        allDay: event.allDay || false,
+        reminderMinutes: event.reminderMinutes || 60,
         veterinarian: event.veterinarian || '',
         location: event.location || '',
         cost: event.cost ? event.cost.toString() : '',
@@ -69,9 +91,26 @@ const EventEditDialog = ({
 
     setIsSubmitting(true);
     
+    // Combine date and time for the event
+    let eventDateTime = new Date(editedEvent.eventDate);
+    let endDateTime = null;
+
+    if (!editedEvent.allDay && editedEvent.startTime) {
+      const [hours, minutes] = editedEvent.startTime.split(':').map(Number);
+      eventDateTime.setHours(hours, minutes, 0, 0);
+    }
+
+    if (!editedEvent.allDay && editedEvent.endTime) {
+      const [endHours, endMinutes] = editedEvent.endTime.split(':').map(Number);
+      endDateTime = new Date(editedEvent.eventDate);
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
+    }
+
     const eventData = {
       ...editedEvent,
-      eventDate: new Date(editedEvent.eventDate).toISOString(),
+      eventDate: eventDateTime.toISOString(),
+      endDate: endDateTime ? endDateTime.toISOString() : undefined,
+      reminderMinutes: Number(editedEvent.reminderMinutes),
       cost: editedEvent.cost ? parseFloat(editedEvent.cost) : undefined
     };
 
@@ -83,6 +122,17 @@ const EventEditDialog = ({
     if (!event || isSubmitting) return;
     onDelete(event.id);
   };
+
+  const reminderOptions = [
+    { value: 0, label: 'Sin recordatorio' },
+    { value: 15, label: '15 minutos antes' },
+    { value: 30, label: '30 minutos antes' },
+    { value: 60, label: '1 hora antes' },
+    { value: 120, label: '2 horas antes' },
+    { value: 1440, label: '1 día antes' },
+    { value: 2880, label: '2 días antes' },
+    { value: 10080, label: '1 semana antes' }
+  ];
 
   if (!event) return null;
 
@@ -141,6 +191,66 @@ const EventEditDialog = ({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Time Settings */}
+            <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-allDay"
+                  checked={editedEvent.allDay}
+                  onChange={(e) => setEditedEvent(prev => ({ ...prev, allDay: e.target.checked }))}
+                  className="rounded"
+                />
+                <Label htmlFor="edit-allDay">Todo el día</Label>
+              </div>
+
+              {!editedEvent.allDay && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-startTime">Hora de inicio</Label>
+                    <Input
+                      id="edit-startTime"
+                      type="time"
+                      value={editedEvent.startTime}
+                      onChange={(e) => setEditedEvent(prev => ({ ...prev, startTime: e.target.value }))}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-endTime">Hora de fin (opcional)</Label>
+                    <Input
+                      id="edit-endTime"
+                      type="time"
+                      value={editedEvent.endTime}
+                      onChange={(e) => setEditedEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Reminder Settings */}
+            <div className="space-y-2">
+              <Label>Recordatorio</Label>
+              <Select 
+                value={editedEvent.reminderMinutes.toString()} 
+                onValueChange={(value) => setEditedEvent(prev => ({ ...prev, reminderMinutes: parseInt(value) }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar recordatorio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reminderOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value.toString()}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

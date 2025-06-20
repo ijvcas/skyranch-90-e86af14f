@@ -3,7 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Calendar, MapPin, DollarSign, User, Clock } from 'lucide-react';
+import { Edit, Trash2, Calendar, MapPin, DollarSign, User, Clock, Bell } from 'lucide-react';
 import { CalendarEvent } from '@/services/calendarService';
 
 interface Animal {
@@ -68,6 +68,48 @@ const EventDetailDialog = ({
     }
   };
 
+  const formatEventDateTime = (eventDate: string, endDate?: string, allDay?: boolean) => {
+    const startDate = new Date(eventDate);
+    
+    if (allDay) {
+      return startDate.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) + ' (Todo el día)';
+    }
+
+    let timeString = startDate.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    timeString += ' a las ' + startDate.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      timeString += ' - ' + endDateTime.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    return timeString;
+  };
+
+  const getReminderText = (minutes: number) => {
+    if (minutes === 0) return 'Sin recordatorio';
+    if (minutes < 60) return `${minutes} minutos antes`;
+    if (minutes < 1440) return `${Math.floor(minutes / 60)} horas antes`;
+    return `${Math.floor(minutes / 1440)} días antes`;
+  };
+
   const handleDelete = () => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
       onDelete(event.id);
@@ -93,24 +135,19 @@ const EventDetailDialog = ({
 
         <div className="space-y-4">
           {/* Event Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4 text-gray-500" />
               <span className="text-sm">
-                {new Date(event.eventDate).toLocaleDateString('es-ES', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+                {formatEventDateTime(event.eventDate, event.endDate, event.allDay)}
               </span>
             </div>
 
-            {event.endDate && (
+            {event.reminderMinutes > 0 && (
               <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-gray-500" />
+                <Bell className="w-4 h-4 text-gray-500" />
                 <span className="text-sm">
-                  Hasta: {new Date(event.endDate).toLocaleDateString('es-ES')}
+                  Recordatorio: {getReminderText(event.reminderMinutes)}
                 </span>
               </div>
             )}
@@ -164,18 +201,13 @@ const EventDetailDialog = ({
             </div>
           )}
 
-          {/* Status and Reminder */}
+          {/* Status and Event Properties */}
           <div className="flex flex-wrap gap-2">
             <Badge variant={event.status === 'completed' ? 'default' : 'secondary'}>
               Estado: {event.status === 'completed' ? 'Completado' : 
                       event.status === 'cancelled' ? 'Cancelado' :
                       event.status === 'missed' ? 'Perdido' : 'Programado'}
             </Badge>
-            {event.reminderMinutes > 0 && (
-              <Badge variant="outline">
-                Recordatorio: {event.reminderMinutes} min antes
-              </Badge>
-            )}
             {event.allDay && (
               <Badge variant="outline">Todo el día</Badge>
             )}

@@ -1,3 +1,4 @@
+
 import { EmailContent } from '../interfaces/EmailTypes';
 import { BaseEmailTemplate, BaseTemplateData } from './BaseEmailTemplate';
 
@@ -7,25 +8,20 @@ export interface CalendarEventData extends BaseTemplateData {
     title: string;
     description?: string;
     eventDate: string;
+    endDate?: string;
+    allDay?: boolean;
     eventType?: string;
     location?: string;
     veterinarian?: string;
+    reminderMinutes?: number;
   };
 }
 
 export class CalendarEventTemplate extends BaseEmailTemplate {
   render(data: CalendarEventData): EmailContent {
-    console.log('🎨 [CALENDAR EMAIL TEMPLATE] Rendering clean template without green frames');
+    console.log('🎨 [CALENDAR EMAIL TEMPLATE] Rendering clean template with proper time display');
     
-    const eventDate = new Date(data.event.eventDate).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
+    const eventDate = this.formatEventDateTime(data.event.eventDate, data.event.endDate, data.event.allDay);
     const actionText = this.getActionText(data.eventType);
     const subject = this.getSubject(data.eventType, data.event.title);
 
@@ -102,6 +98,12 @@ export class CalendarEventTemplate extends BaseEmailTemplate {
                 <tr>
                   <td style="color: #10b981; font-weight: 600; font-size: 13px; padding: 8px 0; vertical-align: top;">🏷️ Tipo:</td>
                   <td style="color: #374151; font-size: 13px; padding: 8px 0;">${this.getEventTypeLabel(data.event.eventType)}</td>
+                </tr>
+                ` : ''}
+                ${data.event.reminderMinutes !== undefined && data.event.reminderMinutes > 0 ? `
+                <tr>
+                  <td style="color: #10b981; font-weight: 600; font-size: 13px; padding: 8px 0; vertical-align: top;">🔔 Recordatorio:</td>
+                  <td style="color: #374151; font-size: 13px; padding: 8px 0;">${this.getReminderText(data.event.reminderMinutes)}</td>
                 </tr>
                 ` : ''}
                 ${data.event.description ? `
@@ -184,15 +186,57 @@ export class CalendarEventTemplate extends BaseEmailTemplate {
     `;
 
     // Generate simple text version
-    const text = `${subject}\n\nEstimado/a ${data.userName || 'Usuario'},\n\nTe informamos que el evento "${data.event.title}" ${actionText.toLowerCase()} en el sistema de gestión ganadera SkyRanch.\n\nDetalles del evento:\n- Título: ${data.event.title}\n- Fecha: ${eventDate}\n${data.event.description ? `- Descripción: ${data.event.description}\n` : ''}${data.event.location ? `- Ubicación: ${data.event.location}\n` : ''}${data.event.veterinarian ? `- Veterinario: ${data.event.veterinarian}\n` : ''}\n\n© ${new Date().getFullYear()} SkyRanch - Sistema de Gestión Ganadera\n\nContacto: soporte@skyranch.es`;
+    const text = `${subject}\n\nEstimado/a ${data.userName || 'Usuario'},\n\nTe informamos que el evento "${data.event.title}" ${actionText.toLowerCase()} en el sistema de gestión ganadera SkyRanch.\n\nDetalles del evento:\n- Título: ${data.event.title}\n- Fecha: ${eventDate}\n${data.event.description ? `- Descripción: ${data.event.description}\n` : ''}${data.event.location ? `- Ubicación: ${data.event.location}\n` : ''}${data.event.veterinarian ? `- Veterinario: ${data.event.veterinarian}\n` : ''}${data.event.reminderMinutes && data.event.reminderMinutes > 0 ? `- Recordatorio: ${this.getReminderText(data.event.reminderMinutes)}\n` : ''}\n\n© ${new Date().getFullYear()} SkyRanch - Sistema de Gestión Ganadera\n\nContacto: soporte@skyranch.es`;
 
-    console.log('✅ [CALENDAR EMAIL TEMPLATE] Clean template rendered without green frames');
+    console.log('✅ [CALENDAR EMAIL TEMPLATE] Template rendered with proper date/time formatting');
     
     return {
       subject,
       html,
       text
     };
+  }
+
+  private formatEventDateTime(eventDate: string, endDate?: string, allDay?: boolean): string {
+    const startDate = new Date(eventDate);
+    
+    if (allDay) {
+      return startDate.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) + ' (Todo el día)';
+    }
+
+    let dateTimeString = startDate.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    dateTimeString += ' a las ' + startDate.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      dateTimeString += ' - ' + endDateTime.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    return dateTimeString;
+  }
+
+  private getReminderText(minutes: number): string {
+    if (minutes === 0) return 'Sin recordatorio';
+    if (minutes < 60) return `${minutes} minutos antes`;
+    if (minutes < 1440) return `${Math.floor(minutes / 60)} horas antes`;
+    return `${Math.floor(minutes / 1440)} días antes`;
   }
 
   private getEventTypeLabel(eventType: string): string {
