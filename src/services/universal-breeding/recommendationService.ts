@@ -15,6 +15,26 @@ export class RecommendationService {
     const recommendations: string[] = [];
     const speciesConfig = SpeciesConfigService.getSpeciesConfig(species);
     
+    // Health status considerations for planning
+    const maleHealthStatus = male.healthStatus?.toLowerCase();
+    const femaleHealthStatus = female.healthStatus?.toLowerCase();
+    
+    if (maleHealthStatus === 'pregnant') {
+      recommendations.push('⚠️ Macho marcado como "pregnant" - revisar estado de salud');
+    }
+    if (femaleHealthStatus === 'pregnant') {
+      recommendations.push('🤱 Hembra actualmente gestante - planificar para post-parto');
+    }
+    if (maleHealthStatus === 'sick') {
+      recommendations.push('🏥 Macho enfermo - asegurar recuperación completa antes del apareamiento');
+    }
+    if (femaleHealthStatus === 'sick') {
+      recommendations.push('🏥 Hembra enferma - asegurar recuperación completa antes del apareamiento');
+    }
+    if (maleHealthStatus === 'treatment' || femaleHealthStatus === 'treatment') {
+      recommendations.push('💊 Animal en tratamiento - consultar con veterinario antes del apareamiento');
+    }
+    
     // Compatibility-based recommendations
     if (compatibilityScore >= 80) {
       recommendations.push(`✅ Excelente compatibilidad (${compatibilityScore}%) para ${speciesConfig?.name || species}`);

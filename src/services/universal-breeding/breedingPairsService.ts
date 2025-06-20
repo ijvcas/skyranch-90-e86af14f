@@ -5,13 +5,12 @@ import type { Animal } from '@/stores/animalStore';
 
 export class BreedingPairsService {
   static async getBreedingPairsBySpecies(species?: string): Promise<{ males: Animal[], females: Animal[] }> {
-    console.log(`🐾 Getting breeding pairs${species ? ` for species: ${species}` : ' for all species'}...`);
+    console.log(`🐾 Getting breeding pairs${species ? ` for species: ${species}` : ' for all species'} (including all health statuses)...`);
     
     try {
       let query = supabase
         .from('animals')
-        .select('*')
-        .in('health_status', ['healthy', 'good']);
+        .select('*');
 
       if (species) {
         query = query.eq('species', species);
@@ -29,20 +28,20 @@ export class BreedingPairsService {
       const males = convertedAnimals.filter(a => {
         const gender = a.gender?.toLowerCase().trim();
         const isMale = gender === 'male' || gender === 'macho';
-        console.log(`🔍 Animal ${a.name} (${a.tag}) - Gender: "${a.gender}" -> Normalized: "${gender}" -> Is Male: ${isMale}`);
+        console.log(`🔍 Animal ${a.name} (${a.tag}) - Gender: "${a.gender}" -> Normalized: "${gender}" -> Is Male: ${isMale} - Health: ${a.healthStatus}`);
         return isMale;
       });
       
       const females = convertedAnimals.filter(a => {
         const gender = a.gender?.toLowerCase().trim();
         const isFemale = gender === 'female' || gender === 'hembra';
-        console.log(`🔍 Animal ${a.name} (${a.tag}) - Gender: "${a.gender}" -> Normalized: "${gender}" -> Is Female: ${isFemale}`);
+        console.log(`🔍 Animal ${a.name} (${a.tag}) - Gender: "${a.gender}" -> Normalized: "${gender}" -> Is Female: ${isFemale} - Health: ${a.healthStatus}`);
         return isFemale;
       });
 
-      console.log(`Found ${males.length} males and ${females.length} females`);
-      console.log('Males:', males.map(m => `${m.name} (${m.gender})`));
-      console.log('Females:', females.map(f => `${f.name} (${f.gender})`));
+      console.log(`Found ${males.length} males and ${females.length} females (all health statuses included)`);
+      console.log('Males:', males.map(m => `${m.name} (${m.gender}, ${m.healthStatus})`));
+      console.log('Females:', females.map(f => `${f.name} (${f.gender}, ${f.healthStatus})`));
       
       // Log animals that weren't categorized
       const uncategorized = convertedAnimals.filter(a => {

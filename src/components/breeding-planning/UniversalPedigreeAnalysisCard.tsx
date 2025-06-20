@@ -1,105 +1,89 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Loader2, Heart, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TreePine, Heart, AlertTriangle, Star, Dna, Calculator, Info } from 'lucide-react';
-import { UniversalBreedingAnalysisService, type UniversalPedigreeAnalysis, type UniversalBreedingRecommendation } from '@/services/universal-breeding/universalBreedingAnalysisService';
-import { SpeciesConfigService } from '@/services/species/speciesConfig';
-import type { Animal } from '@/stores/animalStore';
+import { UniversalBreedingAnalysisService } from '@/services/universal-breeding';
+import type { UniversalPedigreeAnalysis } from '@/services/universal-breeding/types';
+import { useToast } from '@/hooks/use-toast';
+import { getStatusColor, getStatusText } from '@/utils/animalStatus';
+import AnimalSelectionWithStatus from './AnimalSelectionWithStatus';
 
-const UniversalPedigreeAnalysisCard = () => {
-  const [animalsBySpecies, setAnimalsBySpecies] = useState<Record<string, { males: Animal[], females: Animal[] }>>({});
+const UniversalPedigreeAnalysisCard: React.FC = () => {
   const [selectedSpecies, setSelectedSpecies] = useState<string>('');
-  const [selectedMale, setSelectedMale] = useState<string>('');
-  const [selectedFemale, setSelectedFemale] = useState<string>('');
-  const [pedigreeAnalysis, setPedigreeAnalysis] = useState<UniversalPedigreeAnalysis | null>(null);
-  const [breedingRecommendations, setBreedingRecommendations] = useState<UniversalBreedingRecommendation[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [selectedMaleId, setSelectedMaleId] = useState<string>('');
+  const [selectedFemaleId, setSelectedFemaleId] = useState<string>('');
+  const [analysis, setAnalysis] = useState<UniversalPedigreeAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    loadAllSpeciesData();
-    loadBreedingRecommendations();
-  }, []);
+  const { data: breedingPairs } = useQuery({
+    queryKey: ['breeding-pairs', selectedSpecies],
+    queryFn: () => UniversalBreedingAnalysisService.getBreedingPairsBySpecies(selectedSpecies || undefined),
+    enabled: true
+  });
 
-  const loadAllSpeciesData = async () => {
-    try {
-      const allSpecies = SpeciesConfigService.getAllSpecies();
-      const speciesData: Record<string, { males: Animal[], females: Animal[] }> = {};
+  const availableSpecies = breedingPairs ? 
+    [...new Set([
+      ...breedingPairs.males.map(m => m.species),
+      ...breedingPairs.females.map(f => f.species)
+    ])] : [];
 
-      for (const speciesConfig of allSpecies) {
-        const pairs = await UniversalBreedingAnalysisService.getBreedingPairsBySpecies(speciesConfig.id);
-        if (pairs.males.length > 0 || pairs.females.length > 0) {
-          speciesData[speciesConfig.id] = pairs;
-        }
-      }
+  const filteredMales = breedingPairs?.males.filter(m => 
+    !selectedSpecies || m.species === selectedSpecies
+  ) || [];
 
-      setAnimalsBySpecies(speciesData);
+  const filteredFemales = breedingPairs?.females.filter(f => 
+    !selectedSpecies || f.species === selectedSpecies
+  ) || [];
 
-      // Auto-select species with animals
-      const firstSpeciesWithAnimals = Object.keys(speciesData)[0];
-      if (firstSpeciesWithAnimals) {
-        setSelectedSpecies(firstSpeciesWithAnimals);
-        
-        // Auto-select special breeds if available
-        const speciesAnimals = speciesData[firstSpeciesWithAnimals];
-        const specialMale = speciesAnimals.males.find(m => 
-          m.name.toLowerCase().includes('lascaux') || m.breed?.toLowerCase().includes('baudet')
-        );
-        const specialFemale = speciesAnimals.females.find(f => 
-          f.name.toLowerCase().includes('luna') || f.breed?.toLowerCase().includes('baudet') ||
-          f.breed?.toLowerCase().includes('nez noir')
-        );
-        
-        if (specialMale) setSelectedMale(specialMale.id);
-        if (specialFemale) setSelectedFemale(specialFemale.id);
-      }
-    } catch (error) {
-      console.error('Error loading species data:', error);
+  const handleAnalyze = async () => {
+    if (!selectedMaleId || !selectedFemaleId) {
+      toast({
+        title: "Selección incompleta",
+        description: "Por favor selecciona tanto el macho como la hembra para el análisis.",
+        variant: "destructive"
+      });
+      return;
     }
-  };
 
-  const loadBreedingRecommendations = async () => {
-    setRecommendationsLoading(true);
-    try {
-      const recommendations = await UniversalBreedingAnalysisService.generateUniversalBreedingRecommendations();
-      setBreedingRecommendations(recommendations);
-    } catch (error) {
-      console.error('Error loading breeding recommendations:', error);
-    } finally {
-      setRecommendationsLoading(false);
+    const male = filteredMales.find(m => m.id === selectedMaleId);
+    const female = filteredFemales.find(f => f.id === selectedFemaleId);
+
+    if (!male || !female) {
+      toast({
+        title: "Error",
+        description: "No se pudieron encontrar los animales seleccionados.",
+        variant: "destructive"
+      });
+      return;
     }
-  };
 
-  const analyzePair = async () => {
-    if (!selectedMale || !selectedFemale || !selectedSpecies) return;
-    
-    setLoading(true);
+    setIsAnalyzing(true);
     try {
-      const animals = animalsBySpecies[selectedSpecies];
-      const male = animals.males.find(m => m.id === selectedMale);
-      const female = animals.females.find(f => f.id === selectedFemale);
+      const result = await UniversalBreedingAnalysisService.analyzeUniversalPair(male, female);
+      setAnalysis(result);
       
-      if (male && female) {
-        const analysis = await UniversalBreedingAnalysisService.analyzeUniversalPair(male, female);
-        setPedigreeAnalysis(analysis);
-      }
+      toast({
+        title: "Análisis completado",
+        description: `Compatibilidad: ${result.compatibilityScore}%`,
+      });
     } catch (error) {
       console.error('Error analyzing pair:', error);
+      toast({
+        title: "Error en el análisis",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive"
+      });
     } finally {
-      setLoading(false);
+      setIsAnalyzing(false);
     }
   };
 
-  const handleSpeciesChange = (species: string) => {
-    setSelectedSpecies(species);
-    setSelectedMale('');
-    setSelectedFemale('');
-    setPedigreeAnalysis(null);
-  };
-
-  const getRiskColor = (riskLevel: 'low' | 'moderate' | 'high') => {
+  const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
       case 'low': return 'bg-green-100 text-green-800';
       case 'moderate': return 'bg-yellow-100 text-yellow-800';
@@ -108,347 +92,153 @@ const UniversalPedigreeAnalysisCard = () => {
     }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+  const getRiskIcon = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'low': return <CheckCircle className="w-4 h-4" />;
+      case 'moderate': return <AlertTriangle className="w-4 h-4" />;
+      case 'high': return <AlertTriangle className="w-4 h-4" />;
+      default: return <Info className="w-4 h-4" />;
+    }
   };
-
-  const getCompatibilityColor = (score: number) => {
-    if (score >= 80) return 'bg-green-500';
-    if (score >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const getSpeciesIcon = (species: string) => {
-    const icons: Record<string, string> = {
-      equino: '🐴',
-      bovino: '🐄',
-      ovino: '🐑',
-      caprino: '🐐',
-      porcino: '🐷'
-    };
-    return icons[species] || '🐾';
-  };
-
-  const currentAnimals = selectedSpecies ? animalsBySpecies[selectedSpecies] : null;
-  const speciesConfig = selectedSpecies ? SpeciesConfigService.getSpeciesConfig(selectedSpecies) : null;
 
   return (
-    <div className="space-y-6">
-      {/* Universal Species Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TreePine className="w-5 h-5" />
-            Sistema Universal de Análisis Genético
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Species Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Select value={selectedSpecies} onValueChange={handleSpeciesChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona especie" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.keys(animalsBySpecies).map((species) => {
-                  const config = SpeciesConfigService.getSpeciesConfig(species);
-                  return (
-                    <SelectItem key={species} value={species}>
-                      {getSpeciesIcon(species)} {config?.name || species}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Heart className="w-5 h-5 text-red-500" />
+          <span>Análisis Universal de Pedigrí</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Species Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Especie (opcional)</label>
+          <Select value={selectedSpecies} onValueChange={setSelectedSpecies}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todas las especies" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas las especies</SelectItem>
+              {availableSpecies.map((species) => (
+                <SelectItem key={species} value={species}>
+                  {species}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            {currentAnimals && (
-              <>
-                <Select value={selectedMale} onValueChange={setSelectedMale}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona macho" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currentAnimals.males.map((male) => (
-                      <SelectItem key={male.id} value={male.id}>
-                        {male.name} ({male.tag})
-                        {male.breed && <span className="text-xs text-gray-500"> - {male.breed}</span>}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Male Selection */}
+          <AnimalSelectionWithStatus
+            animals={filteredMales}
+            selectedAnimalId={selectedMaleId}
+            onAnimalSelect={setSelectedMaleId}
+            placeholder="Seleccionar macho"
+            label="Macho"
+          />
 
-                <Select value={selectedFemale} onValueChange={setSelectedFemale}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona hembra" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currentAnimals.females.map((female) => (
-                      <SelectItem key={female.id} value={female.id}>
-                        {female.name} ({female.tag})
-                        {female.breed && <span className="text-xs text-gray-500"> - {female.breed}</span>}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* Female Selection */}
+          <AnimalSelectionWithStatus
+            animals={filteredFemales}
+            selectedAnimalId={selectedFemaleId}
+            onAnimalSelect={setSelectedFemaleId}
+            placeholder="Seleccionar hembra"
+            label="Hembra"
+          />
+        </div>
 
-                <Button 
-                  onClick={analyzePair} 
-                  disabled={!selectedMale || !selectedFemale || loading}
-                  className="flex items-center gap-2"
-                >
-                  <Calculator className="w-4 h-4" />
-                  {loading ? 'Analizando...' : 'Analizar'}
-                </Button>
-              </>
+        <Button 
+          onClick={handleAnalyze} 
+          disabled={!selectedMaleId || !selectedFemaleId || isAnalyzing}
+          className="w-full"
+        >
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Analizando...
+            </>
+          ) : (
+            'Analizar Compatibilidad'
+          )}
+        </Button>
+
+        {analysis && (
+          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Resultado del Análisis</h3>
+              <div className="flex items-center space-x-2">
+                <Badge className={getRiskColor(analysis.riskLevel)}>
+                  {getRiskIcon(analysis.riskLevel)}
+                  <span className="ml-1">
+                    {analysis.riskLevel === 'low' ? 'Bajo Riesgo' : 
+                     analysis.riskLevel === 'moderate' ? 'Riesgo Moderado' : 'Alto Riesgo'}
+                  </span>
+                </Badge>
+                <Badge variant="outline">
+                  Compatibilidad: {analysis.compatibilityScore}%
+                </Badge>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="font-medium">Diversidad Genética:</span>
+                <div>{analysis.geneticDiversityScore.toFixed(1)}%</div>
+              </div>
+              <div>
+                <span className="font-medium">Coef. Consanguinidad:</span>
+                <div>{(analysis.inbreedingCoefficient * 100).toFixed(2)}%</div>
+              </div>
+              <div>
+                <span className="font-medium">Gestación:</span>
+                <div>{analysis.expectedGestationDays} días</div>
+              </div>
+              <div>
+                <span className="font-medium">Época Óptima:</span>
+                <div>{analysis.optimalBreedingWindow}</div>
+              </div>
+            </div>
+
+            {analysis.relationshipWarning && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-center space-x-2 text-red-800">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-medium">Advertencia de Parentesco</span>
+                </div>
+                <p className="text-red-700 mt-1">{analysis.relationshipWarning}</p>
+              </div>
+            )}
+
+            <div>
+              <h4 className="font-medium mb-2">Recomendaciones:</h4>
+              <ul className="space-y-1 text-sm">
+                {analysis.recommendations.map((rec, index) => (
+                  <li key={index} className="flex items-start space-x-2">
+                    <span className="text-gray-400">•</span>
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {analysis.speciesSpecificAdvice.length > 0 && (
+              <div>
+                <h4 className="font-medium mb-2">Consejos Específicos de la Especie:</h4>
+                <ul className="space-y-1 text-sm">
+                  {analysis.speciesSpecificAdvice.map((advice, index) => (
+                    <li key={index} className="flex items-start space-x-2">
+                      <span className="text-blue-400">•</span>
+                      <span>{advice}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
-
-          {/* Species Information */}
-          {speciesConfig && (
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium mb-2 flex items-center gap-2">
-                {getSpeciesIcon(selectedSpecies)} Información de {speciesConfig.name}
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Gestación:</span> {speciesConfig.gestationDays} días
-                </div>
-                <div>
-                  <span className="font-medium">Época óptima:</span> {speciesConfig.optimalBreedingMonths.join(', ')}
-                </div>
-                <div>
-                  <span className="font-medium">Animales:</span> {currentAnimals?.males.length || 0}♂ / {currentAnimals?.females.length || 0}♀
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Analysis Results */}
-          {pedigreeAnalysis && (
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-blue-900">
-                    {getSpeciesIcon(pedigreeAnalysis.species)} {pedigreeAnalysis.maleName} × {pedigreeAnalysis.femaleName}
-                  </h3>
-                  {pedigreeAnalysis.breedInfo?.isSpecialBreed && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className="bg-purple-100 text-purple-800">
-                        <Star className="w-3 h-3 mr-1" />
-                        Raza Especial
-                      </Badge>
-                      {pedigreeAnalysis.breedInfo.specialBreedInfo?.website && (
-                        <a 
-                          href={pedigreeAnalysis.breedInfo.specialBreedInfo.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          <Info className="w-3 h-3" />
-                          Más info
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div 
-                    className={`w-3 h-3 rounded-full ${getCompatibilityColor(pedigreeAnalysis.compatibilityScore)}`}
-                  />
-                  <span className="font-semibold">
-                    {pedigreeAnalysis.compatibilityScore}% compatibilidad
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Inbreeding Analysis */}
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    Consanguinidad
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>Coeficiente:</span>
-                      <Badge className={getRiskColor(pedigreeAnalysis.riskLevel)}>
-                        {(pedigreeAnalysis.inbreedingCoefficient * 100).toFixed(1)}%
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Genetic Diversity */}
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <Dna className="w-4 h-4" />
-                    Diversidad Genética
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>Puntuación:</span>
-                      <span className={`font-bold ${getScoreColor(pedigreeAnalysis.geneticDiversityScore)}`}>
-                        {pedigreeAnalysis.geneticDiversityScore.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Species Info */}
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">
-                    {getSpeciesIcon(pedigreeAnalysis.species)} {speciesConfig?.name}
-                  </h4>
-                  <div className="space-y-1 text-sm">
-                    <div>Gestación: {pedigreeAnalysis.expectedGestationDays} días</div>
-                    <div>Época: {pedigreeAnalysis.optimalBreedingWindow}</div>
-                  </div>
-                </div>
-
-                {/* Common Ancestors */}
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">Ancestros Comunes</h4>
-                  <div className="space-y-1 text-sm">
-                    {pedigreeAnalysis.commonAncestors.length > 0 ? (
-                      <div className="text-orange-600">
-                        {pedigreeAnalysis.commonAncestors.length} detectados
-                      </div>
-                    ) : (
-                      <div className="text-green-600">
-                        Ninguno detectado
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Recomendaciones Genéticas</h4>
-                  <div className="space-y-1 text-sm">
-                    {pedigreeAnalysis.recommendations.map((rec, index) => (
-                      <div key={index} className="text-gray-700">{rec}</div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Consejos Específicos</h4>
-                  <div className="space-y-1 text-sm">
-                    {pedigreeAnalysis.speciesSpecificAdvice.map((advice, index) => (
-                      <div key={index} className="text-gray-700">{advice}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Universal Breeding Recommendations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart className="w-5 h-5" />
-            Recomendaciones Universales de Apareamiento
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recommendationsLoading ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">Generando recomendaciones para todas las especies...</div>
-            </div>
-          ) : breedingRecommendations.length === 0 ? (
-            <div className="text-center py-8">
-              <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No hay animales reproductores disponibles
-              </h3>
-              <p className="text-gray-500">
-                Registra animales de cualquier especie para generar recomendaciones de apareamiento.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {breedingRecommendations.slice(0, 6).map((recommendation, index) => (
-                <div key={recommendation.pairId} className="border rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-medium flex items-center gap-2">
-                        {getSpeciesIcon(recommendation.species)} {recommendation.maleName} × {recommendation.femaleName}
-                        {recommendation.breed && (
-                          <Badge variant="outline" className="text-xs">
-                            {recommendation.breed}
-                          </Badge>
-                        )}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1">
-                          <div 
-                            className={`w-3 h-3 rounded-full ${getCompatibilityColor(recommendation.compatibilityScore)}`}
-                          />
-                          <span className="text-sm font-medium">
-                            {recommendation.compatibilityScore}% compatibilidad
-                          </span>
-                        </div>
-                        {index === 0 && (
-                          <Badge className="bg-yellow-100 text-yellow-800">
-                            <Star className="w-3 h-3 mr-1" />
-                            Mejor Pareja
-                          </Badge>
-                        )}
-                        {recommendation.isSpecialBreed && (
-                          <Badge className="bg-purple-100 text-purple-800">
-                            <Star className="w-3 h-3 mr-1" />
-                            Raza Especial
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
-                    <div>
-                      <h5 className="font-medium text-gray-700 mb-1">Ventana de Apareamiento:</h5>
-                      <p className="text-gray-600">{recommendation.breedingWindow}</p>
-                      <p className="text-xs text-gray-500 mt-1">Gestación: {recommendation.gestationDays} días</p>
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-gray-700 mb-1">Beneficios:</h5>
-                      <div className="text-gray-600 space-y-1">
-                        {recommendation.geneticBenefits.slice(0, 2).map((benefit, idx) => (
-                          <div key={idx}>{benefit}</div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-gray-700 mb-1">Consideraciones:</h5>
-                      <div className="text-gray-600 space-y-1">
-                        {recommendation.considerations.slice(0, 2).map((consideration, idx) => (
-                          <div key={idx}>{consideration}</div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <Button 
-                onClick={loadBreedingRecommendations}
-                variant="outline"
-                className="w-full mt-4"
-              >
-                Actualizar Recomendaciones
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
