@@ -55,21 +55,12 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
 
   const loadCadastralParcels = async (propertyId: string) => {
     try {
-      // CRITICAL FIX: Calculate and update property center before loading parcels
-      console.log('🔄 Updating property center to calculated coordinates...');
-      await updatePropertyCenterToCalculatedCenter(propertyId);
+      console.log('🗺️ Loading cadastral parcels with CORRECTED SkyRanch coordinates...');
       
-      // Reload properties to get updated center coordinates
-      const updatedProperties = await getAllProperties();
-      setProperties(updatedProperties);
-      
-      // Run batch update to ensure sequential numbering 1-41
-      console.log('🔄 Running batch update to ensure sequential numbering 1-41...');
-      await batchUpdateAllParcels(propertyId);
-      
+      // Load parcels directly - coordinates are already corrected in database
       const data = await getCadastralParcels(propertyId);
       setCadastralParcels(data);
-      console.log(`📋 Loaded ${data.length} cadastral parcels with updated center coordinates`);
+      console.log(`📋 Loaded ${data.length} cadastral parcels at CORRECTED SkyRanch location`);
     } catch (error) {
       console.error('Error loading cadastral parcels:', error);
     }
@@ -121,18 +112,18 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       const selectedProperty = properties.find(p => p.id === selectedPropertyId);
       return selectedProperty ? 
         { lat: selectedProperty.centerLat, lng: selectedProperty.centerLng } :
-        { lat: 40.103, lng: -4.470 }; // Updated fallback coordinates
+        { lat: 40.317635, lng: -4.474248 }; // CORRECTED SkyRanch fallback coordinates
     }
 
-    // FIXED: Use updated coordinate validation bounds
+    // CORRECTED: Use updated coordinate validation bounds for SkyRanch
     const validCoords = coordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
       typeof coord.lng === 'number' &&
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
-      coord.lat >= 40.099 && coord.lat <= 40.105 && 
-      coord.lng >= -4.475 && coord.lng <= -4.465
+      coord.lat >= 40.315 && coord.lat <= 40.320 && 
+      coord.lng >= -4.478 && coord.lng <= -4.470
     );
 
     if (validCoords.length === 0) {
@@ -140,7 +131,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       const selectedProperty = properties.find(p => p.id === selectedPropertyId);
       return selectedProperty ? 
         { lat: selectedProperty.centerLat, lng: selectedProperty.centerLng } :
-        { lat: 40.103, lng: -4.470 }; // Updated fallback coordinates
+        { lat: 40.317635, lng: -4.474248 }; // CORRECTED SkyRanch fallback coordinates
     }
 
     const latSum = validCoords.reduce((sum, coord) => sum + coord.lat, 0);
@@ -151,35 +142,35 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       lng: lngSum / validCoords.length
     };
 
-    console.log(`📍 Calculated parcel center: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)} from ${validCoords.length} valid coords`);
+    console.log(`📍 Calculated parcel center at CORRECTED SkyRanch location: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)} from ${validCoords.length} valid coords`);
     return center;
   };
 
   const handleParcelClick = (parcel: CadastralParcel) => {
     if (map && parcel.boundaryCoordinates.length > 0) {
-      console.log(`🎯 Focusing on parcel: ${parcel.parcelId}`);
+      console.log(`🎯 Focusing on parcel at CORRECTED SkyRanch location: ${parcel.parcelId}`);
       
       const center = calculateParcelCenter(parcel.boundaryCoordinates);
       
-      // FIXED: Validate calculated center is within updated bounds
-      const isValidCenter = center.lat >= 40.099 && center.lat <= 40.105 && 
-                           center.lng >= -4.475 && center.lng <= -4.465;
+      // CORRECTED: Validate calculated center is within SkyRanch bounds
+      const isValidCenter = center.lat >= 40.315 && center.lat <= 40.320 && 
+                           center.lng >= -4.478 && center.lng <= -4.470;
       
       if (isValidCenter) {
-        console.log(`🎯 Centering map on parcel at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
+        console.log(`🎯 Centering map on parcel at CORRECTED SkyRanch location: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
         
         map.setCenter(center);
-        map.setZoom(18); // Higher zoom to see individual parcel clearly with WHITE numbers
+        map.setZoom(20); // Higher zoom to see individual parcel clearly with WHITE numbers
         
-        console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
+        console.log(`✅ Successfully focused on parcel at CORRECTED SkyRanch location: ${parcel.parcelId}`);
       } else {
-        console.warn(`⚠️ Calculated parcel center outside bounds: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
+        console.warn(`⚠️ Calculated parcel center outside SkyRanch bounds: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
         
         // Fallback to property center
         const selectedProperty = properties.find(p => p.id === selectedPropertyId);
         if (selectedProperty) {
           map.setCenter({ lat: selectedProperty.centerLat, lng: selectedProperty.centerLng });
-          map.setZoom(16);
+          map.setZoom(18);
         }
         toast.error('Centro de parcela inválido, usando ubicación central');
       }

@@ -1,3 +1,4 @@
+
 import type { CadastralParcel } from '@/services/cadastralService';
 import { PARCEL_STATUS_COLORS, type ParcelStatus } from '@/utils/cadastral/types';
 
@@ -35,7 +36,7 @@ export class ParcelRenderer {
       return false;
     }
 
-    // FIXED: Use updated coordinate bounds to match calculated center
+    // CORRECTED: Use updated coordinate bounds for SkyRanch location
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -43,9 +44,9 @@ export class ParcelRenderer {
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
       coord.lat !== 0 && coord.lng !== 0 &&
-      // UPDATED: Wider bounds to match actual parcel locations
-      coord.lat >= 40.099 && coord.lat <= 40.105 && 
-      coord.lng >= -4.475 && coord.lng <= -4.465    
+      // CORRECTED: SkyRanch coordinate bounds
+      coord.lat >= 40.315 && coord.lat <= 40.320 && 
+      coord.lng >= -4.478 && coord.lng <= -4.470    
     );
 
     if (validCoords.length < 3) {
@@ -53,7 +54,7 @@ export class ParcelRenderer {
       return false;
     }
 
-    console.log(`\n🗺️ === RENDERING PARCEL ${index + 1} ===`);
+    console.log(`\n🗺️ === RENDERING PARCEL ${index + 1} AT CORRECTED SKYRANCH LOCATION ===`);
     console.log(`📋 Parcel ID: ${parcel.parcelId}`);
     console.log(`📊 Valid coordinates: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
     console.log(`🎯 First coordinate: ${validCoords[0].lat.toFixed(6)}, ${validCoords[0].lng.toFixed(6)}`);
@@ -85,11 +86,11 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // FIXED: Always use simple sequential lot numbers: 1, 2, 3, 4, 5...
+    // Use simple sequential lot numbers: 1, 2, 3, 4, 5...
     const displayLotNumber = (index + 1).toString();
     
     const center = this.calculatePolygonCenter(validCoords);
-    console.log(`🏷️ Creating label for lot ${displayLotNumber} at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
+    console.log(`🏷️ Creating label for lot ${displayLotNumber} at CORRECTED SkyRanch location: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
     
     const label = new google.maps.Marker({
       position: center,
@@ -123,7 +124,7 @@ export class ParcelRenderer {
     });
 
     this.labels.push(label);
-    console.log(`✅ Label created for lot ${displayLotNumber} with WHITE text`);
+    console.log(`✅ Label created for lot ${displayLotNumber} with WHITE text at CORRECTED SkyRanch location`);
 
     // Enhanced info window
     const infoWindow = new google.maps.InfoWindow({
@@ -148,7 +149,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully with lot number ${displayLotNumber} and WHITE text`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully at CORRECTED SkyRanch location with lot number ${displayLotNumber}`);
     console.log(`=== END PARCEL RENDERING ===\n`);
 
     return true;
@@ -169,16 +170,16 @@ export class ParcelRenderer {
       });
     });
 
-    console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels`);
+    console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels at CORRECTED SkyRanch location`);
     this.map.fitBounds(bounds);
     
-    // Set appropriate zoom to see all parcels clearly with WHITE numbers
+    // Set appropriate zoom to see all parcels clearly with WHITE numbers at SkyRanch
     google.maps.event.addListenerOnce(this.map, 'bounds_changed', () => {
       const zoom = this.map.getZoom();
-      if (zoom && zoom > 16) {
-        this.map.setZoom(16); // Perfect zoom to see all parcels and WHITE numbers clearly
-      } else if (zoom && zoom < 14) {
-        this.map.setZoom(14);
+      if (zoom && zoom > 18) {
+        this.map.setZoom(18); // Perfect zoom to see all parcels and WHITE numbers clearly at SkyRanch
+      } else if (zoom && zoom < 16) {
+        this.map.setZoom(16);
       }
     });
   }

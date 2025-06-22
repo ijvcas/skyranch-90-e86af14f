@@ -38,7 +38,7 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
           }
         }
 
-        // Validate and filter coordinates with precise SkyRanch bounds
+        // Validate and filter coordinates with CORRECTED SkyRanch bounds
         if (Array.isArray(coordinates)) {
           const validCoords = coordinates.filter(coord => 
             coord && 
@@ -46,8 +46,8 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
             typeof coord.lng === 'number' &&
             !isNaN(coord.lat) && 
             !isNaN(coord.lng) &&
-            coord.lat >= 40.099 && coord.lat <= 40.105 && 
-            coord.lng >= -4.475 && coord.lng <= -4.465
+            coord.lat >= 40.315 && coord.lat <= 40.320 && 
+            coord.lng >= -4.478 && coord.lng <= -4.470
           );
 
           validCoords.forEach(coord => {

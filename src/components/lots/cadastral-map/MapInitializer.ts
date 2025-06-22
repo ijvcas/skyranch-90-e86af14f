@@ -13,9 +13,9 @@ export const initializeMap = (
   }
 
   console.log('🗺️ Initializing map for property:', property.name);
-  console.log(`🎯 Using PRECISE property center coordinates: ${property.centerLat}, ${property.centerLng}`);
+  console.log(`🎯 Using CORRECTED SkyRanch coordinates: ${property.centerLat}, ${property.centerLng}`);
   
-  // Use the property's precise center coordinates from database
+  // Use the property's corrected center coordinates from database
   const mapCenter = {
     lat: property.centerLat,
     lng: property.centerLng
@@ -23,7 +23,7 @@ export const initializeMap = (
 
   const map = new google.maps.Map(mapElement, {
     center: mapCenter,
-    zoom: 16, // Optimal zoom to see all parcels clearly
+    zoom: 18, // Higher zoom for better parcel visibility at SkyRanch
     mapTypeId: google.maps.MapTypeId.SATELLITE,
     mapTypeControl: true,
     mapTypeControlOptions: {
@@ -38,7 +38,7 @@ export const initializeMap = (
     fullscreenControlOptions: {
       position: google.maps.ControlPosition.TOP_RIGHT,
     },
-    // Enhanced styling for perfect parcel visibility
+    // Enhanced styling for perfect parcel visibility at SkyRanch
     styles: [
       {
         featureType: 'landscape',
@@ -48,11 +48,11 @@ export const initializeMap = (
     ]
   });
 
-  console.log('✅ Map initialized at PRECISE property center coordinates with optimal zoom');
+  console.log('✅ Map initialized at CORRECTED SkyRanch coordinates with optimal zoom');
   
   // Ensure map is fully ready before calling callback
   google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
-    console.log('🗺️ Map tiles loaded - ready for precise parcel rendering');
+    console.log('🗺️ Map tiles loaded at correct SkyRanch location - ready for precise parcel rendering');
     onMapReady(map);
   });
   
