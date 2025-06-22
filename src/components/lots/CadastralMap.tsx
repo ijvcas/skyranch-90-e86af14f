@@ -3,9 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Property, CadastralParcel } from '@/services/cadastralService';
 import { ParcelStatus } from '@/utils/cadastral/types';
-import { initializeRebuildMap } from './cadastral-map/RebuildMapInitializer';
+import { initializeMap } from './cadastral-map/MapInitializer';
 import { ParcelRenderer } from './cadastral-map/ParcelRenderer';
-import { SKYRANCH_COORDINATES } from '@/utils/cadastral/coordinateSystemRebuild';
 
 interface CadastralMapProps {
   isLoaded: boolean;
@@ -31,17 +30,16 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
   useEffect(() => {
     if (isLoaded && selectedProperty && !mapRef.current) {
-      console.log('🗺️ Initializing rebuild map for SkyRanch');
-      console.log(`🎯 Forcing map to SkyRanch coordinates: ${SKYRANCH_COORDINATES.lat}, ${SKYRANCH_COORDINATES.lng}`);
+      console.log('🗺️ Initializing map with original MapInitializer');
       
-      const map = initializeRebuildMap(selectedProperty, 'cadastral-map', onMapReady);
+      const map = initializeMap(selectedProperty, 'cadastral-map', onMapReady);
       if (map) {
         mapRef.current = map;
         parcelRendererRef.current = new ParcelRenderer(map, onParcelClick);
         
         // Wait for map to be fully ready before rendering parcels
         google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
-          console.log('✅ Rebuild map tiles loaded at SkyRanch, ready for parcels');
+          console.log('✅ Map tiles loaded, ready for parcels');
           setTimeout(() => {
             setInitialLoadComplete(true);
           }, 300);
@@ -52,15 +50,8 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
   useEffect(() => {
     if (mapRef.current && parcelRendererRef.current && cadastralParcels.length > 0 && initialLoadComplete) {
-      console.log(`🎯 RENDERING ${cadastralParcels.length} PARCELS AT SKYRANCH COORDINATES`);
+      console.log(`🎯 Rendering ${cadastralParcels.length} parcels`);
       displayCadastralParcels();
-    } else {
-      console.log('⏳ Waiting for optimal conditions:', {
-        hasMap: !!mapRef.current,
-        hasRenderer: !!parcelRendererRef.current,
-        parcelCount: cadastralParcels.length,
-        initialLoadComplete
-      });
     }
   }, [cadastralParcels, statusFilter, initialLoadComplete]);
 
@@ -79,7 +70,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       ? cadastralParcels 
       : cadastralParcels.filter(parcel => parcel.status === statusFilter);
 
-    console.log(`🎯 Rendering ${filteredParcels.length} parcels at SkyRanch coordinates`);
+    console.log(`🎯 Rendering ${filteredParcels.length} parcels`);
     
     if (filteredParcels.length === 0) {
       console.log('⚠️ No parcels to display after filtering');
@@ -91,7 +82,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     const bounds = new google.maps.LatLngBounds();
 
     filteredParcels.forEach((parcel, index) => {
-      console.log(`🔄 Rendering parcel ${index + 1}/${filteredParcels.length}: ${parcel.parcelId} at SkyRanch`);
+      console.log(`🔄 Rendering parcel ${index + 1}/${filteredParcels.length}: ${parcel.parcelId}`);
       
       if (parcelRendererRef.current?.renderParcel(parcel, bounds, index)) {
         validParcels++;
@@ -101,7 +92,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       }
     });
 
-    console.log(`🎉 RENDERED ${validParcels}/${filteredParcels.length} parcels at SkyRanch coordinates`);
+    console.log(`🎉 Rendered ${validParcels}/${filteredParcels.length} parcels`);
     
     if (validParcels === 0) {
       console.error('🚨 NO PARCELS WERE RENDERED!');
@@ -129,10 +120,10 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
           <div className="absolute bottom-4 left-4 bg-white p-2 rounded shadow text-sm">
             {parcelsRendered ? (
               <span className="text-green-600">
-                ✅ {cadastralParcels.length} parcelas at SkyRanch ({SKYRANCH_COORDINATES.lat.toFixed(6)}, {SKYRANCH_COORDINATES.lng.toFixed(6)})
+                ✅ {cadastralParcels.length} parcelas cargadas
               </span>
             ) : (
-              <span className="text-orange-600">⏳ Loading at SkyRanch coordinates...</span>
+              <span className="text-orange-600">⏳ Cargando parcelas...</span>
             )}
           </div>
         )}

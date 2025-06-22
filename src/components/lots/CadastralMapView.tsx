@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
@@ -8,8 +9,6 @@ import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
 import type { ParcelStatus } from '@/utils/cadastral/types';
 import { toast } from 'sonner';
-import { batchUpdateAllParcels } from '@/services/cadastral/batchProcessor';
-import { updatePropertyCenterToCalculatedCenter } from '@/services/cadastral/coordinateCalculator';
 
 interface CadastralMapViewProps {
   onPropertySelect?: (propertyId: string) => void;
@@ -55,14 +54,12 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
 
   const loadCadastralParcels = async (propertyId: string) => {
     try {
-      console.log('🗺️ Loading cadastral parcels with correct SkyRanch coordinates...');
+      console.log('🗺️ Loading cadastral parcels...');
       
-      // Load parcels directly - coordinates are already correct in database
       const data = await getCadastralParcels(propertyId);
       setCadastralParcels(data);
-      console.log(`📋 Loaded ${data.length} cadastral parcels at SkyRanch location`);
+      console.log(`📋 Loaded ${data.length} cadastral parcels`);
       
-      // Debug: Log sample coordinates to verify they're correct
       if (data.length > 0 && data[0].boundaryCoordinates?.length > 0) {
         console.log('🔍 Sample parcel coordinates:', data[0].boundaryCoordinates[0]);
       }
@@ -100,7 +97,6 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
     try {
       const success = await updateCadastralParcel(parcelId, updates);
       if (success) {
-        // Update local state
         setCadastralParcels(prev => 
           prev.map(parcel => 
             parcel.id === parcelId 
@@ -127,7 +123,6 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
         { lat: 40.317635, lng: -4.474248 };
     }
 
-    // Use ALL valid coordinates - no geographic bounds filtering
     const validCoords = coordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -166,7 +161,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       console.log(`🎯 Centering map on parcel: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
       
       map.setCenter(center);
-      map.setZoom(20); // Higher zoom to see individual parcel clearly
+      map.setZoom(20);
       
       console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
     } else {
