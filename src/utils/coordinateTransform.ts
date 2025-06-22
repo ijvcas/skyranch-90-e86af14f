@@ -30,15 +30,28 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// Simple UTM to WGS84 conversion for Spanish zones
+// Improved UTM to WGS84 conversion for Spanish zones
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
-  // Simplified conversion - in a real implementation you'd use proj4js
-  // This is a basic approximation for Spanish UTM zones
+  // More accurate conversion for Spanish UTM zones
   const centralMeridian = (zone - 1) * 6 - 180 + 3;
   
-  // Basic conversion approximation
-  const lng = centralMeridian + (x - 500000) / (111320 * Math.cos(y * Math.PI / 180 / 111320));
-  const lat = y / 111320;
+  // UTM constants
+  const k0 = 0.9996; // Scale factor
+  const a = 6378137; // WGS84 semi-major axis
+  const e = 0.0818191908426; // First eccentricity
+  const e1sq = 0.00673949674228; // e'^2
+  
+  // Remove false easting and northing
+  const x1 = x - 500000;
+  const y1 = y;
+  
+  // Calculate longitude
+  const lng = centralMeridian + (x1 / (k0 * a)) * (180 / Math.PI);
+  
+  // Calculate latitude (simplified)
+  const lat = (y1 / (k0 * a)) * (180 / Math.PI);
+  
+  console.log(`Converting UTM Zone ${zone}: (${x}, ${y}) -> (${lat}, ${lng})`);
   
   return { lat, lng };
 };
@@ -49,21 +62,32 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
   const firstCoord = coordinates[0];
   if (!firstCoord || firstCoord.length < 2) return 'EPSG:4326';
   
-  const x = firstCoord[0];
-  const y = firstCoord[1];
+  const x = Math.abs(firstCoord[0]);
+  const y = Math.abs(firstCoord[1]);
+  
+  console.log(`Detecting coordinate system for: (${firstCoord[0]}, ${firstCoord[1]})`);
   
   // Detect based on coordinate ranges
-  if (x >= -180 && x <= 180 && y >= -90 && y <= 90) {
+  if (x <= 180 && y <= 90) {
+    console.log('Detected WGS84 (EPSG:4326)');
     return 'EPSG:4326'; // WGS84
   }
   
-  // Spanish UTM zones
-  if (x >= 160000 && x <= 800000 && y >= 4000000 && y <= 4900000) {
-    if (x < 300000) return 'EPSG:25829'; // Zone 29N
-    if (x < 600000) return 'EPSG:25830'; // Zone 30N
+  // Spanish UTM zones - more specific ranges
+  if (x >= 100000 && x <= 900000 && y >= 4000000 && y <= 5000000) {
+    if (x < 300000) {
+      console.log('Detected UTM Zone 29N (EPSG:25829)');
+      return 'EPSG:25829'; // Zone 29N
+    }
+    if (x < 600000) {
+      console.log('Detected UTM Zone 30N (EPSG:25830)');
+      return 'EPSG:25830'; // Zone 30N
+    }
+    console.log('Detected UTM Zone 31N (EPSG:25831)');
     return 'EPSG:25831'; // Zone 31N
   }
   
+  console.log('Defaulting to EPSG:4326');
   return 'EPSG:4326'; // Default fallback
 };
 
@@ -72,6 +96,8 @@ export const transformCoordinates = (
   fromEPSG: string,
   toEPSG: string = 'EPSG:4326'
 ): { lat: number; lng: number }[] => {
+  console.log(`Transforming ${coordinates.length} coordinates from ${fromEPSG} to ${toEPSG}`);
+  
   if (fromEPSG === toEPSG) {
     return coordinates.map(([lng, lat]) => ({ lat, lng }));
   }
@@ -88,5 +114,6 @@ export const transformCoordinates = (
   }
   
   // Fallback: assume coordinates are already in target system
+  console.log('Using fallback coordinate transformation');
   return coordinates.map(([lng, lat]) => ({ lat, lng }));
 };

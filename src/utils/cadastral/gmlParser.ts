@@ -22,17 +22,28 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
     element.querySelector('gml\\:posList'),
     element.querySelector('coordinates'),
     element.querySelector('posList'),
+    element.querySelector('gml\\:pos'),
+    element.querySelector('pos'),
     element
   ];
   
   for (const source of coordSources) {
     if (source) {
       coordinates = extractGMLCoordinates(source);
-      if (coordinates.length >= 3) break;
+      if (coordinates.length >= 3) {
+        console.log(`Found ${coordinates.length} coordinates from ${source.tagName}`);
+        break;
+      }
     }
   }
   
-  if (coordinates.length < 3) return null;
+  if (coordinates.length < 3) {
+    console.log(`Insufficient coordinates found for element ${index}: ${coordinates.length} points`);
+    return null;
+  }
+  
+  // Log first few coordinates for debugging
+  console.log(`Sample coordinates:`, coordinates.slice(0, 3));
   
   return {
     parcelId,
@@ -46,7 +57,7 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
 export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
   const result: ParsingResult = {
     parcels: [],
-    coordinateSystem: 'EPSG:4326',
+    coordinateSystem: 'EPSG:25830', // Default to Spanish UTM 30N
     errors: [],
     warnings: []
   };
@@ -65,34 +76,50 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       return result;
     }
 
-    // Extract CRS information
-    const crsElements = xmlDoc.querySelectorAll('[srsName], [crs]');
+    // Extract CRS information - enhanced detection
+    const crsElements = xmlDoc.querySelectorAll('[srsName], [crs], [srs]');
     if (crsElements.length > 0) {
-      const srsName = crsElements[0].getAttribute('srsName') || crsElements[0].getAttribute('crs');
+      const srsName = crsElements[0].getAttribute('srsName') || 
+                      crsElements[0].getAttribute('crs') || 
+                      crsElements[0].getAttribute('srs');
       if (srsName) {
-        result.coordinateSystem = srsName.includes('EPSG') ? srsName : 'EPSG:4326';
+        if (srsName.includes('25830')) {
+          result.coordinateSystem = 'EPSG:25830';
+        } else if (srsName.includes('25829')) {
+          result.coordinateSystem = 'EPSG:25829';
+        } else if (srsName.includes('25831')) {
+          result.coordinateSystem = 'EPSG:25831';
+        } else if (srsName.includes('4326')) {
+          result.coordinateSystem = 'EPSG:4326';
+        } else {
+          result.coordinateSystem = srsName.includes('EPSG') ? srsName : 'EPSG:25830';
+        }
       }
     }
 
-    // Enhanced GML element search
+    // Enhanced GML element search - specifically for Surface elements
     const gmlSelectors = [
-      'gml\\:Polygon', 'Polygon', 
       'gml\\:Surface', 'Surface',
+      'gml\\:Polygon', 'Polygon', 
       'gml\\:LinearRing', 'LinearRing',
       'gml\\:featureMember', 'featureMember',
       'gml\\:Feature', 'Feature',
-      'gml\\:coordinates', 'coordinates',
-      'gml\\:posList', 'posList'
+      'featureMember > *', // Any child of featureMember
+      '*[gml\\:id]', // Any element with gml:id
     ];
 
     let foundElements: Element[] = [];
     
     for (const selector of gmlSelectors) {
-      const elements = xmlDoc.querySelectorAll(selector);
-      if (elements.length > 0) {
-        foundElements = Array.from(elements);
-        console.log(`Found ${elements.length} GML elements of type: ${selector}`);
-        break;
+      try {
+        const elements = xmlDoc.querySelectorAll(selector);
+        if (elements.length > 0) {
+          foundElements = Array.from(elements);
+          console.log(`Found ${elements.length} GML elements of type: ${selector}`);
+          break;
+        }
+      } catch (e) {
+        console.log(`Selector ${selector} failed, trying next`);
       }
     }
 
@@ -101,10 +128,11 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       const allElements = xmlDoc.querySelectorAll('*');
       for (const element of allElements) {
         const text = element.textContent || '';
-        if (isCoordinateData(text)) {
+        if (isCoordinateData(text) && text.length > 20) { // Ensure substantial coordinate data
           foundElements.push(element);
         }
       }
+      console.log(`Fallback search found ${foundElements.length} elements with coordinate data`);
     }
 
     if (foundElements.length === 0) {
@@ -119,15 +147,24 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       }
     });
 
+    console.log(`Successfully parsed ${result.parcels.length} parcels from GML`);
+    console.log(`Coordinate system detected: ${result.coordinateSystem}`);
+
     // Transform coordinates if needed
-    if (result.coordinateSystem !== 'EPSG:4326') {
-      result.parcels = result.parcels.map(parcel => ({
-        ...parcel,
-        boundaryCoordinates: transformCoordinates(
+    if (result.coordinateSystem !== 'EPSG:4326' && result.parcels.length > 0) {
+      console.log('Transforming coordinates from', result.coordinateSystem, 'to EPSG:4326');
+      result.parcels = result.parcels.map(parcel => {
+        const transformedCoords = transformCoordinates(
           parcel.boundaryCoordinates.map(c => [c.lng, c.lat]),
-          result.coordinateSystem
-        )
-      }));
+          result.coordinateSystem,
+          'EPSG:4326'
+        );
+        return {
+          ...parcel,
+          boundaryCoordinates: transformedCoords
+        };
+      });
+      console.log('Coordinate transformation completed');
     }
 
   } catch (error) {
