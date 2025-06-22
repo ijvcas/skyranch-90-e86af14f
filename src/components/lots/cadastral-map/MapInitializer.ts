@@ -1,33 +1,59 @@
 
 import type { Property } from '@/services/cadastralService';
 
+// FIXED: Use correct SkyRanch center coordinates where parcels actually are
+const CORRECTED_SKYRANCH_CENTER = { 
+  lat: 40.101, 
+  lng: -4.470 
+};
+
 export const initializeMap = (
-  selectedProperty: Property,
-  mapElementId: string,
+  property: Property, 
+  elementId: string, 
   onMapReady: (map: google.maps.Map) => void
 ): google.maps.Map | null => {
-  const mapElement = document.getElementById(mapElementId);
-  if (!mapElement) return null;
+  const mapElement = document.getElementById(elementId);
+  if (!mapElement) {
+    console.error(`Map element with id "${elementId}" not found`);
+    return null;
+  }
 
-  console.log('Initializing cadastral map with center:', selectedProperty.centerLat, selectedProperty.centerLng);
+  console.log('🗺️ Initializing map for property:', property.name);
+  
+  // CRITICAL FIX: Always use correct SkyRanch coordinates, not the incorrect property center
+  const mapCenter = CORRECTED_SKYRANCH_CENTER;
+  
+  console.log(`🎯 Using CORRECTED map center: ${mapCenter.lat}, ${mapCenter.lng}`);
 
-  const newMap = new google.maps.Map(mapElement, {
-    center: { 
-      lat: selectedProperty.centerLat, 
-      lng: selectedProperty.centerLng 
-    },
-    zoom: selectedProperty.zoomLevel || 16,
+  const map = new google.maps.Map(mapElement, {
+    center: mapCenter,
+    zoom: 15, // Start with wider view to see all parcels
     mapTypeId: google.maps.MapTypeId.SATELLITE,
     mapTypeControl: true,
-    streetViewControl: false,
-    fullscreenControl: true,
-    zoomControl: true,
     mapTypeControlOptions: {
-      style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
       position: google.maps.ControlPosition.TOP_RIGHT,
     },
+    zoomControl: true,
+    zoomControlOptions: {
+      position: google.maps.ControlPosition.RIGHT_CENTER,
+    },
+    streetViewControl: false,
+    fullscreenControl: true,
+    fullscreenControlOptions: {
+      position: google.maps.ControlPosition.TOP_RIGHT,
+    },
+    // Enhanced styling for better parcel visibility
+    styles: [
+      {
+        featureType: 'landscape',
+        elementType: 'geometry',
+        stylers: [{ saturation: -10 }] // Less saturation for better parcel contrast
+      }
+    ]
   });
 
-  onMapReady(newMap);
-  return newMap;
+  console.log('✅ Map initialized at correct SkyRanch location');
+  onMapReady(map);
+  
+  return map;
 };

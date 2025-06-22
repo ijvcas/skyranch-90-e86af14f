@@ -36,7 +36,7 @@ export class ParcelRenderer {
       return false;
     }
 
-    // FIXED: Use much wider coordinate ranges to include all SkyRanch parcels
+    // FIXED: Use correct SkyRanch coordinate ranges
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -44,9 +44,9 @@ export class ParcelRenderer {
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
       coord.lat !== 0 && coord.lng !== 0 &&
-      // EXPANDED: Much wider coordinate bounds to catch all parcels
-      coord.lat >= 40.095 && coord.lat <= 40.110 && 
-      coord.lng >= -4.480 && coord.lng <= -4.460    
+      // CORRECTED: Proper SkyRanch bounds centered around 40.101, -4.470
+      coord.lat >= 40.099 && coord.lat <= 40.103 && 
+      coord.lng >= -4.475 && coord.lng <= -4.465    
     );
 
     if (validCoords.length < 3) {
@@ -64,7 +64,7 @@ export class ParcelRenderer {
     const polygon = new google.maps.Polygon({
       paths: validCoords,
       fillColor: color,
-      fillOpacity: 0.7, // HIGH visibility
+      fillOpacity: 0.8, // HIGH visibility
       strokeColor: '#000000', // BLACK stroke for visibility
       strokeWeight: 2,
       clickable: true,
@@ -97,17 +97,17 @@ export class ParcelRenderer {
       map: this.map,
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
-        scale: 15, // LARGER background
+        scale: 18, // LARGER background for better visibility
         fillOpacity: 0.9,
         strokeOpacity: 1.0,
-        fillColor: '#FFFFFF',
-        strokeColor: '#000000',
+        fillColor: '#000000', // BLACK background for white text contrast
+        strokeColor: '#FFFFFF',
         strokeWeight: 2
       },
       label: {
         text: displayLotNumber,
-        color: '#000000',
-        fontSize: '16px', // LARGER font
+        color: '#FFFFFF', // FIXED: WHITE text as required
+        fontSize: '18px', // LARGER font for better visibility
         fontWeight: 'bold',
         fontFamily: 'Arial, sans-serif'
       },
@@ -124,7 +124,7 @@ export class ParcelRenderer {
     });
 
     this.labels.push(label);
-    console.log(`✅ Label created for lot ${displayLotNumber}`);
+    console.log(`✅ Label created for lot ${displayLotNumber} with WHITE text`);
 
     // Enhanced info window
     const infoWindow = new google.maps.InfoWindow({
@@ -149,7 +149,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully with lot number ${displayLotNumber}`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully with lot number ${displayLotNumber} and WHITE text`);
     console.log(`=== END PARCEL RENDERING ===\n`);
 
     return true;
@@ -173,13 +173,13 @@ export class ParcelRenderer {
     console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels`);
     this.map.fitBounds(bounds);
     
-    // FIXED: Set zoom to level where parcels are clearly visible
+    // FIXED: Set appropriate zoom to see all parcels clearly with WHITE numbers
     google.maps.event.addListenerOnce(this.map, 'bounds_changed', () => {
       const zoom = this.map.getZoom();
-      if (zoom && zoom > 17) {
-        this.map.setZoom(17); // Perfect zoom to see parcels and numbers
-      } else if (zoom && zoom < 15) {
-        this.map.setZoom(15);
+      if (zoom && zoom > 16) {
+        this.map.setZoom(16); // Perfect zoom to see all parcels and WHITE numbers clearly
+      } else if (zoom && zoom < 14) {
+        this.map.setZoom(14);
       }
     });
   }
