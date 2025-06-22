@@ -1,4 +1,3 @@
-
 import type { CadastralParcel } from '@/services/cadastralService';
 import { PARCEL_STATUS_COLORS, type ParcelStatus } from '@/utils/cadastral/types';
 
@@ -36,7 +35,7 @@ export class ParcelRenderer {
       return false;
     }
 
-    // FIXED: Use correct SkyRanch coordinate ranges
+    // FIXED: Use updated coordinate bounds to match calculated center
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -44,8 +43,8 @@ export class ParcelRenderer {
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
       coord.lat !== 0 && coord.lng !== 0 &&
-      // CORRECTED: Proper SkyRanch bounds centered around 40.101, -4.470
-      coord.lat >= 40.099 && coord.lat <= 40.103 && 
+      // UPDATED: Wider bounds to match actual parcel locations
+      coord.lat >= 40.099 && coord.lat <= 40.105 && 
       coord.lng >= -4.475 && coord.lng <= -4.465    
     );
 
@@ -106,7 +105,7 @@ export class ParcelRenderer {
       },
       label: {
         text: displayLotNumber,
-        color: '#FFFFFF', // FIXED: WHITE text as required
+        color: '#FFFFFF', // WHITE text as required
         fontSize: '18px', // LARGER font for better visibility
         fontWeight: 'bold',
         fontFamily: 'Arial, sans-serif'
@@ -173,7 +172,7 @@ export class ParcelRenderer {
     console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels`);
     this.map.fitBounds(bounds);
     
-    // FIXED: Set appropriate zoom to see all parcels clearly with WHITE numbers
+    // Set appropriate zoom to see all parcels clearly with WHITE numbers
     google.maps.event.addListenerOnce(this.map, 'bounds_changed', () => {
       const zoom = this.map.getZoom();
       if (zoom && zoom > 16) {

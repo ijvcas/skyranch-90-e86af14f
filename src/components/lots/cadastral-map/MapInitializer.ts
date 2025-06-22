@@ -1,12 +1,6 @@
 
 import type { Property } from '@/services/cadastralService';
 
-// FIXED: Use correct SkyRanch center coordinates where parcels actually are
-const CORRECTED_SKYRANCH_CENTER = { 
-  lat: 40.101, 
-  lng: -4.470 
-};
-
 export const initializeMap = (
   property: Property, 
   elementId: string, 
@@ -20,10 +14,13 @@ export const initializeMap = (
 
   console.log('🗺️ Initializing map for property:', property.name);
   
-  // CRITICAL FIX: Always use correct SkyRanch coordinates, not the incorrect property center
-  const mapCenter = CORRECTED_SKYRANCH_CENTER;
+  // CRITICAL FIX: Use the property's actual center coordinates from database
+  const mapCenter = {
+    lat: property.centerLat,
+    lng: property.centerLng
+  };
   
-  console.log(`🎯 Using CORRECTED map center: ${mapCenter.lat}, ${mapCenter.lng}`);
+  console.log(`🎯 Using property center coordinates: ${mapCenter.lat}, ${mapCenter.lng}`);
 
   const map = new google.maps.Map(mapElement, {
     center: mapCenter,
@@ -52,7 +49,7 @@ export const initializeMap = (
     ]
   });
 
-  console.log('✅ Map initialized at correct SkyRanch location');
+  console.log('✅ Map initialized at property center coordinates');
   onMapReady(map);
   
   return map;
