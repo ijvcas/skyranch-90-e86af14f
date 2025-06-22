@@ -32,6 +32,7 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
       coordinates = extractGMLCoordinates(source);
       if (coordinates.length >= 3) {
         console.log(`Found ${coordinates.length} coordinates from ${source.tagName}`);
+        console.log(`Sample raw coordinates:`, coordinates.slice(0, 3));
         break;
       }
     }
@@ -41,9 +42,6 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
     console.log(`Insufficient coordinates found for element ${index}: ${coordinates.length} points`);
     return null;
   }
-  
-  // Log first few coordinates for debugging
-  console.log(`Sample coordinates:`, coordinates.slice(0, 3));
   
   return {
     parcelId,
@@ -83,6 +81,7 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
                       crsElements[0].getAttribute('crs') || 
                       crsElements[0].getAttribute('srs');
       if (srsName) {
+        console.log('Found CRS in GML:', srsName);
         if (srsName.includes('25830')) {
           result.coordinateSystem = 'EPSG:25830';
         } else if (srsName.includes('25829')) {
@@ -153,6 +152,12 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
     // Transform coordinates if needed
     if (result.coordinateSystem !== 'EPSG:4326' && result.parcels.length > 0) {
       console.log('Transforming coordinates from', result.coordinateSystem, 'to EPSG:4326');
+      
+      // Log some sample coordinates before transformation
+      if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
+        console.log('Sample coordinates before transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
+      }
+      
       result.parcels = result.parcels.map(parcel => {
         const transformedCoords = transformCoordinates(
           parcel.boundaryCoordinates.map(c => [c.lng, c.lat]),
@@ -164,6 +169,12 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
           boundaryCoordinates: transformedCoords
         };
       });
+      
+      // Log some sample coordinates after transformation
+      if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
+        console.log('Sample coordinates after transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
+      }
+      
       console.log('Coordinate transformation completed');
     }
 

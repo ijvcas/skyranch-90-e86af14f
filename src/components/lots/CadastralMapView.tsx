@@ -6,7 +6,6 @@ import { useGoogleMapsLoader } from '@/hooks/polygon/useGoogleMapsLoader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
-import CadastralParcelsInfo from './CadastralParcelsInfo';
 
 interface CadastralMapViewProps {
   onPropertySelect?: (propertyId: string) => void;
@@ -120,7 +119,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
         onMapReady={handleMapReady}
       />
 
-      <CadastralParcelsInfo cadastralParcels={cadastralParcels} />
+      {/* Removed CadastralParcelsInfo component - no longer displaying the list */}
     </div>
   );
 };

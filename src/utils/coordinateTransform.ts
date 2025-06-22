@@ -30,30 +30,59 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// Improved UTM to WGS84 conversion for Spanish zones
+// More accurate UTM to WGS84 conversion for Spanish zones
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
-  // More accurate conversion for Spanish UTM zones
-  const centralMeridian = (zone - 1) * 6 - 180 + 3;
-  
-  // UTM constants
+  // Constants for WGS84 ellipsoid
+  const a = 6378137.0; // Semi-major axis
+  const f = 1/298.257223563; // Flattening
   const k0 = 0.9996; // Scale factor
-  const a = 6378137; // WGS84 semi-major axis
-  const e = 0.0818191908426; // First eccentricity
-  const e1sq = 0.00673949674228; // e'^2
+  const e = Math.sqrt(2*f - f*f); // First eccentricity
+  const e1sq = e*e / (1-e*e); // Second eccentricity squared
   
-  // Remove false easting and northing
-  const x1 = x - 500000;
-  const y1 = y;
+  // Remove false easting
+  const x1 = x - 500000.0;
   
   // Calculate longitude
-  const lng = centralMeridian + (x1 / (k0 * a)) * (180 / Math.PI);
+  const centralMeridian = (zone - 1) * 6 - 180 + 3;
   
-  // Calculate latitude (simplified)
-  const lat = (y1 / (k0 * a)) * (180 / Math.PI);
+  // More accurate latitude calculation
+  const M = y / k0;
+  const mu = M / (a * (1 - e*e/4 - 3*e*e*e*e/64 - 5*e*e*e*e*e*e/256));
   
-  console.log(`Converting UTM Zone ${zone}: (${x}, ${y}) -> (${lat}, ${lng})`);
+  const e1 = (1 - Math.sqrt(1 - e*e)) / (1 + Math.sqrt(1 - e*e));
+  const J1 = 3*e1/2 - 27*e1*e1*e1/32;
+  const J2 = 21*e1*e1/16 - 55*e1*e1*e1*e1/32;
+  const J3 = 151*e1*e1*e1/96;
+  const J4 = 1097*e1*e1*e1*e1/512;
   
-  return { lat, lng };
+  const fp = mu + J1*Math.sin(2*mu) + J2*Math.sin(4*mu) + J3*Math.sin(6*mu) + J4*Math.sin(8*mu);
+  
+  const C1 = e1sq * Math.cos(fp) * Math.cos(fp);
+  const T1 = Math.tan(fp) * Math.tan(fp);
+  const R1 = a * (1 - e*e) / Math.pow(1 - e*e * Math.sin(fp) * Math.sin(fp), 1.5);
+  const N1 = a / Math.sqrt(1 - e*e * Math.sin(fp) * Math.sin(fp));
+  const D = x1 / (N1 * k0);
+  
+  const Q1 = N1 * Math.tan(fp) / R1;
+  const Q2 = D*D / 2;
+  const Q3 = (5 + 3*T1 + 10*C1 - 4*C1*C1 - 9*e1sq) * D*D*D*D / 24;
+  const Q4 = (61 + 90*T1 + 298*C1 + 45*T1*T1 - 1.6*e1sq - 3*C1*C1) * D*D*D*D*D*D / 720;
+  
+  const lat = fp - Q1 * (Q2 - Q3 + Q4);
+  
+  const Q5 = D;
+  const Q6 = (1 + 2*T1 + C1) * D*D*D / 6;
+  const Q7 = (5 - 2*C1 + 28*T1 - 3*C1*C1 + 8*e1sq + 24*T1*T1) * D*D*D*D*D / 120;
+  
+  const lng = centralMeridian + (Q5 - Q6 + Q7) / Math.cos(fp);
+  
+  // Convert from radians to degrees
+  const latDeg = lat * 180 / Math.PI;
+  const lngDeg = lng * 180 / Math.PI;
+  
+  console.log(`Enhanced UTM conversion Zone ${zone}: (${x}, ${y}) -> (${latDeg}, ${lngDeg})`);
+  
+  return { lat: latDeg, lng: lngDeg };
 };
 
 export const detectCoordinateSystem = (coordinates: number[][]): string => {
@@ -73,8 +102,9 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
     return 'EPSG:4326'; // WGS84
   }
   
-  // Spanish UTM zones - more specific ranges
+  // Spanish UTM zones - more specific ranges for Spain
   if (x >= 100000 && x <= 900000 && y >= 4000000 && y <= 5000000) {
+    // Spain is typically in zones 29N, 30N, 31N
     if (x < 300000) {
       console.log('Detected UTM Zone 29N (EPSG:25829)');
       return 'EPSG:25829'; // Zone 29N
@@ -102,7 +132,7 @@ export const transformCoordinates = (
     return coordinates.map(([lng, lat]) => ({ lat, lng }));
   }
   
-  // Handle UTM to WGS84 conversion
+  // Handle UTM to WGS84 conversion with enhanced accuracy
   if (fromEPSG.includes('25830') && toEPSG === 'EPSG:4326') {
     return coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 30));
   }
