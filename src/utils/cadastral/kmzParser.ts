@@ -1,6 +1,7 @@
 
 import JSZip from 'jszip';
 import type { ParsingResult } from './types';
+import { calculateParcelArea } from '@/services/cadastral/areaCalculator';
 
 export const parseKMZFile = async (file: File): Promise<ParsingResult> => {
   const result: ParsingResult = {
@@ -67,6 +68,9 @@ export const parseKMZFile = async (file: File): Promise<ParsingResult> => {
       const name = placemark.querySelector('name')?.textContent || `KMZ_Parcel_${index + 1}`;
       const description = placemark.querySelector('description')?.textContent || '';
       
+      // Extract parcel number from name or description
+      const parcelNumber = extractParcelNumber(name, description);
+      
       // Look for polygon coordinates
       const coordinatesText = placemark.querySelector('Polygon coordinates, LinearRing coordinates')?.textContent?.trim() ||
                              placemark.querySelector('coordinates')?.textContent?.trim();
@@ -84,13 +88,20 @@ export const parseKMZFile = async (file: File): Promise<ParsingResult> => {
         }).filter(coord => coord && !isNaN(coord.lat) && !isNaN(coord.lng)) as { lat: number; lng: number }[];
 
         if (coordinates.length >= 3) {
+          // Calculate area using the coordinates
+          const areaHectares = calculateParcelArea(coordinates);
+          
           result.parcels.push({
-            parcelId: name,
+            parcelId: parcelNumber || name,
             boundaryCoordinates: coordinates,
             notes: description,
-            classification: 'KMZ Import'
+            classification: 'KMZ Import',
+            lotNumber: parcelNumber,
+            areaHectares: areaHectares,
+            displayName: parcelNumber ? `Parcela ${parcelNumber}` : name
           });
-          console.log(`✅ Parsed parcel: ${name} with ${coordinates.length} coordinates`);
+          
+          console.log(`✅ Parsed parcel: ${parcelNumber || name} with ${coordinates.length} coordinates, area: ${areaHectares.toFixed(4)} ha`);
         } else {
           result.warnings.push(`Parcel ${name} has insufficient coordinates (${coordinates.length})`);
         }
@@ -100,7 +111,7 @@ export const parseKMZFile = async (file: File): Promise<ParsingResult> => {
     });
     
     if (result.parcels.length > 0) {
-      result.warnings.push(`Successfully extracted ${result.parcels.length} parcels from KMZ file`);
+      result.warnings.push(`Successfully extracted ${result.parcels.length} parcels from KMZ file with calculated areas`);
     }
     
   } catch (error) {
@@ -109,4 +120,28 @@ export const parseKMZFile = async (file: File): Promise<ParsingResult> => {
   }
 
   return result;
+};
+
+// Extract parcel number from name or description using regex
+const extractParcelNumber = (name: string, description: string): string | null => {
+  const text = `${name} ${description}`.toLowerCase();
+  
+  // Look for various patterns: "parcel 20", "parcela 20", "20", "lote 20", etc.
+  const patterns = [
+    /parcel\s*(\d+)/i,
+    /parcela\s*(\d+)/i,
+    /lote\s*(\d+)/i,
+    /lot\s*(\d+)/i,
+    /^(\d+)$/,
+    /\b(\d+)\b/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
 };

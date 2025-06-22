@@ -28,6 +28,12 @@ export const initializeMap = (
     mapTypeControl: true,
     mapTypeControlOptions: {
       position: google.maps.ControlPosition.TOP_RIGHT,
+      mapTypeIds: [
+        google.maps.MapTypeId.SATELLITE,
+        google.maps.MapTypeId.HYBRID,
+        google.maps.MapTypeId.ROADMAP,
+        google.maps.MapTypeId.TERRAIN
+      ]
     },
     zoomControl: true,
     zoomControlOptions: {
@@ -46,6 +52,36 @@ export const initializeMap = (
         stylers: [{ saturation: -15 }] // Optimized saturation for white number visibility
       }
     ]
+  });
+
+  // Add fallback for map loading issues
+  map.addListener('idle', () => {
+    console.log('🗺️ Map is idle and ready');
+    
+    // Check if map tiles are loading properly
+    const mapDiv = map.getDiv();
+    if (mapDiv) {
+      const images = mapDiv.querySelectorAll('img');
+      let loadedImages = 0;
+      let totalImages = images.length;
+      
+      if (totalImages === 0) {
+        console.warn('⚠️ No map tiles found, trying to refresh map');
+        // Force a refresh by slightly adjusting the center
+        const center = map.getCenter();
+        if (center) {
+          map.setCenter({
+            lat: center.lat() + 0.00001,
+            lng: center.lng() + 0.00001
+          });
+        }
+      }
+    }
+  });
+
+  // Handle map loading errors
+  map.addListener('tilesloaded', () => {
+    console.log('✅ Map tiles loaded successfully');
   });
 
   console.log('✅ Map initialized at SkyRanch coordinates with optimal zoom');

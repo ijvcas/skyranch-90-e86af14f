@@ -82,8 +82,8 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // Create label with parcel ID or lot number
-    const displayText = parcel.lotNumber || parcel.parcelId;
+    // Create label with parcel number (prioritize lotNumber)
+    const displayText = parcel.lotNumber || this.extractNumberFromId(parcel.parcelId) || parcel.parcelId;
     const center = this.calculatePolygonCenter(coordinates);
     
     const label = new google.maps.Marker({
@@ -98,12 +98,12 @@ export class ParcelRenderer {
       label: {
         text: displayText,
         color: '#FFFFFF',
-        fontSize: '14px',
+        fontSize: '16px',
         fontWeight: 'bold',
         fontFamily: 'Arial, sans-serif'
       },
       clickable: true,
-      title: `${parcel.displayName || parcel.parcelId}`,
+      title: `Parcela ${displayText}${parcel.areaHectares ? ` - ${parcel.areaHectares.toFixed(4)} ha` : ''}`,
       zIndex: 10000,
       optimized: false
     });
@@ -116,14 +116,15 @@ export class ParcelRenderer {
 
     this.labels.push(label);
 
-    // Simple info window
+    // Enhanced info window with area information
     const infoWindow = new google.maps.InfoWindow({
       content: `
         <div class="p-3 min-w-[200px]">
-          <h3 class="font-bold text-lg mb-2">${parcel.displayName || parcel.parcelId}</h3>
+          <h3 class="font-bold text-lg mb-2">Parcela ${displayText}</h3>
           <p class="mb-1"><strong>ID:</strong> ${parcel.parcelId}</p>
-          ${parcel.areaHectares ? `<p class="mb-1"><strong>Área:</strong> ${parcel.areaHectares.toFixed(4)} ha</p>` : ''}
+          ${parcel.areaHectares ? `<p class="mb-1"><strong>Área:</strong> ${parcel.areaHectares.toFixed(4)} hectáreas</p>` : ''}
           ${parcel.status ? `<p class="mb-1"><strong>Estado:</strong> ${parcel.status}</p>` : ''}
+          ${parcel.notes ? `<p class="mb-1"><strong>Notas:</strong> ${parcel.notes}</p>` : ''}
         </div>
       `
     });
@@ -135,8 +136,14 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully`);
+    console.log(`✅ Parcel ${displayText} rendered successfully with area: ${parcel.areaHectares?.toFixed(4) || 'N/A'} ha`);
     return true;
+  }
+
+  // Extract number from parcel ID for display
+  private extractNumberFromId(parcelId: string): string | null {
+    const match = parcelId.match(/(\d+)/);
+    return match ? match[1] : null;
   }
 
   // Fit map bounds to show all rendered parcels
