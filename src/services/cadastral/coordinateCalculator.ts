@@ -28,17 +28,15 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
         if (typeof parcel.boundary_coordinates === 'string') {
           coordinates = JSON.parse(parcel.boundary_coordinates);
         } else if (Array.isArray(parcel.boundary_coordinates)) {
-          // Cast to the expected type since we know it's an array of coordinates
           coordinates = parcel.boundary_coordinates as { lat: number; lng: number }[];
         } else if (parcel.boundary_coordinates && typeof parcel.boundary_coordinates === 'object') {
-          // Handle case where it's a parsed object - convert to unknown first then to array
           const unknownCoords = parcel.boundary_coordinates as unknown;
           if (Array.isArray(unknownCoords)) {
             coordinates = unknownCoords as { lat: number; lng: number }[];
           }
         }
 
-        // FIXED: Use expanded coordinate validation bounds for SkyRanch
+        // Use EXACT coordinates as they are in the database - no filtering by bounds
         if (Array.isArray(coordinates)) {
           const validCoords = coordinates.filter(coord => 
             coord && 
@@ -46,8 +44,7 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
             typeof coord.lng === 'number' &&
             !isNaN(coord.lat) && 
             !isNaN(coord.lng) &&
-            coord.lat >= 40.318 && coord.lat <= 40.321 && 
-            coord.lng >= -4.478 && coord.lng <= -4.470
+            coord.lat !== 0 && coord.lng !== 0
           );
 
           validCoords.forEach(coord => {
@@ -70,13 +67,13 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
     const centerLat = allLatitudes.reduce((sum, lat) => sum + lat, 0) / allLatitudes.length;
     const centerLng = allLongitudes.reduce((sum, lng) => sum + lng, 0) / allLongitudes.length;
 
-    // Calculate bounds for zoom optimization
+    // Calculate bounds for information
     const minLat = Math.min(...allLatitudes);
     const maxLat = Math.max(...allLatitudes);
     const minLng = Math.min(...allLongitudes);
     const maxLng = Math.max(...allLongitudes);
 
-    console.log(`🎯 CALCULATED PRECISE CENTER: ${centerLat.toFixed(10)}, ${centerLng.toFixed(10)}`);
+    console.log(`🎯 CALCULATED CENTER: ${centerLat.toFixed(10)}, ${centerLng.toFixed(10)}`);
     console.log(`📏 Coordinate bounds: Lat ${minLat.toFixed(6)} to ${maxLat.toFixed(6)}, Lng ${minLng.toFixed(6)} to ${maxLng.toFixed(6)}`);
     console.log(`📊 Based on ${allLatitudes.length} coordinate points from ${parcels.length} parcels`);
 
@@ -101,7 +98,7 @@ export const updatePropertyCenterToCalculatedCenter = async (propertyId: string)
       return false;
     }
 
-    console.log(`🔄 Updating property center to PRECISE calculated coordinates: ${calculatedCenter.lat}, ${calculatedCenter.lng}`);
+    console.log(`🔄 Updating property center to calculated coordinates: ${calculatedCenter.lat}, ${calculatedCenter.lng}`);
     
     const { error } = await supabase
       .from('properties')
@@ -117,7 +114,7 @@ export const updatePropertyCenterToCalculatedCenter = async (propertyId: string)
       return false;
     }
 
-    console.log('✅ Successfully updated property center to PRECISE calculated coordinates');
+    console.log('✅ Successfully updated property center to calculated coordinates');
     return true;
 
   } catch (error) {

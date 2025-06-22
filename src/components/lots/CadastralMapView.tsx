@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
@@ -114,22 +113,20 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const calculateParcelCenter = (coordinates: { lat: number; lng: number }[]): { lat: number; lng: number } => {
     if (!coordinates || coordinates.length === 0) {
       console.warn('⚠️ No coordinates provided for center calculation');
-      // Use the property center as fallback
       const selectedProperty = properties.find(p => p.id === selectedPropertyId);
       return selectedProperty ? 
         { lat: selectedProperty.centerLat, lng: selectedProperty.centerLng } :
-        { lat: 40.317635, lng: -4.474248 }; // SkyRanch fallback coordinates
+        { lat: 40.317635, lng: -4.474248 };
     }
 
-    // FIXED: Use expanded coordinate validation bounds for SkyRanch
+    // Use ALL valid coordinates - no geographic bounds filtering
     const validCoords = coordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
       typeof coord.lng === 'number' &&
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
-      coord.lat >= 40.318 && coord.lat <= 40.321 && 
-      coord.lng >= -4.478 && coord.lng <= -4.470
+      coord.lat !== 0 && coord.lng !== 0
     );
 
     if (validCoords.length === 0) {
@@ -137,7 +134,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       const selectedProperty = properties.find(p => p.id === selectedPropertyId);
       return selectedProperty ? 
         { lat: selectedProperty.centerLat, lng: selectedProperty.centerLng } :
-        { lat: 40.317635, lng: -4.474248 }; // SkyRanch fallback coordinates
+        { lat: 40.317635, lng: -4.474248 };
     }
 
     const latSum = validCoords.reduce((sum, coord) => sum + coord.lat, 0);
@@ -148,38 +145,22 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       lng: lngSum / validCoords.length
     };
 
-    console.log(`📍 Calculated parcel center at SkyRanch location: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)} from ${validCoords.length} valid coords`);
+    console.log(`📍 Calculated parcel center: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)} from ${validCoords.length} valid coords`);
     return center;
   };
 
   const handleParcelClick = (parcel: CadastralParcel) => {
     if (map && parcel.boundaryCoordinates.length > 0) {
-      console.log(`🎯 Focusing on parcel at SkyRanch location: ${parcel.parcelId}`);
+      console.log(`🎯 Focusing on parcel: ${parcel.parcelId}`);
       
       const center = calculateParcelCenter(parcel.boundaryCoordinates);
       
-      // FIXED: Validate calculated center is within expanded SkyRanch bounds
-      const isValidCenter = center.lat >= 40.318 && center.lat <= 40.321 && 
-                           center.lng >= -4.478 && center.lng <= -4.470;
+      console.log(`🎯 Centering map on parcel: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
       
-      if (isValidCenter) {
-        console.log(`🎯 Centering map on parcel at SkyRanch location: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
-        
-        map.setCenter(center);
-        map.setZoom(20); // Higher zoom to see individual parcel clearly with WHITE numbers
-        
-        console.log(`✅ Successfully focused on parcel at SkyRanch location: ${parcel.parcelId}`);
-      } else {
-        console.warn(`⚠️ Calculated parcel center outside SkyRanch bounds: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
-        
-        // Fallback to property center
-        const selectedProperty = properties.find(p => p.id === selectedPropertyId);
-        if (selectedProperty) {
-          map.setCenter({ lat: selectedProperty.centerLat, lng: selectedProperty.centerLng });
-          map.setZoom(18);
-        }
-        toast.error('Centro de parcela inválido, usando ubicación central');
-      }
+      map.setCenter(center);
+      map.setZoom(20); // Higher zoom to see individual parcel clearly
+      
+      console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
     } else {
       console.warn(`❌ Cannot focus on parcel: no map or coordinates for ${parcel.parcelId}`);
     }
