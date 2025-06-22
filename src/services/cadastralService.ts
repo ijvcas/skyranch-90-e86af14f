@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { ParcelStatus } from '@/utils/cadastral/types';
 
 export interface Property {
   id: string;
@@ -18,11 +19,14 @@ export interface CadastralParcel {
   id: string;
   propertyId?: string;
   parcelId: string;
+  displayName?: string;
+  lotNumber?: string;
   boundaryCoordinates: { lat: number; lng: number }[];
   areaHectares?: number;
   classification?: string;
   ownerInfo?: string;
   notes?: string;
+  status?: ParcelStatus;
   importedFromFile?: string;
   createdAt: string;
   updatedAt: string;
@@ -101,11 +105,14 @@ export const getCadastralParcels = async (propertyId?: string): Promise<Cadastra
         id: item.id,
         propertyId: item.property_id,
         parcelId: item.parcel_id,
+        displayName: item.display_name,
+        lotNumber: item.lot_number,
         boundaryCoordinates,
         areaHectares: item.area_hectares,
         classification: item.classification,
         ownerInfo: item.owner_info,
         notes: item.notes,
+        status: item.status as ParcelStatus,
         importedFromFile: item.imported_from_file,
         createdAt: item.created_at,
         updatedAt: item.updated_at
@@ -126,11 +133,14 @@ export const saveCadastralParcel = async (parcel: Omit<CadastralParcel, 'id' | '
       .insert({
         property_id: parcel.propertyId,
         parcel_id: parcel.parcelId,
+        display_name: parcel.displayName,
+        lot_number: parcel.lotNumber,
         boundary_coordinates: parcel.boundaryCoordinates,
         area_hectares: parcel.areaHectares,
         classification: parcel.classification,
         owner_info: parcel.ownerInfo,
         notes: parcel.notes,
+        status: parcel.status || 'SHOPPING_LIST',
         imported_from_file: parcel.importedFromFile
       });
 
@@ -143,6 +153,35 @@ export const saveCadastralParcel = async (parcel: Omit<CadastralParcel, 'id' | '
     return true;
   } catch (error) {
     console.error('Unexpected error saving cadastral parcel:', error);
+    return false;
+  }
+};
+
+export const updateCadastralParcel = async (parcelId: string, updates: Partial<CadastralParcel>): Promise<boolean> => {
+  try {
+    console.log('Updating cadastral parcel:', parcelId, updates);
+    
+    const updateData: any = {};
+    if (updates.displayName !== undefined) updateData.display_name = updates.displayName;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.notes !== undefined) updateData.notes = updates.notes;
+    if (updates.classification !== undefined) updateData.classification = updates.classification;
+    if (updates.ownerInfo !== undefined) updateData.owner_info = updates.ownerInfo;
+    
+    const { error } = await supabase
+      .from('cadastral_parcels')
+      .update(updateData)
+      .eq('id', parcelId);
+
+    if (error) {
+      console.error('Error updating cadastral parcel:', error);
+      return false;
+    }
+
+    console.log('Cadastral parcel updated successfully');
+    return true;
+  } catch (error) {
+    console.error('Unexpected error updating cadastral parcel:', error);
     return false;
   }
 };

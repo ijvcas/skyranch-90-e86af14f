@@ -1,11 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { getAllProperties, getCadastralParcels, type Property, type CadastralParcel } from '@/services/cadastralService';
+import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
 import { useGoogleMapsLoader } from '@/hooks/polygon/useGoogleMapsLoader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
+import EditableParcelsList from './EditableParcelsList';
+import type { ParcelStatus } from '@/utils/cadastral/types';
+import { toast } from 'sonner';
 
 interface CadastralMapViewProps {
   onPropertySelect?: (propertyId: string) => void;
@@ -18,7 +21,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const [showUpload, setShowUpload] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [cadastralPolygons, setCadastralPolygons] = useState<google.maps.Polygon[]>([]);
+  const [statusFilter, setStatusFilter] = useState<ParcelStatus | 'ALL'>('ALL');
 
   const { isLoaded, loadError } = useGoogleMapsLoader();
 
@@ -75,6 +78,39 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
     setMap(newMap);
   };
 
+  const handleParcelUpdate = async (parcelId: string, updates: Partial<CadastralParcel>) => {
+    try {
+      const success = await updateCadastralParcel(parcelId, updates);
+      if (success) {
+        // Update local state
+        setCadastralParcels(prev => 
+          prev.map(parcel => 
+            parcel.id === parcelId 
+              ? { ...parcel, ...updates }
+              : parcel
+          )
+        );
+        toast.success('Parcela actualizada correctamente');
+      } else {
+        toast.error('Error al actualizar la parcela');
+      }
+    } catch (error) {
+      console.error('Error updating parcel:', error);
+      toast.error('Error al actualizar la parcela');
+    }
+  };
+
+  const handleParcelClick = (parcel: CadastralParcel) => {
+    // Focus on the parcel in the map
+    if (map && parcel.boundaryCoordinates.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      parcel.boundaryCoordinates.forEach(coord => {
+        bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+      });
+      map.fitBounds(bounds);
+    }
+  };
+
   if (loadError) {
     return (
       <Alert variant="destructive">
@@ -110,16 +146,24 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
         onToggleUpload={() => setShowUpload(!showUpload)}
         onFileUploadSuccess={handleFileUploadSuccess}
         onCancelUpload={() => setShowUpload(false)}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
       />
 
       <CadastralMap
         isLoaded={isLoaded}
         selectedProperty={selectedProperty}
         cadastralParcels={cadastralParcels}
+        statusFilter={statusFilter}
         onMapReady={handleMapReady}
+        onParcelClick={handleParcelClick}
       />
 
-      {/* Removed CadastralParcelsInfo component - no longer displaying the list */}
+      <EditableParcelsList
+        parcels={cadastralParcels}
+        onParcelUpdate={handleParcelUpdate}
+        onParcelClick={handleParcelClick}
+      />
     </div>
   );
 };

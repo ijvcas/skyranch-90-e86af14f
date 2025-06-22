@@ -2,22 +2,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Property, CadastralParcel } from '@/services/cadastralService';
+import { PARCEL_STATUS_COLORS, ParcelStatus } from '@/utils/cadastral/types';
 
 interface CadastralMapProps {
   isLoaded: boolean;
   selectedProperty: Property | undefined;
   cadastralParcels: CadastralParcel[];
+  statusFilter: ParcelStatus | 'ALL';
   onMapReady: (map: google.maps.Map) => void;
+  onParcelClick: (parcel: CadastralParcel) => void;
 }
 
 const CadastralMap: React.FC<CadastralMapProps> = ({
   isLoaded,
   selectedProperty,
   cadastralParcels,
-  onMapReady
+  statusFilter,
+  onMapReady,
+  onParcelClick
 }) => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const polygonsRef = useRef<google.maps.Polygon[]>([]);
+  const labelsRef = useRef<google.maps.Marker[]>([]);
 
   useEffect(() => {
     if (isLoaded && selectedProperty && !mapRef.current) {
@@ -30,7 +36,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       console.log(`Displaying ${cadastralParcels.length} cadastral parcels on map`);
       displayCadastralParcels();
     }
-  }, [cadastralParcels]);
+  }, [cadastralParcels, statusFilter]);
 
   const initializeMap = () => {
     if (!selectedProperty) return;
@@ -66,6 +72,25 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       polygon.setMap(null);
     });
     polygonsRef.current = [];
+
+    labelsRef.current.forEach(label => {
+      label.setMap(null);
+    });
+    labelsRef.current = [];
+  };
+
+  const getParcelColor = (status?: ParcelStatus | string): string => {
+    const parcelStatus = (status as ParcelStatus) || 'SHOPPING_LIST';
+    return PARCEL_STATUS_COLORS[parcelStatus] || PARCEL_STATUS_COLORS.SHOPPING_LIST;
+  };
+
+  const calculatePolygonCenter = (coordinates: { lat: number; lng: number }[]): { lat: number; lng: number } => {
+    const latSum = coordinates.reduce((sum, coord) => sum + coord.lat, 0);
+    const lngSum = coordinates.reduce((sum, coord) => sum + coord.lng, 0);
+    return {
+      lat: latSum / coordinates.length,
+      lng: lngSum / coordinates.length
+    };
   };
 
   const displayCadastralParcels = () => {
@@ -74,20 +99,22 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       return;
     }
 
-    // Clear existing polygons
     clearExistingPolygons();
 
-    console.log(`Processing ${cadastralParcels.length} cadastral parcels`);
+    // Filter parcels based on status
+    const filteredParcels = statusFilter === 'ALL' 
+      ? cadastralParcels 
+      : cadastralParcels.filter(parcel => parcel.status === statusFilter);
+
+    console.log(`Processing ${filteredParcels.length} filtered cadastral parcels`);
     
     let validParcels = 0;
     const bounds = new google.maps.LatLngBounds();
 
-    cadastralParcels.forEach((parcel, index) => {
+    filteredParcels.forEach((parcel, index) => {
       if (parcel.boundaryCoordinates && parcel.boundaryCoordinates.length >= 3) {
         console.log(`Creating polygon for parcel ${index + 1}: ${parcel.parcelId}`);
-        console.log(`Coordinates sample:`, parcel.boundaryCoordinates.slice(0, 3));
         
-        // Validate coordinates
         const validCoords = parcel.boundaryCoordinates.filter(coord => 
           coord && 
           typeof coord.lat === 'number' && 
@@ -99,11 +126,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
         );
 
         if (validCoords.length >= 3) {
+          const color = getParcelColor(parcel.status);
+          
           const polygon = new google.maps.Polygon({
             paths: validCoords,
-            fillColor: '#FFD700',
+            fillColor: color,
             fillOpacity: 0.3,
-            strokeColor: '#FFA500',
+            strokeColor: color,
             strokeWeight: 2,
             clickable: true,
             editable: false,
@@ -112,7 +141,36 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
           polygon.setMap(mapRef.current);
           polygonsRef.current.push(polygon);
 
-          // Extend bounds to include this parcel
+          // Add click listener
+          polygon.addListener('click', () => {
+            onParcelClick(parcel);
+          });
+
+          // Create lot number label at polygon center
+          if (parcel.lotNumber) {
+            const center = calculatePolygonCenter(validCoords);
+            
+            const label = new google.maps.Marker({
+              position: center,
+              map: mapRef.current,
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 0, // Make the marker invisible
+              },
+              label: {
+                text: parcel.lotNumber,
+                color: '#ffffff',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                className: 'lot-number-label'
+              },
+              clickable: false,
+            });
+
+            labelsRef.current.push(label);
+          }
+
+          // Extend bounds
           validCoords.forEach(coord => {
             bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
           });
@@ -120,16 +178,17 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
           const infoWindow = new google.maps.InfoWindow({
             content: `
               <div class="p-2">
-                <h3 class="font-semibold">${parcel.parcelId}</h3>
+                <h3 class="font-semibold">${parcel.displayName || parcel.parcelId}</h3>
+                ${parcel.lotNumber ? `<p>Número: ${parcel.lotNumber}</p>` : ''}
                 ${parcel.areaHectares ? `<p>Área: ${parcel.areaHectares.toFixed(2)} ha</p>` : ''}
                 ${parcel.classification ? `<p>Clasificación: ${parcel.classification}</p>` : ''}
-                ${parcel.ownerInfo ? `<p>Propietario: ${parcel.ownerInfo}</p>` : ''}
+                ${parcel.status ? `<p>Estado: ${parcel.status}</p>` : ''}
                 ${parcel.notes ? `<p>Notas: ${parcel.notes}</p>` : ''}
               </div>
             `
           });
 
-          polygon.addListener('click', (event: google.maps.MapMouseEvent) => {
+          polygon.addListener('rightclick', (event: google.maps.MapMouseEvent) => {
             infoWindow.setPosition(event.latLng);
             infoWindow.open(mapRef.current);
           });
@@ -143,14 +202,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       }
     });
 
-    console.log(`Successfully displayed ${validParcels} out of ${cadastralParcels.length} parcels`);
+    console.log(`Successfully displayed ${validParcels} out of ${filteredParcels.length} filtered parcels`);
 
     // Fit map to show all parcels if we have valid bounds
     if (!bounds.isEmpty() && validParcels > 0) {
       console.log('Fitting map to bounds of all parcels');
       mapRef.current?.fitBounds(bounds);
       
-      // Set a reasonable zoom level if too zoomed in
       google.maps.event.addListenerOnce(mapRef.current!, 'bounds_changed', () => {
         const zoom = mapRef.current?.getZoom();
         if (zoom && zoom > 18) {

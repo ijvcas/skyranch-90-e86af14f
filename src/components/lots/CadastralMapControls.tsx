@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Upload } from 'lucide-react';
 import PropertySelector from './PropertySelector';
 import CadastralFileUpload from './CadastralFileUpload';
+import ParcelStatusFilter from './ParcelStatusFilter';
 import type { Property } from '@/services/cadastralService';
+import type { ParcelStatus } from '@/utils/cadastral/types';
 
 interface CadastralMapControlsProps {
   properties: Property[];
@@ -16,6 +18,8 @@ interface CadastralMapControlsProps {
   onToggleUpload: () => void;
   onFileUploadSuccess: () => void;
   onCancelUpload: () => void;
+  statusFilter: ParcelStatus | 'ALL';
+  onStatusFilterChange: (status: ParcelStatus | 'ALL') => void;
 }
 
 const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
@@ -26,7 +30,9 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
   showUpload,
   onToggleUpload,
   onFileUploadSuccess,
-  onCancelUpload
+  onCancelUpload,
+  statusFilter,
+  onStatusFilterChange
 }) => {
   return (
     <Card>
@@ -37,12 +43,17 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <PropertySelector
             properties={properties}
             selectedPropertyId={selectedPropertyId}
             onPropertyChange={onPropertyChange}
             isLoading={isLoading}
+          />
+          
+          <ParcelStatusFilter
+            selectedStatus={statusFilter}
+            onStatusChange={onStatusFilterChange}
           />
           
           <div className="flex space-x-2">

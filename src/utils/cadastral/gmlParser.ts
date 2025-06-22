@@ -3,7 +3,43 @@ import { detectCoordinateSystem, transformCoordinates } from '../coordinateTrans
 import { ParsedParcel, ParsingResult } from './types';
 import { isCoordinateData, extractGMLCoordinates } from './coordinateUtils';
 
-// Enhanced GML element parser with better coordinate handling
+// Extract lot number from various GML sources
+const extractLotNumber = (element: Element): string | undefined => {
+  // Try to extract from common cadastral ID patterns
+  const gmlId = element.getAttribute('gml:id') || element.getAttribute('id');
+  if (gmlId) {
+    // Spanish cadastral pattern: Surface_ES.SDGC.CP.28128A00800002.1
+    const match = gmlId.match(/(\d{5}[A-Z]\d{8})/);
+    if (match) {
+      // Extract the numeric part after letters
+      const cadastralRef = match[1];
+      const numericPart = cadastralRef.match(/\d+$/);
+      if (numericPart) return numericPart[0];
+    }
+    
+    // Try to extract any meaningful number
+    const numberMatch = gmlId.match(/(\d+)(?!.*\d)/); // Last number in string
+    if (numberMatch) return numberMatch[1];
+  }
+  
+  // Look for localId or other identifier fields
+  const localId = element.querySelector('gml\\:localId, localId')?.textContent;
+  if (localId) {
+    const numberMatch = localId.match(/(\d+)/);
+    if (numberMatch) return numberMatch[1];
+  }
+  
+  // Look for numeric content in name fields
+  const nameElement = element.querySelector('gml\\:name, name, gml\\:identifier, identifier');
+  if (nameElement?.textContent) {
+    const numberMatch = nameElement.textContent.match(/(\d+)/);
+    if (numberMatch) return numberMatch[1];
+  }
+  
+  return undefined;
+};
+
+// Enhanced GML element parser with lot number extraction
 const parseGMLElement = (element: Element, index: number): ParsedParcel | null => {
   console.log(`\n--- Parsing GML element ${index}: ${element.tagName} ---`);
   
@@ -12,7 +48,9 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
                    element.querySelector('gml\\:name, name, parcela, parcel')?.textContent ||
                    `GML_Feature_${index + 1}`;
   
-  console.log(`Parcel ID: ${parcelId}`);
+  // Extract lot number
+  const lotNumber = extractLotNumber(element);
+  console.log(`Parcel ID: ${parcelId}, Lot Number: ${lotNumber || 'N/A'}`);
   
   // Enhanced coordinate extraction for GML
   let coordinates: number[][] = [];
@@ -50,9 +88,12 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
   
   return {
     parcelId,
+    lotNumber,
+    displayName: lotNumber ? `Parcela ${lotNumber}` : parcelId,
     boundaryCoordinates: coordinates.map(([lng, lat]) => ({ lat, lng })),
     classification: 'GML Import',
-    notes: element.tagName
+    notes: element.tagName,
+    status: 'SHOPPING_LIST' // Default status for new parcels
   };
 };
 
@@ -162,29 +203,20 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
 
     console.log(`✅ Successfully parsed ${result.parcels.length} parcels from GML`);
 
-    // Transform coordinates if needed with enhanced debugging
+    // Transform coordinates if needed
     if (result.coordinateSystem !== 'EPSG:4326' && result.parcels.length > 0) {
       console.log('\n🔄 STARTING COORDINATE TRANSFORMATION...');
       console.log(`Converting from ${result.coordinateSystem} to EPSG:4326`);
-      
-      // Show sample before transformation
-      if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
-        console.log('📍 BEFORE transformation sample:', result.parcels[0].boundaryCoordinates.slice(0, 3));
-      }
       
       result.parcels = result.parcels.map((parcel, index) => {
         console.log(`\n🔄 Transforming parcel ${index + 1}: ${parcel.parcelId}`);
         
         const originalCoords = parcel.boundaryCoordinates.map(c => [c.lng, c.lat]);
-        console.log(`RAW input coords for ${parcel.parcelId}:`, originalCoords.slice(0, 2));
-        
         const transformedCoords = transformCoordinates(
           originalCoords,
           result.coordinateSystem,
           'EPSG:4326'
         );
-        
-        console.log(`TRANSFORMED coords for ${parcel.parcelId}:`, transformedCoords.slice(0, 2));
         
         return {
           ...parcel,
@@ -192,14 +224,7 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
         };
       });
       
-      // Show sample after transformation
-      if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
-        console.log('📍 FINAL result sample:', result.parcels[0].boundaryCoordinates.slice(0, 3));
-      }
-      
       console.log('✅ Coordinate transformation completed');
-    } else {
-      console.log('ℹ️ No coordinate transformation needed');
     }
 
     console.log(`\n🎉 GML PARSING COMPLETE: ${result.parcels.length} parcels processed`);
