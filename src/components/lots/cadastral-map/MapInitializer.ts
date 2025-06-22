@@ -13,9 +13,9 @@ export const initializeMap = (
   }
 
   console.log('🗺️ Initializing map for property:', property.name);
-  console.log(`🎯 Using CORRECTED SkyRanch coordinates: ${property.centerLat}, ${property.centerLng}`);
+  console.log(`🎯 Using SkyRanch coordinates: ${property.centerLat.toFixed(10)}, ${property.centerLng.toFixed(10)}`);
   
-  // Use the property's corrected center coordinates from database
+  // Use the property's center coordinates from database (already correct)
   const mapCenter = {
     lat: property.centerLat,
     lng: property.centerLng
@@ -48,7 +48,7 @@ export const initializeMap = (
     ]
   });
 
-  console.log('✅ Map initialized at CORRECTED SkyRanch coordinates with optimal zoom');
+  console.log('✅ Map initialized at SkyRanch coordinates with optimal zoom');
   
   // Ensure map is fully ready before calling callback
   google.maps.event.addListenerOnce(map, 'tilesloaded', () => {

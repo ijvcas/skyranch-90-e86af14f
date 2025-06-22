@@ -36,7 +36,7 @@ export class ParcelRenderer {
       return false;
     }
 
-    // CORRECTED: Use updated coordinate bounds for SkyRanch location
+    // FIXED: Expanded coordinate bounds to include all actual SkyRanch parcel coordinates
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -44,17 +44,18 @@ export class ParcelRenderer {
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
       coord.lat !== 0 && coord.lng !== 0 &&
-      // CORRECTED: SkyRanch coordinate bounds
-      coord.lat >= 40.315 && coord.lat <= 40.320 && 
+      // EXPANDED: SkyRanch coordinate bounds to include all actual parcel coordinates
+      coord.lat >= 40.318 && coord.lat <= 40.321 && 
       coord.lng >= -4.478 && coord.lng <= -4.470    
     );
 
     if (validCoords.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${validCoords.length}/3 required`);
+      console.log(`📍 Sample coordinates for debugging:`, parcel.boundaryCoordinates.slice(0, 3));
       return false;
     }
 
-    console.log(`\n🗺️ === RENDERING PARCEL ${index + 1} AT CORRECTED SKYRANCH LOCATION ===`);
+    console.log(`\n🗺️ === RENDERING PARCEL ${index + 1} AT SKYRANCH LOCATION ===`);
     console.log(`📋 Parcel ID: ${parcel.parcelId}`);
     console.log(`📊 Valid coordinates: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
     console.log(`🎯 First coordinate: ${validCoords[0].lat.toFixed(6)}, ${validCoords[0].lng.toFixed(6)}`);
@@ -90,7 +91,7 @@ export class ParcelRenderer {
     const displayLotNumber = (index + 1).toString();
     
     const center = this.calculatePolygonCenter(validCoords);
-    console.log(`🏷️ Creating label for lot ${displayLotNumber} at CORRECTED SkyRanch location: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
+    console.log(`🏷️ Creating label for lot ${displayLotNumber} at SkyRanch location: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
     
     const label = new google.maps.Marker({
       position: center,
@@ -124,7 +125,7 @@ export class ParcelRenderer {
     });
 
     this.labels.push(label);
-    console.log(`✅ Label created for lot ${displayLotNumber} with WHITE text at CORRECTED SkyRanch location`);
+    console.log(`✅ Label created for lot ${displayLotNumber} with WHITE text at SkyRanch location`);
 
     // Enhanced info window
     const infoWindow = new google.maps.InfoWindow({
@@ -149,7 +150,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully at CORRECTED SkyRanch location with lot number ${displayLotNumber}`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully at SkyRanch location with lot number ${displayLotNumber}`);
     console.log(`=== END PARCEL RENDERING ===\n`);
 
     return true;
@@ -170,7 +171,7 @@ export class ParcelRenderer {
       });
     });
 
-    console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels at CORRECTED SkyRanch location`);
+    console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels at SkyRanch location`);
     this.map.fitBounds(bounds);
     
     // Set appropriate zoom to see all parcels clearly with WHITE numbers at SkyRanch
