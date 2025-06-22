@@ -23,7 +23,7 @@ const AdvancedOptionsSection: React.FC<AdvancedOptionsSectionProps> = ({
             <SelectValue placeholder="Detectar automáticamente" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Detectar automáticamente</SelectItem>
+            <SelectItem value="auto">Detectar automáticamente</SelectItem>
             {Object.entries(COORDINATE_SYSTEMS).map(([key, system]) => (
               <SelectItem key={key} value={key}>
                 {system.name} ({key})

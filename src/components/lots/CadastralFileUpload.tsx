@@ -26,7 +26,7 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [parseResult, setParseResult] = useState<ParsingResult | null>(null);
-  const [manualCoordinateSystem, setManualCoordinateSystem] = useState<string>('');
+  const [manualCoordinateSystem, setManualCoordinateSystem] = useState<string>('auto');
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +34,7 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
     if (file) {
       setSelectedFile(file);
       setParseResult(null);
-      setManualCoordinateSystem('');
+      setManualCoordinateSystem('auto');
       
       // Auto-preview for small files
       if (file.size < 5 * 1024 * 1024) { // 5MB
@@ -81,9 +81,9 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
         throw new Error('No se encontraron parcelas válidas en el archivo');
       }
 
-      // Use manual coordinate system if specified
+      // Use manual coordinate system if specified and not auto
       let parcelsToSave = parseResult.parcels;
-      if (manualCoordinateSystem && manualCoordinateSystem !== parseResult.coordinateSystem) {
+      if (manualCoordinateSystem && manualCoordinateSystem !== 'auto' && manualCoordinateSystem !== parseResult.coordinateSystem) {
         toast.info('Sistema de coordenadas manual aplicado');
       }
 
