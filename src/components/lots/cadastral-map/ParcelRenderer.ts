@@ -31,10 +31,11 @@ export class ParcelRenderer {
 
   renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds): boolean {
     if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
-      console.warn(`Parcel ${parcel.parcelId} has no valid boundary coordinates`);
+      console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
       return false;
     }
 
+    // Enhanced coordinate validation
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -42,24 +43,29 @@ export class ParcelRenderer {
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
       Math.abs(coord.lat) <= 90 && 
-      Math.abs(coord.lng) <= 180
+      Math.abs(coord.lng) <= 180 &&
+      coord.lat !== 0 && coord.lng !== 0 // Exclude zero coordinates
     );
 
     if (validCoords.length < 3) {
-      console.warn(`Parcel ${parcel.parcelId} has invalid coordinates:`, parcel.boundaryCoordinates);
+      console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${validCoords.length}/3 required`);
+      console.warn('Invalid coordinates:', parcel.boundaryCoordinates);
       return false;
     }
 
-    // Log coordinate sample for debugging
-    console.log(`🗺️ Rendering parcel ${parcel.parcelId} with ${validCoords.length} coordinates. Sample:`, validCoords.slice(0, 3));
-    console.log(`📍 Lot number: ${parcel.lotNumber || 'N/A'}`);
+    // Enhanced logging for debugging
+    console.log(`\n🗺️ === RENDERING PARCEL ===`);
+    console.log(`📋 Parcel ID: ${parcel.parcelId}`);
+    console.log(`🔢 Lot Number: ${parcel.lotNumber || 'N/A'}`);
+    console.log(`📊 Valid coordinates: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
+    console.log(`📍 Sample coordinates:`, validCoords.slice(0, 3));
 
     const color = this.getParcelColor(parcel.status);
     
     const polygon = new google.maps.Polygon({
       paths: validCoords,
       fillColor: color,
-      fillOpacity: 0.3,
+      fillOpacity: 0.4,
       strokeColor: color,
       strokeWeight: 2,
       clickable: true,
@@ -75,30 +81,33 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // Create lot number label at polygon center - make it more visible
+    // Enhanced lot number label rendering
     if (parcel.lotNumber) {
       const center = this.calculatePolygonCenter(validCoords);
-      console.log(`🏷️ Creating label for lot ${parcel.lotNumber} at:`, center);
+      console.log(`🏷️ Creating enhanced label for lot ${parcel.lotNumber} at:`, center);
       
+      // Create a more visible marker with better styling
       const label = new google.maps.Marker({
         position: center,
         map: this.map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
+          scale: 12, // Larger scale for better visibility
           fillColor: '#ffffff',
-          fillOpacity: 0.8,
-          strokeColor: '#333333',
-          strokeWeight: 1
+          fillOpacity: 0.9,
+          strokeColor: color, // Use parcel color for border
+          strokeWeight: 2
         },
         label: {
           text: parcel.lotNumber,
           color: '#000000',
-          fontSize: '14px',
-          fontWeight: 'bold'
+          fontSize: '12px',
+          fontWeight: 'bold',
+          fontFamily: 'Arial, sans-serif'
         },
         clickable: true,
-        title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`
+        title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`,
+        zIndex: 1000 // Ensure labels appear above polygons
       });
 
       // Add click listener to label as well
@@ -108,25 +117,32 @@ export class ParcelRenderer {
       });
 
       this.labels.push(label);
+      console.log(`✅ Label created successfully for lot ${parcel.lotNumber}`);
     } else {
-      console.warn(`❌ No lot number available for parcel: ${parcel.parcelId}`);
+      console.warn(`⚠️ No lot number available for parcel: ${parcel.parcelId}`);
     }
 
-    // Extend bounds
-    validCoords.forEach(coord => {
-      bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
-    });
+    // Extend bounds with validation
+    try {
+      validCoords.forEach(coord => {
+        bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+      });
+    } catch (error) {
+      console.error(`❌ Error extending bounds for parcel ${parcel.parcelId}:`, error);
+    }
 
-    // Add info window
+    // Enhanced info window with more details
     const infoWindow = new google.maps.InfoWindow({
       content: `
-        <div class="p-2">
-          <h3 class="font-semibold">${parcel.displayName || parcel.parcelId}</h3>
-          ${parcel.lotNumber ? `<p><strong>Número:</strong> ${parcel.lotNumber}</p>` : ''}
-          ${parcel.areaHectares ? `<p><strong>Área:</strong> ${parcel.areaHectares.toFixed(2)} ha</p>` : ''}
-          ${parcel.classification ? `<p><strong>Clasificación:</strong> ${parcel.classification}</p>` : ''}
-          ${parcel.status ? `<p><strong>Estado:</strong> ${parcel.status}</p>` : ''}
-          ${parcel.notes ? `<p><strong>Notas:</strong> ${parcel.notes}</p>` : ''}
+        <div class="p-3 min-w-[200px]">
+          <h3 class="font-bold text-lg mb-2">${parcel.displayName || parcel.parcelId}</h3>
+          ${parcel.lotNumber ? `<p class="mb-1"><strong>Número de Parcela:</strong> ${parcel.lotNumber}</p>` : ''}
+          <p class="mb-1"><strong>ID Catastral:</strong> ${parcel.parcelId}</p>
+          ${parcel.areaHectares ? `<p class="mb-1"><strong>Área:</strong> ${parcel.areaHectares.toFixed(4)} ha</p>` : ''}
+          ${parcel.classification ? `<p class="mb-1"><strong>Clasificación:</strong> ${parcel.classification}</p>` : ''}
+          ${parcel.status ? `<p class="mb-1"><strong>Estado:</strong> ${parcel.status}</p>` : ''}
+          ${parcel.notes ? `<p class="mb-1"><strong>Notas:</strong> ${parcel.notes}</p>` : ''}
+          <p class="text-xs text-gray-500 mt-2">Click derecho para más información</p>
         </div>
       `
     });
@@ -137,6 +153,9 @@ export class ParcelRenderer {
         infoWindow.open(this.map);
       }
     });
+
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully`);
+    console.log(`=== END PARCEL RENDERING ===\n`);
 
     return true;
   }
