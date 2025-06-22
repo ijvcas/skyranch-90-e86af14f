@@ -3,8 +3,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Property, CadastralParcel } from '@/services/cadastralService';
 import { ParcelStatus } from '@/utils/cadastral/types';
-import { initializeMap } from './cadastral-map/MapInitializer';
+import { initializeRebuildMap } from './cadastral-map/RebuildMapInitializer';
 import { ParcelRenderer } from './cadastral-map/ParcelRenderer';
+import { SKYRANCH_COORDINATES } from '@/utils/cadastral/coordinateSystemRebuild';
 
 interface CadastralMapProps {
   isLoaded: boolean;
@@ -30,17 +31,17 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
   useEffect(() => {
     if (isLoaded && selectedProperty && !mapRef.current) {
-      console.log('🗺️ Initializing map for property:', selectedProperty.name);
-      console.log(`📍 Property center: ${selectedProperty.centerLat.toFixed(10)}, ${selectedProperty.centerLng.toFixed(10)}`);
+      console.log('🗺️ Initializing rebuild map for SkyRanch');
+      console.log(`🎯 Forcing map to SkyRanch coordinates: ${SKYRANCH_COORDINATES.lat}, ${SKYRANCH_COORDINATES.lng}`);
       
-      const map = initializeMap(selectedProperty, 'cadastral-map', onMapReady);
+      const map = initializeRebuildMap(selectedProperty, 'cadastral-map', onMapReady);
       if (map) {
         mapRef.current = map;
         parcelRendererRef.current = new ParcelRenderer(map, onParcelClick);
         
         // Wait for map to be fully ready before rendering parcels
         google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
-          console.log('✅ Map tiles loaded at PRECISE coordinates, ready for parcels');
+          console.log('✅ Rebuild map tiles loaded at SkyRanch, ready for parcels');
           setTimeout(() => {
             setInitialLoadComplete(true);
           }, 300);
@@ -51,7 +52,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
   useEffect(() => {
     if (mapRef.current && parcelRendererRef.current && cadastralParcels.length > 0 && initialLoadComplete) {
-      console.log(`🎯 RENDERING ${cadastralParcels.length} CADASTRAL PARCELS AT PRECISE SKYRANCH COORDINATES`);
+      console.log(`🎯 RENDERING ${cadastralParcels.length} PARCELS AT SKYRANCH COORDINATES`);
       displayCadastralParcels();
     } else {
       console.log('⏳ Waiting for optimal conditions:', {
@@ -70,7 +71,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     }
 
     // Clear existing polygons first
-    console.log('🧹 Clearing existing polygons before rendering at precise coordinates');
+    console.log('🧹 Clearing existing polygons');
     parcelRendererRef.current.clearAll();
 
     // Filter parcels based on status
@@ -78,7 +79,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       ? cadastralParcels 
       : cadastralParcels.filter(parcel => parcel.status === statusFilter);
 
-    console.log(`🎯 Rendering ${filteredParcels.length} parcels at PRECISE SkyRanch coordinates`);
+    console.log(`🎯 Rendering ${filteredParcels.length} parcels at SkyRanch coordinates`);
     
     if (filteredParcels.length === 0) {
       console.log('⚠️ No parcels to display after filtering');
@@ -90,24 +91,24 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     const bounds = new google.maps.LatLngBounds();
 
     filteredParcels.forEach((parcel, index) => {
-      console.log(`🔄 Rendering parcel ${index + 1}/${filteredParcels.length}: ${parcel.parcelId} at precise coordinates`);
+      console.log(`🔄 Rendering parcel ${index + 1}/${filteredParcels.length}: ${parcel.parcelId} at SkyRanch`);
       
       if (parcelRendererRef.current?.renderParcel(parcel, bounds, index)) {
         validParcels++;
-        console.log(`✅ Successfully rendered parcel ${index + 1}: ${parcel.parcelId} with WHITE numbers`);
+        console.log(`✅ Successfully rendered parcel ${index + 1}: ${parcel.parcelId}`);
       } else {
         console.warn(`❌ Failed to render parcel ${index + 1}: ${parcel.parcelId}`);
       }
     });
 
-    console.log(`🎉 RENDERED ${validParcels}/${filteredParcels.length} parcels at PRECISE SkyRanch coordinates with WHITE numbers 1-41`);
+    console.log(`🎉 RENDERED ${validParcels}/${filteredParcels.length} parcels at SkyRanch coordinates`);
     
     if (validParcels === 0) {
       console.error('🚨 NO PARCELS WERE RENDERED!');
       setParcelsRendered(false);
     } else {
       // Fit map bounds to show all parcels optimally
-      console.log('🎯 Fitting map bounds to show all parcels at optimal zoom with WHITE numbers');
+      console.log('🎯 Fitting map bounds to show all parcels');
       setTimeout(() => {
         parcelRendererRef.current?.fitMapToAllParcels();
         setParcelsRendered(true);
@@ -123,15 +124,15 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
           className="w-full h-96 rounded-lg"
           style={{ minHeight: '600px' }}
         />
-        {/* Status indicator with precise coordinate info */}
+        {/* Status indicator */}
         {initialLoadComplete && (
           <div className="absolute bottom-4 left-4 bg-white p-2 rounded shadow text-sm">
             {parcelsRendered ? (
               <span className="text-green-600">
-                ✅ {cadastralParcels.length} parcelas at precise SkyRanch coordinates
+                ✅ {cadastralParcels.length} parcelas at SkyRanch ({SKYRANCH_COORDINATES.lat.toFixed(6)}, {SKYRANCH_COORDINATES.lng.toFixed(6)})
               </span>
             ) : (
-              <span className="text-orange-600">⏳ Loading precise coordinates...</span>
+              <span className="text-orange-600">⏳ Loading at SkyRanch coordinates...</span>
             )}
           </div>
         )}

@@ -1,13 +1,14 @@
 
-import { transformCoordinatesToSkyRanch } from './coordinateSystemRebuild';
-import type { ParsedParcel, ParsingResult } from './types';
-import { detectCRSFromGML, validateCRS } from './gml/crsDetector';
-import { findGMLElements } from './gml/elementFinder';
-import { parseGMLElement } from './gml/elementParser';
+// Rebuilt GML parser with proper coordinate transformation
+import { transformCoordinatesToSkyRanch } from '../coordinateSystemRebuild';
+import { validateAndPreviewCoordinates } from '../coordinateValidator';
+import type { ParsedParcel, ParsingResult } from '../types';
+import { detectCRSFromGML, validateCRS } from './crsDetector';
+import { findGMLElements } from './elementFinder';
+import { parseGMLElement } from './elementParser';
 
-// Updated GML Parser using the rebuilt coordinate system
-export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
-  console.log(`\n🔄 REBUILT GML PARSING: ${file.name}`);
+export const parseGMLFileRebuilt = async (file: File): Promise<ParsingResult> => {
+  console.log(`\n🔄 REBUILT GML PARSER: ${file.name}`);
   
   const result: ParsingResult = {
     parcels: [],
@@ -47,25 +48,25 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       return result;
     }
 
-    console.log(`\n🔧 PROCESSING ${foundElements.length} ELEMENTS WITH REBUILT SYSTEM...`);
+    console.log(`\n🔧 PROCESSING ${foundElements.length} ELEMENTS WITH REBUILT PARSER...`);
     
+    // Parse elements to get raw coordinate data
+    const rawParcels: ParsedParcel[] = [];
     foundElements.forEach((element, index) => {
       const parcel = parseGMLElement(element, index);
       if (parcel) {
-        result.parcels.push(parcel);
-        console.log(`✅ Parsed parcel ${index + 1}: ${parcel.parcelId} with ${parcel.boundaryCoordinates.length} coordinates`);
+        rawParcels.push(parcel);
       }
     });
 
-    console.log(`📊 Successfully parsed ${result.parcels.length} parcels from GML`);
+    console.log(`📊 Parsed ${rawParcels.length} raw parcels from GML`);
 
-    // Apply rebuilt coordinate transformation
-    if (result.parcels.length > 0) {
+    // Process each parcel with proper coordinate transformation
+    if (rawParcels.length > 0) {
       console.log('\n🚀 APPLYING REBUILT COORDINATE TRANSFORMATION...');
-      console.log(`Converting from ${result.coordinateSystem} to WGS84 with SkyRanch positioning`);
       
-      result.parcels = result.parcels.map((parcel, index) => {
-        console.log(`\n🔄 Transforming parcel ${index + 1}/${result.parcels.length}: ${parcel.parcelId}`);
+      result.parcels = rawParcels.map((parcel, index) => {
+        console.log(`\n🔄 Processing parcel ${index + 1}/${rawParcels.length}: ${parcel.parcelId}`);
         
         // Convert boundary coordinates to number arrays for transformation
         const coordArray = parcel.boundaryCoordinates.map(c => [c.lng, c.lat]);
@@ -78,7 +79,15 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
         );
         
         console.log(`📍 Transformed first coord: [${transformedCoords[0]?.lat}, ${transformedCoords[0]?.lng}]`);
-        console.log(`✅ Transformed ${transformedCoords.length} coordinates for ${parcel.parcelId}`);
+        
+        // Validate transformed coordinates
+        const validation = validateAndPreviewCoordinates(transformedCoords);
+        if (!validation.isValid) {
+          console.warn(`⚠️ Validation issues for parcel ${parcel.parcelId}:`, validation.errors);
+          result.warnings.push(`Parcel ${parcel.parcelId}: ${validation.errors.join(', ')}`);
+        }
+        
+        console.log(`✅ Processed ${transformedCoords.length} coordinates for ${parcel.parcelId}`);
         
         return {
           ...parcel,
@@ -86,7 +95,7 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
         };
       });
       
-      console.log('✅ REBUILT COORDINATE TRANSFORMATION COMPLETED - ALL PARCELS AT SKYRANCH');
+      console.log('✅ REBUILT COORDINATE TRANSFORMATION COMPLETED');
       
       // Update coordinate system to reflect transformation
       result.coordinateSystem = 'EPSG:4326';
@@ -97,7 +106,6 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
     console.log(`- CRS: ${result.coordinateSystem}`);
     console.log(`- Errors: ${result.errors.length}`);
     console.log(`- Warnings: ${result.warnings.length}`);
-    console.log(`- ALL PARCELS POSITIONED AT SKYRANCH`);
 
   } catch (error) {
     console.error('❌ Error in rebuilt GML processing:', error);
