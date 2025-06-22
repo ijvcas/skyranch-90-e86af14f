@@ -63,41 +63,21 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     console.log(`Processing ${filteredParcels.length} filtered cadastral parcels`);
     
     let validParcels = 0;
-    const bounds = new google.maps.LatLngBounds();
-    let hasParcelsInBounds = false;
 
     filteredParcels.forEach((parcel, index) => {
       console.log(`Creating polygon for parcel ${index + 1}: ${parcel.parcelId}`);
       
+      // FIXED: Don't use bounds for auto-fitting to prevent map jumping
+      const bounds = new google.maps.LatLngBounds();
       if (parcelRendererRef.current?.renderParcel(parcel, bounds)) {
         validParcels++;
-        hasParcelsInBounds = true;
       }
     });
 
     console.log(`Successfully displayed ${validParcels} out of ${filteredParcels.length} filtered parcels`);
-
-    // FIXED: Only fit bounds if we have valid parcels AND it's not the initial load
-    // This prevents the map from auto-zooming away from SkyRanch on first load
-    if (!bounds.isEmpty() && validParcels > 0 && mapRef.current && hasParcelsInBounds) {
-      console.log('📍 Fitting map to bounds of parcels');
-      
-      // Check if we should auto-fit or maintain current view
-      const currentZoom = mapRef.current.getZoom();
-      if (currentZoom && currentZoom < 14) {
-        // Only auto-fit if we're zoomed out too far
-        mapRef.current.fitBounds(bounds);
-        
-        google.maps.event.addListenerOnce(mapRef.current, 'bounds_changed', () => {
-          const zoom = mapRef.current?.getZoom();
-          if (zoom && zoom > 18) {
-            mapRef.current?.setZoom(18);
-          }
-        });
-      }
-    } else {
-      console.log('📍 Keeping current map view centered on SkyRanch');
-    }
+    
+    // REMOVED: Auto-bounds fitting that was causing map to jump to wrong locations
+    // The map should stay centered on SkyRanch and users can zoom/pan manually
   };
 
   return (

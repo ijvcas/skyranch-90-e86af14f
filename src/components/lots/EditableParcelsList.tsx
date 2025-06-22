@@ -61,46 +61,14 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
     );
   };
 
-  // FIXED: Proper lot number display logic
+  // FIXED: Use the database lot_number directly instead of extraction
   const getDisplayLotNumber = (parcel: CadastralParcel): string => {
-    // First priority: actual lot_number from database
+    // Use the lot_number from the database directly
     if (parcel.lotNumber) {
       return parcel.lotNumber;
     }
     
-    // Second priority: extract from parcel_id if available
-    if (parcel.parcelId) {
-      // Try to extract from Spanish cadastral format
-      const surfaceMatch = parcel.parcelId.match(/Surface_ES\.SDGC\.CP\.28128A(\d{8})/);
-      if (surfaceMatch) {
-        const mainNumber = surfaceMatch[1];
-        let extracted = mainNumber.replace(/^0+/, '');
-        if (extracted.length === 0) extracted = mainNumber.slice(-1);
-        if (extracted.length > 4) {
-          const lastThreeMatch = mainNumber.match(/0*(\d{1,3})$/);
-          if (lastThreeMatch) extracted = lastThreeMatch[1];
-        }
-        return extracted;
-      }
-      
-      // Try direct Spanish cadastral format
-      const directMatch = parcel.parcelId.match(/28128A(\d{8})/);
-      if (directMatch) {
-        const mainNumber = directMatch[1];
-        let extracted = mainNumber.replace(/^0+/, '');
-        if (extracted.length === 0) extracted = mainNumber.slice(-1);
-        if (extracted.length > 4) {
-          const lastThreeMatch = mainNumber.match(/0*(\d{1,3})$/);
-          if (lastThreeMatch) extracted = lastThreeMatch[1];
-        }
-        return extracted;
-      }
-      
-      // Fallback: use last part of parcel ID
-      const parts = parcel.parcelId.split('.');
-      return parts[parts.length - 1] || 'N/A';
-    }
-    
+    // If no lot number in database, show N/A instead of trying to extract
     return 'N/A';
   };
 
@@ -150,13 +118,16 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                       })}
                       onClick={(e) => e.stopPropagation()}
                       className="w-full"
+                      placeholder="Nombre de la parcela"
                     />
                   ) : (
-                    <span>{parcel.displayName || parcel.parcelId}</span>
+                    <span className="cursor-pointer">
+                      {parcel.displayName || parcel.parcelId}
+                    </span>
                   )}
                 </TableCell>
                 <TableCell>
-                  {parcel.areaHectares ? `${parcel.areaHectares.toFixed(4)} ha` : 'Calculando...'}
+                  {parcel.areaHectares ? `${parcel.areaHectares.toFixed(4)} ha` : 'Sin calcular'}
                 </TableCell>
                 <TableCell>
                   {editingParcel === parcel.id ? (

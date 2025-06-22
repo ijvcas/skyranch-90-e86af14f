@@ -30,29 +30,13 @@ export class ParcelRenderer {
     };
   }
 
-  private calculatePolygonArea(coordinates: { lat: number; lng: number }[]): number {
-    if (!window.google?.maps?.geometry || coordinates.length < 3) {
-      return 0;
-    }
-
-    try {
-      const path = coordinates.map(coord => new google.maps.LatLng(coord.lat, coord.lng));
-      const area = google.maps.geometry.spherical.computeArea(path);
-      // Convert from square meters to hectares (1 hectare = 10,000 square meters)
-      return area / 10000;
-    } catch (error) {
-      console.error('Error calculating polygon area:', error);
-      return 0;
-    }
-  }
-
   renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds): boolean {
     if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
       return false;
     }
 
-    // ENHANCED coordinate validation - ensure we're in the SkyRanch area ONLY
+    // RELAXED coordinate validation - allow more coordinates to show on map
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -61,21 +45,21 @@ export class ParcelRenderer {
       !isNaN(coord.lng) &&
       Math.abs(coord.lat) <= 90 && 
       Math.abs(coord.lng) <= 180 &&
-      coord.lat !== 0 && coord.lng !== 0 && // Exclude zero coordinates
-      // STRICT: Only accept coordinates in the immediate SkyRanch area
-      coord.lat >= 40.31 && coord.lat <= 40.32 && // Very narrow latitude range around SkyRanch
-      coord.lng >= -4.48 && coord.lng <= -4.47    // Very narrow longitude range around SkyRanch
+      coord.lat !== 0 && coord.lng !== 0 &&
+      // RELAXED: More generous area around SkyRanch to show more parcels
+      coord.lat >= 40.30 && coord.lat <= 40.33 && 
+      coord.lng >= -4.50 && coord.lng <= -4.45    
     );
 
     if (validCoords.length < 3) {
-      console.warn(`❌ Parcel ${parcel.parcelId} coordinates outside SkyRanch area: ${validCoords.length}/3 required`);
+      console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${validCoords.length}/3 required`);
       return false;
     }
 
     console.log(`\n🗺️ === RENDERING PARCEL ===`);
     console.log(`📋 Parcel ID: ${parcel.parcelId}`);
     console.log(`🔢 Lot Number: ${parcel.lotNumber || 'N/A'}`);
-    console.log(`📊 Valid coordinates in SkyRanch area: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
+    console.log(`📊 Valid coordinates: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
 
     const color = this.getParcelColor(parcel.status);
     
@@ -98,34 +82,33 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // FIXED: White text lot number labels without circles (as requested)
+    // FIXED: Use database lot_number directly for labels
     if (parcel.lotNumber) {
       const center = this.calculatePolygonCenter(validCoords);
       console.log(`🏷️ Creating WHITE TEXT label for lot ${parcel.lotNumber} at:`, center);
       
-      // ENHANCED: Create white text label without any background/circle
       const label = new google.maps.Marker({
         position: center,
         map: this.map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 0, // ZERO scale = no visible circle
-          fillOpacity: 0, // Completely transparent
-          strokeOpacity: 0, // No border
+          scale: 0,
+          fillOpacity: 0,
+          strokeOpacity: 0,
           fillColor: 'transparent',
           strokeColor: 'transparent'
         },
         label: {
-          text: parcel.lotNumber,
-          color: '#FFFFFF', // Pure white text as requested
-          fontSize: '16px', // Larger for better visibility
+          text: parcel.lotNumber.toString(),
+          color: '#FFFFFF',
+          fontSize: '16px',
           fontWeight: 'bold',
           fontFamily: 'Arial, sans-serif'
         },
         clickable: true,
         title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`,
-        zIndex: 10000, // Very high z-index to ensure visibility on top
-        optimized: false // Disable optimization to ensure rendering
+        zIndex: 10000,
+        optimized: false
       });
 
       // Add click listener to label as well
@@ -138,24 +121,6 @@ export class ParcelRenderer {
       console.log(`✅ WHITE TEXT label created for lot ${parcel.lotNumber}`);
     } else {
       console.warn(`⚠️ No lot number available for parcel: ${parcel.parcelId}`);
-    }
-
-    // Extend bounds with validation - only for valid SkyRanch coordinates
-    try {
-      validCoords.forEach(coord => {
-        bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
-      });
-    } catch (error) {
-      console.error(`❌ Error extending bounds for parcel ${parcel.parcelId}:`, error);
-    }
-
-    // Calculate area if not already set
-    if (!parcel.areaHectares) {
-      const calculatedArea = this.calculatePolygonArea(validCoords);
-      if (calculatedArea > 0) {
-        parcel.areaHectares = calculatedArea;
-        console.log(`📐 Calculated area: ${calculatedArea.toFixed(4)} hectares`);
-      }
     }
 
     // Enhanced info window with more details
@@ -181,7 +146,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully in SkyRanch area`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully`);
     console.log(`=== END PARCEL RENDERING ===\n`);
 
     return true;

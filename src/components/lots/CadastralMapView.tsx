@@ -4,7 +4,6 @@ import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
 import { useGoogleMapsLoader } from '@/hooks/polygon/useGoogleMapsLoader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { batchUpdateAllParcels, removeDuplicateParcels } from '@/services/cadastral/parcelUpdater';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
@@ -23,7 +22,6 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const [isLoading, setIsLoading] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [statusFilter, setStatusFilter] = useState<ParcelStatus | 'ALL'>('ALL');
-  const [hasProcessed, setHasProcessed] = useState(false);
 
   const { isLoaded, loadError } = useGoogleMapsLoader();
 
@@ -36,40 +34,6 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       loadCadastralParcels(selectedPropertyId);
     }
   }, [selectedPropertyId]);
-
-  // ENHANCED: Comprehensive parcel processing when Google Maps is loaded
-  useEffect(() => {
-    if (isLoaded && selectedPropertyId && cadastralParcels.length > 0 && !hasProcessed) {
-      console.log('🔄 === STARTING COMPREHENSIVE PARCEL PROCESSING ===');
-      
-      const processAllParcels = async () => {
-        try {
-          // Step 1: Remove duplicates first
-          console.log('🗑️ Step 1: Removing duplicate parcels...');
-          await removeDuplicateParcels(selectedPropertyId);
-          
-          // Step 2: Batch update all parcels
-          console.log('📝 Step 2: Batch updating parcels with lot numbers and areas...');
-          await batchUpdateAllParcels(selectedPropertyId);
-          
-          // Step 3: Reload parcels to get updated data
-          console.log('🔄 Step 3: Reloading parcels with updated data...');
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for database consistency
-          await loadCadastralParcels(selectedPropertyId);
-          
-          setHasProcessed(true);
-          console.log('✅ === COMPREHENSIVE PARCEL PROCESSING COMPLETE ===');
-          toast.success('Parcelas procesadas y actualizadas correctamente');
-          
-        } catch (error) {
-          console.error('❌ Error during comprehensive processing:', error);
-          toast.error('Error procesando las parcelas');
-        }
-      };
-      
-      processAllParcels();
-    }
-  }, [isLoaded, selectedPropertyId, cadastralParcels.length, hasProcessed]);
 
   const loadProperties = async () => {
     setIsLoading(true);
@@ -101,13 +65,11 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const handlePropertyChange = (propertyId: string) => {
     setSelectedPropertyId(propertyId);
     setMap(null);
-    setHasProcessed(false); // Reset processing flag for new property
     onPropertySelect?.(propertyId);
   };
 
   const handleFileUploadSuccess = () => {
     if (selectedPropertyId) {
-      setHasProcessed(false); // Reset to trigger processing of new data
       loadCadastralParcels(selectedPropertyId);
     }
     setShowUpload(false);
@@ -140,13 +102,34 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   };
 
   const handleParcelClick = (parcel: CadastralParcel) => {
-    // Focus on the parcel in the map
+    // FIXED: Focus on the parcel without disrupting the main map view
     if (map && parcel.boundaryCoordinates.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       parcel.boundaryCoordinates.forEach(coord => {
         bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
       });
-      map.fitBounds(bounds);
+      
+      // Only fit bounds if the parcel is reasonably sized and not too small
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
+      const latDiff = Math.abs(ne.lat() - sw.lat());
+      const lngDiff = Math.abs(ne.lng() - sw.lng());
+      
+      if (latDiff > 0.0001 && lngDiff > 0.0001) {
+        map.fitBounds(bounds);
+        // Prevent over-zooming
+        google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+          const zoom = map.getZoom();
+          if (zoom && zoom > 20) {
+            map.setZoom(20);
+          }
+        });
+      } else {
+        // For very small parcels, just center on them
+        const center = bounds.getCenter();
+        map.setCenter(center);
+        map.setZoom(18);
+      }
     }
   };
 
