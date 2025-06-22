@@ -36,32 +36,33 @@ export class ParcelRenderer {
       return false;
     }
 
-    // CONSERVATIVE: Use coordinates exactly as stored - minimal filtering
+    // Use coordinates EXACTLY as stored - no transformations
     const coordinates = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
       typeof coord.lng === 'number' &&
       !isNaN(coord.lat) && 
-      !isNaN(coord.lng)
+      !isNaN(coord.lng) &&
+      coord.lat !== 0 && coord.lng !== 0
     );
 
     if (coordinates.length < 3) {
-      console.warn(`❌ Parcel ${parcel.parcelId} has insufficient coordinates: ${coordinates.length}/3 required`);
+      console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${coordinates.length}/3 required`);
       return false;
     }
 
-    console.log(`🗺️ Rendering parcel ${index + 1}: ${parcel.parcelId} with ${coordinates.length} coordinates`);
-    console.log(`📍 First coordinate: ${coordinates[0].lat.toFixed(8)}, ${coordinates[0].lng.toFixed(8)}`);
+    console.log(`🗺️ Rendering parcel ${parcel.parcelId} with ${coordinates.length} coordinates`);
+    console.log(`📍 Sample coordinate: ${coordinates[0].lat.toFixed(8)}, ${coordinates[0].lng.toFixed(8)}`);
 
     const color = this.getParcelColor(parcel.status);
     
-    // Create polygon with preserved coordinates
+    // Create polygon with clean styling
     const polygon = new google.maps.Polygon({
       paths: coordinates,
       fillColor: color,
-      fillOpacity: 0.6,
-      strokeColor: '#000000',
-      strokeWeight: 1,
+      fillOpacity: 0.4,
+      strokeColor: '#333333',
+      strokeWeight: 2,
       clickable: true,
       editable: false,
       zIndex: 1,
@@ -70,22 +71,21 @@ export class ParcelRenderer {
     polygon.setMap(this.map);
     this.polygons.push(polygon);
 
-    // Extend bounds for each coordinate
+    // Extend bounds for proper map fitting
     coordinates.forEach(coord => {
       bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
     });
 
     // Add click listener
     polygon.addListener('click', () => {
-      console.log(`🖱️ Clicked parcel polygon: ${parcel.parcelId}`);
+      console.log(`🖱️ Clicked parcel: ${parcel.parcelId}`);
       this.onParcelClick(parcel);
     });
 
-    // Sequential lot numbers: 1, 2, 3, 4, 5...
-    const displayLotNumber = (index + 1).toString();
+    // Create label with parcel ID or lot number
+    const displayText = parcel.lotNumber || parcel.parcelId;
     const center = this.calculatePolygonCenter(coordinates);
     
-    // Create white text label
     const label = new google.maps.Marker({
       position: center,
       map: this.map,
@@ -96,38 +96,34 @@ export class ParcelRenderer {
         strokeOpacity: 0
       },
       label: {
-        text: displayLotNumber,
+        text: displayText,
         color: '#FFFFFF',
-        fontSize: '16px',
+        fontSize: '14px',
         fontWeight: 'bold',
         fontFamily: 'Arial, sans-serif'
       },
       clickable: true,
-      title: `Parcela ${displayLotNumber} - ${parcel.displayName || parcel.parcelId}`,
+      title: `${parcel.displayName || parcel.parcelId}`,
       zIndex: 10000,
       optimized: false
     });
 
     // Add click listener to label
     label.addListener('click', () => {
-      console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}, lot: ${displayLotNumber}`);
+      console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}`);
       this.onParcelClick(parcel);
     });
 
     this.labels.push(label);
 
-    // Enhanced info window
+    // Simple info window
     const infoWindow = new google.maps.InfoWindow({
       content: `
         <div class="p-3 min-w-[200px]">
           <h3 class="font-bold text-lg mb-2">${parcel.displayName || parcel.parcelId}</h3>
-          <p class="mb-1"><strong>Número de Parcela:</strong> ${displayLotNumber}</p>
-          <p class="mb-1"><strong>ID Catastral:</strong> ${parcel.parcelId}</p>
+          <p class="mb-1"><strong>ID:</strong> ${parcel.parcelId}</p>
           ${parcel.areaHectares ? `<p class="mb-1"><strong>Área:</strong> ${parcel.areaHectares.toFixed(4)} ha</p>` : ''}
-          ${parcel.classification ? `<p class="mb-1"><strong>Clasificación:</strong> ${parcel.classification}</p>` : ''}
           ${parcel.status ? `<p class="mb-1"><strong>Estado:</strong> ${parcel.status}</p>` : ''}
-          ${parcel.notes ? `<p class="mb-1"><strong>Notas:</strong> ${parcel.notes}</p>` : ''}
-          <p class="text-xs text-gray-500 mt-2">Click derecho para más información</p>
         </div>
       `
     });
@@ -139,7 +135,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully with label ${displayLotNumber}`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully`);
     return true;
   }
 
@@ -161,13 +157,11 @@ export class ParcelRenderer {
     console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels`);
     this.map.fitBounds(bounds);
     
-    // Set appropriate zoom to see all parcels clearly
+    // Ensure reasonable zoom level
     google.maps.event.addListenerOnce(this.map, 'bounds_changed', () => {
       const zoom = this.map.getZoom();
-      if (zoom && zoom > 18) {
-        this.map.setZoom(18);
-      } else if (zoom && zoom < 16) {
-        this.map.setZoom(16);
+      if (zoom && zoom > 20) {
+        this.map.setZoom(20);
       }
     });
   }

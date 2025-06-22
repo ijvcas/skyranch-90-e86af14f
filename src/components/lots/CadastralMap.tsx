@@ -30,19 +30,19 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
   useEffect(() => {
     if (isLoaded && selectedProperty && !mapRef.current) {
-      console.log('🗺️ Initializing map with original MapInitializer');
+      console.log('🗺️ Initializing map with coordinates:', selectedProperty.centerLat, selectedProperty.centerLng);
       
       const map = initializeMap(selectedProperty, 'cadastral-map', onMapReady);
       if (map) {
         mapRef.current = map;
         parcelRendererRef.current = new ParcelRenderer(map, onParcelClick);
         
-        // Wait for map to be fully ready before rendering parcels
+        // Wait for map to be ready
         google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
-          console.log('✅ Map tiles loaded, ready for parcels');
+          console.log('✅ Map tiles loaded');
           setTimeout(() => {
             setInitialLoadComplete(true);
-          }, 300);
+          }, 500);
         });
       }
     }
@@ -61,55 +61,48 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       return;
     }
 
-    // Clear existing polygons first
+    // Clear existing polygons
     console.log('🧹 Clearing existing polygons');
     parcelRendererRef.current.clearAll();
 
-    // Filter parcels based on status
+    // Filter parcels
     const filteredParcels = statusFilter === 'ALL' 
       ? cadastralParcels 
       : cadastralParcels.filter(parcel => parcel.status === statusFilter);
 
-    console.log(`🎯 Rendering ${filteredParcels.length} parcels`);
+    console.log(`🎯 Displaying ${filteredParcels.length} filtered parcels`);
     
     if (filteredParcels.length === 0) {
-      console.log('⚠️ No parcels to display after filtering');
+      console.log('⚠️ No parcels to display');
       setParcelsRendered(false);
       return;
     }
 
-    let validParcels = 0;
+    let renderedCount = 0;
     const bounds = new google.maps.LatLngBounds();
 
     filteredParcels.forEach((parcel, index) => {
-      console.log(`🔄 Rendering parcel ${index + 1}/${filteredParcels.length}: ${parcel.parcelId}`);
-      
       if (parcelRendererRef.current?.renderParcel(parcel, bounds, index)) {
-        validParcels++;
-        console.log(`✅ Successfully rendered parcel ${index + 1}: ${parcel.parcelId}`);
-      } else {
-        console.warn(`❌ Failed to render parcel ${index + 1}: ${parcel.parcelId}`);
+        renderedCount++;
       }
     });
 
-    console.log(`🎉 Rendered ${validParcels}/${filteredParcels.length} parcels`);
+    console.log(`🎉 Rendered ${renderedCount}/${filteredParcels.length} parcels`);
     
-    if (validParcels === 0) {
-      console.error('🚨 NO PARCELS WERE RENDERED!');
-      setParcelsRendered(false);
-    } else {
-      // Fit map bounds to show all parcels optimally
-      console.log('🎯 Fitting map bounds to show all parcels');
+    if (renderedCount > 0) {
+      // Fit bounds after rendering
       setTimeout(() => {
         parcelRendererRef.current?.fitMapToAllParcels();
         setParcelsRendered(true);
-      }, 500);
+      }, 1000);
+    } else {
+      setParcelsRendered(false);
     }
   };
 
   return (
     <Card>
-      <CardContent className="p-0">
+      <CardContent className="p-0 relative">
         <div 
           id="cadastral-map" 
           className="w-full h-96 rounded-lg"
