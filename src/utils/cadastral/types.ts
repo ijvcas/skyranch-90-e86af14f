@@ -12,6 +12,13 @@ export interface ParsedParcel {
   importedFromFile?: string;
 }
 
+export interface DXFEntity {
+  vertices: number[][];
+  layer?: string;
+  type?: string;
+  handle?: string;
+}
+
 export type ParcelStatus = 'PROPIEDAD' | 'SHOPPING_LIST' | 'NEGOCIANDO';
 
 export interface ParsingResult {

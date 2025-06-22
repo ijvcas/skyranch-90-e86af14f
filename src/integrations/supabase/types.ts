@@ -356,12 +356,15 @@ export type Database = {
           boundary_coordinates: Json
           classification: string | null
           created_at: string
+          display_name: string | null
           id: string
           imported_from_file: string | null
+          lot_number: string | null
           notes: string | null
           owner_info: string | null
           parcel_id: string
           property_id: string | null
+          status: string | null
           updated_at: string
         }
         Insert: {
@@ -369,12 +372,15 @@ export type Database = {
           boundary_coordinates: Json
           classification?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
           imported_from_file?: string | null
+          lot_number?: string | null
           notes?: string | null
           owner_info?: string | null
           parcel_id: string
           property_id?: string | null
+          status?: string | null
           updated_at?: string
         }
         Update: {
@@ -382,12 +388,15 @@ export type Database = {
           boundary_coordinates?: Json
           classification?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
           imported_from_file?: string | null
+          lot_number?: string | null
           notes?: string | null
           owner_info?: string | null
           parcel_id?: string
           property_id?: string | null
+          status?: string | null
           updated_at?: string
         }
         Relationships: [
