@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
@@ -8,6 +9,7 @@ import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
 import type { ParcelStatus } from '@/utils/cadastral/types';
 import { toast } from 'sonner';
+import { batchUpdateAllParcels } from '@/services/cadastral/batchProcessor';
 
 interface CadastralMapViewProps {
   onPropertySelect?: (propertyId: string) => void;
@@ -53,6 +55,10 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
 
   const loadCadastralParcels = async (propertyId: string) => {
     try {
+      // FIXED: Run batch update first to ensure all parcels have unique lot numbers and areas
+      console.log('🔄 Running batch update to ensure data quality...');
+      await batchUpdateAllParcels(propertyId);
+      
       const data = await getCadastralParcels(propertyId);
       setCadastralParcels(data);
       console.log(`📋 Loaded ${data.length} cadastral parcels`);
@@ -116,16 +122,16 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       // FIXED: Calculate center manually for more predictable behavior
       const center = calculateParcelCenter(parcel.boundaryCoordinates);
       
-      // FIXED: Validate that the center is within expected SkyRanch bounds
-      const isValidCenter = center.lat >= 40.10 && center.lat <= 40.11 && 
-                           center.lng >= -4.48 && center.lng <= -4.46;
+      // FIXED: More lenient validation for Spanish coordinates
+      const isValidCenter = center.lat >= 39.0 && center.lat <= 41.0 && 
+                           center.lng >= -5.0 && center.lng <= -3.0;
       
       if (isValidCenter) {
         console.log(`🎯 Centering map on parcel at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
         
         // FIXED: Use setCenter and setZoom for predictable navigation
         map.setCenter(center);
-        map.setZoom(19); // High zoom to see individual parcels clearly
+        map.setZoom(18); // Good zoom to see individual parcels clearly
         
         console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
       } else {
