@@ -1,4 +1,3 @@
-
 import type { CadastralParcel } from '@/services/cadastralService';
 import { PARCEL_STATUS_COLORS, type ParcelStatus } from '@/utils/cadastral/types';
 
@@ -9,6 +8,7 @@ export class ParcelRenderer {
   constructor(private map: google.maps.Map, private onParcelClick: (parcel: CadastralParcel) => void) {}
 
   clearAll() {
+    console.log(`🧹 Clearing ${this.polygons.length} polygons and ${this.labels.length} labels`);
     this.polygons.forEach(polygon => polygon.setMap(null));
     this.polygons = [];
     this.labels.forEach(label => label.setMap(null));
@@ -35,7 +35,7 @@ export class ParcelRenderer {
       return false;
     }
 
-    // Enhanced coordinate validation - ensure we're in the SkyRanch area
+    // ENHANCED coordinate validation - ensure we're in the SkyRanch area ONLY
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -45,22 +45,23 @@ export class ParcelRenderer {
       Math.abs(coord.lat) <= 90 && 
       Math.abs(coord.lng) <= 180 &&
       coord.lat !== 0 && coord.lng !== 0 && // Exclude zero coordinates
-      // FIXED: Ensure coordinates are in reasonable range for SkyRanch area
-      coord.lat >= 40.0 && coord.lat <= 41.0 && // Reasonable latitude range for central Spain
-      coord.lng >= -5.0 && coord.lng <= -4.0    // Reasonable longitude range for central Spain
+      // STRICT: Only accept coordinates in the immediate SkyRanch area
+      coord.lat >= 40.31 && coord.lat <= 40.32 && // Very narrow latitude range around SkyRanch
+      coord.lng >= -4.48 && coord.lng <= -4.47    // Very narrow longitude range around SkyRanch
     );
 
     if (validCoords.length < 3) {
-      console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${validCoords.length}/3 required`);
-      console.warn('Invalid coordinates:', parcel.boundaryCoordinates);
+      console.warn(`❌ Parcel ${parcel.parcelId} coordinates outside SkyRanch area: ${validCoords.length}/3 required`);
+      console.warn('Rejected coordinates (outside SkyRanch bounds):', parcel.boundaryCoordinates.filter(coord => 
+        coord.lat < 40.31 || coord.lat > 40.32 || coord.lng < -4.48 || coord.lng > -4.47
+      ));
       return false;
     }
 
-    // Enhanced logging for debugging
     console.log(`\n🗺️ === RENDERING PARCEL ===`);
     console.log(`📋 Parcel ID: ${parcel.parcelId}`);
     console.log(`🔢 Lot Number: ${parcel.lotNumber || 'N/A'}`);
-    console.log(`📊 Valid coordinates: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
+    console.log(`📊 Valid coordinates in SkyRanch area: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
     console.log(`📍 Sample coordinates:`, validCoords.slice(0, 3));
 
     const color = this.getParcelColor(parcel.status);
@@ -84,33 +85,34 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // FIXED: Enhanced lot number label rendering with better visibility
+    // ENHANCED lot number label rendering - FORCE visibility
     if (parcel.lotNumber) {
       const center = this.calculatePolygonCenter(validCoords);
-      console.log(`🏷️ Creating ENHANCED label for lot ${parcel.lotNumber} at:`, center);
+      console.log(`🏷️ Creating MAXIMUM VISIBILITY label for lot ${parcel.lotNumber} at:`, center);
       
-      // Create a highly visible marker with enhanced styling
+      // Create the most visible marker possible
       const label = new google.maps.Marker({
         position: center,
         map: this.map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 16, // Larger scale for maximum visibility
+          scale: 20, // Even larger scale
           fillColor: '#ffffff',
-          fillOpacity: 1.0, // Full opacity for white background
-          strokeColor: color, // Use parcel color for border
-          strokeWeight: 3 // Thicker border
+          fillOpacity: 1.0, // Full opacity white background
+          strokeColor: '#000000', // Black border for maximum contrast
+          strokeWeight: 4 // Very thick border
         },
         label: {
           text: parcel.lotNumber,
-          color: '#000000', // Black text for maximum contrast
-          fontSize: '14px', // Larger font
+          color: '#000000', // Black text
+          fontSize: '16px', // Larger font
           fontWeight: 'bold',
           fontFamily: 'Arial, sans-serif'
         },
         clickable: true,
         title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`,
-        zIndex: 2000 // Higher z-index to ensure labels appear above everything
+        zIndex: 9999, // Maximum z-index to ensure visibility above everything
+        optimized: false // Disable optimization to ensure rendering
       });
 
       // Add click listener to label as well
@@ -120,12 +122,12 @@ export class ParcelRenderer {
       });
 
       this.labels.push(label);
-      console.log(`✅ ENHANCED label created successfully for lot ${parcel.lotNumber}`);
+      console.log(`✅ MAXIMUM VISIBILITY label created for lot ${parcel.lotNumber} with zIndex: 9999`);
     } else {
       console.warn(`⚠️ No lot number available for parcel: ${parcel.parcelId}`);
     }
 
-    // Extend bounds with validation
+    // Extend bounds with validation - only for valid SkyRanch coordinates
     try {
       validCoords.forEach(coord => {
         bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
@@ -157,7 +159,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully in SkyRanch area`);
     console.log(`=== END PARCEL RENDERING ===\n`);
 
     return true;

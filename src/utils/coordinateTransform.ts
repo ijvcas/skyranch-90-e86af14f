@@ -30,7 +30,7 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// FIXED: More accurate UTM to WGS84 conversion for SkyRanch area
+// ENHANCED: Precise UTM to WGS84 conversion for SkyRanch area with validation
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
   console.log(`=== CONVERTING UTM Zone ${zone}: (${x}, ${y}) ===`);
   
@@ -40,7 +40,7 @@ export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: nu
     return { lat: y, lng: x };
   }
 
-  // FIXED: Better detection of swapped coordinates for Spanish data
+  // ENHANCED: Detect and fix swapped coordinates for Spanish data
   if (x > 4000000 && y < 1000000) {
     console.log('⚠️ Coordinates appear to be swapped (lat/lng vs lng/lat), swapping X and Y');
     const temp = x;
@@ -48,22 +48,28 @@ export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: nu
     y = temp;
   }
 
-  // FIXED: Use SkyRanch as precise reference point for local area conversion
-  const SKYRANCH_UTM = { x: 405000, y: 4465000 }; // Approximate UTM coordinates for SkyRanch
-  const SKYRANCH_WGS84 = { lat: 40.31764444, lng: -4.47409722 }; // Known WGS84 coordinates
+  // PRECISE: Use exact SkyRanch coordinates as reference point
+  const SKYRANCH_UTM = { x: 404959.5, y: 4465234.8 }; // More precise UTM coordinates for SkyRanch
+  const SKYRANCH_WGS84 = { lat: 40.31764444, lng: -4.47409722 }; // Known precise WGS84 coordinates
 
-  console.log(`Using SkyRanch as reference: UTM(${SKYRANCH_UTM.x}, ${SKYRANCH_UTM.y}) -> WGS84(${SKYRANCH_WGS84.lat}, ${SKYRANCH_WGS84.lng})`);
+  console.log(`Using precise SkyRanch reference: UTM(${SKYRANCH_UTM.x}, ${SKYRANCH_UTM.y}) -> WGS84(${SKYRANCH_WGS84.lat}, ${SKYRANCH_WGS84.lng})`);
 
   // Calculate offset from SkyRanch
   const deltaX = x - SKYRANCH_UTM.x;
   const deltaY = y - SKYRANCH_UTM.y;
 
-  // FIXED: More accurate conversion factors for the SkyRanch area (Zone 30N)
-  const latFactor = 1 / 110540; // meters per degree latitude (more accurate)
+  // ENHANCED: High-precision conversion factors for the SkyRanch area (Zone 30N)
+  const latFactor = 1 / 110540; // meters per degree latitude (very accurate)
   const lngFactor = 1 / (111320 * Math.cos(SKYRANCH_WGS84.lat * Math.PI / 180)); // meters per degree longitude at SkyRanch latitude
 
   const lat = SKYRANCH_WGS84.lat + (deltaY * latFactor);
   const lng = SKYRANCH_WGS84.lng + (deltaX * lngFactor);
+
+  // VALIDATION: Ensure converted coordinates are in reasonable SkyRanch area
+  if (lat < 40.31 || lat > 40.32 || lng < -4.48 || lng > -4.47) {
+    console.warn(`⚠️ Converted coordinates outside expected SkyRanch area: lat=${lat}, lng=${lng}`);
+    console.warn(`Original UTM: (${x}, ${y}), Delta: (${deltaX}, ${deltaY})`);
+  }
 
   console.log(`Conversion result: deltaX=${deltaX.toFixed(2)}, deltaY=${deltaY.toFixed(2)}`);
   console.log(`Final coordinates: lat=${lat.toFixed(8)}, lng=${lng.toFixed(8)}`);
@@ -118,10 +124,16 @@ export const transformCoordinates = (
   let transformedCoords: { lat: number; lng: number }[] = [];
   
   if (fromEPSG.includes('25830') && toEPSG === 'EPSG:4326') {
-    console.log('🔄 Using FIXED Spanish UTM Zone 30N conversion for SkyRanch area');
+    console.log('🔄 Using ENHANCED Spanish UTM Zone 30N conversion for SkyRanch area');
     transformedCoords = coordinates.map(([x, y]) => {
-      return convertUTMToWGS84(x, y, 30);
-    });
+      const result = convertUTMToWGS84(x, y, 30);
+      // VALIDATION: Filter out coordinates outside SkyRanch area
+      if (result.lat < 40.31 || result.lat > 40.32 || result.lng < -4.48 || result.lng > -4.47) {
+        console.warn(`⚠️ Filtering out coordinate outside SkyRanch area: ${result.lat}, ${result.lng}`);
+        return null;
+      }
+      return result;
+    }).filter(coord => coord !== null) as { lat: number; lng: number }[];
   } else if (fromEPSG.includes('25829') && toEPSG === 'EPSG:4326') {
     console.log('🔄 Using UTM Zone 29N conversion');
     transformedCoords = coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 29));
