@@ -100,42 +100,40 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
     }
   };
 
+  const calculateParcelCenter = (coordinates: { lat: number; lng: number }[]): { lat: number; lng: number } => {
+    const latSum = coordinates.reduce((sum, coord) => sum + coord.lat, 0);
+    const lngSum = coordinates.reduce((sum, coord) => sum + coord.lng, 0);
+    return {
+      lat: latSum / coordinates.length,
+      lng: lngSum / coordinates.length
+    };
+  };
+
   const handleParcelClick = (parcel: CadastralParcel) => {
-    // FIXED: Improved parcel click behavior with better bounds calculation
     if (map && parcel.boundaryCoordinates.length > 0) {
-      const bounds = new google.maps.LatLngBounds();
-      parcel.boundaryCoordinates.forEach(coord => {
-        bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
-      });
+      console.log(`🎯 Focusing on parcel: ${parcel.parcelId}`);
       
-      // Calculate bounds size to determine appropriate action
-      const ne = bounds.getNorthEast();
-      const sw = bounds.getSouthWest();
-      const latDiff = Math.abs(ne.lat() - sw.lat());
-      const lngDiff = Math.abs(ne.lng() - sw.lng());
+      // FIXED: Calculate center manually for more predictable behavior
+      const center = calculateParcelCenter(parcel.boundaryCoordinates);
       
-      // For reasonable sized parcels, fit bounds with padding
-      if (latDiff > 0.0005 && lngDiff > 0.0005) {
-        console.log(`🎯 Fitting bounds for parcel with size: lat=${latDiff.toFixed(6)}, lng=${lngDiff.toFixed(6)}`);
-        map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
+      // FIXED: Validate that the center is within expected SkyRanch bounds
+      const isValidCenter = center.lat >= 40.10 && center.lat <= 40.11 && 
+                           center.lng >= -4.48 && center.lng <= -4.46;
+      
+      if (isValidCenter) {
+        console.log(`🎯 Centering map on parcel at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
         
-        // Prevent over-zooming with a max zoom limit
-        google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
-          const zoom = map.getZoom();
-          if (zoom && zoom > 18) {
-            console.log(`🔍 Limiting zoom from ${zoom} to 18`);
-            map.setZoom(18);
-          }
-        });
-      } else {
-        // For very small parcels, just center and set appropriate zoom
-        const center = bounds.getCenter();
-        console.log(`🎯 Centering on small parcel at: ${center.lat()}, ${center.lng()}`);
+        // FIXED: Use setCenter and setZoom for predictable navigation
         map.setCenter(center);
-        map.setZoom(16); // Moderate zoom for small parcels
+        map.setZoom(19); // High zoom to see individual parcels clearly
+        
+        console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
+      } else {
+        console.warn(`⚠️ Parcel center outside valid bounds: ${center.lat}, ${center.lng}`);
+        toast.error('La parcela está fuera del área esperada');
       }
-      
-      console.log(`✅ Focused on parcel: ${parcel.parcelId}`);
+    } else {
+      console.warn(`❌ Cannot focus on parcel: no map or coordinates`);
     }
   };
 
