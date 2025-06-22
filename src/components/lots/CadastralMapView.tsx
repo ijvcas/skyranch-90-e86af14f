@@ -4,6 +4,7 @@ import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
 import { useGoogleMapsLoader } from '@/hooks/polygon/useGoogleMapsLoader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { reprocessExistingParcels } from '@/utils/cadastral/parcelProcessor';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
@@ -22,6 +23,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const [isLoading, setIsLoading] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [statusFilter, setStatusFilter] = useState<ParcelStatus | 'ALL'>('ALL');
+  const [hasReprocessed, setHasReprocessed] = useState(false);
 
   const { isLoaded, loadError } = useGoogleMapsLoader();
 
@@ -34,6 +36,20 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       loadCadastralParcels(selectedPropertyId);
     }
   }, [selectedPropertyId]);
+
+  // Re-process existing parcels when Google Maps is loaded and we have parcels
+  useEffect(() => {
+    if (isLoaded && selectedPropertyId && cadastralParcels.length > 0 && !hasReprocessed) {
+      console.log('🔄 Triggering parcel re-processing...');
+      reprocessExistingParcels(selectedPropertyId).then(() => {
+        setHasReprocessed(true);
+        // Reload parcels to get updated data
+        setTimeout(() => {
+          loadCadastralParcels(selectedPropertyId);
+        }, 1000);
+      });
+    }
+  }, [isLoaded, selectedPropertyId, cadastralParcels.length, hasReprocessed]);
 
   const loadProperties = async () => {
     setIsLoading(true);
@@ -64,11 +80,13 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const handlePropertyChange = (propertyId: string) => {
     setSelectedPropertyId(propertyId);
     setMap(null);
+    setHasReprocessed(false); // Reset reprocessing flag for new property
     onPropertySelect?.(propertyId);
   };
 
   const handleFileUploadSuccess = () => {
     if (selectedPropertyId) {
+      setHasReprocessed(false); // Reset to trigger reprocessing of new data
       loadCadastralParcels(selectedPropertyId);
     }
     setShowUpload(false);

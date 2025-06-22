@@ -1,3 +1,4 @@
+
 import type { CadastralParcel } from '@/services/cadastralService';
 import { PARCEL_STATUS_COLORS, type ParcelStatus } from '@/utils/cadastral/types';
 
@@ -29,6 +30,22 @@ export class ParcelRenderer {
     };
   }
 
+  private calculatePolygonArea(coordinates: { lat: number; lng: number }[]): number {
+    if (!window.google?.maps?.geometry || coordinates.length < 3) {
+      return 0;
+    }
+
+    try {
+      const path = coordinates.map(coord => new google.maps.LatLng(coord.lat, coord.lng));
+      const area = google.maps.geometry.spherical.computeArea(path);
+      // Convert from square meters to hectares (1 hectare = 10,000 square meters)
+      return area / 10000;
+    } catch (error) {
+      console.error('Error calculating polygon area:', error);
+      return 0;
+    }
+  }
+
   renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds): boolean {
     if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
@@ -52,9 +69,6 @@ export class ParcelRenderer {
 
     if (validCoords.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} coordinates outside SkyRanch area: ${validCoords.length}/3 required`);
-      console.warn('Rejected coordinates (outside SkyRanch bounds):', parcel.boundaryCoordinates.filter(coord => 
-        coord.lat < 40.31 || coord.lat > 40.32 || coord.lng < -4.48 || coord.lng > -4.47
-      ));
       return false;
     }
 
@@ -62,7 +76,6 @@ export class ParcelRenderer {
     console.log(`📋 Parcel ID: ${parcel.parcelId}`);
     console.log(`🔢 Lot Number: ${parcel.lotNumber || 'N/A'}`);
     console.log(`📊 Valid coordinates in SkyRanch area: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
-    console.log(`📍 Sample coordinates:`, validCoords.slice(0, 3));
 
     const color = this.getParcelColor(parcel.status);
     
@@ -85,33 +98,31 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // ENHANCED lot number label rendering - FORCE visibility
+    // NEW: White text lot number labels without circles (as requested)
     if (parcel.lotNumber) {
       const center = this.calculatePolygonCenter(validCoords);
-      console.log(`🏷️ Creating MAXIMUM VISIBILITY label for lot ${parcel.lotNumber} at:`, center);
+      console.log(`🏷️ Creating WHITE TEXT label for lot ${parcel.lotNumber} at:`, center);
       
-      // Create the most visible marker possible
+      // Create white text label without circle background
       const label = new google.maps.Marker({
         position: center,
         map: this.map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 20, // Even larger scale
-          fillColor: '#ffffff',
-          fillOpacity: 1.0, // Full opacity white background
-          strokeColor: '#000000', // Black border for maximum contrast
-          strokeWeight: 4 // Very thick border
+          scale: 0, // No visible circle
+          fillOpacity: 0, // Completely transparent
+          strokeOpacity: 0 // No border
         },
         label: {
           text: parcel.lotNumber,
-          color: '#000000', // Black text
-          fontSize: '16px', // Larger font
+          color: '#FFFFFF', // White text as requested
+          fontSize: '14px', // Clear readable size
           fontWeight: 'bold',
           fontFamily: 'Arial, sans-serif'
         },
         clickable: true,
         title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`,
-        zIndex: 9999, // Maximum z-index to ensure visibility above everything
+        zIndex: 9999, // Maximum z-index to ensure visibility
         optimized: false // Disable optimization to ensure rendering
       });
 
@@ -122,7 +133,7 @@ export class ParcelRenderer {
       });
 
       this.labels.push(label);
-      console.log(`✅ MAXIMUM VISIBILITY label created for lot ${parcel.lotNumber} with zIndex: 9999`);
+      console.log(`✅ WHITE TEXT label created for lot ${parcel.lotNumber}`);
     } else {
       console.warn(`⚠️ No lot number available for parcel: ${parcel.parcelId}`);
     }
@@ -134,6 +145,15 @@ export class ParcelRenderer {
       });
     } catch (error) {
       console.error(`❌ Error extending bounds for parcel ${parcel.parcelId}:`, error);
+    }
+
+    // Calculate area if not already set
+    if (!parcel.areaHectares) {
+      const calculatedArea = this.calculatePolygonArea(validCoords);
+      if (calculatedArea > 0) {
+        parcel.areaHectares = calculatedArea;
+        console.log(`📐 Calculated area: ${calculatedArea.toFixed(4)} hectares`);
+      }
     }
 
     // Enhanced info window with more details

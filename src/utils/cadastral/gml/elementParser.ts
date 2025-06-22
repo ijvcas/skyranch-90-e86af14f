@@ -51,7 +51,7 @@ export const parseGMLElement = (element: Element, index: number): ParsedParcel |
     return null;
   }
   
-  // Create a more descriptive display name
+  // Create a more descriptive display name using the extracted lot number
   const displayName = lotNumber ? `Parcela ${lotNumber}` : 
                      parcelId.includes('28128A') ? `Parcela ${parcelId.split('.').slice(-2, -1)[0] || index}` :
                      `Parcela ${index}`;

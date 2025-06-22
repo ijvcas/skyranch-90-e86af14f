@@ -8,6 +8,38 @@ export const extractLotNumber = (element: Element): string | undefined => {
   if (gmlId) {
     console.log(`🆔 Processing gml:id: ${gmlId}`);
     
+    // ENHANCED: Surface format pattern matching for format like: Surface_ES.SDGC.CP.28128A00700122.1
+    const surfaceMatch = gmlId.match(/Surface_ES\.SDGC\.CP\.28128A(\d{8})(?:\.(\d+))?/);
+    if (surfaceMatch) {
+      const mainNumber = surfaceMatch[1]; // 00700122
+      const subNumber = surfaceMatch[2]; // 1 (if exists)
+      
+      console.log(`📋 Surface cadastral: 28128A${mainNumber}${subNumber ? '.' + subNumber : ''}`);
+      
+      // Extract meaningful lot number from the 8-digit sequence
+      // For 00700122, we want to extract 122
+      // For 00710007, we want to extract 7
+      // For 00700006, we want to extract 6
+      let lotNumber = mainNumber.replace(/^0+/, ''); // Remove leading zeros
+      
+      // If we get an empty string (all zeros), use the last non-zero digit
+      if (lotNumber.length === 0) {
+        lotNumber = mainNumber.slice(-1);
+      }
+      
+      // If still very long, take the last meaningful part
+      if (lotNumber.length > 4) {
+        // Look for patterns like 700122 -> 122, 710007 -> 7
+        const meaningfulMatch = mainNumber.match(/0*(\d{1,3})$/);
+        if (meaningfulMatch) {
+          lotNumber = meaningfulMatch[1];
+        }
+      }
+      
+      console.log(`✅ Extracted Surface lot number: ${lotNumber}`);
+      return lotNumber;
+    }
+    
     // FIXED: Enhanced Spanish cadastral pattern matching for format like: 28128A00700122.1
     const detailedSpanishMatch = gmlId.match(/28128A(\d{8})(?:\.(\d+))?/);
     if (detailedSpanishMatch) {
@@ -17,52 +49,22 @@ export const extractLotNumber = (element: Element): string | undefined => {
       console.log(`📋 Detailed Spanish cadastral: 28128A${mainNumber}${subNumber ? '.' + subNumber : ''}`);
       
       // Extract meaningful lot number from the 8-digit sequence
-      // For 00700122, we want to extract 122
       let lotNumber = mainNumber.replace(/^0+/, ''); // Remove leading zeros
       
-      // If we get a very long number, take the last 3-4 meaningful digits
+      if (lotNumber.length === 0) {
+        lotNumber = mainNumber.slice(-1);
+      }
+      
+      // If still very long, take the last meaningful part
       if (lotNumber.length > 4) {
-        // Look for the last meaningful segment (non-zero part)
-        const meaningfulMatch = mainNumber.match(/0*(\d{1,4})$/);
+        const meaningfulMatch = mainNumber.match(/0*(\d{1,3})$/);
         if (meaningfulMatch) {
           lotNumber = meaningfulMatch[1];
         }
       }
       
-      // If still empty or just one digit, use a different approach
-      if (lotNumber.length === 0 || (lotNumber.length === 1 && lotNumber === '0')) {
-        // Use the last 3 digits, removing only leading zeros from that segment
-        lotNumber = mainNumber.slice(-3).replace(/^0+/, '') || mainNumber.slice(-1);
-      }
-      
       console.log(`✅ Extracted Spanish cadastral lot number: ${lotNumber}`);
       return lotNumber;
-    }
-    
-    // Alternative pattern for Surface IDs - extract meaningful numbers
-    const surfaceMatch = gmlId.match(/Surface_ES\.SDGC\.CP\.(\d+[A-Z]\d+)/);
-    if (surfaceMatch) {
-      const cadastralCode = surfaceMatch[1];
-      console.log(`🏗️ Surface cadastral code: ${cadastralCode}`);
-      
-      // Extract the numeric part after the letter (28128A00700122 -> 00700122)
-      const numericMatch = cadastralCode.match(/28128A(\d{8})/);
-      if (numericMatch) {
-        const fullNumber = numericMatch[1];
-        // Apply same logic as above
-        let lotNumber = fullNumber.replace(/^0+/, '');
-        if (lotNumber.length > 4) {
-          const meaningfulMatch = fullNumber.match(/0*(\d{1,4})$/);
-          if (meaningfulMatch) {
-            lotNumber = meaningfulMatch[1];
-          }
-        }
-        if (lotNumber.length === 0) {
-          lotNumber = fullNumber.slice(-3).replace(/^0+/, '') || fullNumber.slice(-1);
-        }
-        console.log(`✅ Extracted surface lot number: ${lotNumber}`);
-        return lotNumber;
-      }
     }
     
     // Generic pattern for any number sequence
@@ -71,14 +73,14 @@ export const extractLotNumber = (element: Element): string | undefined => {
       let number = numberMatch[1];
       // Apply meaningful number extraction
       let lotNumber = number.replace(/^0+/, '');
+      if (lotNumber.length === 0) {
+        lotNumber = number.slice(-1);
+      }
       if (lotNumber.length > 4) {
-        const meaningfulMatch = number.match(/0*(\d{1,4})$/);
+        const meaningfulMatch = number.match(/0*(\d{1,3})$/);
         if (meaningfulMatch) {
           lotNumber = meaningfulMatch[1];
         }
-      }
-      if (lotNumber.length === 0) {
-        lotNumber = number.slice(-1);
       }
       console.log(`✅ Extracted generic lot number: ${lotNumber}`);
       return lotNumber;
