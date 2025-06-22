@@ -18,7 +18,7 @@ export interface ParsingResult {
   warnings: string[];
 }
 
-// Spanish Cadastral XML Parser (CATASTRO format)
+// Spanish Cadastral XML Parser (CATASTRO format) - Enhanced
 export const parseSpanishCadastralXML = async (file: File): Promise<ParsingResult> => {
   const result: ParsingResult = {
     parcels: [],
@@ -29,6 +29,8 @@ export const parseSpanishCadastralXML = async (file: File): Promise<ParsingResul
 
   try {
     const content = await file.text();
+    console.log('XML Content preview:', content.substring(0, 500));
+    
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(content, 'application/xml');
     
@@ -39,29 +41,52 @@ export const parseSpanishCadastralXML = async (file: File): Promise<ParsingResul
       return result;
     }
 
-    // Look for different possible root elements
-    const parcelas = xmlDoc.querySelectorAll('parcela, Parcela, PARCELA');
-    const fincas = xmlDoc.querySelectorAll('finca, Finca, FINCA');
-    const elements = parcelas.length > 0 ? parcelas : fincas;
+    // Enhanced element search - try multiple possible element names
+    const possibleElements = [
+      'parcela', 'Parcela', 'PARCELA',
+      'finca', 'Finca', 'FINCA',
+      'Polygon', 'polygon', 'POLYGON',
+      'Feature', 'feature', 'FEATURE',
+      'gml:Feature', 'featureMember',
+      'superficie', 'Superficie', 'SUPERFICIE',
+      'coordenadas', 'coordinates', 'geometry',
+      'LinearRing', 'Boundary', 'boundary'
+    ];
 
-    if (elements.length === 0) {
-      // Try generic polygon elements
-      const polygons = xmlDoc.querySelectorAll('Polygon, polygon, POLYGON');
-      if (polygons.length === 0) {
-        result.errors.push('No cadastral parcels found in XML. Expected elements: parcela, finca, or Polygon');
-        return result;
+    let foundElements: Element[] = [];
+    
+    for (const elementName of possibleElements) {
+      const elements = xmlDoc.querySelectorAll(elementName);
+      if (elements.length > 0) {
+        foundElements = Array.from(elements);
+        console.log(`Found ${elements.length} elements of type: ${elementName}`);
+        break;
       }
-      
-      polygons.forEach((polygon, index) => {
-        const parcel = parseGenericPolygon(polygon, index);
-        if (parcel) result.parcels.push(parcel);
-      });
-    } else {
-      elements.forEach((element, index) => {
-        const parcel = parseCadastralElement(element, index);
-        if (parcel) result.parcels.push(parcel);
-      });
     }
+
+    // If no specific cadastral elements found, try to find any elements with coordinates
+    if (foundElements.length === 0) {
+      const allElements = xmlDoc.querySelectorAll('*');
+      for (const element of allElements) {
+        const text = element.textContent || '';
+        // Check if element contains coordinate-like data
+        if (isCoordinateData(text)) {
+          foundElements.push(element);
+        }
+      }
+    }
+
+    if (foundElements.length === 0) {
+      result.errors.push('No cadastral data found. The file may not contain supported cadastral information.');
+      return result;
+    }
+
+    foundElements.forEach((element, index) => {
+      const parcel = parseXMLElement(element, index);
+      if (parcel) {
+        result.parcels.push(parcel);
+      }
+    });
 
     // Detect coordinate system from first parcel
     if (result.parcels.length > 0) {
@@ -82,13 +107,14 @@ export const parseSpanishCadastralXML = async (file: File): Promise<ParsingResul
     }
 
   } catch (error) {
+    console.error('Error processing XML file:', error);
     result.errors.push(`Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   return result;
 };
 
-// GML Parser (Geographic Markup Language)
+// Enhanced GML Parser
 export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
   const result: ParsingResult = {
     parcels: [],
@@ -99,6 +125,8 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
 
   try {
     const content = await file.text();
+    console.log('GML Content preview:', content.substring(0, 500));
+    
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(content, 'application/xml');
     
@@ -118,27 +146,50 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       }
     }
 
-    // Look for GML polygons and features
-    const polygons = xmlDoc.querySelectorAll('gml\\:Polygon, Polygon');
-    const features = xmlDoc.querySelectorAll('gml\\:featureMember, featureMember');
+    // Enhanced GML element search
+    const gmlSelectors = [
+      'gml\\:Polygon', 'Polygon', 
+      'gml\\:Surface', 'Surface',
+      'gml\\:LinearRing', 'LinearRing',
+      'gml\\:featureMember', 'featureMember',
+      'gml\\:Feature', 'Feature',
+      'gml\\:coordinates', 'coordinates',
+      'gml\\:posList', 'posList'
+    ];
 
-    if (polygons.length > 0) {
-      polygons.forEach((polygon, index) => {
-        const parcel = parseGMLPolygon(polygon, index);
-        if (parcel) result.parcels.push(parcel);
-      });
-    } else if (features.length > 0) {
-      features.forEach((feature, index) => {
-        const polygon = feature.querySelector('gml\\:Polygon, Polygon');
-        if (polygon) {
-          const parcel = parseGMLPolygon(polygon, index, feature);
-          if (parcel) result.parcels.push(parcel);
+    let foundElements: Element[] = [];
+    
+    for (const selector of gmlSelectors) {
+      const elements = xmlDoc.querySelectorAll(selector);
+      if (elements.length > 0) {
+        foundElements = Array.from(elements);
+        console.log(`Found ${elements.length} GML elements of type: ${selector}`);
+        break;
+      }
+    }
+
+    // Fallback: search for any element containing coordinate-like data
+    if (foundElements.length === 0) {
+      const allElements = xmlDoc.querySelectorAll('*');
+      for (const element of allElements) {
+        const text = element.textContent || '';
+        if (isCoordinateData(text)) {
+          foundElements.push(element);
         }
-      });
-    } else {
-      result.errors.push('No GML polygons found in file');
+      }
+    }
+
+    if (foundElements.length === 0) {
+      result.errors.push('No GML geometry data found in file');
       return result;
     }
+
+    foundElements.forEach((element, index) => {
+      const parcel = parseGMLElement(element, index);
+      if (parcel) {
+        result.parcels.push(parcel);
+      }
+    });
 
     // Transform coordinates if needed
     if (result.coordinateSystem !== 'EPSG:4326') {
@@ -152,13 +203,14 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
     }
 
   } catch (error) {
+    console.error('Error processing GML file:', error);
     result.errors.push(`Error processing GML file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   return result;
 };
 
-// DXF to Coordinates Parser (basic implementation)
+// Enhanced DXF Parser
 export const parseDXFFile = async (file: File): Promise<ParsingResult> => {
   const result: ParsingResult = {
     parcels: [],
@@ -169,117 +221,188 @@ export const parseDXFFile = async (file: File): Promise<ParsingResult> => {
 
   try {
     const content = await file.text();
+    console.log('DXF Content preview:', content.substring(0, 500));
+    
     const lines = content.split('\n').map(line => line.trim());
     
-    // Basic DXF LWPOLYLINE parsing
-    const polylines = extractDXFPolylines(lines);
+    // Enhanced DXF parsing - look for various entity types
+    const entities = extractDXFEntities(lines);
+    console.log(`Found ${entities.length} DXF entities`);
     
-    polylines.forEach((polyline, index) => {
-      if (polyline.vertices.length >= 3) {
-        const coordinates = transformCoordinates(polyline.vertices, result.coordinateSystem);
+    entities.forEach((entity, index) => {
+      if (entity.vertices && entity.vertices.length >= 3) {
+        const coordinates = transformCoordinates(entity.vertices, result.coordinateSystem);
         
         result.parcels.push({
-          parcelId: polyline.layer || `DXF_Parcel_${index + 1}`,
+          parcelId: entity.layer || entity.handle || `DXF_Entity_${index + 1}`,
           boundaryCoordinates: coordinates,
           classification: 'DXF Import',
-          notes: `Layer: ${polyline.layer || 'Unknown'}`
+          notes: `Layer: ${entity.layer || 'Unknown'}, Type: ${entity.type || 'Unknown'}`
         });
       }
     });
 
     if (result.parcels.length === 0) {
-      result.errors.push('No polylines found in DXF file');
+      result.errors.push('No geometric entities found in DXF file. The file may not contain polylines, polygons, or other supported geometry.');
     }
 
   } catch (error) {
+    console.error('Error processing DXF file:', error);
     result.errors.push(`Error processing DXF file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   return result;
 };
 
-// Helper functions
-const parseCadastralElement = (element: Element, index: number): ParsedParcel | null => {
+// Helper function to detect coordinate-like data
+const isCoordinateData = (text: string): boolean => {
+  if (!text || text.length < 10) return false;
+  
+  // Look for patterns that suggest coordinates
+  const coordinatePatterns = [
+    /\d+\.\d+[,\s]+\d+\.\d+/, // decimal coordinates
+    /\d+[,\s]+\d+[,\s]+\d+/, // integer coordinates
+    /-?\d+\.\d+\s+-?\d+\.\d+/, // negative coordinates
+  ];
+  
+  return coordinatePatterns.some(pattern => pattern.test(text));
+};
+
+// Enhanced XML element parser
+const parseXMLElement = (element: Element, index: number): ParsedParcel | null => {
+  console.log(`Parsing XML element ${index}:`, element.tagName, element.textContent?.substring(0, 100));
+  
   const parcelId = element.getAttribute('refcat') || 
-                   element.querySelector('refcat, referencia_catastral')?.textContent ||
-                   `Parcel_${index + 1}`;
+                   element.getAttribute('id') ||
+                   element.querySelector('refcat, referencia_catastral, id, gml\\:id')?.textContent ||
+                   `XML_Parcel_${index + 1}`;
   
-  const superficie = element.querySelector('superficie, area')?.textContent;
-  const coordenadas = element.querySelector('coordenadas, coordinates, geometry');
+  const superficie = element.querySelector('superficie, area, gml\\:area')?.textContent;
   
-  if (!coordenadas) return null;
+  // Enhanced coordinate extraction
+  let coordinates: number[][] = [];
   
-  const coordinates = extractCoordinatesFromElement(coordenadas);
-  if (coordinates.length < 3) return null;
+  // Try different coordinate sources
+  const coordSources = [
+    element.querySelector('coordenadas, coordinates, geometry, gml\\:coordinates, gml\\:posList'),
+    element.querySelector('gml\\:exterior gml\\:LinearRing gml\\:coordinates'),
+    element.querySelector('gml\\:exterior gml\\:LinearRing gml\\:posList'),
+    element
+  ];
+  
+  for (const source of coordSources) {
+    if (source) {
+      coordinates = extractCoordinatesFromElement(source);
+      if (coordinates.length >= 3) break;
+    }
+  }
+  
+  if (coordinates.length < 3) {
+    console.log(`Insufficient coordinates found for element ${index}`);
+    return null;
+  }
   
   return {
     parcelId,
     boundaryCoordinates: coordinates.map(([lng, lat]) => ({ lat, lng })),
     areaHectares: superficie ? parseFloat(superficie) / 10000 : undefined,
-    classification: 'Cadastral Import'
+    classification: 'XML Import',
+    notes: element.tagName
   };
 };
 
-const parseGenericPolygon = (polygon: Element, index: number): ParsedParcel | null => {
-  const coordinates = extractCoordinatesFromElement(polygon);
+// Enhanced GML element parser
+const parseGMLElement = (element: Element, index: number): ParsedParcel | null => {
+  console.log(`Parsing GML element ${index}:`, element.tagName);
+  
+  const parcelId = element.getAttribute('gml:id') || 
+                   element.getAttribute('id') ||
+                   element.querySelector('gml\\:name, name, parcela, parcel')?.textContent ||
+                   `GML_Feature_${index + 1}`;
+  
+  // Enhanced coordinate extraction for GML
+  let coordinates: number[][] = [];
+  
+  const coordSources = [
+    element.querySelector('gml\\:exterior gml\\:LinearRing gml\\:coordinates'),
+    element.querySelector('gml\\:exterior gml\\:LinearRing gml\\:posList'),
+    element.querySelector('gml\\:coordinates'),
+    element.querySelector('gml\\:posList'),
+    element.querySelector('coordinates'),
+    element.querySelector('posList'),
+    element
+  ];
+  
+  for (const source of coordSources) {
+    if (source) {
+      coordinates = extractGMLCoordinates(source);
+      if (coordinates.length >= 3) break;
+    }
+  }
+  
   if (coordinates.length < 3) return null;
-  
-  return {
-    parcelId: `Polygon_${index + 1}`,
-    boundaryCoordinates: coordinates.map(([lng, lat]) => ({ lat, lng })),
-    classification: 'XML Import'
-  };
-};
-
-const parseGMLPolygon = (polygon: Element, index: number, feature?: Element): ParsedParcel | null => {
-  const exterior = polygon.querySelector('gml\\:exterior, exterior, gml\\:outerBoundaryIs, outerBoundaryIs');
-  const coordsElement = exterior?.querySelector('gml\\:coordinates, coordinates, gml\\:posList, posList');
-  
-  if (!coordsElement) return null;
-  
-  const coordinates = extractGMLCoordinates(coordsElement);
-  if (coordinates.length < 3) return null;
-  
-  // Extract feature properties if available
-  const parcelId = feature?.getAttribute('gml:id') || 
-                   feature?.querySelector('parcela, parcel, id')?.textContent ||
-                   `GML_Parcel_${index + 1}`;
   
   return {
     parcelId,
     boundaryCoordinates: coordinates.map(([lng, lat]) => ({ lat, lng })),
-    classification: 'GML Import'
+    classification: 'GML Import',
+    notes: element.tagName
   };
 };
 
+// Enhanced coordinate extraction
 const extractCoordinatesFromElement = (element: Element): number[][] => {
   const text = element.textContent?.trim() || '';
   if (!text) return [];
   
-  // Try different coordinate formats
+  console.log('Extracting coordinates from text:', text.substring(0, 200));
+  
   const coords: number[][] = [];
   
-  // Format: "x1,y1 x2,y2 x3,y3"
-  if (text.includes(' ') && text.includes(',')) {
-    const pairs = text.split(/\s+/);
-    pairs.forEach(pair => {
-      const [x, y] = pair.split(',').map(Number);
-      if (!isNaN(x) && !isNaN(y)) coords.push([x, y]);
-    });
-  }
-  // Format: "x1 y1 x2 y2 x3 y3"
-  else if (text.split(/\s+/).length % 2 === 0) {
-    const numbers = text.split(/\s+/).map(Number);
-    for (let i = 0; i < numbers.length; i += 2) {
-      if (!isNaN(numbers[i]) && !isNaN(numbers[i + 1])) {
-        coords.push([numbers[i], numbers[i + 1]]);
+  // Try different coordinate formats
+  const formats = [
+    // Format: "x1,y1 x2,y2 x3,y3"
+    () => {
+      if (text.includes(' ') && text.includes(',')) {
+        const pairs = text.split(/\s+/);
+        pairs.forEach(pair => {
+          const [x, y] = pair.split(',').map(Number);
+          if (!isNaN(x) && !isNaN(y)) coords.push([x, y]);
+        });
+      }
+    },
+    // Format: "x1 y1 x2 y2 x3 y3"
+    () => {
+      const numbers = text.split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+      if (numbers.length % 2 === 0) {
+        for (let i = 0; i < numbers.length; i += 2) {
+          coords.push([numbers[i], numbers[i + 1]]);
+        }
+      }
+    },
+    // Format: "x1;y1;x2;y2;x3;y3"
+    () => {
+      if (text.includes(';')) {
+        const numbers = text.split(';').map(Number).filter(n => !isNaN(n));
+        if (numbers.length % 2 === 0) {
+          for (let i = 0; i < numbers.length; i += 2) {
+            coords.push([numbers[i], numbers[i + 1]]);
+          }
+        }
       }
     }
+  ];
+  
+  for (const format of formats) {
+    format();
+    if (coords.length >= 3) break;
   }
   
+  console.log(`Extracted ${coords.length} coordinate pairs`);
   return coords;
 };
 
+// Enhanced GML coordinate extraction
 const extractGMLCoordinates = (element: Element): number[][] => {
   const text = element.textContent?.trim() || '';
   if (!text) return [];
@@ -307,21 +430,32 @@ const extractGMLCoordinates = (element: Element): number[][] => {
   return coords;
 };
 
-const extractDXFPolylines = (lines: string[]): Array<{vertices: number[][], layer?: string}> => {
-  const polylines: Array<{vertices: number[][], layer?: string}> = [];
-  let currentPolyline: {vertices: number[][], layer?: string} | null = null;
+// Enhanced DXF entity extraction
+const extractDXFEntities = (lines: string[]): Array<{vertices: number[][], layer?: string, type?: string, handle?: string}> => {
+  const entities: Array<{vertices: number[][], layer?: string, type?: string, handle?: string}> = [];
+  let currentEntity: {vertices: number[][], layer?: string, type?: string, handle?: string} | null = null;
   let currentVertex: number[] = [];
   let currentLayer: string | undefined;
+  let currentType: string | undefined;
+  let currentHandle: string | undefined;
+  
+  console.log(`Processing ${lines.length} DXF lines`);
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Start of LWPOLYLINE
-    if (line === 'LWPOLYLINE') {
-      if (currentPolyline && currentPolyline.vertices.length >= 3) {
-        polylines.push(currentPolyline);
+    // Entity types to look for
+    if (['LWPOLYLINE', 'POLYLINE', 'POLYGON', 'CIRCLE', 'ARC'].includes(line)) {
+      if (currentEntity && currentEntity.vertices.length >= 3) {
+        entities.push(currentEntity);
       }
-      currentPolyline = { vertices: [], layer: currentLayer };
+      currentEntity = { vertices: [], layer: currentLayer, type: line };
+      currentType = line;
+    }
+    
+    // Handle
+    if (line === '5' && i + 1 < lines.length) {
+      currentHandle = lines[i + 1];
     }
     
     // Layer information
@@ -341,17 +475,18 @@ const extractDXFPolylines = (lines: string[]): Array<{vertices: number[][], laye
       if (!isNaN(y)) {
         currentVertex[1] = y;
         if (currentVertex.length === 2) {
-          currentPolyline?.vertices.push([...currentVertex]);
+          currentEntity?.vertices.push([...currentVertex]);
           currentVertex = [];
         }
       }
     }
   }
   
-  // Add final polyline
-  if (currentPolyline && currentPolyline.vertices.length >= 3) {
-    polylines.push(currentPolyline);
+  // Add final entity
+  if (currentEntity && currentEntity.vertices.length >= 3) {
+    entities.push(currentEntity);
   }
   
-  return polylines;
+  console.log(`Extracted ${entities.length} DXF entities`);
+  return entities;
 };
