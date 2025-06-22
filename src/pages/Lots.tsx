@@ -6,6 +6,7 @@ import LotDetail from '@/components/lots/LotDetail';
 import LotForm from '@/components/lots/LotForm';
 import LotMapView from '@/components/lots/LotMapView';
 import LotsOverview from '@/components/lots/LotsOverview';
+import CadastralMapView from '@/components/lots/CadastralMapView';
 import PermissionGuard from '@/components/PermissionGuard';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -112,7 +113,7 @@ const Lots = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Gestión de Lotes</h1>
-            <p className="text-gray-500">Administra los lotes de tu finca</p>
+            <p className="text-gray-500">Administra los lotes de tu finca y datos catastrales</p>
           </div>
           <PermissionGuard permission="lots_manage">
             <Button onClick={handleCreateLot} className="mt-4 md:mt-0">
@@ -124,7 +125,8 @@ const Lots = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Resumen</TabsTrigger>
-            <TabsTrigger value="map">Mapa</TabsTrigger>
+            <TabsTrigger value="map">Mapa de Lotes</TabsTrigger>
+            <TabsTrigger value="cadastral">Mapa Catastral</TabsTrigger>
             {selectedLot && <TabsTrigger value="detail">Detalle</TabsTrigger>}
           </TabsList>
           
@@ -144,6 +146,10 @@ const Lots = () => {
               lots={lots}
               onLotSelect={handleLotSelect}
             />
+          </TabsContent>
+
+          <TabsContent value="cadastral">
+            <CadastralMapView />
           </TabsContent>
           
           <TabsContent value="detail">
@@ -171,7 +177,6 @@ const Lots = () => {
           </DialogContent>
         </Dialog>
         
-        {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent>
             <DialogHeader>

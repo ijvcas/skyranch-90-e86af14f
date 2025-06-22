@@ -350,6 +350,56 @@ export type Database = {
           },
         ]
       }
+      cadastral_parcels: {
+        Row: {
+          area_hectares: number | null
+          boundary_coordinates: Json
+          classification: string | null
+          created_at: string
+          id: string
+          imported_from_file: string | null
+          notes: string | null
+          owner_info: string | null
+          parcel_id: string
+          property_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          area_hectares?: number | null
+          boundary_coordinates: Json
+          classification?: string | null
+          created_at?: string
+          id?: string
+          imported_from_file?: string | null
+          notes?: string | null
+          owner_info?: string | null
+          parcel_id: string
+          property_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area_hectares?: number | null
+          boundary_coordinates?: Json
+          classification?: string | null
+          created_at?: string
+          id?: string
+          imported_from_file?: string | null
+          notes?: string | null
+          owner_info?: string | null
+          parcel_id?: string
+          property_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_parcels_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           all_day: boolean | null
@@ -548,6 +598,7 @@ export type Database = {
           created_at: string | null
           id: string
           lot_id: string
+          property_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -556,6 +607,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           lot_id: string
+          property_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -564,6 +616,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           lot_id?: string
+          property_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -572,6 +625,13 @@ export type Database = {
             columns: ["lot_id"]
             isOneToOne: false
             referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lot_polygons_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -795,6 +855,45 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          center_lat: number
+          center_lng: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_main_property: boolean | null
+          name: string
+          updated_at: string
+          zoom_level: number | null
+        }
+        Insert: {
+          center_lat: number
+          center_lng: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_main_property?: boolean | null
+          name: string
+          updated_at?: string
+          zoom_level?: number | null
+        }
+        Update: {
+          center_lat?: number
+          center_lng?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_main_property?: boolean | null
+          name?: string
+          updated_at?: string
+          zoom_level?: number | null
         }
         Relationships: []
       }
