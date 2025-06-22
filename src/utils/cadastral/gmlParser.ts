@@ -5,12 +5,14 @@ import { isCoordinateData, extractGMLCoordinates } from './coordinateUtils';
 
 // Enhanced GML element parser
 const parseGMLElement = (element: Element, index: number): ParsedParcel | null => {
-  console.log(`Parsing GML element ${index}:`, element.tagName);
+  console.log(`\n--- Parsing GML element ${index}: ${element.tagName} ---`);
   
   const parcelId = element.getAttribute('gml:id') || 
                    element.getAttribute('id') ||
                    element.querySelector('gml\\:name, name, parcela, parcel')?.textContent ||
                    `GML_Feature_${index + 1}`;
+  
+  console.log(`Parcel ID: ${parcelId}`);
   
   // Enhanced coordinate extraction for GML
   let coordinates: number[][] = [];
@@ -29,19 +31,22 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
   
   for (const source of coordSources) {
     if (source) {
+      console.log(`Trying to extract coordinates from: ${source.tagName}`);
       coordinates = extractGMLCoordinates(source);
       if (coordinates.length >= 3) {
-        console.log(`Found ${coordinates.length} coordinates from ${source.tagName}`);
-        console.log(`Raw coordinate sample:`, coordinates.slice(0, 3));
+        console.log(`SUCCESS: Found ${coordinates.length} coordinates from ${source.tagName}`);
+        console.log(`Sample coordinates:`, coordinates.slice(0, 3));
         break;
       }
     }
   }
   
   if (coordinates.length < 3) {
-    console.log(`Insufficient coordinates found for element ${index}: ${coordinates.length} points`);
+    console.log(`FAILED: Insufficient coordinates for element ${index}: ${coordinates.length} points`);
     return null;
   }
+  
+  console.log(`--- End parsing element ${index} ---\n`);
   
   return {
     parcelId,
@@ -53,6 +58,8 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
 
 // Enhanced GML Parser
 export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
+  console.log(`\n🗂️ STARTING GML FILE PARSING: ${file.name}`);
+  
   const result: ParsingResult = {
     parcels: [],
     coordinateSystem: 'EPSG:25830', // Default to Spanish UTM 30N
@@ -62,7 +69,8 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
 
   try {
     const content = await file.text();
-    console.log('GML Content preview:', content.substring(0, 500));
+    console.log('📄 GML Content length:', content.length);
+    console.log('📄 GML Content preview:', content.substring(0, 500));
     
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(content, 'application/xml');
@@ -75,13 +83,16 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
     }
 
     // Extract CRS information - enhanced detection
+    console.log('\n🔍 SEARCHING FOR CRS INFORMATION...');
     const crsElements = xmlDoc.querySelectorAll('[srsName], [crs], [srs]');
+    console.log(`Found ${crsElements.length} elements with CRS information`);
+    
     if (crsElements.length > 0) {
       const srsName = crsElements[0].getAttribute('srsName') || 
                       crsElements[0].getAttribute('crs') || 
                       crsElements[0].getAttribute('srs');
       if (srsName) {
-        console.log('Found CRS in GML:', srsName);
+        console.log('🎯 Found CRS in GML:', srsName);
         if (srsName.includes('25830')) {
           result.coordinateSystem = 'EPSG:25830';
         } else if (srsName.includes('25829')) {
@@ -95,16 +106,18 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
         }
       }
     }
+    console.log(`📍 Using coordinate system: ${result.coordinateSystem}`);
 
-    // Enhanced GML element search - specifically for Surface elements
+    // Enhanced GML element search
+    console.log('\n🔍 SEARCHING FOR GML GEOMETRY ELEMENTS...');
     const gmlSelectors = [
       'gml\\:Surface', 'Surface',
       'gml\\:Polygon', 'Polygon', 
       'gml\\:LinearRing', 'LinearRing',
       'gml\\:featureMember', 'featureMember',
       'gml\\:Feature', 'Feature',
-      'featureMember > *', // Any child of featureMember
-      '*[gml\\:id]', // Any element with gml:id
+      'featureMember > *',
+      '*[gml\\:id]',
     ];
 
     let foundElements: Element[] = [];
@@ -114,24 +127,25 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
         const elements = xmlDoc.querySelectorAll(selector);
         if (elements.length > 0) {
           foundElements = Array.from(elements);
-          console.log(`Found ${elements.length} GML elements of type: ${selector}`);
+          console.log(`✅ Found ${elements.length} GML elements of type: ${selector}`);
           break;
         }
       } catch (e) {
-        console.log(`Selector ${selector} failed, trying next`);
+        console.log(`❌ Selector ${selector} failed, trying next`);
       }
     }
 
     // Fallback: search for any element containing coordinate-like data
     if (foundElements.length === 0) {
+      console.log('🔄 No structured elements found, trying fallback search...');
       const allElements = xmlDoc.querySelectorAll('*');
       for (const element of allElements) {
         const text = element.textContent || '';
-        if (isCoordinateData(text) && text.length > 20) { // Ensure substantial coordinate data
+        if (isCoordinateData(text) && text.length > 20) {
           foundElements.push(element);
         }
       }
-      console.log(`Fallback search found ${foundElements.length} elements with coordinate data`);
+      console.log(`🔄 Fallback search found ${foundElements.length} elements with coordinate data`);
     }
 
     if (foundElements.length === 0) {
@@ -139,6 +153,7 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       return result;
     }
 
+    console.log(`\n📐 PROCESSING ${foundElements.length} GEOMETRY ELEMENTS...`);
     foundElements.forEach((element, index) => {
       const parcel = parseGMLElement(element, index);
       if (parcel) {
@@ -146,23 +161,23 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       }
     });
 
-    console.log(`Successfully parsed ${result.parcels.length} parcels from GML`);
-    console.log(`Coordinate system detected: ${result.coordinateSystem}`);
+    console.log(`✅ Successfully parsed ${result.parcels.length} parcels from GML`);
 
     // Transform coordinates if needed
     if (result.coordinateSystem !== 'EPSG:4326' && result.parcels.length > 0) {
-      console.log('=== COORDINATE TRANSFORMATION START ===');
-      console.log('Transforming coordinates from', result.coordinateSystem, 'to EPSG:4326');
+      console.log('\n🔄 STARTING COORDINATE TRANSFORMATION...');
+      console.log(`Converting from ${result.coordinateSystem} to EPSG:4326`);
       
-      // Log some sample coordinates before transformation
+      // Show sample before transformation
       if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
-        console.log('Sample coordinates BEFORE transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
+        console.log('📍 BEFORE transformation sample:', result.parcels[0].boundaryCoordinates.slice(0, 3));
       }
       
       result.parcels = result.parcels.map((parcel, index) => {
-        console.log(`Transforming parcel ${index + 1}: ${parcel.parcelId}`);
+        console.log(`\n🔄 Transforming parcel ${index + 1}: ${parcel.parcelId}`);
+        
         const originalCoords = parcel.boundaryCoordinates.map(c => [c.lng, c.lat]);
-        console.log(`Original coords for ${parcel.parcelId}:`, originalCoords.slice(0, 2));
+        console.log(`Input coords for ${parcel.parcelId}:`, originalCoords.slice(0, 2));
         
         const transformedCoords = transformCoordinates(
           originalCoords,
@@ -170,7 +185,7 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
           'EPSG:4326'
         );
         
-        console.log(`Transformed coords for ${parcel.parcelId}:`, transformedCoords.slice(0, 2));
+        console.log(`Output coords for ${parcel.parcelId}:`, transformedCoords.slice(0, 2));
         
         return {
           ...parcel,
@@ -178,17 +193,20 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
         };
       });
       
-      // Log some sample coordinates after transformation
+      // Show sample after transformation
       if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
-        console.log('Sample coordinates AFTER transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
+        console.log('📍 AFTER transformation sample:', result.parcels[0].boundaryCoordinates.slice(0, 3));
       }
-      console.log('=== COORDINATE TRANSFORMATION END ===');
       
-      console.log('Coordinate transformation completed');
+      console.log('✅ Coordinate transformation completed');
+    } else {
+      console.log('ℹ️ No coordinate transformation needed');
     }
 
+    console.log(`\n🎉 GML PARSING COMPLETE: ${result.parcels.length} parcels processed`);
+
   } catch (error) {
-    console.error('Error processing GML file:', error);
+    console.error('❌ Error processing GML file:', error);
     result.errors.push(`Error processing GML file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
