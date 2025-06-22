@@ -2,22 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { calculateParcelArea, updateParcelWithLotNumberAndArea, removeDuplicateParcels } from './parcelUpdater';
 
-// FIXED: Simple sequential lot number generation
-const generateSimpleLotNumber = (parcelId: string, index: number): string => {
-  console.log(`🔢 Generating simple lot number for: ${parcelId} at index ${index}`);
-  
-  // Handle the special format: 5141313UK7654S
-  if (parcelId.includes('5141313UK7654S')) {
-    console.log(`✅ Special format handled: SPECIAL`);
-    return 'SPECIAL';
-  }
-  
-  // Generate simple sequential numbers: 1, 2, 3, 4, etc.
-  const lotNumber = (index + 1).toString();
-  console.log(`✅ Generated simple lot number: ${lotNumber}`);
-  return lotNumber;
-};
-
 // FIXED: Helper function to validate and parse boundary coordinates
 const parseBoundaryCoordinates = (boundaryData: any): { lat: number; lng: number }[] => {
   if (!boundaryData) {
@@ -57,9 +41,9 @@ const parseBoundaryCoordinates = (boundaryData: any): { lat: number; lng: number
   }
 };
 
-// Batch update all parcels with simple lot numbers and areas
+// Batch update all parcels with simple sequential lot numbers and areas
 export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean> => {
-  console.log('🔄 === STARTING BATCH UPDATE WITH SIMPLE LOT NUMBERS ===');
+  console.log('🔄 === STARTING BATCH UPDATE WITH SEQUENTIAL LOT NUMBERS ===');
   
   try {
     // First remove duplicates
@@ -77,7 +61,7 @@ export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean
       return false;
     }
     
-    console.log(`📋 Found ${parcels.length} parcels to process with simple sequential numbering`);
+    console.log(`📋 Found ${parcels.length} parcels to process with sequential numbering: 1, 2, 3...`);
     
     let successCount = 0;
     
@@ -88,18 +72,17 @@ export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean
       let needsUpdate = false;
       const updates: any = {};
       
-      // FIXED: Generate simple sequential lot numbers (1, 2, 3, etc.)
-      const simpleLotNumber = generateSimpleLotNumber(parcel.parcel_id, index);
-      if (!parcel.lot_number || parcel.lot_number !== simpleLotNumber) {
-        updates.lot_number = simpleLotNumber;
-        updates.display_name = `Parcela ${simpleLotNumber}`;
+      // FIXED: Always use simple sequential lot numbers: 1, 2, 3, 4, 5...
+      const sequentialLotNumber = (index + 1).toString();
+      if (!parcel.lot_number || parcel.lot_number !== sequentialLotNumber) {
+        updates.lot_number = sequentialLotNumber;
+        updates.display_name = `Parcela ${sequentialLotNumber}`;
         needsUpdate = true;
-        console.log(`📝 Will update with simple lot number: ${simpleLotNumber}`);
+        console.log(`📝 Will update with sequential lot number: ${sequentialLotNumber}`);
       }
       
       // Calculate area if missing and coordinates available
       if (!parcel.area_hectares && parcel.boundary_coordinates) {
-        // FIXED: Properly parse and validate boundary coordinates
         const validCoordinates = parseBoundaryCoordinates(parcel.boundary_coordinates);
         if (validCoordinates.length >= 3) {
           const areaHectares = calculateParcelArea(validCoordinates);
@@ -133,7 +116,7 @@ export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean
     
     console.log(`\n🎉 === BATCH UPDATE COMPLETE ===`);
     console.log(`✅ Successfully processed ${successCount} out of ${parcels.length} parcels`);
-    console.log(`📊 Generated simple lot numbers: 1, 2, 3, ..., ${parcels.length}`);
+    console.log(`📊 Sequential lot numbers: 1, 2, 3, 4, 5, 6... ${parcels.length}`);
     
     return successCount === parcels.length;
     

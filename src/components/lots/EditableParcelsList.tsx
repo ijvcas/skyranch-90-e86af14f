@@ -61,28 +61,6 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
     );
   };
 
-  // FIXED: Simple sequential lot number generation
-  const generateSimpleLotNumber = (parcelId: string, index: number): string => {
-    // Handle the special format: 5141313UK7654S
-    if (parcelId.includes('5141313UK7654S')) {
-      return 'SPECIAL';
-    }
-    
-    // Generate simple sequential numbers: 1, 2, 3, 4, etc.
-    return (index + 1).toString();
-  };
-
-  // FIXED: Get display lot number with simple sequential logic
-  const getDisplayLotNumber = (parcel: CadastralParcel, index: number): string => {
-    // First try to use the lot_number from the database if it's already simple
-    if (parcel.lotNumber && parcel.lotNumber.trim() !== '' && !parcel.lotNumber.includes('-')) {
-      return parcel.lotNumber;
-    }
-    
-    // Generate simple sequential lot number based on position in list
-    return generateSimpleLotNumber(parcel.parcelId, index);
-  };
-
   if (parcels.length === 0) {
     return (
       <Card>
@@ -117,7 +95,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                 onClick={() => onParcelClick(parcel)}
               >
                 <TableCell className="font-mono text-sm font-bold">
-                  {getDisplayLotNumber(parcel, index)}
+                  {index + 1}
                 </TableCell>
                 <TableCell>
                   {editingParcel === parcel.id ? (
@@ -133,7 +111,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                     />
                   ) : (
                     <span className="cursor-pointer">
-                      {parcel.displayName || `Parcela ${getDisplayLotNumber(parcel, index)}`}
+                      {parcel.displayName || `Parcela ${index + 1}`}
                     </span>
                   )}
                 </TableCell>

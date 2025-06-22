@@ -30,28 +30,13 @@ export class ParcelRenderer {
     };
   }
 
-  private generateSimpleLotNumber(parcelId: string, index: number): string {
-    console.log(`🔢 Generating simple lot number for: ${parcelId} at index ${index}`);
-    
-    // Handle the special format: 5141313UK7654S
-    if (parcelId.includes('5141313UK7654S')) {
-      console.log(`✅ Special format handled: SPECIAL`);
-      return 'SPECIAL';
-    }
-    
-    // Generate simple sequential numbers: 1, 2, 3, 4, etc.
-    const lotNumber = (index + 1).toString();
-    console.log(`✅ Generated simple lot number: ${lotNumber}`);
-    return lotNumber;
-  }
-
   renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds, index: number = 0): boolean {
     if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
       return false;
     }
 
-    // CRITICAL FIX: Use exact coordinate ranges that match the actual data
+    // FIXED: Use much wider coordinate ranges to include all SkyRanch parcels
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -59,14 +44,13 @@ export class ParcelRenderer {
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
       coord.lat !== 0 && coord.lng !== 0 &&
-      // FIXED: Use exact SkyRanch coordinate bounds - very precise ranges
-      coord.lat >= 40.099 && coord.lat <= 40.103 && 
-      coord.lng >= -4.475 && coord.lng <= -4.466    
+      // EXPANDED: Much wider coordinate bounds to catch all parcels
+      coord.lat >= 40.095 && coord.lat <= 40.110 && 
+      coord.lng >= -4.480 && coord.lng <= -4.460    
     );
 
     if (validCoords.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${validCoords.length}/3 required`);
-      console.log('Coordinate range check - Sample coordinates:', parcel.boundaryCoordinates.slice(0, 3));
       return false;
     }
 
@@ -80,18 +64,18 @@ export class ParcelRenderer {
     const polygon = new google.maps.Polygon({
       paths: validCoords,
       fillColor: color,
-      fillOpacity: 0.6, // CRITICAL FIX: Increased opacity for better visibility
-      strokeColor: color === '#f3f4f6' ? '#9ca3af' : color,
-      strokeWeight: 3, // CRITICAL FIX: Increased stroke weight for visibility
+      fillOpacity: 0.7, // HIGH visibility
+      strokeColor: '#000000', // BLACK stroke for visibility
+      strokeWeight: 2,
       clickable: true,
       editable: false,
-      zIndex: 1, // Ensure polygons are visible
+      zIndex: 1,
     });
 
     polygon.setMap(this.map);
     this.polygons.push(polygon);
 
-    // CRITICAL FIX: Extend bounds for each parcel to ensure map fits all parcels
+    // Extend bounds for each parcel
     validCoords.forEach(coord => {
       bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
     });
@@ -102,54 +86,52 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // Use simple lot numbers or database lot_number
-    const displayLotNumber = parcel.lotNumber || this.generateSimpleLotNumber(parcel.parcelId, index);
+    // FIXED: Always use simple sequential lot numbers: 1, 2, 3, 4, 5...
+    const displayLotNumber = (index + 1).toString();
     
-    if (displayLotNumber && displayLotNumber !== 'N/A') {
-      const center = this.calculatePolygonCenter(validCoords);
-      console.log(`🏷️ Creating label for lot ${displayLotNumber} at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
-      
-      const label = new google.maps.Marker({
-        position: center,
-        map: this.map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 12, // CRITICAL FIX: Larger background for better visibility
-          fillOpacity: 0.8,
-          strokeOpacity: 0.9,
-          fillColor: '#FFFFFF',
-          strokeColor: '#000000',
-          strokeWeight: 2
-        },
-        label: {
-          text: displayLotNumber.toString(),
-          color: '#000000', // CRITICAL FIX: Black text for better contrast
-          fontSize: '14px',
-          fontWeight: 'bold',
-          fontFamily: 'Arial, sans-serif'
-        },
-        clickable: true,
-        title: `Parcela ${displayLotNumber} - ${parcel.displayName || parcel.parcelId}`,
-        zIndex: 10000,
-        optimized: false
-      });
+    const center = this.calculatePolygonCenter(validCoords);
+    console.log(`🏷️ Creating label for lot ${displayLotNumber} at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
+    
+    const label = new google.maps.Marker({
+      position: center,
+      map: this.map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 15, // LARGER background
+        fillOpacity: 0.9,
+        strokeOpacity: 1.0,
+        fillColor: '#FFFFFF',
+        strokeColor: '#000000',
+        strokeWeight: 2
+      },
+      label: {
+        text: displayLotNumber,
+        color: '#000000',
+        fontSize: '16px', // LARGER font
+        fontWeight: 'bold',
+        fontFamily: 'Arial, sans-serif'
+      },
+      clickable: true,
+      title: `Parcela ${displayLotNumber} - ${parcel.displayName || parcel.parcelId}`,
+      zIndex: 10000,
+      optimized: false
+    });
 
-      // Add click listener to label as well
-      label.addListener('click', () => {
-        console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}, lot: ${displayLotNumber}`);
-        this.onParcelClick(parcel);
-      });
+    // Add click listener to label
+    label.addListener('click', () => {
+      console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}, lot: ${displayLotNumber}`);
+      this.onParcelClick(parcel);
+    });
 
-      this.labels.push(label);
-      console.log(`✅ Label created for lot ${displayLotNumber}`);
-    }
+    this.labels.push(label);
+    console.log(`✅ Label created for lot ${displayLotNumber}`);
 
-    // Enhanced info window with more details
+    // Enhanced info window
     const infoWindow = new google.maps.InfoWindow({
       content: `
         <div class="p-3 min-w-[200px]">
           <h3 class="font-bold text-lg mb-2">${parcel.displayName || parcel.parcelId}</h3>
-          ${displayLotNumber ? `<p class="mb-1"><strong>Número de Parcela:</strong> ${displayLotNumber}</p>` : ''}
+          <p class="mb-1"><strong>Número de Parcela:</strong> ${displayLotNumber}</p>
           <p class="mb-1"><strong>ID Catastral:</strong> ${parcel.parcelId}</p>
           ${parcel.areaHectares ? `<p class="mb-1"><strong>Área:</strong> ${parcel.areaHectares.toFixed(4)} ha</p>` : ''}
           ${parcel.classification ? `<p class="mb-1"><strong>Clasificación:</strong> ${parcel.classification}</p>` : ''}
@@ -173,7 +155,7 @@ export class ParcelRenderer {
     return true;
   }
 
-  // CRITICAL FIX: Add method to fit map bounds to all rendered parcels
+  // Fit map bounds to show all rendered parcels
   fitMapToAllParcels() {
     if (this.polygons.length === 0) {
       console.log('⚠️ No polygons to fit bounds to');
@@ -191,13 +173,13 @@ export class ParcelRenderer {
     console.log(`🎯 Fitting map bounds to ${this.polygons.length} parcels`);
     this.map.fitBounds(bounds);
     
-    // Set a reasonable zoom level to see parcel details
+    // FIXED: Set zoom to level where parcels are clearly visible
     google.maps.event.addListenerOnce(this.map, 'bounds_changed', () => {
       const zoom = this.map.getZoom();
-      if (zoom && zoom > 18) {
-        this.map.setZoom(18);
-      } else if (zoom && zoom < 16) {
-        this.map.setZoom(16);
+      if (zoom && zoom > 17) {
+        this.map.setZoom(17); // Perfect zoom to see parcels and numbers
+      } else if (zoom && zoom < 15) {
+        this.map.setZoom(15);
       }
     });
   }
