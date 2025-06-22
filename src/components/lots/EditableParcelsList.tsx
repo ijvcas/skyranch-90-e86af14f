@@ -61,64 +61,26 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
     );
   };
 
-  // FIXED: Enhanced unique lot number generation to match renderer
-  const generateUniqueLotNumber = (parcelId: string): string => {
+  // FIXED: Simple sequential lot number generation
+  const generateSimpleLotNumber = (parcelId: string, index: number): string => {
     // Handle the special format: 5141313UK7654S
     if (parcelId.includes('5141313UK7654S')) {
-      return 'SPECIAL-1';
+      return 'SPECIAL';
     }
     
-    // Extract cadastral area and lot number from Spanish cadastral format
-    const patterns = [
-      // Surface format: Surface_ES.SDGC.CP.28128A00800122.1
-      /Surface_ES\.SDGC\.CP\.28128A(\d{2})(\d{6})(?:\.(\d+))?/,
-      // Direct Spanish cadastral: 28128A00800122.1
-      /28128A(\d{2})(\d{6})(?:\.(\d+))?/,
-    ];
-    
-    for (const pattern of patterns) {
-      const match = parcelId.match(pattern);
-      if (match) {
-        const area = match[1]; // e.g., "08", "81", "71", "00"
-        const lotSequence = match[2]; // e.g., "00122", "00007", "00006"
-        
-        // Extract meaningful lot number from the 6-digit sequence
-        let lotNumber = lotSequence.replace(/^0+/, ''); // Remove leading zeros
-        
-        // If we get an empty string (all zeros), use "0"
-        if (lotNumber.length === 0) {
-          lotNumber = "0";
-        }
-        
-        // Create truly unique identifier: area-lot (e.g., "800-122", "810-7")
-        return `${area}0-${lotNumber}`;
-      }
-    }
-    
-    // Fallback: try to extract any number sequence
-    const numberMatch = parcelId.match(/(\d{2,})/);
-    if (numberMatch) {
-      const number = numberMatch[1];
-      // Take first 2 digits as area, rest as lot
-      if (number.length >= 4) {
-        const area = number.substring(0, 2);
-        const lot = number.substring(2).replace(/^0+/, '') || "0";
-        return `${area}0-${lot}`;
-      }
-    }
-    
-    return 'N/A';
+    // Generate simple sequential numbers: 1, 2, 3, 4, etc.
+    return (index + 1).toString();
   };
 
-  // FIXED: Get display lot number with enhanced unique generation
-  const getDisplayLotNumber = (parcel: CadastralParcel): string => {
-    // First try to use the lot_number from the database if it's not a duplicate
-    if (parcel.lotNumber && parcel.lotNumber.trim() !== '' && parcel.lotNumber !== '1' && parcel.lotNumber !== '2') {
+  // FIXED: Get display lot number with simple sequential logic
+  const getDisplayLotNumber = (parcel: CadastralParcel, index: number): string => {
+    // First try to use the lot_number from the database if it's already simple
+    if (parcel.lotNumber && parcel.lotNumber.trim() !== '' && !parcel.lotNumber.includes('-')) {
       return parcel.lotNumber;
     }
     
-    // If no lot number in database or it's a duplicate, generate unique one from parcel ID
-    return generateUniqueLotNumber(parcel.parcelId);
+    // Generate simple sequential lot number based on position in list
+    return generateSimpleLotNumber(parcel.parcelId, index);
   };
 
   if (parcels.length === 0) {
@@ -148,14 +110,14 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {parcels.map((parcel) => (
+            {parcels.map((parcel, index) => (
               <TableRow 
                 key={parcel.id}
                 className="cursor-pointer hover:bg-gray-50"
                 onClick={() => onParcelClick(parcel)}
               >
                 <TableCell className="font-mono text-sm font-bold">
-                  {getDisplayLotNumber(parcel)}
+                  {getDisplayLotNumber(parcel, index)}
                 </TableCell>
                 <TableCell>
                   {editingParcel === parcel.id ? (
@@ -171,7 +133,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                     />
                   ) : (
                     <span className="cursor-pointer">
-                      {parcel.displayName || `Parcela ${getDisplayLotNumber(parcel)}`}
+                      {parcel.displayName || `Parcela ${getDisplayLotNumber(parcel, index)}`}
                     </span>
                   )}
                 </TableCell>

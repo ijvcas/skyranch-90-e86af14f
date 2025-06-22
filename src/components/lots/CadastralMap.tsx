@@ -29,25 +29,38 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
   useEffect(() => {
     if (isLoaded && selectedProperty && !mapRef.current) {
+      console.log('🗺️ Initializing map for property:', selectedProperty.name);
       const map = initializeMap(selectedProperty, 'cadastral-map', onMapReady);
       if (map) {
         mapRef.current = map;
         parcelRendererRef.current = new ParcelRenderer(map, onParcelClick);
-        setInitialLoadComplete(true);
+        
+        // FIXED: Add a small delay to ensure map is fully ready before marking as complete
+        setTimeout(() => {
+          console.log('✅ Map initialization complete, ready for parcels');
+          setInitialLoadComplete(true);
+        }, 500);
       }
     }
   }, [isLoaded, selectedProperty, onMapReady, onParcelClick]);
 
   useEffect(() => {
     if (mapRef.current && parcelRendererRef.current && cadastralParcels.length > 0 && initialLoadComplete) {
-      console.log(`Displaying ${cadastralParcels.length} cadastral parcels on map`);
+      console.log(`🎯 ATTEMPTING TO DISPLAY ${cadastralParcels.length} CADASTRAL PARCELS ON MAP`);
       displayCadastralParcels();
+    } else {
+      console.log('⏳ Waiting for conditions:', {
+        hasMap: !!mapRef.current,
+        hasRenderer: !!parcelRendererRef.current,
+        parcelCount: cadastralParcels.length,
+        initialLoadComplete
+      });
     }
   }, [cadastralParcels, statusFilter, initialLoadComplete]);
 
   const displayCadastralParcels = () => {
     if (!parcelRendererRef.current) {
-      console.log('No parcel renderer available');
+      console.log('❌ No parcel renderer available');
       return;
     }
 
@@ -60,24 +73,33 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       ? cadastralParcels 
       : cadastralParcels.filter(parcel => parcel.status === statusFilter);
 
-    console.log(`Processing ${filteredParcels.length} filtered cadastral parcels`);
+    console.log(`🎯 Processing ${filteredParcels.length} filtered cadastral parcels out of ${cadastralParcels.length} total`);
     
+    if (filteredParcels.length === 0) {
+      console.log('⚠️ No parcels to display after filtering');
+      return;
+    }
+
     let validParcels = 0;
 
     filteredParcels.forEach((parcel, index) => {
-      console.log(`Creating polygon for parcel ${index + 1}: ${parcel.parcelId}`);
+      console.log(`🔄 Processing parcel ${index + 1}/${filteredParcels.length}: ${parcel.parcelId}`);
       
-      // FIXED: Don't use bounds for auto-fitting to prevent map jumping
+      // FIXED: Pass index to renderer for simple lot number generation
       const bounds = new google.maps.LatLngBounds();
-      if (parcelRendererRef.current?.renderParcel(parcel, bounds)) {
+      if (parcelRendererRef.current?.renderParcel(parcel, bounds, index)) {
         validParcels++;
+        console.log(`✅ Successfully rendered parcel ${index + 1}: ${parcel.parcelId}`);
+      } else {
+        console.warn(`❌ Failed to render parcel ${index + 1}: ${parcel.parcelId}`);
       }
     });
 
-    console.log(`Successfully displayed ${validParcels} out of ${filteredParcels.length} filtered parcels`);
+    console.log(`🎉 FINAL RESULT: Successfully displayed ${validParcels} out of ${filteredParcels.length} filtered parcels`);
     
-    // REMOVED: Auto-bounds fitting that was causing map to jump to wrong locations
-    // The map should stay centered on SkyRanch and users can zoom/pan manually
+    if (validParcels === 0) {
+      console.error('🚨 NO PARCELS WERE RENDERED! Check coordinate validation and data format.');
+    }
   };
 
   return (

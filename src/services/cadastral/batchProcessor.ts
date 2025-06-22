@@ -1,62 +1,21 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { extractLotNumberFromParcelId, calculateParcelArea, updateParcelWithLotNumberAndArea, removeDuplicateParcels } from './parcelUpdater';
+import { calculateParcelArea, updateParcelWithLotNumberAndArea, removeDuplicateParcels } from './parcelUpdater';
 
-// FIXED: Enhanced unique lot number generation to avoid duplicates
-const generateUniqueLotNumber = (parcelId: string): string => {
-  console.log(`🔍 Generating unique lot number for: ${parcelId}`);
+// FIXED: Simple sequential lot number generation
+const generateSimpleLotNumber = (parcelId: string, index: number): string => {
+  console.log(`🔢 Generating simple lot number for: ${parcelId} at index ${index}`);
   
   // Handle the special format: 5141313UK7654S
   if (parcelId.includes('5141313UK7654S')) {
-    console.log(`✅ Special format handled: SPECIAL-1`);
-    return 'SPECIAL-1';
+    console.log(`✅ Special format handled: SPECIAL`);
+    return 'SPECIAL';
   }
   
-  // Extract cadastral area and lot number from Spanish cadastral format
-  const patterns = [
-    // Surface format: Surface_ES.SDGC.CP.28128A00800122.1
-    /Surface_ES\.SDGC\.CP\.28128A(\d{2})(\d{6})(?:\.(\d+))?/,
-    // Direct Spanish cadastral: 28128A00800122.1
-    /28128A(\d{2})(\d{6})(?:\.(\d+))?/,
-  ];
-  
-  for (const pattern of patterns) {
-    const match = parcelId.match(pattern);
-    if (match) {
-      const area = match[1]; // e.g., "08", "81", "71", "00"
-      const lotSequence = match[2]; // e.g., "00122", "00007", "00006"
-      
-      // Extract meaningful lot number from the 6-digit sequence
-      let lotNumber = lotSequence.replace(/^0+/, ''); // Remove leading zeros
-      
-      // If we get an empty string (all zeros), use "0"
-      if (lotNumber.length === 0) {
-        lotNumber = "0";
-      }
-      
-      // Create truly unique identifier: area-lot (e.g., "800-122", "810-7")
-      const uniqueLot = `${area}0-${lotNumber}`;
-      console.log(`✅ Generated unique lot: ${uniqueLot} from area ${area}, sequence ${lotSequence}`);
-      return uniqueLot;
-    }
-  }
-  
-  // Fallback: try to extract any number sequence
-  const numberMatch = parcelId.match(/(\d{2,})/);
-  if (numberMatch) {
-    const number = numberMatch[1];
-    // Take first 2 digits as area, rest as lot
-    if (number.length >= 4) {
-      const area = number.substring(0, 2);
-      const lot = number.substring(2).replace(/^0+/, '') || "0";
-      const uniqueLot = `${area}0-${lot}`;
-      console.log(`✅ Generated fallback unique lot: ${uniqueLot}`);
-      return uniqueLot;
-    }
-  }
-  
-  console.log(`❌ Could not generate unique lot number for: ${parcelId}`);
-  return '';
+  // Generate simple sequential numbers: 1, 2, 3, 4, etc.
+  const lotNumber = (index + 1).toString();
+  console.log(`✅ Generated simple lot number: ${lotNumber}`);
+  return lotNumber;
 };
 
 // FIXED: Helper function to validate and parse boundary coordinates
@@ -98,44 +57,44 @@ const parseBoundaryCoordinates = (boundaryData: any): { lat: number; lng: number
   }
 };
 
-// Batch update all parcels with lot numbers and areas
+// Batch update all parcels with simple lot numbers and areas
 export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean> => {
-  console.log('🔄 === STARTING BATCH UPDATE OF ALL PARCELS ===');
+  console.log('🔄 === STARTING BATCH UPDATE WITH SIMPLE LOT NUMBERS ===');
   
   try {
     // First remove duplicates
     await removeDuplicateParcels(propertyId);
     
-    // Get all parcels for the property
+    // Get all parcels for the property, ordered consistently
     const { data: parcels, error } = await supabase
       .from('cadastral_parcels')
       .select('*')
-      .eq('property_id', propertyId);
+      .eq('property_id', propertyId)
+      .order('parcel_id'); // Consistent ordering for sequential numbering
     
     if (error || !parcels) {
       console.error('❌ Error fetching parcels:', error);
       return false;
     }
     
-    console.log(`📋 Found ${parcels.length} parcels to process`);
+    console.log(`📋 Found ${parcels.length} parcels to process with simple sequential numbering`);
     
     let successCount = 0;
     
-    for (const parcel of parcels) {
-      console.log(`\n🔄 Processing parcel: ${parcel.parcel_id}`);
+    for (let index = 0; index < parcels.length; index++) {
+      const parcel = parcels[index];
+      console.log(`\n🔄 Processing parcel ${index + 1}/${parcels.length}: ${parcel.parcel_id}`);
       
       let needsUpdate = false;
       const updates: any = {};
       
-      // Generate unique lot number if missing or if it's a duplicate "1" or "2"
-      if (!parcel.lot_number || parcel.lot_number === '1' || parcel.lot_number === '2') {
-        const uniqueLotNumber = generateUniqueLotNumber(parcel.parcel_id);
-        if (uniqueLotNumber) {
-          updates.lot_number = uniqueLotNumber;
-          updates.display_name = `Parcela ${uniqueLotNumber}`;
-          needsUpdate = true;
-          console.log(`📝 Will update with unique lot number: ${uniqueLotNumber}`);
-        }
+      // FIXED: Generate simple sequential lot numbers (1, 2, 3, etc.)
+      const simpleLotNumber = generateSimpleLotNumber(parcel.parcel_id, index);
+      if (!parcel.lot_number || parcel.lot_number !== simpleLotNumber) {
+        updates.lot_number = simpleLotNumber;
+        updates.display_name = `Parcela ${simpleLotNumber}`;
+        needsUpdate = true;
+        console.log(`📝 Will update with simple lot number: ${simpleLotNumber}`);
       }
       
       // Calculate area if missing and coordinates available
@@ -162,18 +121,19 @@ export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean
         
         if (success) {
           successCount++;
-          console.log(`✅ Successfully updated parcel: ${parcel.parcel_id}`);
+          console.log(`✅ Successfully updated parcel ${index + 1}: ${parcel.parcel_id} with lot ${updates.lot_number}`);
         } else {
-          console.error(`❌ Failed to update parcel: ${parcel.parcel_id}`);
+          console.error(`❌ Failed to update parcel ${index + 1}: ${parcel.parcel_id}`);
         }
       } else {
-        console.log(`ℹ️ Parcel ${parcel.parcel_id} already has all required data`);
+        console.log(`ℹ️ Parcel ${index + 1}: ${parcel.parcel_id} already has required data`);
         successCount++;
       }
     }
     
     console.log(`\n🎉 === BATCH UPDATE COMPLETE ===`);
     console.log(`✅ Successfully processed ${successCount} out of ${parcels.length} parcels`);
+    console.log(`📊 Generated simple lot numbers: 1, 2, 3, ..., ${parcels.length}`);
     
     return successCount === parcels.length;
     

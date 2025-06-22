@@ -30,94 +30,51 @@ export class ParcelRenderer {
     };
   }
 
-  // FIXED: Enhanced unique lot number generation
-  private generateUniqueLotNumber(parcelId: string): string {
-    console.log(`🔍 Generating unique lot number for: ${parcelId}`);
+  // FIXED: Simple sequential lot number generation
+  private generateSimpleLotNumber(parcelId: string, index: number): string {
+    console.log(`🔢 Generating simple lot number for: ${parcelId} at index ${index}`);
     
     // Handle the special format: 5141313UK7654S
     if (parcelId.includes('5141313UK7654S')) {
-      console.log(`✅ Special format handled: SPECIAL-1`);
-      return 'SPECIAL-1';
+      console.log(`✅ Special format handled: SPECIAL`);
+      return 'SPECIAL';
     }
     
-    // Extract cadastral area and lot number from Spanish cadastral format
-    const patterns = [
-      // Surface format: Surface_ES.SDGC.CP.28128A00800122.1
-      /Surface_ES\.SDGC\.CP\.28128A(\d{2})(\d{6})(?:\.(\d+))?/,
-      // Direct Spanish cadastral: 28128A00800122.1
-      /28128A(\d{2})(\d{6})(?:\.(\d+))?/,
-    ];
-    
-    for (const pattern of patterns) {
-      const match = parcelId.match(pattern);
-      if (match) {
-        const area = match[1]; // e.g., "08", "81", "71", "00"
-        const lotSequence = match[2]; // e.g., "00122", "00007", "00006"
-        
-        // Extract meaningful lot number from the 6-digit sequence
-        let lotNumber = lotSequence.replace(/^0+/, ''); // Remove leading zeros
-        
-        // If we get an empty string (all zeros), use "0"
-        if (lotNumber.length === 0) {
-          lotNumber = "0";
-        }
-        
-        // Create truly unique identifier: area-lot (e.g., "800-122", "810-7")
-        const uniqueLot = `${area}0-${lotNumber}`;
-        console.log(`✅ Generated unique lot: ${uniqueLot} from area ${area}, sequence ${lotSequence}`);
-        return uniqueLot;
-      }
-    }
-    
-    // Fallback: try to extract any number sequence
-    const numberMatch = parcelId.match(/(\d{2,})/);
-    if (numberMatch) {
-      const number = numberMatch[1];
-      // Take first 2 digits as area, rest as lot
-      if (number.length >= 4) {
-        const area = number.substring(0, 2);
-        const lot = number.substring(2).replace(/^0+/, '') || "0";
-        const uniqueLot = `${area}0-${lot}`;
-        console.log(`✅ Generated fallback unique lot: ${uniqueLot}`);
-        return uniqueLot;
-      }
-    }
-    
-    console.log(`❌ Could not generate unique lot number, using fallback`);
-    return 'N/A';
+    // Generate simple sequential numbers: 1, 2, 3, 4, etc.
+    const lotNumber = (index + 1).toString();
+    console.log(`✅ Generated simple lot number: ${lotNumber}`);
+    return lotNumber;
   }
 
-  renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds): boolean {
+  renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds, index: number = 0): boolean {
     if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
       return false;
     }
 
-    // FIXED: Updated coordinate validation to be less restrictive and match actual data
+    // FIXED: Much more lenient coordinate validation for SkyRanch area
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
       typeof coord.lng === 'number' &&
       !isNaN(coord.lat) && 
       !isNaN(coord.lng) &&
-      Math.abs(coord.lat) <= 90 && 
-      Math.abs(coord.lng) <= 180 &&
       coord.lat !== 0 && coord.lng !== 0 &&
-      // FIXED: More lenient range - if coordinates are in Spain, allow them
-      coord.lat >= 39.0 && coord.lat <= 41.0 && 
-      coord.lng >= -5.0 && coord.lng <= -3.0    
+      // FIXED: Very lenient bounds - if coordinates are anywhere near Spain, allow them
+      coord.lat >= 35.0 && coord.lat <= 45.0 && 
+      coord.lng >= -10.0 && coord.lng <= 5.0    
     );
 
     if (validCoords.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${validCoords.length}/3 required`);
-      console.log('Invalid coordinates:', parcel.boundaryCoordinates);
+      console.log('Sample coordinates:', parcel.boundaryCoordinates.slice(0, 3));
       return false;
     }
 
     console.log(`\n🗺️ === RENDERING PARCEL ===`);
     console.log(`📋 Parcel ID: ${parcel.parcelId}`);
-    console.log(`🔢 Original Lot: ${parcel.lotNumber || 'N/A'}`);
     console.log(`📊 Valid coordinates: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
+    console.log(`🎯 First coordinate: ${validCoords[0].lat}, ${validCoords[0].lng}`);
 
     const color = this.getParcelColor(parcel.status);
     
@@ -136,16 +93,16 @@ export class ParcelRenderer {
 
     // Add click listener
     polygon.addListener('click', () => {
-      console.log(`🖱️ Clicked parcel: ${parcel.parcelId}, lot: ${parcel.lotNumber}`);
+      console.log(`🖱️ Clicked parcel: ${parcel.parcelId}`);
       this.onParcelClick(parcel);
     });
 
-    // FIXED: Use database lot_number or generate unique lot number for labels
-    const displayLotNumber = parcel.lotNumber || this.generateUniqueLotNumber(parcel.parcelId);
+    // FIXED: Use simple lot numbers or database lot_number
+    const displayLotNumber = parcel.lotNumber || this.generateSimpleLotNumber(parcel.parcelId, index);
     
     if (displayLotNumber && displayLotNumber !== 'N/A') {
       const center = this.calculatePolygonCenter(validCoords);
-      console.log(`🏷️ Creating WHITE TEXT label for lot ${displayLotNumber} at:`, center);
+      console.log(`🏷️ Creating label for lot ${displayLotNumber} at:`, center);
       
       const label = new google.maps.Marker({
         position: center,
@@ -178,9 +135,7 @@ export class ParcelRenderer {
       });
 
       this.labels.push(label);
-      console.log(`✅ WHITE TEXT label created for lot ${displayLotNumber}`);
-    } else {
-      console.warn(`⚠️ No lot number available for parcel: ${parcel.parcelId}`);
+      console.log(`✅ Label created for lot ${displayLotNumber}`);
     }
 
     // Enhanced info window with more details
@@ -206,7 +161,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully with lot number ${displayLotNumber}`);
     console.log(`=== END PARCEL RENDERING ===\n`);
 
     return true;

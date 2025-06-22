@@ -123,15 +123,15 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
       const center = calculateParcelCenter(parcel.boundaryCoordinates);
       
       // FIXED: More lenient validation for Spanish coordinates
-      const isValidCenter = center.lat >= 39.0 && center.lat <= 41.0 && 
-                           center.lng >= -5.0 && center.lng <= -3.0;
+      const isValidCenter = center.lat >= 35.0 && center.lat <= 45.0 && 
+                           center.lng >= -10.0 && center.lng <= 5.0;
       
       if (isValidCenter) {
         console.log(`🎯 Centering map on parcel at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
         
         // FIXED: Use setCenter and setZoom for predictable navigation
         map.setCenter(center);
-        map.setZoom(18); // Good zoom to see individual parcels clearly
+        map.setZoom(20); // Higher zoom to see individual parcel clearly
         
         console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
       } else {
