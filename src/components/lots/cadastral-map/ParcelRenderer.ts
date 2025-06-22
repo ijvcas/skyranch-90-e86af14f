@@ -30,6 +30,21 @@ export class ParcelRenderer {
     };
   }
 
+  private getParcelDisplayNumber(parcel: CadastralParcel): string {
+    // Priority: lotNumber > extracted number from parcelId > fallback to parcelId
+    if (parcel.lotNumber) {
+      return parcel.lotNumber;
+    }
+    
+    // Try to extract number from parcelId
+    const match = parcel.parcelId.match(/\d+/);
+    if (match) {
+      return match[0];
+    }
+    
+    return parcel.parcelId;
+  }
+
   renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds, index: number = 0): boolean {
     if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
@@ -51,7 +66,8 @@ export class ParcelRenderer {
       return false;
     }
 
-    console.log(`🗺️ Rendering parcel ${parcel.parcelId} with ${coordinates.length} coordinates`);
+    const displayNumber = this.getParcelDisplayNumber(parcel);
+    console.log(`🗺️ Rendering parcel ${parcel.parcelId} as number ${displayNumber} with ${coordinates.length} coordinates`);
     console.log(`📍 Sample coordinate: ${coordinates[0].lat.toFixed(8)}, ${coordinates[0].lng.toFixed(8)}`);
 
     const color = this.getParcelColor(parcel.status);
@@ -78,12 +94,11 @@ export class ParcelRenderer {
 
     // Add click listener
     polygon.addListener('click', () => {
-      console.log(`🖱️ Clicked parcel: ${parcel.parcelId}`);
+      console.log(`🖱️ Clicked parcel: ${parcel.parcelId} (${displayNumber})`);
       this.onParcelClick(parcel);
     });
 
-    // Create label with parcel number (prioritize lotNumber)
-    const displayText = parcel.lotNumber || this.extractNumberFromId(parcel.parcelId) || parcel.parcelId;
+    // Create label with correct parcel number
     const center = this.calculatePolygonCenter(coordinates);
     
     const label = new google.maps.Marker({
@@ -96,21 +111,21 @@ export class ParcelRenderer {
         strokeOpacity: 0
       },
       label: {
-        text: displayText,
+        text: displayNumber,
         color: '#FFFFFF',
-        fontSize: '16px',
+        fontSize: '18px',
         fontWeight: 'bold',
         fontFamily: 'Arial, sans-serif'
       },
       clickable: true,
-      title: `Parcela ${displayText}${parcel.areaHectares ? ` - ${parcel.areaHectares.toFixed(4)} ha` : ''}`,
+      title: `Parcela ${displayNumber}${parcel.areaHectares ? ` - ${parcel.areaHectares.toFixed(4)} ha` : ''}`,
       zIndex: 10000,
       optimized: false
     });
 
     // Add click listener to label
     label.addListener('click', () => {
-      console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}`);
+      console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId} (${displayNumber})`);
       this.onParcelClick(parcel);
     });
 
@@ -120,7 +135,7 @@ export class ParcelRenderer {
     const infoWindow = new google.maps.InfoWindow({
       content: `
         <div class="p-3 min-w-[200px]">
-          <h3 class="font-bold text-lg mb-2">Parcela ${displayText}</h3>
+          <h3 class="font-bold text-lg mb-2">Parcela ${displayNumber}</h3>
           <p class="mb-1"><strong>ID:</strong> ${parcel.parcelId}</p>
           ${parcel.areaHectares ? `<p class="mb-1"><strong>Área:</strong> ${parcel.areaHectares.toFixed(4)} hectáreas</p>` : ''}
           ${parcel.status ? `<p class="mb-1"><strong>Estado:</strong> ${parcel.status}</p>` : ''}
@@ -136,14 +151,8 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${displayText} rendered successfully with area: ${parcel.areaHectares?.toFixed(4) || 'N/A'} ha`);
+    console.log(`✅ Parcel ${displayNumber} rendered successfully with area: ${parcel.areaHectares?.toFixed(4) || 'N/A'} ha`);
     return true;
-  }
-
-  // Extract number from parcel ID for display
-  private extractNumberFromId(parcelId: string): string | null {
-    const match = parcelId.match(/(\d+)/);
-    return match ? match[1] : null;
   }
 
   // Fit map bounds to show all rendered parcels
