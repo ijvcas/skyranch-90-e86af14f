@@ -24,27 +24,34 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
       try {
         let coordinates: { lat: number; lng: number }[] = [];
         
+        // Handle different types of JSON data from Supabase
         if (typeof parcel.boundary_coordinates === 'string') {
           coordinates = JSON.parse(parcel.boundary_coordinates);
         } else if (Array.isArray(parcel.boundary_coordinates)) {
-          coordinates = parcel.boundary_coordinates;
+          // Cast to the expected type since we know it's an array of coordinates
+          coordinates = parcel.boundary_coordinates as { lat: number; lng: number }[];
+        } else if (parcel.boundary_coordinates && typeof parcel.boundary_coordinates === 'object') {
+          // Handle case where it's already a parsed object
+          coordinates = parcel.boundary_coordinates as { lat: number; lng: number }[];
         }
 
-        // Filter valid coordinates within expected SkyRanch bounds
-        const validCoords = coordinates.filter(coord => 
-          coord && 
-          typeof coord.lat === 'number' && 
-          typeof coord.lng === 'number' &&
-          !isNaN(coord.lat) && 
-          !isNaN(coord.lng) &&
-          coord.lat >= 40.099 && coord.lat <= 40.105 && 
-          coord.lng >= -4.475 && coord.lng <= -4.465
-        );
+        // Validate and filter coordinates
+        if (Array.isArray(coordinates)) {
+          const validCoords = coordinates.filter(coord => 
+            coord && 
+            typeof coord.lat === 'number' && 
+            typeof coord.lng === 'number' &&
+            !isNaN(coord.lat) && 
+            !isNaN(coord.lng) &&
+            coord.lat >= 40.099 && coord.lat <= 40.105 && 
+            coord.lng >= -4.475 && coord.lng <= -4.465
+          );
 
-        validCoords.forEach(coord => {
-          allLatitudes.push(coord.lat);
-          allLongitudes.push(coord.lng);
-        });
+          validCoords.forEach(coord => {
+            allLatitudes.push(coord.lat);
+            allLongitudes.push(coord.lng);
+          });
+        }
 
       } catch (parseError) {
         console.warn('⚠️ Error parsing coordinates for parcel:', parseError);
