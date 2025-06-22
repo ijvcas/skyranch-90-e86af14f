@@ -22,15 +22,13 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
 }) => {
   const [editingParcel, setEditingParcel] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{
-    displayName: string;
     status: ParcelStatus;
     lotNumber: string;
-  }>({ displayName: '', status: 'SHOPPING_LIST', lotNumber: '' });
+  }>({ status: 'SHOPPING_LIST', lotNumber: '' });
 
   const handleStartEdit = (parcel: CadastralParcel) => {
     setEditingParcel(parcel.id);
     setEditValues({
-      displayName: parcel.displayName || parcel.parcelId,
       status: (parcel.status as ParcelStatus) || 'SHOPPING_LIST',
       lotNumber: parcel.lotNumber || ''
     });
@@ -38,7 +36,6 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
 
   const handleSaveEdit = (parcelId: string) => {
     onParcelUpdate(parcelId, {
-      displayName: editValues.displayName,
       status: editValues.status,
       lotNumber: editValues.lotNumber
     });
@@ -105,7 +102,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                 }}
                 onClick={() => !isEditing && onParcelClick(parcel)}
               >
-                <CardContent className="p-3">
+                <CardContent className="p-2">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-bold">
@@ -123,7 +120,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                               e.stopPropagation();
                               handleSaveEdit(parcel.id);
                             }}
-                            className="h-7 w-7 p-0"
+                            className="h-6 w-6 p-0"
                           >
                             <Save className="w-3 h-3" />
                           </Button>
@@ -134,7 +131,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                               e.stopPropagation();
                               handleCancelEdit();
                             }}
-                            className="h-7 w-7 p-0"
+                            className="h-6 w-6 p-0"
                           >
                             <X className="w-3 h-3" />
                           </Button>
@@ -147,7 +144,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                             e.stopPropagation();
                             handleStartEdit(parcel);
                           }}
-                          className="h-7 w-7 p-0"
+                          className="h-6 w-6 p-0"
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -155,9 +152,9 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <label className="text-xs text-gray-500 uppercase tracking-wide">Número</label>
+                      <label className="text-xs text-gray-500 uppercase tracking-wide block">Número</label>
                       {isEditing ? (
                         <Input
                           value={editValues.lotNumber}
@@ -166,45 +163,25 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                             lotNumber: e.target.value
                           })}
                           onClick={(e) => e.stopPropagation()}
-                          className="mt-1 h-8 text-sm"
-                          placeholder="Ej: 7, 15, 41..."
+                          className="mt-1 h-6 text-xs"
+                          placeholder="7, 15, 41..."
                         />
                       ) : (
-                        <p className="font-medium text-sm">
+                        <p className="font-medium text-xs mt-1">
                           {parcel.lotNumber || 'Sin número'}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="text-xs text-gray-500 uppercase tracking-wide">Nombre</label>
-                      {isEditing ? (
-                        <Input
-                          value={editValues.displayName}
-                          onChange={(e) => setEditValues({
-                            ...editValues,
-                            displayName: e.target.value
-                          })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1 h-8 text-sm"
-                          placeholder="Nombre de la parcela"
-                        />
-                      ) : (
-                        <p className="font-medium text-sm">
-                          {parcel.displayName || `Parcela ${parcelNumber}`}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-gray-500 uppercase tracking-wide">Área</label>
-                      <p className="font-medium text-green-600 text-sm">
+                      <label className="text-xs text-gray-500 uppercase tracking-wide block">Área</label>
+                      <p className="font-medium text-green-600 text-xs mt-1">
                         {parcel.areaHectares ? `${parcel.areaHectares.toFixed(4)} ha` : 'Sin calcular'}
                       </p>
                     </div>
 
                     <div>
-                      <label className="text-xs text-gray-500 uppercase tracking-wide">Estado</label>
+                      <label className="text-xs text-gray-500 uppercase tracking-wide block">Estado</label>
                       <div className="mt-1">
                         {isEditing ? (
                           <Select
@@ -215,7 +192,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                             })}
                           >
                             <SelectTrigger 
-                              className="w-full h-8 text-sm"
+                              className="w-full h-6 text-xs"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <SelectValue />
