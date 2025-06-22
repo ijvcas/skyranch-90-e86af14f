@@ -6,6 +6,7 @@ import { MapPin, Upload } from 'lucide-react';
 import PropertySelector from './PropertySelector';
 import CadastralFileUpload from './CadastralFileUpload';
 import ParcelStatusFilter from './ParcelStatusFilter';
+import DeleteAllParcelsButton from './DeleteAllParcelsButton';
 import type { Property } from '@/services/cadastralService';
 import type { ParcelStatus } from '@/utils/cadastral/types';
 
@@ -20,6 +21,7 @@ interface CadastralMapControlsProps {
   onCancelUpload: () => void;
   statusFilter: ParcelStatus | 'ALL';
   onStatusFilterChange: (status: ParcelStatus | 'ALL') => void;
+  onParcelsDeleted?: () => void;
 }
 
 const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
@@ -32,7 +34,8 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
   onFileUploadSuccess,
   onCancelUpload,
   statusFilter,
-  onStatusFilterChange
+  onStatusFilterChange,
+  onParcelsDeleted
 }) => {
   return (
     <Card>
@@ -65,6 +68,10 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
               <Upload className="w-4 h-4" />
               <span>Importar XML/KML</span>
             </Button>
+            
+            {onParcelsDeleted && (
+              <DeleteAllParcelsButton onDeleted={onParcelsDeleted} />
+            )}
           </div>
         </div>
 

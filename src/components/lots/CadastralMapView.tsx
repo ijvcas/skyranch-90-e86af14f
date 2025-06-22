@@ -84,6 +84,14 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
     setShowUpload(false);
   };
 
+  const handleParcelsDeleted = () => {
+    console.log('🗑️ All parcels deleted, reloading...');
+    setCadastralParcels([]);
+    if (selectedPropertyId) {
+      loadCadastralParcels(selectedPropertyId);
+    }
+  };
+
   const handleMapReady = (newMap: google.maps.Map) => {
     setMap(newMap);
   };
@@ -203,6 +211,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
         onCancelUpload={() => setShowUpload(false)}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        onParcelsDeleted={handleParcelsDeleted}
       />
 
       <CadastralMap
