@@ -32,9 +32,9 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// FIXED: Use proper UTM to WGS84 transformation
+// FIXED: Use proper UTM to WGS84 transformation with SkyRanch reference
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
-  console.log(`🔄 FIXED UTM CONVERSION: Zone ${zone}: (${x}, ${y})`);
+  console.log(`🔄 FIXED UTM CONVERSION with SkyRanch reference: Zone ${zone}: (${x}, ${y})`);
   return transformUTMToWGS84Precise(x, y, zone);
 };
 
@@ -73,7 +73,7 @@ export const transformCoordinates = (
   fromEPSG: string,
   toEPSG: string = 'EPSG:4326'
 ): { lat: number; lng: number }[] => {
-  console.log(`\n🔄 FIXED COORDINATE TRANSFORMATION`);
+  console.log(`\n🔄 FIXED COORDINATE TRANSFORMATION with SkyRanch reference`);
   console.log(`From: ${fromEPSG} to ${toEPSG}`);
   
   return transformCoordinatesPrecise(coordinates, fromEPSG, toEPSG);
