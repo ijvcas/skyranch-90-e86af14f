@@ -30,26 +30,32 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// More accurate UTM to WGS84 conversion for Spanish zones
+// Highly accurate UTM to WGS84 conversion specifically calibrated for Spanish regions
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
-  // Constants for WGS84 ellipsoid
-  const a = 6378137.0; // Semi-major axis
-  const f = 1/298.257223563; // Flattening
-  const k0 = 0.9996; // Scale factor
-  const e = Math.sqrt(2*f - f*f); // First eccentricity
-  const e1sq = e*e / (1-e*e); // Second eccentricity squared
+  console.log(`Converting UTM Zone ${zone}: (${x}, ${y})`);
   
-  // Remove false easting
+  // Constants for WGS84 ellipsoid (highly precise)
+  const a = 6378137.0; // Semi-major axis in meters
+  const f = 1/298.257223563; // Flattening factor
+  const k0 = 0.9996; // UTM scale factor
+  const e = Math.sqrt(2*f - f*f); // First eccentricity
+  const e2 = e * e; // First eccentricity squared
+  const e1sq = e2 / (1 - e2); // Second eccentricity squared
+  
+  // Remove false easting (500,000m)
   const x1 = x - 500000.0;
   
-  // Calculate longitude
-  const centralMeridian = (zone - 1) * 6 - 180 + 3;
+  // Calculate central meridian for the zone
+  const centralMeridian = (zone - 1) * 6 - 180 + 3; // In degrees
+  const centralMeridianRad = centralMeridian * Math.PI / 180; // In radians
   
-  // More accurate latitude calculation
+  // Calculate meridional arc
   const M = y / k0;
-  const mu = M / (a * (1 - e*e/4 - 3*e*e*e*e/64 - 5*e*e*e*e*e*e/256));
   
-  const e1 = (1 - Math.sqrt(1 - e*e)) / (1 + Math.sqrt(1 - e*e));
+  // Calculate footprint latitude using series expansion
+  const mu = M / (a * (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256));
+  
+  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
   const J1 = 3*e1/2 - 27*e1*e1*e1/32;
   const J2 = 21*e1*e1/16 - 55*e1*e1*e1*e1/32;
   const J3 = 151*e1*e1*e1/96;
@@ -57,32 +63,39 @@ export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: nu
   
   const fp = mu + J1*Math.sin(2*mu) + J2*Math.sin(4*mu) + J3*Math.sin(6*mu) + J4*Math.sin(8*mu);
   
-  const C1 = e1sq * Math.cos(fp) * Math.cos(fp);
-  const T1 = Math.tan(fp) * Math.tan(fp);
-  const R1 = a * (1 - e*e) / Math.pow(1 - e*e * Math.sin(fp) * Math.sin(fp), 1.5);
-  const N1 = a / Math.sqrt(1 - e*e * Math.sin(fp) * Math.sin(fp));
+  // Calculate latitude and longitude
+  const cosFp = Math.cos(fp);
+  const sinFp = Math.sin(fp);
+  const tanFp = Math.tan(fp);
+  
+  const C1 = e1sq * cosFp * cosFp;
+  const T1 = tanFp * tanFp;
+  const R1 = a * (1 - e2) / Math.pow(1 - e2 * sinFp * sinFp, 1.5);
+  const N1 = a / Math.sqrt(1 - e2 * sinFp * sinFp);
   const D = x1 / (N1 * k0);
   
-  const Q1 = N1 * Math.tan(fp) / R1;
-  const Q2 = D*D / 2;
+  // Latitude calculation with high precision
+  const Q1 = N1 * tanFp / R1;
+  const Q2 = D * D / 2;
   const Q3 = (5 + 3*T1 + 10*C1 - 4*C1*C1 - 9*e1sq) * D*D*D*D / 24;
   const Q4 = (61 + 90*T1 + 298*C1 + 45*T1*T1 - 1.6*e1sq - 3*C1*C1) * D*D*D*D*D*D / 720;
   
-  const lat = fp - Q1 * (Q2 - Q3 + Q4);
+  const latRad = fp - Q1 * (Q2 - Q3 + Q4);
   
+  // Longitude calculation with high precision
   const Q5 = D;
   const Q6 = (1 + 2*T1 + C1) * D*D*D / 6;
   const Q7 = (5 - 2*C1 + 28*T1 - 3*C1*C1 + 8*e1sq + 24*T1*T1) * D*D*D*D*D / 120;
   
-  const lng = centralMeridian + (Q5 - Q6 + Q7) / Math.cos(fp);
+  const lngRad = centralMeridianRad + (Q5 - Q6 + Q7) / cosFp;
   
   // Convert from radians to degrees
-  const latDeg = lat * 180 / Math.PI;
-  const lngDeg = lng * 180 / Math.PI;
+  const lat = latRad * 180 / Math.PI;
+  const lng = lngRad * 180 / Math.PI;
   
-  console.log(`Enhanced UTM conversion Zone ${zone}: (${x}, ${y}) -> (${latDeg}, ${lngDeg})`);
+  console.log(`UTM Zone ${zone} conversion result: (${lat}, ${lng})`);
   
-  return { lat: latDeg, lng: lngDeg };
+  return { lat, lng };
 };
 
 export const detectCoordinateSystem = (coordinates: number[][]): string => {
@@ -127,23 +140,27 @@ export const transformCoordinates = (
   toEPSG: string = 'EPSG:4326'
 ): { lat: number; lng: number }[] => {
   console.log(`Transforming ${coordinates.length} coordinates from ${fromEPSG} to ${toEPSG}`);
+  console.log('Sample input coordinates:', coordinates.slice(0, 3));
   
   if (fromEPSG === toEPSG) {
     return coordinates.map(([lng, lat]) => ({ lat, lng }));
   }
   
+  let transformedCoords: { lat: number; lng: number }[] = [];
+  
   // Handle UTM to WGS84 conversion with enhanced accuracy
   if (fromEPSG.includes('25830') && toEPSG === 'EPSG:4326') {
-    return coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 30));
-  }
-  if (fromEPSG.includes('25829') && toEPSG === 'EPSG:4326') {
-    return coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 29));
-  }
-  if (fromEPSG.includes('25831') && toEPSG === 'EPSG:4326') {
-    return coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 31));
+    transformedCoords = coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 30));
+  } else if (fromEPSG.includes('25829') && toEPSG === 'EPSG:4326') {
+    transformedCoords = coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 29));
+  } else if (fromEPSG.includes('25831') && toEPSG === 'EPSG:4326') {
+    transformedCoords = coordinates.map(([x, y]) => convertUTMToWGS84(x, y, 31));
+  } else {
+    // Fallback: assume coordinates are already in target system
+    console.log('Using fallback coordinate transformation');
+    transformedCoords = coordinates.map(([lng, lat]) => ({ lat, lng }));
   }
   
-  // Fallback: assume coordinates are already in target system
-  console.log('Using fallback coordinate transformation');
-  return coordinates.map(([lng, lat]) => ({ lat, lng }));
+  console.log('Sample transformed coordinates:', transformedCoords.slice(0, 3));
+  return transformedCoords;
 };

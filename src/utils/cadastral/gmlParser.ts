@@ -32,7 +32,7 @@ const parseGMLElement = (element: Element, index: number): ParsedParcel | null =
       coordinates = extractGMLCoordinates(source);
       if (coordinates.length >= 3) {
         console.log(`Found ${coordinates.length} coordinates from ${source.tagName}`);
-        console.log(`Sample raw coordinates:`, coordinates.slice(0, 3));
+        console.log(`Raw coordinate sample:`, coordinates.slice(0, 3));
         break;
       }
     }
@@ -151,19 +151,27 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
 
     // Transform coordinates if needed
     if (result.coordinateSystem !== 'EPSG:4326' && result.parcels.length > 0) {
+      console.log('=== COORDINATE TRANSFORMATION START ===');
       console.log('Transforming coordinates from', result.coordinateSystem, 'to EPSG:4326');
       
       // Log some sample coordinates before transformation
       if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
-        console.log('Sample coordinates before transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
+        console.log('Sample coordinates BEFORE transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
       }
       
-      result.parcels = result.parcels.map(parcel => {
+      result.parcels = result.parcels.map((parcel, index) => {
+        console.log(`Transforming parcel ${index + 1}: ${parcel.parcelId}`);
+        const originalCoords = parcel.boundaryCoordinates.map(c => [c.lng, c.lat]);
+        console.log(`Original coords for ${parcel.parcelId}:`, originalCoords.slice(0, 2));
+        
         const transformedCoords = transformCoordinates(
-          parcel.boundaryCoordinates.map(c => [c.lng, c.lat]),
+          originalCoords,
           result.coordinateSystem,
           'EPSG:4326'
         );
+        
+        console.log(`Transformed coords for ${parcel.parcelId}:`, transformedCoords.slice(0, 2));
+        
         return {
           ...parcel,
           boundaryCoordinates: transformedCoords
@@ -172,8 +180,9 @@ export const parseGMLFile = async (file: File): Promise<ParsingResult> => {
       
       // Log some sample coordinates after transformation
       if (result.parcels[0]?.boundaryCoordinates?.length > 0) {
-        console.log('Sample coordinates after transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
+        console.log('Sample coordinates AFTER transformation:', result.parcels[0].boundaryCoordinates.slice(0, 3));
       }
+      console.log('=== COORDINATE TRANSFORMATION END ===');
       
       console.log('Coordinate transformation completed');
     }
