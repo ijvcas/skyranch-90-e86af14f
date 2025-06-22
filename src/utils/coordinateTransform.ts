@@ -1,5 +1,5 @@
 
-// Fixed coordinate system transformation utilities for cadastral data
+// FINAL coordinate system transformation utilities - prevents double transformation
 import { transformUTMToWGS84Precise, transformCoordinatesPrecise } from './cadastral/gml/precisionCoordinateTransform';
 
 export interface CoordinateSystem {
@@ -32,9 +32,16 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// FIXED: Use proper UTM to WGS84 transformation with SkyRanch reference
+// FINAL: Prevent double transformation with safeguards
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
-  console.log(`🔄 FIXED UTM CONVERSION with SkyRanch reference: Zone ${zone}: (${x}, ${y})`);
+  console.log(`🔄 FINAL UTM CONVERSION - checking for double transformation: Zone ${zone}: (${x}, ${y})`);
+  
+  // CRITICAL: Check if already transformed
+  if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
+    console.log('🚫 PREVENTING DOUBLE TRANSFORMATION - already in WGS84 range');
+    return { lat: y, lng: x };
+  }
+  
   return transformUTMToWGS84Precise(x, y, zone);
 };
 
@@ -47,7 +54,7 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
   const x = firstCoord[0];
   const y = firstCoord[1];
   
-  console.log(`🔍 FIXED COORDINATE DETECTION for: (${x}, ${y})`);
+  console.log(`🔍 FINAL COORDINATE DETECTION for: (${x}, ${y})`);
   
   // Check if already in WGS84
   if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
@@ -55,7 +62,7 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
     return 'EPSG:4326';
   }
   
-  // FIXED: Better UTM coordinate detection for Spanish regions
+  // FINAL: Better UTM coordinate detection for Spanish regions
   if (x >= 200000 && x <= 800000 && y >= 4000000 && y <= 5000000) {
     console.log('✅ Detected Spanish UTM coordinates, using Zone 30N (EPSG:25830)');
     return 'EPSG:25830';
@@ -73,7 +80,7 @@ export const transformCoordinates = (
   fromEPSG: string,
   toEPSG: string = 'EPSG:4326'
 ): { lat: number; lng: number }[] => {
-  console.log(`\n🔄 FIXED COORDINATE TRANSFORMATION with SkyRanch reference`);
+  console.log(`\n🔄 FINAL COORDINATE TRANSFORMATION - preventing double transformation`);
   console.log(`From: ${fromEPSG} to ${toEPSG}`);
   
   return transformCoordinatesPrecise(coordinates, fromEPSG, toEPSG);
