@@ -26,6 +26,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
   const mapRef = useRef<google.maps.Map | null>(null);
   const parcelRendererRef = useRef<ParcelRenderer | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [parcelsRendered, setParcelsRendered] = useState(false);
 
   useEffect(() => {
     if (isLoaded && selectedProperty && !mapRef.current) {
@@ -35,11 +36,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
         mapRef.current = map;
         parcelRendererRef.current = new ParcelRenderer(map, onParcelClick);
         
-        // FIXED: Add a small delay to ensure map is fully ready before marking as complete
-        setTimeout(() => {
-          console.log('✅ Map initialization complete, ready for parcels');
-          setInitialLoadComplete(true);
-        }, 500);
+        // CRITICAL FIX: Ensure map is fully ready before marking as complete
+        google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
+          console.log('✅ Map tiles loaded, ready for parcels');
+          setTimeout(() => {
+            setInitialLoadComplete(true);
+          }, 200);
+        });
       }
     }
   }, [isLoaded, selectedProperty, onMapReady, onParcelClick]);
@@ -59,12 +62,12 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
   }, [cadastralParcels, statusFilter, initialLoadComplete]);
 
   const displayCadastralParcels = () => {
-    if (!parcelRendererRef.current) {
-      console.log('❌ No parcel renderer available');
+    if (!parcelRendererRef.current || !mapRef.current) {
+      console.log('❌ No parcel renderer or map available');
       return;
     }
 
-    // FIXED: Always clear existing polygons first to prevent duplicates
+    // CRITICAL FIX: Always clear existing polygons first to prevent duplicates
     console.log('🧹 Clearing existing polygons before rendering new ones');
     parcelRendererRef.current.clearAll();
 
@@ -77,16 +80,17 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     
     if (filteredParcels.length === 0) {
       console.log('⚠️ No parcels to display after filtering');
+      setParcelsRendered(false);
       return;
     }
 
     let validParcels = 0;
+    const bounds = new google.maps.LatLngBounds();
 
     filteredParcels.forEach((parcel, index) => {
       console.log(`🔄 Processing parcel ${index + 1}/${filteredParcels.length}: ${parcel.parcelId}`);
       
-      // FIXED: Pass index to renderer for simple lot number generation
-      const bounds = new google.maps.LatLngBounds();
+      // CRITICAL FIX: Pass bounds to each parcel render to collect all coordinates
       if (parcelRendererRef.current?.renderParcel(parcel, bounds, index)) {
         validParcels++;
         console.log(`✅ Successfully rendered parcel ${index + 1}: ${parcel.parcelId}`);
@@ -99,6 +103,14 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     
     if (validParcels === 0) {
       console.error('🚨 NO PARCELS WERE RENDERED! Check coordinate validation and data format.');
+      setParcelsRendered(false);
+    } else {
+      // CRITICAL FIX: Fit map bounds to show all parcels after rendering
+      console.log('🎯 Fitting map bounds to show all rendered parcels');
+      setTimeout(() => {
+        parcelRendererRef.current?.fitMapToAllParcels();
+        setParcelsRendered(true);
+      }, 500);
     }
   };
 
@@ -110,6 +122,12 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
           className="w-full h-96 rounded-lg"
           style={{ minHeight: '600px' }}
         />
+        {/* CRITICAL FIX: Add status indicator */}
+        {initialLoadComplete && (
+          <div className="absolute bottom-4 left-4 bg-white p-2 rounded shadow text-sm">
+            {parcelsRendered ? `✅ ${cadastralParcels.length} parcelas cargadas` : '⏳ Cargando parcelas...'}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

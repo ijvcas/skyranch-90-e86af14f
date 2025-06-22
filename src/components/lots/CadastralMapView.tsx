@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
@@ -107,39 +106,69 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   };
 
   const calculateParcelCenter = (coordinates: { lat: number; lng: number }[]): { lat: number; lng: number } => {
-    const latSum = coordinates.reduce((sum, coord) => sum + coord.lat, 0);
-    const lngSum = coordinates.reduce((sum, coord) => sum + coord.lng, 0);
-    return {
-      lat: latSum / coordinates.length,
-      lng: lngSum / coordinates.length
+    if (!coordinates || coordinates.length === 0) {
+      console.warn('⚠️ No coordinates provided for center calculation');
+      return { lat: 40.101, lng: -4.470 }; // SkyRanch fallback center
+    }
+
+    // CRITICAL FIX: Filter out invalid coordinates before calculation
+    const validCoords = coordinates.filter(coord => 
+      coord && 
+      typeof coord.lat === 'number' && 
+      typeof coord.lng === 'number' &&
+      !isNaN(coord.lat) && 
+      !isNaN(coord.lng) &&
+      coord.lat >= 40.099 && coord.lat <= 40.103 && 
+      coord.lng >= -4.475 && coord.lng <= -4.466
+    );
+
+    if (validCoords.length === 0) {
+      console.warn('⚠️ No valid coordinates after filtering');
+      return { lat: 40.101, lng: -4.470 }; // SkyRanch fallback center
+    }
+
+    const latSum = validCoords.reduce((sum, coord) => sum + coord.lat, 0);
+    const lngSum = validCoords.reduce((sum, coord) => sum + coord.lng, 0);
+    
+    const center = {
+      lat: latSum / validCoords.length,
+      lng: lngSum / validCoords.length
     };
+
+    console.log(`📍 Calculated parcel center: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)} from ${validCoords.length} valid coords`);
+    return center;
   };
 
   const handleParcelClick = (parcel: CadastralParcel) => {
     if (map && parcel.boundaryCoordinates.length > 0) {
       console.log(`🎯 Focusing on parcel: ${parcel.parcelId}`);
       
-      // FIXED: Calculate center manually for more predictable behavior
+      // CRITICAL FIX: Use improved center calculation with validation
       const center = calculateParcelCenter(parcel.boundaryCoordinates);
       
-      // FIXED: More lenient validation for Spanish coordinates
-      const isValidCenter = center.lat >= 35.0 && center.lat <= 45.0 && 
-                           center.lng >= -10.0 && center.lng <= 5.0;
+      // CRITICAL FIX: Validate calculated center is within SkyRanch bounds
+      const isValidCenter = center.lat >= 40.099 && center.lat <= 40.103 && 
+                           center.lng >= -4.475 && center.lng <= -4.466;
       
       if (isValidCenter) {
         console.log(`🎯 Centering map on parcel at: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
         
-        // FIXED: Use setCenter and setZoom for predictable navigation
+        // CRITICAL FIX: Use setCenter and appropriate zoom for parcel viewing
         map.setCenter(center);
-        map.setZoom(20); // Higher zoom to see individual parcel clearly
+        map.setZoom(18); // Higher zoom to see individual parcel clearly
         
         console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
       } else {
-        console.warn(`⚠️ Parcel center outside valid bounds: ${center.lat}, ${center.lng}`);
-        toast.error('La parcela está fuera del área esperada');
+        console.warn(`⚠️ Calculated parcel center outside SkyRanch bounds: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
+        console.warn(`⚠️ Using SkyRanch center as fallback`);
+        
+        // Fallback to SkyRanch center
+        map.setCenter({ lat: 40.101, lng: -4.470 });
+        map.setZoom(16);
+        toast.error('Centro de parcela inválido, usando ubicación central');
       }
     } else {
-      console.warn(`❌ Cannot focus on parcel: no map or coordinates`);
+      console.warn(`❌ Cannot focus on parcel: no map or coordinates for ${parcel.parcelId}`);
     }
   };
 
