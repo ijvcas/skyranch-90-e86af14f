@@ -4,7 +4,7 @@ import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
 import { useGoogleMapsLoader } from '@/hooks/polygon/useGoogleMapsLoader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { reprocessExistingParcels } from '@/utils/cadastral/parcelProcessor';
+import { batchUpdateAllParcels, removeDuplicateParcels } from '@/services/cadastral/parcelUpdater';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
@@ -23,7 +23,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const [isLoading, setIsLoading] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [statusFilter, setStatusFilter] = useState<ParcelStatus | 'ALL'>('ALL');
-  const [hasReprocessed, setHasReprocessed] = useState(false);
+  const [hasProcessed, setHasProcessed] = useState(false);
 
   const { isLoaded, loadError } = useGoogleMapsLoader();
 
@@ -37,19 +37,39 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
     }
   }, [selectedPropertyId]);
 
-  // Re-process existing parcels when Google Maps is loaded and we have parcels
+  // ENHANCED: Comprehensive parcel processing when Google Maps is loaded
   useEffect(() => {
-    if (isLoaded && selectedPropertyId && cadastralParcels.length > 0 && !hasReprocessed) {
-      console.log('🔄 Triggering parcel re-processing...');
-      reprocessExistingParcels(selectedPropertyId).then(() => {
-        setHasReprocessed(true);
-        // Reload parcels to get updated data
-        setTimeout(() => {
-          loadCadastralParcels(selectedPropertyId);
-        }, 1000);
-      });
+    if (isLoaded && selectedPropertyId && cadastralParcels.length > 0 && !hasProcessed) {
+      console.log('🔄 === STARTING COMPREHENSIVE PARCEL PROCESSING ===');
+      
+      const processAllParcels = async () => {
+        try {
+          // Step 1: Remove duplicates first
+          console.log('🗑️ Step 1: Removing duplicate parcels...');
+          await removeDuplicateParcels(selectedPropertyId);
+          
+          // Step 2: Batch update all parcels
+          console.log('📝 Step 2: Batch updating parcels with lot numbers and areas...');
+          await batchUpdateAllParcels(selectedPropertyId);
+          
+          // Step 3: Reload parcels to get updated data
+          console.log('🔄 Step 3: Reloading parcels with updated data...');
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for database consistency
+          await loadCadastralParcels(selectedPropertyId);
+          
+          setHasProcessed(true);
+          console.log('✅ === COMPREHENSIVE PARCEL PROCESSING COMPLETE ===');
+          toast.success('Parcelas procesadas y actualizadas correctamente');
+          
+        } catch (error) {
+          console.error('❌ Error during comprehensive processing:', error);
+          toast.error('Error procesando las parcelas');
+        }
+      };
+      
+      processAllParcels();
     }
-  }, [isLoaded, selectedPropertyId, cadastralParcels.length, hasReprocessed]);
+  }, [isLoaded, selectedPropertyId, cadastralParcels.length, hasProcessed]);
 
   const loadProperties = async () => {
     setIsLoading(true);
@@ -72,6 +92,7 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
     try {
       const data = await getCadastralParcels(propertyId);
       setCadastralParcels(data);
+      console.log(`📋 Loaded ${data.length} cadastral parcels`);
     } catch (error) {
       console.error('Error loading cadastral parcels:', error);
     }
@@ -80,13 +101,13 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   const handlePropertyChange = (propertyId: string) => {
     setSelectedPropertyId(propertyId);
     setMap(null);
-    setHasReprocessed(false); // Reset reprocessing flag for new property
+    setHasProcessed(false); // Reset processing flag for new property
     onPropertySelect?.(propertyId);
   };
 
   const handleFileUploadSuccess = () => {
     if (selectedPropertyId) {
-      setHasReprocessed(false); // Reset to trigger reprocessing of new data
+      setHasProcessed(false); // Reset to trigger processing of new data
       loadCadastralParcels(selectedPropertyId);
     }
     setShowUpload(false);

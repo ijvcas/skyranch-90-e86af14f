@@ -61,6 +61,49 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
     );
   };
 
+  // FIXED: Proper lot number display logic
+  const getDisplayLotNumber = (parcel: CadastralParcel): string => {
+    // First priority: actual lot_number from database
+    if (parcel.lotNumber) {
+      return parcel.lotNumber;
+    }
+    
+    // Second priority: extract from parcel_id if available
+    if (parcel.parcelId) {
+      // Try to extract from Spanish cadastral format
+      const surfaceMatch = parcel.parcelId.match(/Surface_ES\.SDGC\.CP\.28128A(\d{8})/);
+      if (surfaceMatch) {
+        const mainNumber = surfaceMatch[1];
+        let extracted = mainNumber.replace(/^0+/, '');
+        if (extracted.length === 0) extracted = mainNumber.slice(-1);
+        if (extracted.length > 4) {
+          const lastThreeMatch = mainNumber.match(/0*(\d{1,3})$/);
+          if (lastThreeMatch) extracted = lastThreeMatch[1];
+        }
+        return extracted;
+      }
+      
+      // Try direct Spanish cadastral format
+      const directMatch = parcel.parcelId.match(/28128A(\d{8})/);
+      if (directMatch) {
+        const mainNumber = directMatch[1];
+        let extracted = mainNumber.replace(/^0+/, '');
+        if (extracted.length === 0) extracted = mainNumber.slice(-1);
+        if (extracted.length > 4) {
+          const lastThreeMatch = mainNumber.match(/0*(\d{1,3})$/);
+          if (lastThreeMatch) extracted = lastThreeMatch[1];
+        }
+        return extracted;
+      }
+      
+      // Fallback: use last part of parcel ID
+      const parts = parcel.parcelId.split('.');
+      return parts[parts.length - 1] || 'N/A';
+    }
+    
+    return 'N/A';
+  };
+
   if (parcels.length === 0) {
     return (
       <Card>
@@ -94,8 +137,8 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                 className="cursor-pointer hover:bg-gray-50"
                 onClick={() => onParcelClick(parcel)}
               >
-                <TableCell className="font-mono text-sm">
-                  {parcel.lotNumber || parcel.parcelId.split('.').pop()}
+                <TableCell className="font-mono text-sm font-bold">
+                  {getDisplayLotNumber(parcel)}
                 </TableCell>
                 <TableCell>
                   {editingParcel === parcel.id ? (
@@ -113,7 +156,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  {parcel.areaHectares ? `${parcel.areaHectares.toFixed(2)} ha` : 'N/A'}
+                  {parcel.areaHectares ? `${parcel.areaHectares.toFixed(4)} ha` : 'Calculando...'}
                 </TableCell>
                 <TableCell>
                   {editingParcel === parcel.id ? (

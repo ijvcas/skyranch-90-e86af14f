@@ -98,31 +98,33 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // NEW: White text lot number labels without circles (as requested)
+    // FIXED: White text lot number labels without circles (as requested)
     if (parcel.lotNumber) {
       const center = this.calculatePolygonCenter(validCoords);
       console.log(`🏷️ Creating WHITE TEXT label for lot ${parcel.lotNumber} at:`, center);
       
-      // Create white text label without circle background
+      // ENHANCED: Create white text label without any background/circle
       const label = new google.maps.Marker({
         position: center,
         map: this.map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 0, // No visible circle
+          scale: 0, // ZERO scale = no visible circle
           fillOpacity: 0, // Completely transparent
-          strokeOpacity: 0 // No border
+          strokeOpacity: 0, // No border
+          fillColor: 'transparent',
+          strokeColor: 'transparent'
         },
         label: {
           text: parcel.lotNumber,
-          color: '#FFFFFF', // White text as requested
-          fontSize: '14px', // Clear readable size
+          color: '#FFFFFF', // Pure white text as requested
+          fontSize: '16px', // Larger for better visibility
           fontWeight: 'bold',
           fontFamily: 'Arial, sans-serif'
         },
         clickable: true,
         title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`,
-        zIndex: 9999, // Maximum z-index to ensure visibility
+        zIndex: 10000, // Very high z-index to ensure visibility on top
         optimized: false // Disable optimization to ensure rendering
       });
 
