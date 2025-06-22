@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, X, FileText, AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Upload, X } from 'lucide-react';
 import { saveCadastralParcel } from '@/services/cadastralService';
-import { parseSpanishCadastralXML, parseGMLFile, parseDXFFile, type ParsingResult } from '@/utils/cadastralParsers';
-import { COORDINATE_SYSTEMS } from '@/utils/coordinateTransform';
 import { toast } from 'sonner';
+import type { ParsingResult } from '@/utils/cadastralParsers';
+import FilePreviewSection from './cadastral-upload/FilePreviewSection';
+import ParseResultDisplay from './cadastral-upload/ParseResultDisplay';
+import AdvancedOptionsSection from './cadastral-upload/AdvancedOptionsSection';
+import { parseFileByType } from './cadastral-upload/FileParser';
 
 interface CadastralFileUploadProps {
   propertyId: string;
@@ -42,36 +43,10 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
     }
   };
 
-  const getFileFormat = (fileName: string): string => {
-    const extension = fileName.toLowerCase().split('.').pop();
-    switch (extension) {
-      case 'xml': return 'Spanish Cadastral XML';
-      case 'gml': return 'Geographic Markup Language (GML)';
-      case 'dxf': return 'Drawing Exchange Format (DXF)';
-      case 'kml': return 'Keyhole Markup Language (KML)';
-      default: return 'Unknown format';
-    }
-  };
-
   const handleFilePreview = async (file: File) => {
     setIsUploading(true);
     try {
-      const fileName = file.name.toLowerCase();
-      let result: ParsingResult;
-
-      if (fileName.endsWith('.xml')) {
-        result = await parseSpanishCadastralXML(file);
-      } else if (fileName.endsWith('.gml')) {
-        result = await parseGMLFile(file);
-      } else if (fileName.endsWith('.dxf')) {
-        result = await parseDXFFile(file);
-      } else if (fileName.endsWith('.kml')) {
-        // Fallback to simple KML parsing
-        result = await parseKMLFile(file);
-      } else {
-        throw new Error('Formato de archivo no soportado. Use archivos .xml, .gml, .dxf o .kml');
-      }
-
+      const result = await parseFileByType(file);
       setParseResult(result);
 
       if (result.errors.length > 0) {
@@ -109,8 +84,6 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
       // Use manual coordinate system if specified
       let parcelsToSave = parseResult.parcels;
       if (manualCoordinateSystem && manualCoordinateSystem !== parseResult.coordinateSystem) {
-        // Re-transform coordinates with manual system
-        // This would require re-parsing with the specified system
         toast.info('Sistema de coordenadas manual aplicado');
       }
 
@@ -142,57 +115,6 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
     }
   };
 
-  // Simple KML parsing fallback
-  const parseKMLFile = async (file: File): Promise<ParsingResult> => {
-    const result: ParsingResult = {
-      parcels: [],
-      coordinateSystem: 'EPSG:4326',
-      errors: [],
-      warnings: []
-    };
-
-    try {
-      const content = await file.text();
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(content, 'application/xml');
-      
-      const parseError = xmlDoc.querySelector('parsererror');
-      if (parseError) {
-        result.errors.push('Error parsing KML file');
-        return result;
-      }
-
-      const placemarks = xmlDoc.querySelectorAll('Placemark');
-      
-      placemarks.forEach((placemark, index) => {
-        const name = placemark.querySelector('name')?.textContent || `KML_Parcel_${index + 1}`;
-        const description = placemark.querySelector('description')?.textContent || '';
-        const coordinatesText = placemark.querySelector('coordinates')?.textContent?.trim();
-        
-        if (coordinatesText) {
-          const coordPairs = coordinatesText.split(/\s+/).filter(coord => coord.length > 0);
-          const coordinates = coordPairs.map(coord => {
-            const [lng, lat] = coord.split(',').map(Number);
-            return { lat, lng };
-          }).filter(coord => !isNaN(coord.lat) && !isNaN(coord.lng));
-
-          if (coordinates.length >= 3) {
-            result.parcels.push({
-              parcelId: name,
-              boundaryCoordinates: coordinates,
-              notes: description,
-              classification: 'KML Import'
-            });
-          }
-        }
-      });
-    } catch (error) {
-      result.errors.push('Error processing KML file');
-    }
-
-    return result;
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -222,67 +144,9 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
           </p>
         </div>
 
-        {selectedFile && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Archivo seleccionado</AlertTitle>
-            <AlertDescription>
-              <div className="space-y-1">
-                <p><strong>Nombre:</strong> {selectedFile.name}</p>
-                <p><strong>Tamaño:</strong> {(selectedFile.size / 1024).toFixed(1)} KB</p>
-                <p><strong>Formato:</strong> {getFileFormat(selectedFile.name)}</p>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
+        {selectedFile && <FilePreviewSection selectedFile={selectedFile} />}
 
-        {parseResult && (
-          <div className="space-y-3">
-            {parseResult.errors.length > 0 && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Errores encontrados</AlertTitle>
-                <AlertDescription>
-                  <ul className="list-disc list-inside">
-                    {parseResult.errors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {parseResult.warnings.length > 0 && (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Advertencias</AlertTitle>
-                <AlertDescription>
-                  <ul className="list-disc list-inside">
-                    {parseResult.warnings.map((warning, index) => (
-                      <li key={index}>{warning}</li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {parseResult.parcels.length > 0 && (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Archivo procesado correctamente</AlertTitle>
-                <AlertDescription>
-                  <div className="space-y-1">
-                    <p><strong>Parcelas encontradas:</strong> {parseResult.parcels.length}</p>
-                    <p><strong>Sistema de coordenadas:</strong> {parseResult.coordinateSystem}</p>
-                    {parseResult.parcels[0]?.areaHectares && (
-                      <p><strong>Área total:</strong> {parseResult.parcels.reduce((sum, p) => sum + (p.areaHectares || 0), 0).toFixed(2)} ha</p>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        )}
+        {parseResult && <ParseResultDisplay parseResult={parseResult} />}
 
         <div className="flex items-center space-x-2">
           <Button
@@ -295,26 +159,10 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
         </div>
 
         {showAdvancedOptions && (
-          <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Sistema de coordenadas manual
-              </label>
-              <Select value={manualCoordinateSystem} onValueChange={setManualCoordinateSystem}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Detectar automáticamente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Detectar automáticamente</SelectItem>
-                  {Object.entries(COORDINATE_SYSTEMS).map(([key, system]) => (
-                    <SelectItem key={key} value={key}>
-                      {system.name} ({key})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <AdvancedOptionsSection
+            manualCoordinateSystem={manualCoordinateSystem}
+            onManualCoordinateSystemChange={setManualCoordinateSystem}
+          />
         )}
 
         <div className="flex space-x-2">
