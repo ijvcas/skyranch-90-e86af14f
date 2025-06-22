@@ -1,5 +1,5 @@
 
-import { parseSpanishCadastralXML, parseGMLFile, parseDXFFile, type ParsingResult } from '@/utils/cadastral';
+import { parseSpanishCadastralXML, parseGMLFile, parseDXFFile, parseKMZFile, type ParsingResult } from '@/utils/cadastral';
 
 export const parseFileByType = async (file: File): Promise<ParsingResult> => {
   const fileName = file.name.toLowerCase();
@@ -13,8 +13,10 @@ export const parseFileByType = async (file: File): Promise<ParsingResult> => {
     result = await parseDXFFile(file);
   } else if (fileName.endsWith('.kml')) {
     result = await parseKMLFile(file);
+  } else if (fileName.endsWith('.kmz')) {
+    result = await parseKMZFile(file);
   } else {
-    throw new Error('Formato de archivo no soportado. Use archivos .xml, .gml, .dxf o .kml');
+    throw new Error('Formato de archivo no soportado. Use archivos .xml, .gml, .dxf, .kml o .kmz');
   }
 
   return result;

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, File, AlertTriangle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { parseGMLFileRebuilt } from '@/utils/cadastral/gml/rebuiltGMLParser';
+import { parseFileByType } from './cadastral-upload/FileParser';
 import { validateAndPreviewCoordinates } from '@/utils/cadastral/coordinateValidator';
 import { bulkInsertCadastralParcels } from '@/services/cadastral/parcelDatabaseOps';
 import CoordinatePreviewDialog from './CoordinatePreviewDialog';
@@ -42,9 +42,18 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
     setUploadProgress(0);
 
     try {
-      // Parse file with rebuilt parser
+      // Parse file with the appropriate parser
       setUploadProgress(25);
-      const result = await parseGMLFileRebuilt(file);
+      
+      let result: ParsingResult;
+      
+      // Use GML parser for .gml files, general parser for others
+      if (file.name.toLowerCase().endsWith('.gml')) {
+        result = await parseGMLFileRebuilt(file);
+      } else {
+        result = await parseFileByType(file);
+      }
+      
       setParseResult(result);
       
       if (result.errors.length > 0) {
@@ -74,7 +83,7 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
 
     } catch (error) {
       console.error('❌ File processing error:', error);
-      toast.error('Error procesando el archivo');
+      toast.error('Error procesando el archivo: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setIsProcessing(false);
     }
@@ -121,7 +130,9 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
     onDrop,
     accept: {
       'application/xml': ['.xml', '.gml'],
-      'application/vnd.google-earth.kml+xml': ['.kml']
+      'application/vnd.google-earth.kml+xml': ['.kml'],
+      'application/vnd.google-earth.kmz': ['.kmz'],
+      'application/zip': ['.kmz']
     },
     maxFiles: 1,
     disabled: isProcessing
@@ -143,10 +154,10 @@ const CadastralFileUpload: React.FC<CadastralFileUploadProps> = ({
               <input {...getInputProps()} />
               <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <p className="text-lg font-medium text-gray-900 mb-2">
-                {isDragActive ? 'Suelta el archivo aquí' : 'Arrastra archivos GML/KML aquí'}
+                {isDragActive ? 'Suelta el archivo aquí' : 'Arrastra archivos cadastrales aquí'}
               </p>
               <p className="text-sm text-gray-500">
-                O haz clic para seleccionar archivos (.xml, .gml, .kml)
+                O haz clic para seleccionar archivos (.xml, .gml, .kml, .kmz)
               </p>
             </div>
 
