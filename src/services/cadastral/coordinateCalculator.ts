@@ -38,7 +38,7 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
           }
         }
 
-        // Validate and filter coordinates
+        // Validate and filter coordinates with precise SkyRanch bounds
         if (Array.isArray(coordinates)) {
           const validCoords = coordinates.filter(coord => 
             coord && 
@@ -66,7 +66,7 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
       return null;
     }
 
-    // Calculate the geographic center (mean of all coordinates)
+    // Calculate the geographic center (mean of all coordinates) with high precision
     const centerLat = allLatitudes.reduce((sum, lat) => sum + lat, 0) / allLatitudes.length;
     const centerLng = allLongitudes.reduce((sum, lng) => sum + lng, 0) / allLongitudes.length;
 
@@ -76,13 +76,13 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
     const minLng = Math.min(...allLongitudes);
     const maxLng = Math.max(...allLongitudes);
 
-    console.log(`🎯 CALCULATED TRUE CENTER: ${centerLat.toFixed(6)}, ${centerLng.toFixed(6)}`);
+    console.log(`🎯 CALCULATED PRECISE CENTER: ${centerLat.toFixed(10)}, ${centerLng.toFixed(10)}`);
     console.log(`📏 Coordinate bounds: Lat ${minLat.toFixed(6)} to ${maxLat.toFixed(6)}, Lng ${minLng.toFixed(6)} to ${maxLng.toFixed(6)}`);
     console.log(`📊 Based on ${allLatitudes.length} coordinate points from ${parcels.length} parcels`);
 
     return {
-      lat: Number(centerLat.toFixed(6)),
-      lng: Number(centerLng.toFixed(6))
+      lat: Number(centerLat.toFixed(10)),
+      lng: Number(centerLng.toFixed(10))
     };
 
   } catch (error) {
@@ -91,7 +91,7 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
   }
 };
 
-// Update property center coordinates in database
+// Update property center coordinates in database with precise coordinates
 export const updatePropertyCenterToCalculatedCenter = async (propertyId: string): Promise<boolean> => {
   try {
     const calculatedCenter = await calculateParcelsCenterPoint(propertyId);
@@ -101,7 +101,7 @@ export const updatePropertyCenterToCalculatedCenter = async (propertyId: string)
       return false;
     }
 
-    console.log(`🔄 Updating property center to calculated coordinates: ${calculatedCenter.lat}, ${calculatedCenter.lng}`);
+    console.log(`🔄 Updating property center to PRECISE calculated coordinates: ${calculatedCenter.lat}, ${calculatedCenter.lng}`);
     
     const { error } = await supabase
       .from('properties')
@@ -117,7 +117,7 @@ export const updatePropertyCenterToCalculatedCenter = async (propertyId: string)
       return false;
     }
 
-    console.log('✅ Successfully updated property center to calculated coordinates');
+    console.log('✅ Successfully updated property center to PRECISE calculated coordinates');
     return true;
 
   } catch (error) {

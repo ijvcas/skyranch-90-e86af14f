@@ -13,18 +13,17 @@ export const initializeMap = (
   }
 
   console.log('🗺️ Initializing map for property:', property.name);
+  console.log(`🎯 Using PRECISE property center coordinates: ${property.centerLat}, ${property.centerLng}`);
   
-  // CRITICAL FIX: Use the property's actual center coordinates from database
+  // Use the property's precise center coordinates from database
   const mapCenter = {
     lat: property.centerLat,
     lng: property.centerLng
   };
-  
-  console.log(`🎯 Using property center coordinates: ${mapCenter.lat}, ${mapCenter.lng}`);
 
   const map = new google.maps.Map(mapElement, {
     center: mapCenter,
-    zoom: 15, // Start with wider view to see all parcels
+    zoom: 16, // Optimal zoom to see all parcels clearly
     mapTypeId: google.maps.MapTypeId.SATELLITE,
     mapTypeControl: true,
     mapTypeControlOptions: {
@@ -39,18 +38,23 @@ export const initializeMap = (
     fullscreenControlOptions: {
       position: google.maps.ControlPosition.TOP_RIGHT,
     },
-    // Enhanced styling for better parcel visibility
+    // Enhanced styling for perfect parcel visibility
     styles: [
       {
         featureType: 'landscape',
         elementType: 'geometry',
-        stylers: [{ saturation: -10 }] // Less saturation for better parcel contrast
+        stylers: [{ saturation: -15 }] // Optimized saturation for white number visibility
       }
     ]
   });
 
-  console.log('✅ Map initialized at property center coordinates');
-  onMapReady(map);
+  console.log('✅ Map initialized at PRECISE property center coordinates with optimal zoom');
+  
+  // Ensure map is fully ready before calling callback
+  google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
+    console.log('🗺️ Map tiles loaded - ready for precise parcel rendering');
+    onMapReady(map);
+  });
   
   return map;
 };
