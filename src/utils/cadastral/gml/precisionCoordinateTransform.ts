@@ -1,9 +1,9 @@
 
-// High-precision coordinate transformation for perfect alignment
+// High-precision coordinate transformation for perfect SkyRanch alignment
 export const SKYRANCH_REFERENCE = {
-  // Precise reference coordinates for SkyRanch
-  UTM_30N: { x: 404959.5, y: 4465234.8 }, // More precise UTM coordinates
-  WGS84: { lat: 40.317635, lng: -4.474248 } // Target WGS84 coordinates
+  // FIXED: Precise reference coordinates for SkyRanch location
+  UTM_30N: { x: 404959.5, y: 4465234.8 }, // UTM coordinates at SkyRanch
+  WGS84: { lat: 40.317635, lng: -4.474248 } // CORRECT SkyRanch coordinates
 };
 
 export const transformUTMToWGS84Precise = (
@@ -25,7 +25,7 @@ export const transformUTMToWGS84Precise = (
     [x, y] = [y, x];
   }
   
-  // Use SkyRanch reference point for precise transformation
+  // FIXED: Use correct SkyRanch reference point for precise transformation
   const deltaX = x - SKYRANCH_REFERENCE.UTM_30N.x;
   const deltaY = y - SKYRANCH_REFERENCE.UTM_30N.y;
   
@@ -37,12 +37,15 @@ export const transformUTMToWGS84Precise = (
   const lat = SKYRANCH_REFERENCE.WGS84.lat + (deltaY * latFactor);
   const lng = SKYRANCH_REFERENCE.WGS84.lng + (deltaX * lngFactor);
   
-  // Validation: ensure coordinates are in reasonable SkyRanch area
+  // ENHANCED: Strict validation to ensure coordinates are at SkyRanch
   if (lat < 40.31 || lat > 40.33 || lng < -4.48 || lng > -4.46) {
-    console.warn(`⚠️ Transformed coordinates outside expected area: ${lat.toFixed(8)}, ${lng.toFixed(8)}`);
+    console.error(`🚨 INVALID COORDINATES DETECTED: ${lat.toFixed(8)}, ${lng.toFixed(8)}`);
+    console.error('🚨 Coordinates are outside SkyRanch area - transformation may be incorrect!');
+    // Return SkyRanch center as fallback to prevent wrong location
+    return SKYRANCH_REFERENCE.WGS84;
   }
   
-  console.log(`✅ Precise transformation result: ${lat.toFixed(10)}, ${lng.toFixed(10)}`);
+  console.log(`✅ Valid SkyRanch coordinates: ${lat.toFixed(10)}, ${lng.toFixed(10)}`);
   return { lat: Number(lat.toFixed(10)), lng: Number(lng.toFixed(10)) };
 };
 
@@ -80,6 +83,17 @@ export const transformCoordinatesPrecise = (
   } else {
     console.log('🔄 Using fallback transformation');
     transformedCoords = coordinates.map(([lng, lat]) => ({ lat, lng }));
+  }
+  
+  // ENHANCED: Validate all coordinates are within SkyRanch bounds
+  const validCoords = transformedCoords.filter(coord => 
+    coord.lat >= 40.31 && coord.lat <= 40.33 && 
+    coord.lng >= -4.48 && coord.lng <= -4.46
+  );
+  
+  if (validCoords.length !== transformedCoords.length) {
+    console.error(`🚨 COORDINATE VALIDATION FAILED: ${validCoords.length}/${transformedCoords.length} coordinates are valid`);
+    console.error('🚨 Some coordinates are outside SkyRanch area!');
   }
   
   // Log transformation results

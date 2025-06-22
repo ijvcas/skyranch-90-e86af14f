@@ -1,7 +1,7 @@
 
-// Enhanced CRS detection for better coordinate system handling
+// Enhanced CRS detection with SkyRanch-specific validation
 export const detectCRSFromGML = (xmlDoc: Document): string => {
-  console.log('\n🔍 ENHANCED CRS DETECTION...');
+  console.log('\n🔍 ENHANCED CRS DETECTION FOR SKYRANCH...');
   
   // Check for explicit CRS declarations
   const crsElements = xmlDoc.querySelectorAll('[srsName], [crs], [srs], [epsg]');
@@ -46,7 +46,7 @@ export const detectCRSFromGML = (xmlDoc: Document): string => {
     }
   }
   
-  // Analyze coordinate values to detect CRS
+  // ENHANCED: Analyze coordinate values with SkyRanch-specific detection
   const coordElements = xmlDoc.querySelectorAll('gml\\:coordinates, coordinates, gml\\:posList, posList');
   if (coordElements.length > 0) {
     const firstCoordText = coordElements[0].textContent?.trim();
@@ -56,27 +56,32 @@ export const detectCRSFromGML = (xmlDoc: Document): string => {
         const x = coords[0];
         const y = coords[1];
         
-        console.log(`🔍 Analyzing sample coordinates: (${x}, ${y})`);
+        console.log(`🔍 Analyzing sample coordinates for SkyRanch: (${x}, ${y})`);
         
-        // Spanish UTM zones detection based on coordinate ranges
-        if (x >= 300000 && x <= 500000 && y >= 4400000 && y <= 4600000) {
-          console.log('✅ Detected Spanish UTM Zone 30N based on coordinate analysis');
+        // STRICT: SkyRanch-specific UTM zones detection
+        if (x >= 400000 && x <= 410000 && y >= 4460000 && y <= 4470000) {
+          console.log('✅ Detected SkyRanch UTM Zone 30N coordinates');
+          return 'EPSG:25830';
+        } else if (x >= 300000 && x <= 500000 && y >= 4400000 && y <= 4600000) {
+          console.log('⚠️ Detected Spanish UTM Zone 30N (broader range)');
           return 'EPSG:25830';
         } else if (x >= 200000 && x <= 400000 && y >= 4400000 && y <= 4600000) {
-          console.log('✅ Detected Spanish UTM Zone 29N based on coordinate analysis');
+          console.log('✅ Detected Spanish UTM Zone 29N');
           return 'EPSG:25829';
         } else if (x >= 400000 && x <= 600000 && y >= 4400000 && y <= 4600000) {
-          console.log('✅ Detected Spanish UTM Zone 31N based on coordinate analysis');
+          console.log('✅ Detected Spanish UTM Zone 31N');
           return 'EPSG:25831';
         } else if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
-          console.log('✅ Detected WGS84 based on coordinate analysis');
+          console.log('✅ Detected WGS84 coordinates');
           return 'EPSG:4326';
+        } else {
+          console.warn(`⚠️ Coordinates (${x}, ${y}) don't match expected SkyRanch patterns`);
         }
       }
     }
   }
   
-  console.log('⚠️ Could not detect CRS, defaulting to Spanish UTM 30N');
+  console.log('⚠️ Could not detect CRS, defaulting to Spanish UTM 30N for SkyRanch');
   return 'EPSG:25830'; // Default for Spanish cadastral data
 };
 

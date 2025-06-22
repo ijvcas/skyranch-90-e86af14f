@@ -1,4 +1,3 @@
-
 // Coordinate system transformation utilities for cadastral data
 import { transformUTMToWGS84Precise, transformCoordinatesPrecise } from './cadastral/gml/precisionCoordinateTransform';
 
@@ -32,7 +31,7 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// ENHANCED: Use the new precise transformation functions
+// ENHANCED: Use the new precise transformation functions with validation
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
   console.log(`🔄 REDIRECTING TO PRECISE UTM CONVERSION: Zone ${zone}: (${x}, ${y})`);
   return transformUTMToWGS84Precise(x, y, zone);
@@ -47,7 +46,7 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
   const x = firstCoord[0];
   const y = firstCoord[1];
   
-  console.log(`🔍 COORDINATE DETECTION for: (${x}, ${y})`);
+  console.log(`🔍 SKYRANCH COORDINATE DETECTION for: (${x}, ${y})`);
   
   // Check if already in WGS84
   if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
@@ -55,10 +54,15 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
     return 'EPSG:4326';
   }
   
-  // FIXED: More specific ranges for Spanish UTM coordinates around SkyRanch area
-  if ((x >= 350000 && x <= 450000 && y >= 4400000 && y <= 4500000) ||
-      (y >= 350000 && y <= 450000 && x >= 4400000 && x <= 4500000)) {
-    console.log('✅ Detected Spanish UTM coordinates near SkyRanch, using Zone 30N (EPSG:25830)');
+  // ENHANCED: Strict SkyRanch-specific ranges for UTM coordinates
+  if (x >= 400000 && x <= 410000 && y >= 4460000 && y <= 4470000) {
+    console.log('✅ Detected PRECISE SkyRanch UTM coordinates, using Zone 30N (EPSG:25830)');
+    return 'EPSG:25830';
+  } else if (x >= 350000 && x <= 450000 && y >= 4400000 && y <= 4500000) {
+    console.log('✅ Detected Spanish UTM coordinates near SkyRanch area, using Zone 30N (EPSG:25830)');
+    return 'EPSG:25830';
+  } else if (y >= 350000 && y <= 450000 && x >= 4400000 && x <= 4500000) {
+    console.log('⚠️ Coordinates appear swapped, treating as Zone 30N (EPSG:25830)');
     return 'EPSG:25830';
   }
   
@@ -71,7 +75,7 @@ export const transformCoordinates = (
   fromEPSG: string,
   toEPSG: string = 'EPSG:4326'
 ): { lat: number; lng: number }[] => {
-  console.log(`\n🔄 REDIRECTING TO PRECISE COORDINATE TRANSFORMATION`);
+  console.log(`\n🔄 REDIRECTING TO PRECISE COORDINATE TRANSFORMATION FOR SKYRANCH`);
   console.log(`From: ${fromEPSG} to ${toEPSG}`);
   
   return transformCoordinatesPrecise(coordinates, fromEPSG, toEPSG);
