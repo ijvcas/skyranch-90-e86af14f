@@ -149,13 +149,17 @@ export const batchUpdateAllParcels = async (propertyId: string): Promise<void> =
         }
       }
       
-      // Calculate area if missing and coordinates available
-      if (!areaHectares && parcel.boundary_coordinates?.length >= 3) {
-        const calculatedArea = calculateParcelArea(parcel.boundary_coordinates);
-        if (calculatedArea > 0) {
-          areaHectares = calculatedArea;
-          needsUpdate = true;
-          console.log(`📐 Will update area: ${areaHectares.toFixed(4)} ha`);
+      // FIXED: Calculate area if missing and coordinates available with proper type casting
+      if (!areaHectares && parcel.boundary_coordinates) {
+        // Cast boundary_coordinates from Json to the expected array type
+        const coordinates = parcel.boundary_coordinates as { lat: number; lng: number }[];
+        if (Array.isArray(coordinates) && coordinates.length >= 3) {
+          const calculatedArea = calculateParcelArea(coordinates);
+          if (calculatedArea > 0) {
+            areaHectares = calculatedArea;
+            needsUpdate = true;
+            console.log(`📐 Will update area: ${areaHectares.toFixed(4)} ha`);
+          }
         }
       }
       
