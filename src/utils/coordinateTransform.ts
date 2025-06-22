@@ -1,4 +1,7 @@
+
 // Coordinate system transformation utilities for cadastral data
+import { transformUTMToWGS84Precise, transformCoordinatesPrecise } from './cadastral/gml/precisionCoordinateTransform';
+
 export interface CoordinateSystem {
   epsg: string;
   name: string;
