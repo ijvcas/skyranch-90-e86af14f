@@ -1,3 +1,4 @@
+
 // Coordinate system transformation utilities for cadastral data
 import { transformUTMToWGS84Precise, transformCoordinatesPrecise } from './cadastral/gml/precisionCoordinateTransform';
 
@@ -31,9 +32,9 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// ENHANCED: Use the new precise transformation functions with validation
+// CONSERVATIVE: Use the new transformation functions without aggressive validation
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
-  console.log(`🔄 REDIRECTING TO PRECISE UTM CONVERSION: Zone ${zone}: (${x}, ${y})`);
+  console.log(`🔄 CONSERVATIVE UTM CONVERSION: Zone ${zone}: (${x}, ${y})`);
   return transformUTMToWGS84Precise(x, y, zone);
 };
 
@@ -46,7 +47,7 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
   const x = firstCoord[0];
   const y = firstCoord[1];
   
-  console.log(`🔍 SKYRANCH COORDINATE DETECTION for: (${x}, ${y})`);
+  console.log(`🔍 CONSERVATIVE COORDINATE DETECTION for: (${x}, ${y})`);
   
   // Check if already in WGS84
   if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
@@ -54,20 +55,17 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
     return 'EPSG:4326';
   }
   
-  // ENHANCED: Strict SkyRanch-specific ranges for UTM coordinates
-  if (x >= 400000 && x <= 410000 && y >= 4460000 && y <= 4470000) {
-    console.log('✅ Detected PRECISE SkyRanch UTM coordinates, using Zone 30N (EPSG:25830)');
+  // CONSERVATIVE: Broader ranges for Spanish UTM coordinates
+  if (x >= 200000 && x <= 800000 && y >= 4000000 && y <= 5000000) {
+    console.log('✅ Detected Spanish UTM coordinates, using Zone 30N (EPSG:25830)');
     return 'EPSG:25830';
-  } else if (x >= 350000 && x <= 450000 && y >= 4400000 && y <= 4500000) {
-    console.log('✅ Detected Spanish UTM coordinates near SkyRanch area, using Zone 30N (EPSG:25830)');
-    return 'EPSG:25830';
-  } else if (y >= 350000 && y <= 450000 && x >= 4400000 && x <= 4500000) {
+  } else if (y >= 200000 && y <= 800000 && x >= 4000000 && x <= 5000000) {
     console.log('⚠️ Coordinates appear swapped, treating as Zone 30N (EPSG:25830)');
     return 'EPSG:25830';
   }
   
-  console.log('⚠️ Unable to detect coordinate system, defaulting to EPSG:4326');
-  return 'EPSG:4326';
+  console.log('⚠️ Unable to detect coordinate system, defaulting to EPSG:25830 for Spanish data');
+  return 'EPSG:25830'; // Default for Spanish cadastral data
 };
 
 export const transformCoordinates = (
@@ -75,7 +73,7 @@ export const transformCoordinates = (
   fromEPSG: string,
   toEPSG: string = 'EPSG:4326'
 ): { lat: number; lng: number }[] => {
-  console.log(`\n🔄 REDIRECTING TO PRECISE COORDINATE TRANSFORMATION FOR SKYRANCH`);
+  console.log(`\n🔄 CONSERVATIVE COORDINATE TRANSFORMATION`);
   console.log(`From: ${fromEPSG} to ${toEPSG}`);
   
   return transformCoordinatesPrecise(coordinates, fromEPSG, toEPSG);

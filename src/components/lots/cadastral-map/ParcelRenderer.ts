@@ -36,26 +36,26 @@ export class ParcelRenderer {
       return false;
     }
 
-    // Use coordinates EXACTLY as they are in the database - no filtering or transformation
+    // CONSERVATIVE: Use coordinates exactly as stored - minimal filtering
     const coordinates = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
       typeof coord.lng === 'number' &&
       !isNaN(coord.lat) && 
-      !isNaN(coord.lng) &&
-      coord.lat !== 0 && coord.lng !== 0
+      !isNaN(coord.lng)
     );
 
     if (coordinates.length < 3) {
-      console.warn(`❌ Parcel ${parcel.parcelId} has insufficient valid coordinates: ${coordinates.length}/3 required`);
+      console.warn(`❌ Parcel ${parcel.parcelId} has insufficient coordinates: ${coordinates.length}/3 required`);
       return false;
     }
 
     console.log(`🗺️ Rendering parcel ${index + 1}: ${parcel.parcelId} with ${coordinates.length} coordinates`);
+    console.log(`📍 First coordinate: ${coordinates[0].lat.toFixed(8)}, ${coordinates[0].lng.toFixed(8)}`);
 
     const color = this.getParcelColor(parcel.status);
     
-    // Create polygon with EXACT database coordinates - no modifications
+    // Create polygon with preserved coordinates
     const polygon = new google.maps.Polygon({
       paths: coordinates,
       fillColor: color,
@@ -81,11 +81,11 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // Simple sequential lot numbers: 1, 2, 3, 4, 5...
+    // Sequential lot numbers: 1, 2, 3, 4, 5...
     const displayLotNumber = (index + 1).toString();
     const center = this.calculatePolygonCenter(coordinates);
     
-    // Create SIMPLE white text label - no background, no circles
+    // Create white text label
     const label = new google.maps.Marker({
       position: center,
       map: this.map,
@@ -115,7 +115,6 @@ export class ParcelRenderer {
     });
 
     this.labels.push(label);
-    console.log(`✅ Created simple white text label "${displayLotNumber}" for parcel ${parcel.parcelId}`);
 
     // Enhanced info window
     const infoWindow = new google.maps.InfoWindow({
@@ -140,7 +139,7 @@ export class ParcelRenderer {
       }
     });
 
-    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully with clean white number ${displayLotNumber}`);
+    console.log(`✅ Parcel ${parcel.parcelId} rendered successfully with label ${displayLotNumber}`);
     return true;
   }
 

@@ -36,7 +36,7 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
           }
         }
 
-        // Use EXACT coordinates as they are in the database - no filtering by bounds
+        // CONSERVATIVE: Use valid coordinates without geographic filtering
         if (Array.isArray(coordinates)) {
           const validCoords = coordinates.filter(coord => 
             coord && 
@@ -67,14 +67,7 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
     const centerLat = allLatitudes.reduce((sum, lat) => sum + lat, 0) / allLatitudes.length;
     const centerLng = allLongitudes.reduce((sum, lng) => sum + lng, 0) / allLongitudes.length;
 
-    // Calculate bounds for information
-    const minLat = Math.min(...allLatitudes);
-    const maxLat = Math.max(...allLatitudes);
-    const minLng = Math.min(...allLongitudes);
-    const maxLng = Math.max(...allLongitudes);
-
     console.log(`🎯 CALCULATED CENTER: ${centerLat.toFixed(10)}, ${centerLng.toFixed(10)}`);
-    console.log(`📏 Coordinate bounds: Lat ${minLat.toFixed(6)} to ${maxLat.toFixed(6)}, Lng ${minLng.toFixed(6)} to ${maxLng.toFixed(6)}`);
     console.log(`📊 Based on ${allLatitudes.length} coordinate points from ${parcels.length} parcels`);
 
     return {
