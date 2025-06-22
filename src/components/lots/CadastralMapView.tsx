@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
@@ -102,34 +101,41 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
   };
 
   const handleParcelClick = (parcel: CadastralParcel) => {
-    // FIXED: Focus on the parcel without disrupting the main map view
+    // FIXED: Improved parcel click behavior with better bounds calculation
     if (map && parcel.boundaryCoordinates.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       parcel.boundaryCoordinates.forEach(coord => {
         bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
       });
       
-      // Only fit bounds if the parcel is reasonably sized and not too small
+      // Calculate bounds size to determine appropriate action
       const ne = bounds.getNorthEast();
       const sw = bounds.getSouthWest();
       const latDiff = Math.abs(ne.lat() - sw.lat());
       const lngDiff = Math.abs(ne.lng() - sw.lng());
       
-      if (latDiff > 0.0001 && lngDiff > 0.0001) {
-        map.fitBounds(bounds);
-        // Prevent over-zooming
+      // For reasonable sized parcels, fit bounds with padding
+      if (latDiff > 0.0005 && lngDiff > 0.0005) {
+        console.log(`🎯 Fitting bounds for parcel with size: lat=${latDiff.toFixed(6)}, lng=${lngDiff.toFixed(6)}`);
+        map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
+        
+        // Prevent over-zooming with a max zoom limit
         google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
           const zoom = map.getZoom();
-          if (zoom && zoom > 20) {
-            map.setZoom(20);
+          if (zoom && zoom > 18) {
+            console.log(`🔍 Limiting zoom from ${zoom} to 18`);
+            map.setZoom(18);
           }
         });
       } else {
-        // For very small parcels, just center on them
+        // For very small parcels, just center and set appropriate zoom
         const center = bounds.getCenter();
+        console.log(`🎯 Centering on small parcel at: ${center.lat()}, ${center.lng()}`);
         map.setCenter(center);
-        map.setZoom(18);
+        map.setZoom(16); // Moderate zoom for small parcels
       }
+      
+      console.log(`✅ Focused on parcel: ${parcel.parcelId}`);
     }
   };
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -61,15 +60,59 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
     );
   };
 
-  // FIXED: Use the database lot_number directly instead of extraction
+  // FIXED: Generate unique lot number from parcel ID if not in database
+  const generateUniqueLotNumber = (parcelId: string): string => {
+    // Extract cadastral area and lot number from Spanish cadastral format
+    const patterns = [
+      // Surface format: Surface_ES.SDGC.CP.28128A00700122.1
+      /Surface_ES\.SDGC\.CP\.28128A(\d{2})(\d{6})(?:\.(\d+))?/,
+      // Direct Spanish cadastral: 28128A00700122.1
+      /28128A(\d{2})(\d{6})(?:\.(\d+))?/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = parcelId.match(pattern);
+      if (match) {
+        const area = match[1]; // e.g., "07", "00", "71"
+        const lotSequence = match[2]; // e.g., "00122", "00007", "00006"
+        
+        // Extract meaningful lot number from the 6-digit sequence
+        let lotNumber = lotSequence.replace(/^0+/, ''); // Remove leading zeros
+        
+        // If we get an empty string (all zeros), use "0"
+        if (lotNumber.length === 0) {
+          lotNumber = "0";
+        }
+        
+        // Create unique identifier: area-lot
+        return `${area}-${lotNumber}`;
+      }
+    }
+    
+    // Fallback: try to extract any number sequence
+    const numberMatch = parcelId.match(/(\d{2,})/);
+    if (numberMatch) {
+      const number = numberMatch[1];
+      // Take first 2 digits as area, rest as lot
+      if (number.length >= 4) {
+        const area = number.substring(0, 2);
+        const lot = number.substring(2).replace(/^0+/, '') || "0";
+        return `${area}-${lot}`;
+      }
+    }
+    
+    return 'N/A';
+  };
+
+  // FIXED: Get display lot number with unique generation
   const getDisplayLotNumber = (parcel: CadastralParcel): string => {
-    // Use the lot_number from the database directly
-    if (parcel.lotNumber) {
+    // First try to use the lot_number from the database
+    if (parcel.lotNumber && parcel.lotNumber.trim() !== '') {
       return parcel.lotNumber;
     }
     
-    // If no lot number in database, show N/A instead of trying to extract
-    return 'N/A';
+    // If no lot number in database, generate unique one from parcel ID
+    return generateUniqueLotNumber(parcel.parcelId);
   };
 
   if (parcels.length === 0) {
@@ -122,7 +165,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                     />
                   ) : (
                     <span className="cursor-pointer">
-                      {parcel.displayName || parcel.parcelId}
+                      {parcel.displayName || `Parcela ${getDisplayLotNumber(parcel)}`}
                     </span>
                   )}
                 </TableCell>

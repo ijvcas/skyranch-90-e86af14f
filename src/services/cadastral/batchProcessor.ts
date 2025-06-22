@@ -1,87 +1,135 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { extractLotNumberFromParcelId } from './lotNumberExtractor';
-import { calculateParcelArea } from './areaCalculator';
-import { updateParcelWithLotNumberAndArea } from './parcelDatabaseOps';
+import { extractLotNumberFromParcelId, calculateParcelArea, updateParcelWithLotNumberAndArea, removeDuplicateParcels } from './parcelUpdater';
 
-// ENHANCED: Batch update all parcels with proper error handling and progress tracking
-export const batchUpdateAllParcels = async (propertyId: string): Promise<void> => {
+// FIXED: Generate unique lot number from parcel ID using Spanish cadastral format
+const generateUniqueLotNumber = (parcelId: string): string => {
+  console.log(`🔍 Generating unique lot number for: ${parcelId}`);
+  
+  // Extract cadastral area and lot number from Spanish cadastral format
+  const patterns = [
+    // Surface format: Surface_ES.SDGC.CP.28128A00700122.1
+    /Surface_ES\.SDGC\.CP\.28128A(\d{2})(\d{6})(?:\.(\d+))?/,
+    // Direct Spanish cadastral: 28128A00700122.1
+    /28128A(\d{2})(\d{6})(?:\.(\d+))?/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = parcelId.match(pattern);
+    if (match) {
+      const area = match[1]; // e.g., "07", "00", "71"
+      const lotSequence = match[2]; // e.g., "00122", "00007", "00006"
+      
+      // Extract meaningful lot number from the 6-digit sequence
+      let lotNumber = lotSequence.replace(/^0+/, ''); // Remove leading zeros
+      
+      // If we get an empty string (all zeros), use "0"
+      if (lotNumber.length === 0) {
+        lotNumber = "0";
+      }
+      
+      // Create unique identifier: area-lot
+      const uniqueLot = `${area}-${lotNumber}`;
+      console.log(`✅ Generated unique lot: ${uniqueLot} from area ${area}, sequence ${lotSequence}`);
+      return uniqueLot;
+    }
+  }
+  
+  // Fallback: try to extract any number sequence
+  const numberMatch = parcelId.match(/(\d{2,})/);
+  if (numberMatch) {
+    const number = numberMatch[1];
+    // Take first 2 digits as area, rest as lot
+    if (number.length >= 4) {
+      const area = number.substring(0, 2);
+      const lot = number.substring(2).replace(/^0+/, '') || "0";
+      const uniqueLot = `${area}-${lot}`;
+      console.log(`✅ Generated fallback unique lot: ${uniqueLot}`);
+      return uniqueLot;
+    }
+  }
+  
+  console.log(`❌ Could not generate unique lot number for: ${parcelId}`);
+  return '';
+};
+
+// Batch update all parcels with lot numbers and areas
+export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean> => {
   console.log('🔄 === STARTING BATCH UPDATE OF ALL PARCELS ===');
   
   try {
-    // Fetch all parcels for the property
+    // First remove duplicates
+    await removeDuplicateParcels(propertyId);
+    
+    // Get all parcels for the property
     const { data: parcels, error } = await supabase
       .from('cadastral_parcels')
       .select('*')
       .eq('property_id', propertyId);
     
-    if (error) {
+    if (error || !parcels) {
       console.error('❌ Error fetching parcels:', error);
-      return;
-    }
-    
-    if (!parcels || parcels.length === 0) {
-      console.log('📭 No parcels found to update');
-      return;
+      return false;
     }
     
     console.log(`📋 Found ${parcels.length} parcels to process`);
     
-    let updatedCount = 0;
-    let skippedCount = 0;
+    let successCount = 0;
     
     for (const parcel of parcels) {
-      console.log(`\n--- Processing parcel ${parcel.id} ---`);
+      console.log(`\n🔄 Processing parcel: ${parcel.parcel_id}`);
       
       let needsUpdate = false;
-      let lotNumber = parcel.lot_number;
-      let areaHectares = parcel.area_hectares;
+      const updates: any = {};
       
-      // Extract lot number if missing
-      if (!lotNumber && parcel.parcel_id) {
-        const extractedLotNumber = extractLotNumberFromParcelId(parcel.parcel_id);
-        if (extractedLotNumber) {
-          lotNumber = extractedLotNumber;
+      // Generate unique lot number if missing
+      if (!parcel.lot_number) {
+        const uniqueLotNumber = generateUniqueLotNumber(parcel.parcel_id);
+        if (uniqueLotNumber) {
+          updates.lot_number = uniqueLotNumber;
+          updates.display_name = `Parcela ${uniqueLotNumber}`;
           needsUpdate = true;
-          console.log(`📝 Will update lot number: ${lotNumber}`);
+          console.log(`📝 Will update with unique lot number: ${uniqueLotNumber}`);
         }
       }
       
-      // FIXED: Calculate area if missing and coordinates available with proper type casting
-      if (!areaHectares && parcel.boundary_coordinates) {
-        // Cast boundary_coordinates from Json to the expected array type
-        const coordinates = parcel.boundary_coordinates as { lat: number; lng: number }[];
-        if (Array.isArray(coordinates) && coordinates.length >= 3) {
-          const calculatedArea = calculateParcelArea(coordinates);
-          if (calculatedArea > 0) {
-            areaHectares = calculatedArea;
-            needsUpdate = true;
-            console.log(`📐 Will update area: ${areaHectares.toFixed(4)} ha`);
-          }
+      // Calculate area if missing and coordinates available
+      if (!parcel.area_hectares && parcel.boundary_coordinates) {
+        const areaHectares = calculateParcelArea(parcel.boundary_coordinates);
+        if (areaHectares > 0) {
+          updates.area_hectares = areaHectares;
+          needsUpdate = true;
+          console.log(`📐 Will update with calculated area: ${areaHectares.toFixed(4)} ha`);
         }
       }
       
       // Apply updates if needed
-      if (needsUpdate && lotNumber && areaHectares) {
-        const success = await updateParcelWithLotNumberAndArea(parcel.id, lotNumber, areaHectares);
+      if (needsUpdate) {
+        const success = await updateParcelWithLotNumberAndArea(
+          parcel.id, 
+          updates.lot_number || parcel.lot_number, 
+          updates.area_hectares || parcel.area_hectares || 0
+        );
+        
         if (success) {
-          updatedCount++;
-          console.log(`✅ Updated parcel ${parcel.id}`);
+          successCount++;
+          console.log(`✅ Successfully updated parcel: ${parcel.parcel_id}`);
         } else {
-          console.error(`❌ Failed to update parcel ${parcel.id}`);
+          console.error(`❌ Failed to update parcel: ${parcel.parcel_id}`);
         }
       } else {
-        skippedCount++;
-        console.log(`⏭️ Skipped parcel ${parcel.id} (no updates needed or missing data)`);
+        console.log(`ℹ️ Parcel ${parcel.parcel_id} already has all required data`);
+        successCount++;
       }
     }
     
     console.log(`\n🎉 === BATCH UPDATE COMPLETE ===`);
-    console.log(`✅ Updated: ${updatedCount} parcels`);
-    console.log(`⏭️ Skipped: ${skippedCount} parcels`);
-    console.log(`📊 Total processed: ${parcels.length} parcels`);
+    console.log(`✅ Successfully processed ${successCount} out of ${parcels.length} parcels`);
+    
+    return successCount === parcels.length;
     
   } catch (error) {
     console.error('❌ Error during batch update:', error);
+    return false;
   }
 };

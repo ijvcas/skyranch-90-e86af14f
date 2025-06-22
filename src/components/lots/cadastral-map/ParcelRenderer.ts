@@ -30,13 +30,66 @@ export class ParcelRenderer {
     };
   }
 
+  // FIXED: Generate unique lot number from parcel ID
+  private generateUniqueLotNumber(parcelId: string): string {
+    console.log(`🔍 Generating unique lot number for: ${parcelId}`);
+    
+    // Extract cadastral area and lot number from Spanish cadastral format
+    // Format: Surface_ES.SDGC.CP.28128A00700122.1 or 28128A00700122.1
+    const patterns = [
+      // Surface format: Surface_ES.SDGC.CP.28128A00700122.1
+      /Surface_ES\.SDGC\.CP\.28128A(\d{2})(\d{6})(?:\.(\d+))?/,
+      // Direct Spanish cadastral: 28128A00700122.1
+      /28128A(\d{2})(\d{6})(?:\.(\d+))?/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = parcelId.match(pattern);
+      if (match) {
+        const area = match[1]; // e.g., "07", "00", "71"
+        const lotSequence = match[2]; // e.g., "00122", "00007", "00006"
+        const subNumber = match[3]; // e.g., "1" (if exists)
+        
+        // Extract meaningful lot number from the 6-digit sequence
+        let lotNumber = lotSequence.replace(/^0+/, ''); // Remove leading zeros
+        
+        // If we get an empty string (all zeros), use "0"
+        if (lotNumber.length === 0) {
+          lotNumber = "0";
+        }
+        
+        // Create unique identifier: area-lot
+        const uniqueLot = `${area}-${lotNumber}`;
+        console.log(`✅ Generated unique lot: ${uniqueLot} from area ${area}, sequence ${lotSequence}`);
+        return uniqueLot;
+      }
+    }
+    
+    // Fallback: try to extract any number sequence
+    const numberMatch = parcelId.match(/(\d{2,})/);
+    if (numberMatch) {
+      const number = numberMatch[1];
+      // Take first 2 digits as area, rest as lot
+      if (number.length >= 4) {
+        const area = number.substring(0, 2);
+        const lot = number.substring(2).replace(/^0+/, '') || "0";
+        const uniqueLot = `${area}-${lot}`;
+        console.log(`✅ Generated fallback unique lot: ${uniqueLot}`);
+        return uniqueLot;
+      }
+    }
+    
+    console.log(`❌ Could not generate unique lot number, using fallback`);
+    return 'N/A';
+  }
+
   renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds): boolean {
     if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
       console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
       return false;
     }
 
-    // RELAXED coordinate validation - allow more coordinates to show on map
+    // FIXED: Updated coordinate validation to match actual parcel data range
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -46,9 +99,9 @@ export class ParcelRenderer {
       Math.abs(coord.lat) <= 90 && 
       Math.abs(coord.lng) <= 180 &&
       coord.lat !== 0 && coord.lng !== 0 &&
-      // RELAXED: More generous area around SkyRanch to show more parcels
-      coord.lat >= 40.30 && coord.lat <= 40.33 && 
-      coord.lng >= -4.50 && coord.lng <= -4.45    
+      // FIXED: Updated range to match actual data: lat 40.10-40.11, lng -4.48 to -4.46
+      coord.lat >= 40.10 && coord.lat <= 40.11 && 
+      coord.lng >= -4.48 && coord.lng <= -4.46    
     );
 
     if (validCoords.length < 3) {
@@ -58,7 +111,7 @@ export class ParcelRenderer {
 
     console.log(`\n🗺️ === RENDERING PARCEL ===`);
     console.log(`📋 Parcel ID: ${parcel.parcelId}`);
-    console.log(`🔢 Lot Number: ${parcel.lotNumber || 'N/A'}`);
+    console.log(`🔢 Original Lot: ${parcel.lotNumber || 'N/A'}`);
     console.log(`📊 Valid coordinates: ${validCoords.length}/${parcel.boundaryCoordinates.length}`);
 
     const color = this.getParcelColor(parcel.status);
@@ -82,10 +135,12 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // FIXED: Use database lot_number directly for labels
-    if (parcel.lotNumber) {
+    // FIXED: Use database lot_number or generate unique lot number for labels
+    const displayLotNumber = parcel.lotNumber || this.generateUniqueLotNumber(parcel.parcelId);
+    
+    if (displayLotNumber && displayLotNumber !== 'N/A') {
       const center = this.calculatePolygonCenter(validCoords);
-      console.log(`🏷️ Creating WHITE TEXT label for lot ${parcel.lotNumber} at:`, center);
+      console.log(`🏷️ Creating WHITE TEXT label for lot ${displayLotNumber} at:`, center);
       
       const label = new google.maps.Marker({
         position: center,
@@ -99,26 +154,26 @@ export class ParcelRenderer {
           strokeColor: 'transparent'
         },
         label: {
-          text: parcel.lotNumber.toString(),
+          text: displayLotNumber.toString(),
           color: '#FFFFFF',
           fontSize: '16px',
           fontWeight: 'bold',
           fontFamily: 'Arial, sans-serif'
         },
         clickable: true,
-        title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`,
+        title: `Parcela ${displayLotNumber} - ${parcel.displayName || parcel.parcelId}`,
         zIndex: 10000,
         optimized: false
       });
 
       // Add click listener to label as well
       label.addListener('click', () => {
-        console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}, lot: ${parcel.lotNumber}`);
+        console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}, lot: ${displayLotNumber}`);
         this.onParcelClick(parcel);
       });
 
       this.labels.push(label);
-      console.log(`✅ WHITE TEXT label created for lot ${parcel.lotNumber}`);
+      console.log(`✅ WHITE TEXT label created for lot ${displayLotNumber}`);
     } else {
       console.warn(`⚠️ No lot number available for parcel: ${parcel.parcelId}`);
     }
@@ -128,7 +183,7 @@ export class ParcelRenderer {
       content: `
         <div class="p-3 min-w-[200px]">
           <h3 class="font-bold text-lg mb-2">${parcel.displayName || parcel.parcelId}</h3>
-          ${parcel.lotNumber ? `<p class="mb-1"><strong>Número de Parcela:</strong> ${parcel.lotNumber}</p>` : ''}
+          ${displayLotNumber ? `<p class="mb-1"><strong>Número de Parcela:</strong> ${displayLotNumber}</p>` : ''}
           <p class="mb-1"><strong>ID Catastral:</strong> ${parcel.parcelId}</p>
           ${parcel.areaHectares ? `<p class="mb-1"><strong>Área:</strong> ${parcel.areaHectares.toFixed(4)} ha</p>` : ''}
           ${parcel.classification ? `<p class="mb-1"><strong>Clasificación:</strong> ${parcel.classification}</p>` : ''}
