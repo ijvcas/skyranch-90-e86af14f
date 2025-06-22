@@ -31,8 +31,11 @@ export const calculateParcelsCenterPoint = async (propertyId: string): Promise<{
           // Cast to the expected type since we know it's an array of coordinates
           coordinates = parcel.boundary_coordinates as { lat: number; lng: number }[];
         } else if (parcel.boundary_coordinates && typeof parcel.boundary_coordinates === 'object') {
-          // Handle case where it's already a parsed object
-          coordinates = parcel.boundary_coordinates as { lat: number; lng: number }[];
+          // Handle case where it's a parsed object - convert to unknown first then to array
+          const unknownCoords = parcel.boundary_coordinates as unknown;
+          if (Array.isArray(unknownCoords)) {
+            coordinates = unknownCoords as { lat: number; lng: number }[];
+          }
         }
 
         // Validate and filter coordinates
