@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Upload, FileText } from 'lucide-react';
+import { MapPin, Upload, FileText, AlertTriangle } from 'lucide-react';
 import PropertySelector from './PropertySelector';
 import CadastralFileUpload from './CadastralFileUpload';
 import { getAllProperties, getCadastralParcels, type Property, type CadastralParcel } from '@/services/cadastralService';

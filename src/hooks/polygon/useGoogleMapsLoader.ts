@@ -1,4 +1,6 @@
 
+import { useState, useEffect } from 'react';
+
 interface GoogleMapsLoaderState {
   isAPILoaded: boolean;
   isAPILoading: boolean;
@@ -47,4 +49,28 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
 
     document.head.appendChild(script);
   });
+};
+
+export const useGoogleMapsLoader = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (loaderState.isAPILoaded) {
+      setIsLoaded(true);
+      return;
+    }
+
+    loadGoogleMapsAPI()
+      .then(() => {
+        setIsLoaded(true);
+        setLoadError(null);
+      })
+      .catch((error) => {
+        setLoadError(error);
+        setIsLoaded(false);
+      });
+  }, []);
+
+  return { isLoaded, loadError };
 };
