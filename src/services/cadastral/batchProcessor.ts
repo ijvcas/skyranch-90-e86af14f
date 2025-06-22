@@ -53,6 +53,45 @@ const generateUniqueLotNumber = (parcelId: string): string => {
   return '';
 };
 
+// FIXED: Helper function to validate and parse boundary coordinates
+const parseBoundaryCoordinates = (boundaryData: any): { lat: number; lng: number }[] => {
+  if (!boundaryData) {
+    return [];
+  }
+
+  try {
+    // If it's already an array, validate it
+    if (Array.isArray(boundaryData)) {
+      return boundaryData.filter(coord => 
+        coord && 
+        typeof coord.lat === 'number' && 
+        typeof coord.lng === 'number' &&
+        !isNaN(coord.lat) && 
+        !isNaN(coord.lng)
+      );
+    }
+
+    // If it's a string, try to parse it as JSON
+    if (typeof boundaryData === 'string') {
+      const parsed = JSON.parse(boundaryData);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(coord => 
+          coord && 
+          typeof coord.lat === 'number' && 
+          typeof coord.lng === 'number' &&
+          !isNaN(coord.lat) && 
+          !isNaN(coord.lng)
+        );
+      }
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error parsing boundary coordinates:', error);
+    return [];
+  }
+};
+
 // Batch update all parcels with lot numbers and areas
 export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean> => {
   console.log('🔄 === STARTING BATCH UPDATE OF ALL PARCELS ===');
@@ -95,11 +134,15 @@ export const batchUpdateAllParcels = async (propertyId: string): Promise<boolean
       
       // Calculate area if missing and coordinates available
       if (!parcel.area_hectares && parcel.boundary_coordinates) {
-        const areaHectares = calculateParcelArea(parcel.boundary_coordinates);
-        if (areaHectares > 0) {
-          updates.area_hectares = areaHectares;
-          needsUpdate = true;
-          console.log(`📐 Will update with calculated area: ${areaHectares.toFixed(4)} ha`);
+        // FIXED: Properly parse and validate boundary coordinates
+        const validCoordinates = parseBoundaryCoordinates(parcel.boundary_coordinates);
+        if (validCoordinates.length >= 3) {
+          const areaHectares = calculateParcelArea(validCoordinates);
+          if (areaHectares > 0) {
+            updates.area_hectares = areaHectares;
+            needsUpdate = true;
+            console.log(`📐 Will update with calculated area: ${areaHectares.toFixed(4)} ha`);
+          }
         }
       }
       
