@@ -1,5 +1,5 @@
 
-import { parseSpanishCadastralXML, parseGMLFile, parseDXFFile, type ParsingResult } from '@/utils/cadastralParsers';
+import { parseSpanishCadastralXML, parseGMLFile, parseDXFFile, type ParsingResult } from '@/utils/cadastral';
 
 export const parseFileByType = async (file: File): Promise<ParsingResult> => {
   const fileName = file.name.toLowerCase();

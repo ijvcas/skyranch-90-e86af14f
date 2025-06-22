@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Upload, X } from 'lucide-react';
 import { saveCadastralParcel } from '@/services/cadastralService';
 import { toast } from 'sonner';
-import type { ParsingResult } from '@/utils/cadastralParsers';
+import type { ParsingResult } from '@/utils/cadastral';
 import FilePreviewSection from './cadastral-upload/FilePreviewSection';
 import ParseResultDisplay from './cadastral-upload/ParseResultDisplay';
 import AdvancedOptionsSection from './cadastral-upload/AdvancedOptionsSection';

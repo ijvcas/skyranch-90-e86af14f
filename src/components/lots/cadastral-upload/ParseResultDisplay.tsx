@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
-import type { ParsingResult } from '@/utils/cadastralParsers';
+import type { ParsingResult } from '@/utils/cadastral';
 
 interface ParseResultDisplayProps {
   parseResult: ParsingResult;
