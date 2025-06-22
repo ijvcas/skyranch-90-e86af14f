@@ -1,6 +1,6 @@
 
 import type { ParcelStatus } from '@/utils/cadastral/types';
-import type { CadastralParcel } from '../cadastralService';
+import type { CadastralParcel, Property } from '../cadastralService';
 
 export const transformCadastralParcelFromDB = (item: any): CadastralParcel => {
   let boundaryCoordinates: { lat: number; lng: number }[] = [];
@@ -36,7 +36,25 @@ export const transformCadastralParcelFromDB = (item: any): CadastralParcel => {
   };
 };
 
-export const transformPropertyFromDB = (item: any) => ({
+export const transformCadastralParcelToDB = (parcel: Omit<CadastralParcel, 'id' | 'createdAt' | 'updatedAt'>) => {
+  return {
+    property_id: parcel.propertyId,
+    parcel_id: parcel.parcelId,
+    display_name: parcel.displayName,
+    lot_number: parcel.lotNumber,
+    boundary_coordinates: JSON.stringify(parcel.boundaryCoordinates),
+    area_hectares: parcel.areaHectares,
+    classification: parcel.classification,
+    owner_info: parcel.ownerInfo,
+    notes: parcel.notes,
+    status: parcel.status || 'SHOPPING_LIST',
+    imported_from_file: parcel.importedFromFile,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+};
+
+export const transformPropertyFromDB = (item: any): Property => ({
   id: item.id,
   name: item.name,
   description: item.description,
@@ -48,3 +66,17 @@ export const transformPropertyFromDB = (item: any) => ({
   createdAt: item.created_at,
   updatedAt: item.updated_at
 });
+
+export const transformPropertyToDB = (property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>) => {
+  return {
+    name: property.name,
+    description: property.description,
+    center_lat: property.centerLat,
+    center_lng: property.centerLng,
+    zoom_level: property.zoomLevel || 16,
+    is_active: property.isActive,
+    is_main_property: property.isMainProperty,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+};

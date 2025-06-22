@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { transformCadastralParcelFromDB, transformCadastralParcelToDB, transformPropertyToDB } from './dataTransformers';
+import { transformCadastralParcelFromDB, transformCadastralParcelToDB, transformPropertyToDB, transformPropertyFromDB } from './dataTransformers';
 import type { CadastralParcel, Property } from '../cadastralService';
 
 export const insertCadastralParcel = async (parcel: Omit<CadastralParcel, 'id' | 'createdAt' | 'updatedAt'>): Promise<CadastralParcel | null> => {
@@ -78,7 +78,7 @@ export const insertProperty = async (property: Omit<Property, 'id' | 'createdAt'
       return null;
     }
 
-    return data;
+    return transformPropertyFromDB(data);
   } catch (error) {
     console.error('Unexpected error inserting property:', error);
     return null;
