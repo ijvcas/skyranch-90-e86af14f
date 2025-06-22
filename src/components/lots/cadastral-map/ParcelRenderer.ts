@@ -50,6 +50,10 @@ export class ParcelRenderer {
       return false;
     }
 
+    // Log coordinate sample for debugging
+    console.log(`🗺️ Rendering parcel ${parcel.parcelId} with ${validCoords.length} coordinates. Sample:`, validCoords.slice(0, 3));
+    console.log(`📍 Lot number: ${parcel.lotNumber || 'N/A'}`);
+
     const color = this.getParcelColor(parcel.status);
     
     const polygon = new google.maps.Polygon({
@@ -67,31 +71,45 @@ export class ParcelRenderer {
 
     // Add click listener
     polygon.addListener('click', () => {
+      console.log(`🖱️ Clicked parcel: ${parcel.parcelId}, lot: ${parcel.lotNumber}`);
       this.onParcelClick(parcel);
     });
 
-    // Create lot number label at polygon center
+    // Create lot number label at polygon center - make it more visible
     if (parcel.lotNumber) {
       const center = this.calculatePolygonCenter(validCoords);
+      console.log(`🏷️ Creating label for lot ${parcel.lotNumber} at:`, center);
       
       const label = new google.maps.Marker({
         position: center,
         map: this.map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 0, // Make the marker invisible
+          scale: 8,
+          fillColor: '#ffffff',
+          fillOpacity: 0.8,
+          strokeColor: '#333333',
+          strokeWeight: 1
         },
         label: {
           text: parcel.lotNumber,
-          color: '#ffffff',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          className: 'lot-number-label'
+          color: '#000000',
+          fontSize: '14px',
+          fontWeight: 'bold'
         },
-        clickable: false,
+        clickable: true,
+        title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`
+      });
+
+      // Add click listener to label as well
+      label.addListener('click', () => {
+        console.log(`🏷️ Clicked label for parcel: ${parcel.parcelId}, lot: ${parcel.lotNumber}`);
+        this.onParcelClick(parcel);
       });
 
       this.labels.push(label);
+    } else {
+      console.warn(`❌ No lot number available for parcel: ${parcel.parcelId}`);
     }
 
     // Extend bounds
@@ -104,18 +122,20 @@ export class ParcelRenderer {
       content: `
         <div class="p-2">
           <h3 class="font-semibold">${parcel.displayName || parcel.parcelId}</h3>
-          ${parcel.lotNumber ? `<p>Número: ${parcel.lotNumber}</p>` : ''}
-          ${parcel.areaHectares ? `<p>Área: ${parcel.areaHectares.toFixed(2)} ha</p>` : ''}
-          ${parcel.classification ? `<p>Clasificación: ${parcel.classification}</p>` : ''}
-          ${parcel.status ? `<p>Estado: ${parcel.status}</p>` : ''}
-          ${parcel.notes ? `<p>Notas: ${parcel.notes}</p>` : ''}
+          ${parcel.lotNumber ? `<p><strong>Número:</strong> ${parcel.lotNumber}</p>` : ''}
+          ${parcel.areaHectares ? `<p><strong>Área:</strong> ${parcel.areaHectares.toFixed(2)} ha</p>` : ''}
+          ${parcel.classification ? `<p><strong>Clasificación:</strong> ${parcel.classification}</p>` : ''}
+          ${parcel.status ? `<p><strong>Estado:</strong> ${parcel.status}</p>` : ''}
+          ${parcel.notes ? `<p><strong>Notas:</strong> ${parcel.notes}</p>` : ''}
         </div>
       `
     });
 
     polygon.addListener('rightclick', (event: google.maps.MapMouseEvent) => {
-      infoWindow.setPosition(event.latLng);
-      infoWindow.open(this.map);
+      if (event.latLng) {
+        infoWindow.setPosition(event.latLng);
+        infoWindow.open(this.map);
+      }
     });
 
     return true;
