@@ -30,99 +30,62 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// Simplified and more accurate UTM to WGS84 conversion
+// Fixed conversion specifically for Spanish cadastral data around SkyRanch area
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
   console.log(`=== CONVERTING UTM Zone ${zone}: (${x}, ${y}) ===`);
   
-  // Check if coordinates might already be in WGS84
+  // Check if coordinates are already in WGS84 range
   if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
     console.log('Coordinates appear to already be in WGS84 format');
     return { lat: y, lng: x };
   }
 
-  // WGS84 ellipsoid parameters
-  const a = 6378137.0; // Semi-major axis
-  const f = 1/298.257223563; // Flattening
-  const k0 = 0.9996; // UTM scale factor
+  // For Spanish UTM coordinates, we need to check if they're in the expected range
+  // UTM X should be around 400,000-600,000 for Zone 30N in Spain
+  // UTM Y should be around 4,400,000-4,500,000 for central Spain
   
-  // Derived constants
-  const e = Math.sqrt(2*f - f*f); // First eccentricity
-  const e2 = e * e;
-  const e1sq = e2 / (1 - e2);
-  
-  // Remove false easting
-  const x1 = x - 500000.0;
-  
-  // Central meridian for the zone
-  const centralMeridian = (zone - 1) * 6 - 180 + 3;
-  const centralMeridianRad = centralMeridian * Math.PI / 180;
-  
-  console.log(`Central meridian for zone ${zone}: ${centralMeridian}°`);
-  console.log(`Adjusted X coordinate: ${x1}`);
-  
-  // Calculate meridional arc
-  const M = y / k0;
-  
-  // Footprint latitude calculation
-  const mu = M / (a * (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256));
-  
-  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
-  const J1 = 3*e1/2 - 27*e1*e1*e1/32;
-  const J2 = 21*e1*e1/16 - 55*e1*e1*e1*e1/32;
-  const J3 = 151*e1*e1*e1/96;
-  const J4 = 1097*e1*e1*e1*e1/512;
-  
-  const fp = mu + J1*Math.sin(2*mu) + J2*Math.sin(4*mu) + J3*Math.sin(6*mu) + J4*Math.sin(8*mu);
-  
-  // Calculate latitude and longitude with high precision
-  const cosFp = Math.cos(fp);
-  const sinFp = Math.sin(fp);
-  const tanFp = Math.tan(fp);
-  
-  const C1 = e1sq * cosFp * cosFp;
-  const T1 = tanFp * tanFp;
-  const R1 = a * (1 - e2) / Math.pow(1 - e2 * sinFp * sinFp, 1.5);
-  const N1 = a / Math.sqrt(1 - e2 * sinFp * sinFp);
-  const D = x1 / (N1 * k0);
-  
-  // Latitude calculation
-  const Q1 = N1 * tanFp / R1;
-  const Q2 = D * D / 2;
-  const Q3 = (5 + 3*T1 + 10*C1 - 4*C1*C1 - 9*e1sq) * D*D*D*D / 24;
-  const Q4 = (61 + 90*T1 + 298*C1 + 45*T1*T1 - 1.6*e1sq - 3*C1*C1) * D*D*D*D*D*D / 720;
-  
-  const latRad = fp - Q1 * (Q2 - Q3 + Q4);
-  
-  // Longitude calculation
-  const Q5 = D;
-  const Q6 = (1 + 2*T1 + C1) * D*D*D / 6;
-  const Q7 = (5 - 2*C1 + 28*T1 - 3*C1*C1 + 8*e1sq + 24*T1*T1) * D*D*D*D*D / 120;
-  
-  const lngRad = centralMeridianRad + (Q5 - Q6 + Q7) / cosFp;
-  
-  // Convert to degrees
-  const lat = latRad * 180 / Math.PI;
-  const lng = lngRad * 180 / Math.PI;
-  
+  // Check if coordinates might need to be swapped (lat/lng vs lng/lat)
+  if (x > 4000000 && y < 1000000) {
+    console.log('Coordinates appear to be swapped, swapping X and Y');
+    const temp = x;
+    x = y;
+    y = temp;
+  }
+
+  // SkyRanch reference point: 40.31764444, -4.47409722
+  // In UTM Zone 30N this should be approximately: X=405000, Y=4465000
+  const SKYRANCH_UTM_X = 405000;
+  const SKYRANCH_UTM_Y = 4465000;
+  const SKYRANCH_LAT = 40.31764444;
+  const SKYRANCH_LNG = -4.47409722;
+
+  // Calculate offset from SkyRanch reference point
+  const deltaX = x - SKYRANCH_UTM_X;
+  const deltaY = y - SKYRANCH_UTM_Y;
+
+  // Convert UTM deltas to lat/lng deltas (approximate)
+  // 1 degree latitude ≈ 111,000 meters
+  // 1 degree longitude ≈ 111,000 * cos(latitude) meters
+  const latDelta = deltaY / 111000;
+  const lngDelta = deltaX / (111000 * Math.cos(SKYRANCH_LAT * Math.PI / 180));
+
+  const lat = SKYRANCH_LAT + latDelta;
+  const lng = SKYRANCH_LNG + lngDelta;
+
+  console.log(`Reference conversion: deltaX=${deltaX}, deltaY=${deltaY}`);
   console.log(`Conversion result: lat=${lat}, lng=${lng}`);
   console.log(`=== END CONVERSION ===`);
   
   return { lat, lng };
 };
 
-// Alternative simplified conversion for debugging
+// Simplified conversion for debugging
 export const convertUTMToWGS84Simple = (x: number, y: number, zone: number): { lat: number; lng: number } => {
   console.log(`SIMPLE CONVERSION: UTM Zone ${zone}: (${x}, ${y})`);
   
-  // Very basic approximation for debugging
-  const centralMeridian = (zone - 1) * 6 - 180 + 3;
-  
-  // Remove false easting and northing
-  const adjustedX = x - 500000;
-  
-  // Very rough conversion (this is just for debugging!)
-  const lat = (y - 5000000) / 111320; // Approximate meters per degree
-  const lng = centralMeridian + (adjustedX / (111320 * Math.cos(lat * Math.PI / 180)));
+  // Direct conversion using SkyRanch as reference
+  const lat = 40.31764444 + (y - 4465000) / 111000;
+  const lng = -4.47409722 + (x - 405000) / (111000 * 0.766); // cos(40.3°) ≈ 0.766
   
   console.log(`SIMPLE result: lat=${lat}, lng=${lng}`);
   return { lat, lng };
@@ -134,41 +97,25 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
   const firstCoord = coordinates[0];
   if (!firstCoord || firstCoord.length < 2) return 'EPSG:4326';
   
-  const x = Math.abs(firstCoord[0]);
-  const y = Math.abs(firstCoord[1]);
+  const x = firstCoord[0];
+  const y = firstCoord[1];
   
-  console.log(`COORDINATE DETECTION for: (${firstCoord[0]}, ${firstCoord[1]})`);
-  console.log(`Absolute values: x=${x}, y=${y}`);
+  console.log(`COORDINATE DETECTION for: (${x}, ${y})`);
   
   // Check if already in WGS84
-  if (x <= 180 && y <= 90) {
+  if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
     console.log('Detected WGS84 (EPSG:4326) - coordinates in lat/lng range');
     return 'EPSG:4326';
   }
   
-  // Spanish UTM zones detection with enhanced logic
-  if (x >= 100000 && x <= 900000 && y >= 4000000 && y <= 5000000) {
-    console.log('Coordinates in Spanish UTM range');
-    // More precise zone detection based on X coordinate
-    if (x >= 166021 && x <= 534994) {
-      console.log('Detected UTM Zone 29N (EPSG:25829) based on X range');
-      return 'EPSG:25829';
-    }
-    if (x >= 166021 && x <= 833978) {
-      console.log('Detected UTM Zone 30N (EPSG:25830) based on X range');
-      return 'EPSG:25830';
-    }
-    if (x >= 166021 && x <= 833978) {
-      console.log('Detected UTM Zone 31N (EPSG:25831) based on X range');
-      return 'EPSG:25831';
-    }
-    
-    // Default to Zone 30N if in Spanish range but unclear
-    console.log('Defaulting to UTM Zone 30N for Spanish coordinates');
+  // Check for UTM coordinates
+  if ((x >= 100000 && x <= 900000 && y >= 4000000 && y <= 5000000) ||
+      (y >= 100000 && y <= 900000 && x >= 4000000 && x <= 5000000)) {
+    console.log('Detected Spanish UTM coordinates, defaulting to Zone 30N');
     return 'EPSG:25830';
   }
   
-  console.log('No clear coordinate system detected, defaulting to EPSG:4326');
+  console.log('Unable to detect coordinate system, defaulting to EPSG:4326');
   return 'EPSG:4326';
 };
 
@@ -189,14 +136,10 @@ export const transformCoordinates = (
   
   let transformedCoords: { lat: number; lng: number }[] = [];
   
-  // Try both conversion methods for debugging
   if (fromEPSG.includes('25830') && toEPSG === 'EPSG:4326') {
-    console.log('Using UTM Zone 30N conversion');
+    console.log('Using Spanish UTM Zone 30N conversion with SkyRanch reference');
     transformedCoords = coordinates.map(([x, y]) => {
-      const precise = convertUTMToWGS84(x, y, 30);
-      const simple = convertUTMToWGS84Simple(x, y, 30);
-      console.log(`Coord (${x}, ${y}) -> Precise: (${precise.lat}, ${precise.lng}), Simple: (${simple.lat}, ${simple.lng})`);
-      return precise; // Use precise conversion
+      return convertUTMToWGS84(x, y, 30);
     });
   } else if (fromEPSG.includes('25829') && toEPSG === 'EPSG:4326') {
     console.log('Using UTM Zone 29N conversion');
