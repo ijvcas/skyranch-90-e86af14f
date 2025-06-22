@@ -7,40 +7,46 @@ export const extractLotNumber = (element: Element): string | undefined => {
   if (gmlId) {
     console.log(`🆔 Processing gml:id: ${gmlId}`);
     
-    // Enhanced Spanish cadastral pattern: Surface_ES.SDGC.CP.28128A00800002.1
-    // The format is: 28128A followed by 8 digits, where we want the meaningful part
+    // FIXED: Enhanced Spanish cadastral pattern: Surface_ES.SDGC.CP.28128A00800002.1
+    // The format is: 28128A followed by 8 digits, extract the last 3-4 meaningful digits
     const spanishMatch = gmlId.match(/28128A(\d{8})/);
     if (spanishMatch) {
       const fullNumber = spanishMatch[1]; // Gets the 8 digits after 28128A
       console.log(`📋 Full cadastral number: 28128A${fullNumber}`);
       
-      // For Spanish cadastral references, the lot number is typically the last 2-3 digits
-      // Remove leading zeros but keep at least 2 digits for meaningful identification
-      let lotNumber = fullNumber.replace(/^0+/, '');
-      if (lotNumber.length < 2) {
-        lotNumber = fullNumber.slice(-3); // Keep last 3 digits if result is too short
+      // For Spanish cadastral references, extract the meaningful lot number
+      // Take the last 3 digits and remove leading zeros, but keep meaningful numbers
+      let lotNumber = fullNumber.slice(-3).replace(/^0+/, '');
+      
+      // If we get an empty string or single digit, take last 4 digits
+      if (lotNumber.length === 0) {
+        lotNumber = fullNumber.slice(-4).replace(/^0+/, '');
+      }
+      
+      // If still empty, use the last digit
+      if (lotNumber.length === 0) {
+        lotNumber = fullNumber.slice(-1);
       }
       
       console.log(`✅ Extracted Spanish cadastral lot number: ${lotNumber}`);
       return lotNumber;
     }
     
-    // Alternative pattern for other cadastral references
-    const altMatch = gmlId.match(/(\d{5}[A-Z]\d{8})/);
-    if (altMatch) {
-      const cadastralRef = altMatch[1];
-      console.log(`📋 Alternative cadastral reference: ${cadastralRef}`);
+    // Alternative Spanish cadastral pattern with dots: 28128A00700122.1
+    const altSpanishMatch = gmlId.match(/28128A(\d{8})\.(\d+)/);
+    if (altSpanishMatch) {
+      const mainNumber = altSpanishMatch[1];
+      const subNumber = altSpanishMatch[2];
+      console.log(`📋 Alternative Spanish cadastral: 28128A${mainNumber}.${subNumber}`);
       
-      // Extract the numeric part after letters (last 8 digits)
-      const numericPart = cadastralRef.match(/[A-Z](\d{8})$/);
-      if (numericPart) {
-        let lotNumber = numericPart[1].replace(/^0+/, '');
-        if (lotNumber.length < 2) {
-          lotNumber = numericPart[1].slice(-3);
-        }
-        console.log(`✅ Extracted alternative lot number: ${lotNumber}`);
-        return lotNumber;
+      // Use the last 3 digits of main number
+      let lotNumber = mainNumber.slice(-3).replace(/^0+/, '');
+      if (lotNumber.length === 0) {
+        lotNumber = mainNumber.slice(-1);
       }
+      
+      console.log(`✅ Extracted alternative Spanish lot number: ${lotNumber}`);
+      return lotNumber;
     }
     
     // Enhanced pattern for Surface IDs - extract meaningful numbers
@@ -49,12 +55,13 @@ export const extractLotNumber = (element: Element): string | undefined => {
       const cadastralCode = surfaceMatch[1];
       console.log(`🏗️ Surface cadastral code: ${cadastralCode}`);
       
-      // Extract the numeric part after the letter
-      const numericMatch = cadastralCode.match(/\d+[A-Z](\d+)/);
+      // Extract the numeric part after the letter (28128A00700122 -> 00700122)
+      const numericMatch = cadastralCode.match(/28128A(\d{8})/);
       if (numericMatch) {
-        let lotNumber = numericMatch[1].replace(/^0+/, '');
-        if (lotNumber.length < 2) {
-          lotNumber = numericMatch[1].slice(-3);
+        const fullNumber = numericMatch[1];
+        let lotNumber = fullNumber.slice(-3).replace(/^0+/, '');
+        if (lotNumber.length === 0) {
+          lotNumber = fullNumber.slice(-1);
         }
         console.log(`✅ Extracted surface lot number: ${lotNumber}`);
         return lotNumber;

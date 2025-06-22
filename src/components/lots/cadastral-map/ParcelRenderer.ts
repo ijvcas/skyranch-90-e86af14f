@@ -35,7 +35,7 @@ export class ParcelRenderer {
       return false;
     }
 
-    // Enhanced coordinate validation
+    // Enhanced coordinate validation - ensure we're in the SkyRanch area
     const validCoords = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
@@ -44,7 +44,10 @@ export class ParcelRenderer {
       !isNaN(coord.lng) &&
       Math.abs(coord.lat) <= 90 && 
       Math.abs(coord.lng) <= 180 &&
-      coord.lat !== 0 && coord.lng !== 0 // Exclude zero coordinates
+      coord.lat !== 0 && coord.lng !== 0 && // Exclude zero coordinates
+      // FIXED: Ensure coordinates are in reasonable range for SkyRanch area
+      coord.lat >= 40.0 && coord.lat <= 41.0 && // Reasonable latitude range for central Spain
+      coord.lng >= -5.0 && coord.lng <= -4.0    // Reasonable longitude range for central Spain
     );
 
     if (validCoords.length < 3) {
@@ -81,33 +84,33 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // Enhanced lot number label rendering
+    // FIXED: Enhanced lot number label rendering with better visibility
     if (parcel.lotNumber) {
       const center = this.calculatePolygonCenter(validCoords);
-      console.log(`🏷️ Creating enhanced label for lot ${parcel.lotNumber} at:`, center);
+      console.log(`🏷️ Creating ENHANCED label for lot ${parcel.lotNumber} at:`, center);
       
-      // Create a more visible marker with better styling
+      // Create a highly visible marker with enhanced styling
       const label = new google.maps.Marker({
         position: center,
         map: this.map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 12, // Larger scale for better visibility
+          scale: 16, // Larger scale for maximum visibility
           fillColor: '#ffffff',
-          fillOpacity: 0.9,
+          fillOpacity: 1.0, // Full opacity for white background
           strokeColor: color, // Use parcel color for border
-          strokeWeight: 2
+          strokeWeight: 3 // Thicker border
         },
         label: {
           text: parcel.lotNumber,
-          color: '#000000',
-          fontSize: '12px',
+          color: '#000000', // Black text for maximum contrast
+          fontSize: '14px', // Larger font
           fontWeight: 'bold',
           fontFamily: 'Arial, sans-serif'
         },
         clickable: true,
         title: `Parcela ${parcel.lotNumber} - ${parcel.displayName || parcel.parcelId}`,
-        zIndex: 1000 // Ensure labels appear above polygons
+        zIndex: 2000 // Higher z-index to ensure labels appear above everything
       });
 
       // Add click listener to label as well
@@ -117,7 +120,7 @@ export class ParcelRenderer {
       });
 
       this.labels.push(label);
-      console.log(`✅ Label created successfully for lot ${parcel.lotNumber}`);
+      console.log(`✅ ENHANCED label created successfully for lot ${parcel.lotNumber}`);
     } else {
       console.warn(`⚠️ No lot number available for parcel: ${parcel.parcelId}`);
     }

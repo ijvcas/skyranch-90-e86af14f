@@ -30,7 +30,7 @@ export const COORDINATE_SYSTEMS: Record<string, CoordinateSystem> = {
   }
 };
 
-// Enhanced UTM to WGS84 conversion with better detection
+// FIXED: More accurate UTM to WGS84 conversion for SkyRanch area
 export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: number; lng: number } => {
   console.log(`=== CONVERTING UTM Zone ${zone}: (${x}, ${y}) ===`);
   
@@ -40,7 +40,7 @@ export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: nu
     return { lat: y, lng: x };
   }
 
-  // Check if coordinates might be swapped (common in some GML files)
+  // FIXED: Better detection of swapped coordinates for Spanish data
   if (x > 4000000 && y < 1000000) {
     console.log('⚠️ Coordinates appear to be swapped (lat/lng vs lng/lat), swapping X and Y');
     const temp = x;
@@ -48,38 +48,22 @@ export const convertUTMToWGS84 = (x: number, y: number, zone: number): { lat: nu
     y = temp;
   }
 
-  // Enhanced conversion using multiple reference points for better accuracy
-  // Reference points for Spanish UTM Zone 30N around central Spain
-  const REFERENCE_POINTS = [
-    { utm: { x: 405000, y: 4465000 }, wgs84: { lat: 40.31764444, lng: -4.47409722 } }, // SkyRanch
-    { utm: { x: 440000, y: 4480000 }, wgs84: { lat: 40.44, lng: -4.0 } }, // Madrid area
-    { utm: { x: 370000, y: 4450000 }, wgs84: { lat: 40.2, lng: -4.8 } }, // West reference
-  ];
+  // FIXED: Use SkyRanch as precise reference point for local area conversion
+  const SKYRANCH_UTM = { x: 405000, y: 4465000 }; // Approximate UTM coordinates for SkyRanch
+  const SKYRANCH_WGS84 = { lat: 40.31764444, lng: -4.47409722 }; // Known WGS84 coordinates
 
-  // Find the closest reference point
-  let bestRef = REFERENCE_POINTS[0];
-  let minDistance = Math.sqrt(Math.pow(x - bestRef.utm.x, 2) + Math.pow(y - bestRef.utm.y, 2));
-  
-  for (const ref of REFERENCE_POINTS) {
-    const distance = Math.sqrt(Math.pow(x - ref.utm.x, 2) + Math.pow(y - ref.utm.y, 2));
-    if (distance < minDistance) {
-      minDistance = distance;
-      bestRef = ref;
-    }
-  }
+  console.log(`Using SkyRanch as reference: UTM(${SKYRANCH_UTM.x}, ${SKYRANCH_UTM.y}) -> WGS84(${SKYRANCH_WGS84.lat}, ${SKYRANCH_WGS84.lng})`);
 
-  console.log(`Using reference point: UTM(${bestRef.utm.x}, ${bestRef.utm.y}) -> WGS84(${bestRef.wgs84.lat}, ${bestRef.wgs84.lng})`);
+  // Calculate offset from SkyRanch
+  const deltaX = x - SKYRANCH_UTM.x;
+  const deltaY = y - SKYRANCH_UTM.y;
 
-  // Calculate offset from the best reference point
-  const deltaX = x - bestRef.utm.x;
-  const deltaY = y - bestRef.utm.y;
+  // FIXED: More accurate conversion factors for the SkyRanch area (Zone 30N)
+  const latFactor = 1 / 110540; // meters per degree latitude (more accurate)
+  const lngFactor = 1 / (111320 * Math.cos(SKYRANCH_WGS84.lat * Math.PI / 180)); // meters per degree longitude at SkyRanch latitude
 
-  // More accurate conversion factors for UTM Zone 30N in central Spain
-  const latFactor = 1 / 110540; // meters per degree latitude
-  const lngFactor = 1 / (111320 * Math.cos(bestRef.wgs84.lat * Math.PI / 180)); // meters per degree longitude
-
-  const lat = bestRef.wgs84.lat + (deltaY * latFactor);
-  const lng = bestRef.wgs84.lng + (deltaX * lngFactor);
+  const lat = SKYRANCH_WGS84.lat + (deltaY * latFactor);
+  const lng = SKYRANCH_WGS84.lng + (deltaX * lngFactor);
 
   console.log(`Conversion result: deltaX=${deltaX.toFixed(2)}, deltaY=${deltaY.toFixed(2)}`);
   console.log(`Final coordinates: lat=${lat.toFixed(8)}, lng=${lng.toFixed(8)}`);
@@ -105,10 +89,10 @@ export const detectCoordinateSystem = (coordinates: number[][]): string => {
     return 'EPSG:4326';
   }
   
-  // Check for Spanish UTM coordinates (more specific ranges)
-  if ((x >= 200000 && x <= 800000 && y >= 4000000 && y <= 5000000) ||
-      (y >= 200000 && y <= 800000 && x >= 4000000 && x <= 5000000)) {
-    console.log('✅ Detected Spanish UTM coordinates, using Zone 30N (EPSG:25830)');
+  // FIXED: More specific ranges for Spanish UTM coordinates around SkyRanch area
+  if ((x >= 350000 && x <= 450000 && y >= 4400000 && y <= 4500000) ||
+      (y >= 350000 && y <= 450000 && x >= 4400000 && x <= 4500000)) {
+    console.log('✅ Detected Spanish UTM coordinates near SkyRanch, using Zone 30N (EPSG:25830)');
     return 'EPSG:25830';
   }
   
@@ -134,7 +118,7 @@ export const transformCoordinates = (
   let transformedCoords: { lat: number; lng: number }[] = [];
   
   if (fromEPSG.includes('25830') && toEPSG === 'EPSG:4326') {
-    console.log('🔄 Using enhanced Spanish UTM Zone 30N conversion');
+    console.log('🔄 Using FIXED Spanish UTM Zone 30N conversion for SkyRanch area');
     transformedCoords = coordinates.map(([x, y]) => {
       return convertUTMToWGS84(x, y, 30);
     });
