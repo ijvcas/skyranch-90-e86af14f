@@ -1,12 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { MapPin, Upload } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import PropertySelector from './PropertySelector';
 import CadastralFileUpload from './CadastralFileUpload';
 import ParcelStatusFilter from './ParcelStatusFilter';
-import DeleteAllParcelsButton from './DeleteAllParcelsButton';
+import CadastralSettingsDropdown from './CadastralSettingsDropdown';
 import type { Property, CadastralParcel } from '@/services/cadastralService';
 import type { ParcelStatus } from '@/utils/cadastral/types';
 
@@ -81,19 +80,12 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
             onStatusChange={onStatusFilterChange}
           />
           
-          <Button 
-            onClick={onToggleUpload}
-            variant="outline"
-            size="sm"
-            className="h-10 flex items-center space-x-2"
-          >
-            <Upload className="w-4 h-4" />
-            <span>Importar XML/KML</span>
-          </Button>
-          
-          {onParcelsDeleted && (
-            <DeleteAllParcelsButton onDeleted={onParcelsDeleted} />
-          )}
+          <div className="md:col-span-2 flex justify-end">
+            <CadastralSettingsDropdown
+              onToggleUpload={onToggleUpload}
+              onParcelsDeleted={onParcelsDeleted}
+            />
+          </div>
         </div>
 
         {showUpload && (
