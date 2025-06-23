@@ -116,17 +116,25 @@ export const getCadastralParcels = async (propertyId?: string): Promise<Cadastra
     return (data || []).map(parcel => {
       let boundaryCoordinates: { lat: number; lng: number }[] = [];
       
-      // Safely parse boundary coordinates
+      // Safely parse boundary coordinates with proper type handling
       try {
-        if (typeof parcel.boundary_coordinates === 'string') {
-          boundaryCoordinates = JSON.parse(parcel.boundary_coordinates);
-        } else if (Array.isArray(parcel.boundary_coordinates)) {
-          boundaryCoordinates = parcel.boundary_coordinates;
-        } else if (parcel.boundary_coordinates && typeof parcel.boundary_coordinates === 'object') {
-          // Handle case where it's already a parsed object
-          boundaryCoordinates = Array.isArray(parcel.boundary_coordinates) 
-            ? parcel.boundary_coordinates 
-            : [];
+        const coords = parcel.boundary_coordinates;
+        
+        if (typeof coords === 'string') {
+          boundaryCoordinates = JSON.parse(coords);
+        } else if (Array.isArray(coords)) {
+          // Type cast the array elements to ensure they have lat/lng properties
+          boundaryCoordinates = coords.filter(coord => 
+            coord && 
+            typeof coord === 'object' && 
+            'lat' in coord && 
+            'lng' in coord &&
+            typeof coord.lat === 'number' && 
+            typeof coord.lng === 'number'
+          ) as { lat: number; lng: number }[];
+        } else if (coords && typeof coords === 'object') {
+          // Handle case where it's already a parsed object but not an array
+          boundaryCoordinates = [];
         }
         
         // Ensure it's always an array
