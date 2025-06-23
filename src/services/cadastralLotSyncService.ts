@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface SyncResult {
   action: string;
-  lot_id: string;
+  returned_lot_id: string;
   parcel_id: string;
   lot_name: string;
 }
@@ -47,16 +47,26 @@ export const syncCadastralParcelsToLots = async (): Promise<SyncResult[]> => {
     console.log(`✅ Sync function executed successfully. Results:`, data);
     console.log(`📈 Number of operations performed: ${data?.length || 0}`);
     
-    // Log each result for debugging
+    // Log each result for debugging and map returned_lot_id to lot_id for compatibility
     if (data && data.length > 0) {
-      data.forEach((result: SyncResult, index: number) => {
+      const mappedResults = data.map((result: any, index: number) => {
         console.log(`📋 Operation ${index + 1}:`, {
           action: result.action,
-          lot_id: result.lot_id,
+          lot_id: result.returned_lot_id,
           parcel_id: result.parcel_id,
           lot_name: result.lot_name
         });
+        
+        // Map returned_lot_id to lot_id for backward compatibility
+        return {
+          action: result.action,
+          lot_id: result.returned_lot_id,
+          parcel_id: result.parcel_id,
+          lot_name: result.lot_name
+        };
       });
+      
+      return mappedResults;
     }
     
     return data || [];
