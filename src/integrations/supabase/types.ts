@@ -352,9 +352,13 @@ export type Database = {
       }
       cadastral_parcels: {
         Row: {
+          acquisition_date: string | null
+          acquisition_notes: string | null
           area_hectares: number | null
           boundary_coordinates: Json
           classification: string | null
+          contract_reference: string | null
+          cost_per_square_meter: number | null
           created_at: string
           display_name: string | null
           id: string
@@ -364,13 +368,19 @@ export type Database = {
           owner_info: string | null
           parcel_id: string
           property_id: string | null
+          seller_name: string | null
           status: string | null
+          total_cost: number | null
           updated_at: string
         }
         Insert: {
+          acquisition_date?: string | null
+          acquisition_notes?: string | null
           area_hectares?: number | null
           boundary_coordinates: Json
           classification?: string | null
+          contract_reference?: string | null
+          cost_per_square_meter?: number | null
           created_at?: string
           display_name?: string | null
           id?: string
@@ -380,13 +390,19 @@ export type Database = {
           owner_info?: string | null
           parcel_id: string
           property_id?: string | null
+          seller_name?: string | null
           status?: string | null
+          total_cost?: number | null
           updated_at?: string
         }
         Update: {
+          acquisition_date?: string | null
+          acquisition_notes?: string | null
           area_hectares?: number | null
           boundary_coordinates?: Json
           classification?: string | null
+          contract_reference?: string | null
+          cost_per_square_meter?: number | null
           created_at?: string
           display_name?: string | null
           id?: string
@@ -396,7 +412,9 @@ export type Database = {
           owner_info?: string | null
           parcel_id?: string
           property_id?: string | null
+          seller_name?: string | null
           status?: string | null
+          total_cost?: number | null
           updated_at?: string
         }
         Relationships: [

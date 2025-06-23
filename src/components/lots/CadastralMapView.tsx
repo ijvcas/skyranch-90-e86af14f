@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
+import FinancialSummaryCard from './FinancialSummaryCard';
 import { getAllProperties, getCadastralParcels, updateCadastralParcel, type CadastralParcel } from '@/services/cadastralService';
 import type { ParcelStatus } from '@/utils/cadastral/types';
 
@@ -103,6 +104,9 @@ const CadastralMapView: React.FC = () => {
         onParcelsDeleted={handleParcelsDeleted}
         parcels={parcels}
       />
+
+      {/* Financial Summary - Show when there are parcels with financial data */}
+      <FinancialSummaryCard parcels={parcels} />
 
       <div className="space-y-6">
         <div>
