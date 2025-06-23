@@ -1,9 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SyncResult {
   action: string;
-  returned_lot_id: string;
+  lot_id: string;
   parcel_id: string;
   lot_name: string;
 }
@@ -63,13 +62,13 @@ export const syncCadastralParcelsToLots = async (): Promise<SyncResult[]> => {
           lot_id: result.returned_lot_id,
           parcel_id: result.parcel_id,
           lot_name: result.lot_name
-        };
+        } as SyncResult;
       });
       
       return mappedResults;
     }
     
-    return data || [];
+    return [];
   } catch (error) {
     console.error('❌ Unexpected error in syncCadastralParcelsToLots:', error);
     if (error instanceof Error) {
