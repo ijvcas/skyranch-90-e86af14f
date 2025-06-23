@@ -55,6 +55,13 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Extract lot number from lot name
+  const getLotNumber = (lotName: string): string => {
+    // Try to extract number from lot name (e.g., "Lote 1" -> "1", "Parcela 2A" -> "2A")
+    const match = lotName.match(/(\d+[A-Za-z]?)/);
+    return match ? match[1] : lotName.charAt(0).toUpperCase();
+  };
+
   // Create or update lot labels on the map
   useEffect(() => {
     if (!isMapReady || !mapInstance) return;
@@ -104,15 +111,21 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       lat /= pathLength;
       lng /= pathLength;
       
-      // Create or update label
+      // Create or update label with just the lot number
       if (labelsRef.current[lot.id]) {
         labelsRef.current[lot.id].setPosition({ lat, lng });
+        labelsRef.current[lot.id].setLabel({
+          text: getLotNumber(lot.name),
+          color: '#ffffff',
+          fontSize: '12px',
+          fontWeight: '700'
+        });
       } else {
         const label = new google.maps.Marker({
           position: { lat, lng },
           map: mapInstance,
           label: {
-            text: lot.name,
+            text: getLotNumber(lot.name),
             color: '#ffffff',
             fontSize: '12px',
             fontWeight: '700'
@@ -258,10 +271,10 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
         </div>
       )}
       
-      {/* Controls overlay - thin lot count banner at top-right */}
+      {/* Controls overlay - thin lot count banner at top-center */}
       {isMapReady && (
         <>
-          <div className="absolute top-4 right-4 z-10">
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
             <SimplifiedPolygonControls
               onClearAll={handleClearPastureLots}
               selectedLotId={selectedLotId}
