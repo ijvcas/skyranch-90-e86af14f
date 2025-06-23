@@ -34,6 +34,8 @@ export interface CadastralParcel {
 // Re-export functions from the modular files
 export { fetchAllProperties as getAllProperties } from './cadastral/cadastralQueries';
 export { fetchCadastralParcels as getCadastralParcels } from './cadastral/cadastralQueries';
+export { fetchCadastralParcels as getAllParcels } from './cadastral/cadastralQueries';
 export { insertCadastralParcel as saveCadastralParcel } from './cadastral/cadastralMutations';
 export { updateCadastralParcelById as updateCadastralParcel } from './cadastral/cadastralMutations';
+export { updateCadastralParcelById as updateParcel } from './cadastral/cadastralMutations';
 export { insertProperty as addProperty } from './cadastral/cadastralMutations';

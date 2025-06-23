@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
-import { getAllProperties, getAllParcels, updateParcel, type CadastralParcel } from '@/services/cadastralService';
+import { getAllProperties, getCadastralParcels, updateCadastralParcel, type CadastralParcel } from '@/services/cadastralService';
 import type { ParcelStatus } from '@/utils/cadastral/types';
 
 const CadastralMapView: React.FC = () => {
@@ -22,7 +22,7 @@ const CadastralMapView: React.FC = () => {
   // Load parcels
   const { data: parcels = [], isLoading: isLoadingParcels, refetch: refetchParcels } = useQuery({
     queryKey: ['parcels', selectedPropertyId],
-    queryFn: () => getAllParcels(selectedPropertyId),
+    queryFn: () => getCadastralParcels(selectedPropertyId),
     enabled: !!selectedPropertyId,
   });
 
@@ -61,7 +61,7 @@ const CadastralMapView: React.FC = () => {
 
   const handleParcelUpdate = async (parcelId: string, updates: Partial<CadastralParcel>) => {
     try {
-      const success = await updateParcel(parcelId, updates);
+      const success = await updateCadastralParcel(parcelId, updates);
       if (success) {
         refetchParcels();
         toast.success('Parcela actualizada correctamente');
@@ -108,7 +108,7 @@ const CadastralMapView: React.FC = () => {
         <div>
           {selectedProperty && (
             <CadastralMap
-              property={selectedProperty}
+              properties={[selectedProperty]}
               parcels={filteredParcels}
               onParcelClick={handleParcelClick}
             />
