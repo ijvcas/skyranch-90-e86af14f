@@ -7,7 +7,7 @@ import PropertySelector from './PropertySelector';
 import CadastralFileUpload from './CadastralFileUpload';
 import ParcelStatusFilter from './ParcelStatusFilter';
 import DeleteAllParcelsButton from './DeleteAllParcelsButton';
-import type { Property } from '@/services/cadastralService';
+import type { Property, CadastralParcel } from '@/services/cadastralService';
 import type { ParcelStatus } from '@/utils/cadastral/types';
 
 interface CadastralMapControlsProps {
@@ -22,6 +22,7 @@ interface CadastralMapControlsProps {
   statusFilter: ParcelStatus | 'ALL';
   onStatusFilterChange: (status: ParcelStatus | 'ALL') => void;
   onParcelsDeleted?: () => void;
+  parcels?: CadastralParcel[];
 }
 
 const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
@@ -35,15 +36,36 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
   onCancelUpload,
   statusFilter,
   onStatusFilterChange,
-  onParcelsDeleted
+  onParcelsDeleted,
+  parcels = []
 }) => {
+  // Calculate total area for PROPIEDAD status parcels
+  const calculatePropiedadTotalArea = (): number => {
+    if (!parcels || parcels.length === 0) return 0;
+    
+    return parcels
+      .filter(parcel => parcel.status === 'PROPIEDAD')
+      .reduce((total, parcel) => total + (parcel.areaHectares || 0), 0);
+  };
+
+  const totalPropiedadArea = calculatePropiedadTotalArea();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <MapPin className="w-5 h-5" />
-          <span>Mapa Cadastral</span>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center space-x-2">
+            <MapPin className="w-5 h-5" />
+            <span>Mapa Cadastral</span>
+          </CardTitle>
+          {totalPropiedadArea > 0 && (
+            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
+              <span className="text-sm font-semibold">
+                Total Área Propiedad: {totalPropiedadArea.toFixed(4)} ha
+              </span>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

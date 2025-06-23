@@ -1,109 +1,69 @@
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { getAllProperties, getCadastralParcels, updateCadastralParcel, type Property, type CadastralParcel } from '@/services/cadastralService';
-import { useGoogleMapsLoader } from '@/hooks/polygon/useGoogleMapsLoader';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import CadastralMapControls from './CadastralMapControls';
 import CadastralMap from './CadastralMap';
 import EditableParcelsList from './EditableParcelsList';
+import { getAllProperties, getAllParcels, updateParcel, type CadastralParcel } from '@/services/cadastralService';
 import type { ParcelStatus } from '@/utils/cadastral/types';
-import { toast } from 'sonner';
 
-interface CadastralMapViewProps {
-  onPropertySelect?: (propertyId: string) => void;
-}
-
-const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect }) => {
-  const [properties, setProperties] = useState<Property[]>([]);
+const CadastralMapView: React.FC = () => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
-  const [cadastralParcels, setCadastralParcels] = useState<CadastralParcel[]>([]);
   const [showUpload, setShowUpload] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
   const [statusFilter, setStatusFilter] = useState<ParcelStatus | 'ALL'>('ALL');
 
-  const { isLoaded, loadError } = useGoogleMapsLoader();
+  // Load properties
+  const { data: properties = [], isLoading: isLoadingProperties } = useQuery({
+    queryKey: ['properties'],
+    queryFn: getAllProperties,
+  });
 
+  // Load parcels
+  const { data: parcels = [], isLoading: isLoadingParcels, refetch: refetchParcels } = useQuery({
+    queryKey: ['parcels', selectedPropertyId],
+    queryFn: () => getAllParcels(selectedPropertyId),
+    enabled: !!selectedPropertyId,
+  });
+
+  // Set default property when properties load
   useEffect(() => {
-    loadProperties();
-  }, []);
-
-  useEffect(() => {
-    if (selectedPropertyId) {
-      loadCadastralParcels(selectedPropertyId);
+    if (properties.length > 0 && !selectedPropertyId) {
+      const mainProperty = properties.find(p => p.isMainProperty);
+      const defaultProperty = mainProperty || properties[0];
+      setSelectedPropertyId(defaultProperty.id);
     }
-  }, [selectedPropertyId]);
+  }, [properties, selectedPropertyId]);
 
-  const loadProperties = async () => {
-    setIsLoading(true);
-    try {
-      const data = await getAllProperties();
-      setProperties(data);
-      
-      const mainProperty = data.find(p => p.isMainProperty);
-      if (mainProperty && !selectedPropertyId) {
-        setSelectedPropertyId(mainProperty.id);
-      }
-    } catch (error) {
-      console.error('Error loading properties:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadCadastralParcels = async (propertyId: string) => {
-    try {
-      console.log('🗺️ Loading cadastral parcels...');
-      
-      const data = await getCadastralParcels(propertyId);
-      setCadastralParcels(data);
-      console.log(`📋 Loaded ${data.length} cadastral parcels`);
-      
-      if (data.length > 0 && data[0].boundaryCoordinates?.length > 0) {
-        console.log('🔍 Sample parcel coordinates:', data[0].boundaryCoordinates[0]);
-      }
-    } catch (error) {
-      console.error('Error loading cadastral parcels:', error);
-    }
-  };
+  // Filter parcels based on status
+  const filteredParcels = statusFilter === 'ALL' 
+    ? parcels 
+    : parcels.filter(parcel => parcel.status === statusFilter);
 
   const handlePropertyChange = (propertyId: string) => {
     setSelectedPropertyId(propertyId);
-    setMap(null);
-    onPropertySelect?.(propertyId);
-  };
-
-  const handleFileUploadSuccess = () => {
-    if (selectedPropertyId) {
-      loadCadastralParcels(selectedPropertyId);
-    }
     setShowUpload(false);
   };
 
-  const handleParcelsDeleted = () => {
-    console.log('🗑️ All parcels deleted, reloading...');
-    setCadastralParcels([]);
-    if (selectedPropertyId) {
-      loadCadastralParcels(selectedPropertyId);
-    }
+  const handleToggleUpload = () => {
+    setShowUpload(!showUpload);
   };
 
-  const handleMapReady = (newMap: google.maps.Map) => {
-    setMap(newMap);
+  const handleFileUploadSuccess = () => {
+    setShowUpload(false);
+    refetchParcels();
+    toast.success('Archivo importado correctamente');
+  };
+
+  const handleCancelUpload = () => {
+    setShowUpload(false);
   };
 
   const handleParcelUpdate = async (parcelId: string, updates: Partial<CadastralParcel>) => {
     try {
-      const success = await updateCadastralParcel(parcelId, updates);
+      const success = await updateParcel(parcelId, updates);
       if (success) {
-        setCadastralParcels(prev => 
-          prev.map(parcel => 
-            parcel.id === parcelId 
-              ? { ...parcel, ...updates }
-              : parcel
-          )
-        );
+        refetchParcels();
         toast.success('Parcela actualizada correctamente');
       } else {
         toast.error('Error al actualizar la parcela');
@@ -114,83 +74,17 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
     }
   };
 
-  const calculateParcelCenter = (coordinates: { lat: number; lng: number }[]): { lat: number; lng: number } => {
-    if (!coordinates || coordinates.length === 0) {
-      console.warn('⚠️ No coordinates provided for center calculation');
-      const selectedProperty = properties.find(p => p.id === selectedPropertyId);
-      return selectedProperty ? 
-        { lat: selectedProperty.centerLat, lng: selectedProperty.centerLng } :
-        { lat: 40.317635, lng: -4.474248 };
-    }
-
-    const validCoords = coordinates.filter(coord => 
-      coord && 
-      typeof coord.lat === 'number' && 
-      typeof coord.lng === 'number' &&
-      !isNaN(coord.lat) && 
-      !isNaN(coord.lng) &&
-      coord.lat !== 0 && coord.lng !== 0
-    );
-
-    if (validCoords.length === 0) {
-      console.warn('⚠️ No valid coordinates after filtering');
-      const selectedProperty = properties.find(p => p.id === selectedPropertyId);
-      return selectedProperty ? 
-        { lat: selectedProperty.centerLat, lng: selectedProperty.centerLng } :
-        { lat: 40.317635, lng: -4.474248 };
-    }
-
-    const latSum = validCoords.reduce((sum, coord) => sum + coord.lat, 0);
-    const lngSum = validCoords.reduce((sum, coord) => sum + coord.lng, 0);
-    
-    const center = {
-      lat: latSum / validCoords.length,
-      lng: lngSum / validCoords.length
-    };
-
-    console.log(`📍 Calculated parcel center: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)} from ${validCoords.length} valid coords`);
-    return center;
-  };
-
   const handleParcelClick = (parcel: CadastralParcel) => {
-    if (map && parcel.boundaryCoordinates.length > 0) {
-      console.log(`🎯 Focusing on parcel: ${parcel.parcelId}`);
-      
-      const center = calculateParcelCenter(parcel.boundaryCoordinates);
-      
-      console.log(`🎯 Centering map on parcel: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
-      
-      map.setCenter(center);
-      map.setZoom(20);
-      
-      console.log(`✅ Successfully focused on parcel: ${parcel.parcelId}`);
-    } else {
-      console.warn(`❌ Cannot focus on parcel: no map or coordinates for ${parcel.parcelId}`);
-    }
+    console.log('Parcel clicked:', parcel);
+    // Future implementation for parcel detail view
   };
 
-  if (loadError) {
-    return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          Error cargando Google Maps. Por favor, verifica tu conexión a internet.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const handleParcelsDeleted = () => {
+    refetchParcels();
+    toast.success('Todas las parcelas han sido eliminadas');
+  };
 
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-500">Cargando mapa cadastral...</p>
-        </div>
-      </div>
-    );
-  }
-
+  const isLoading = isLoadingProperties || isLoadingParcels;
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
   return (
@@ -201,28 +95,34 @@ const CadastralMapView: React.FC<CadastralMapViewProps> = ({ onPropertySelect })
         onPropertyChange={handlePropertyChange}
         isLoading={isLoading}
         showUpload={showUpload}
-        onToggleUpload={() => setShowUpload(!showUpload)}
+        onToggleUpload={handleToggleUpload}
         onFileUploadSuccess={handleFileUploadSuccess}
-        onCancelUpload={() => setShowUpload(false)}
+        onCancelUpload={handleCancelUpload}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         onParcelsDeleted={handleParcelsDeleted}
+        parcels={parcels}
       />
 
-      <CadastralMap
-        isLoaded={isLoaded}
-        selectedProperty={selectedProperty}
-        cadastralParcels={cadastralParcels}
-        statusFilter={statusFilter}
-        onMapReady={handleMapReady}
-        onParcelClick={handleParcelClick}
-      />
-
-      <EditableParcelsList
-        parcels={cadastralParcels}
-        onParcelUpdate={handleParcelUpdate}
-        onParcelClick={handleParcelClick}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          {selectedProperty && (
+            <CadastralMap
+              property={selectedProperty}
+              parcels={filteredParcels}
+              onParcelClick={handleParcelClick}
+            />
+          )}
+        </div>
+        
+        <div>
+          <EditableParcelsList
+            parcels={filteredParcels}
+            onParcelUpdate={handleParcelUpdate}
+            onParcelClick={handleParcelClick}
+          />
+        </div>
+      </div>
     </div>
   );
 };
