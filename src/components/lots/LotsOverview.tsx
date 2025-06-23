@@ -10,7 +10,6 @@ import PermissionGuard from '../PermissionGuard';
 import WorkflowGuide from './WorkflowGuide';
 import SyncStatusCard from './SyncStatusCard';
 import CadastralSyncButton from './CadastralSyncButton';
-import DebugLotsButton from './DebugLotsButton';
 import { type Lot } from '@/stores/lotStore';
 import { useCadastralData } from '@/hooks/useCadastralData';
 
@@ -71,7 +70,6 @@ const LotsOverview: React.FC<LotsOverviewProps> = ({
               propiedadParcelsCount={propiedadParcelsCount}
               size="default"
             />
-            <DebugLotsButton onUpdateComplete={handleSyncComplete} />
             <PermissionGuard permission="lots_manage">
               <Button 
                 onClick={onCreateLot} 
