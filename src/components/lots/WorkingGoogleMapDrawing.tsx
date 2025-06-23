@@ -62,7 +62,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     return match ? match[1] : lotName.charAt(0).toUpperCase();
   };
 
-  // Create or update lot labels on the map
+  // Create or update lot labels on the map - now includes dependency on lot names
   useEffect(() => {
     if (!isMapReady || !mapInstance) return;
 
