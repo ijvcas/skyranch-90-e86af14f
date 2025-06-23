@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -143,7 +142,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                         </div>
                         <MapPin className="w-4 h-4 text-gray-400" />
                         {showIncompleteWarning && (
-                          <AlertCircle className="w-4 h-4 text-amber-500" title="Información financiera incompleta" />
+                          <AlertCircle className="w-4 h-4 text-amber-500" />
                         )}
                       </div>
                       <div className="flex items-center space-x-1">
@@ -155,7 +154,6 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                             handleDetailEdit(parcel);
                           }}
                           className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700"
-                          title="Edición completa"
                         >
                           <Settings className="w-3 h-3" />
                         </Button>
@@ -193,7 +191,6 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
                               handleStartEdit(parcel);
                             }}
                             className="h-6 w-6 p-0"
-                            title="Edición rápida"
                           >
                             <Edit2 className="w-3 h-3" />
                           </Button>
