@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useSimplePolygonDrawing } from '@/hooks/useSimplePolygonDrawing';
@@ -72,19 +71,37 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     lots.forEach(lot => {
       // Skip if no polygon - check if polygon exists for this lot
       const lotPolygon = polygons.get(lot.id);
-      if (!lotPolygon) return;
-      
-      // Calculate centroid of polygon
-      const path = lotPolygon.getPath();
-      let lat = 0, lng = 0;
-      
-      for (let i = 0; i < path.getLength(); i++) {
-        lat += path.getAt(i).lat();
-        lng += path.getAt(i).lng();
+      if (!lotPolygon) {
+        console.log(`⚠️ No polygon found for lot: ${lot.name}, skipping label creation`);
+        return;
       }
       
-      lat /= path.getLength();
-      lng /= path.getLength();
+      // Additional safety check - ensure polygon has a valid path
+      const path = lotPolygon.getPath();
+      if (!path || typeof path.getLength !== 'function') {
+        console.log(`⚠️ Invalid polygon path for lot: ${lot.name}, skipping label creation`);
+        return;
+      }
+
+      const pathLength = path.getLength();
+      if (pathLength === 0) {
+        console.log(`⚠️ Empty polygon path for lot: ${lot.name}, skipping label creation`);
+        return;
+      }
+      
+      // Calculate centroid of polygon
+      let lat = 0, lng = 0;
+      
+      for (let i = 0; i < pathLength; i++) {
+        const point = path.getAt(i);
+        if (point && typeof point.lat === 'function' && typeof point.lng === 'function') {
+          lat += point.lat();
+          lng += point.lng();
+        }
+      }
+      
+      lat /= pathLength;
+      lng /= pathLength;
       
       // Create or update label
       if (labelsRef.current[lot.id]) {
@@ -240,7 +257,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
         </div>
       )}
       
-      {/* Controls overlay - moved to top-center to avoid Google controls */}
+      {/* Controls overlay - positioned at top-center to avoid Google controls */}
       {isMapReady && (
         <>
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
