@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   MapPin, 
   Users, 
-  Grass, 
+  Leaf, 
   Calendar,
   Trash2,
   Eye,
@@ -94,14 +94,14 @@ const LotCard: React.FC<LotCardProps> = ({
           
           {lot.grassType && (
             <div className="flex items-center space-x-2">
-              <Grass className="w-4 h-4 text-gray-500" />
+              <Leaf className="w-4 h-4 text-gray-500" />
               <span>{lot.grassType}</span>
             </div>
           )}
           
           {lot.grassCondition && (
             <div className="flex items-center space-x-2">
-              <Grass className={`w-4 h-4 ${getGrassConditionColor(lot.grassCondition)}`} />
+              <Leaf className={`w-4 h-4 ${getGrassConditionColor(lot.grassCondition)}`} />
               <span className={getGrassConditionColor(lot.grassCondition)}>
                 {lot.grassCondition}
               </span>

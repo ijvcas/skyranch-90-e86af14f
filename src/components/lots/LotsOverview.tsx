@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import LotStatistics from './LotStatistics';
 import LotsGrid from './LotsGrid';
-import AnimalListEmptyState from '../animals/AnimalListEmptyState';
-import LoadingState from '../LoadingState';
+import LotsEmptyState from './LotsEmptyState';
+import LoadingState from '../ui/loading-state';
 import PermissionGuard from '../PermissionGuard';
 import { type Lot } from '@/stores/lotStore';
 import CadastralSyncButton from './CadastralSyncButton';
@@ -57,7 +58,7 @@ const LotsOverview: React.FC<LotsOverviewProps> = ({
       </div>
 
       {lots.length === 0 ? (
-        <AnimalListEmptyState 
+        <LotsEmptyState 
           title="No hay lotes registrados"
           description="Crea tu primer lote o sincroniza con datos catastrales para comenzar"
           actionLabel="Crear Lote"
