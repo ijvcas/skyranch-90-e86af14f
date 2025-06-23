@@ -44,7 +44,7 @@ const CleanGoogleMapWithDrawing: React.FC<CleanGoogleMapWithDrawingProps> = ({
   const handlePolygonComplete = (polygon: google.maps.Polygon, lotName: string) => {
     // Only allow creating pasture lots in pasture mode
     if (mapMode === 'pasture' || mapMode === 'combined') {
-      originalHandlePolygonComplete(polygon, lotName, 'pasture');
+      originalHandlePolygonComplete(polygon, lotName);
     }
   };
 
@@ -156,6 +156,7 @@ const CleanGoogleMapWithDrawing: React.FC<CleanGoogleMapWithDrawingProps> = ({
             }
           }}
           polygonCount={pastureLots.length}
+          lots={lots}
         />
       )}
       
