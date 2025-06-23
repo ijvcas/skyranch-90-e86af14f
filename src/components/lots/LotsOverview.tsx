@@ -64,19 +64,20 @@ const LotsOverview: React.FC<LotsOverviewProps> = ({
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <LotStatistics lots={lots} />
           <div className="flex flex-col gap-3">
-            <CadastralSyncButton 
-              onSyncComplete={handleSyncComplete} 
-              propiedadParcelsCount={propiedadParcelsCount}
-              size="default"
-            />
             <Button 
               onClick={onCreateLot} 
-              variant="outline"
-              className="flex items-center space-x-2"
+              size="default"
+              className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0 font-medium"
             >
               <Plus className="w-4 h-4" />
               <span>Crear Lote Manual</span>
             </Button>
+            <CadastralSyncButton 
+              onSyncComplete={handleSyncComplete} 
+              propiedadParcelsCount={propiedadParcelsCount}
+              size="sm"
+              variant="outline"
+            />
           </div>
         </div>
       </div>

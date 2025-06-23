@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, MapPin, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { RefreshCw, MapPin, Zap, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { syncCadastralParcelsToLots, type SimpleSyncResult } from '@/services/cadastralLotSyncService';
 import {
@@ -10,6 +10,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface CadastralSyncButtonProps {
   onSyncComplete?: () => void;
@@ -23,8 +34,8 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
   onSyncComplete, 
   propiedadParcelsCount = 0,
   className = "",
-  size = "default",
-  variant = "default"
+  size = "sm", // Changed default to sm
+  variant = "outline" // Changed default to outline
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<SimpleSyncResult | null>(null);
@@ -97,32 +108,64 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
     if (!canSync) {
       return <AlertCircle className="w-4 h-4 text-amber-600" />;
     }
-    return <Zap className="w-4 h-4" />;
+    return <AlertTriangle className="w-4 h-4 text-orange-600" />;
   };
 
   const buttonContent = (
-    <Button
-      onClick={handleSync}
-      disabled={isSyncing || !canSync}
-      variant={canSync ? variant : "outline"}
-      size={size}
-      className={`flex items-center space-x-2 ${className} ${
-        canSync 
-          ? 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0' 
-          : 'opacity-50 border-gray-300'
-      }`}
-    >
-      {getButtonIcon()}
-      <MapPin className="w-4 h-4" />
-      <span className="font-medium">
-        {isSyncing ? 'Sincronizando...' : 'Sincronizar Catastral'}
-      </span>
-      {propiedadParcelsCount > 0 && (
-        <span className="bg-white bg-opacity-20 text-xs px-2 py-1 rounded-full">
-          {propiedadParcelsCount}
-        </span>
-      )}
-    </Button>
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          disabled={isSyncing || !canSync}
+          variant={canSync ? variant : "outline"}
+          size={size}
+          className={`flex items-center space-x-2 ${className} ${
+            canSync 
+              ? 'border-orange-300 text-orange-700 hover:bg-orange-50' 
+              : 'opacity-50 border-gray-300'
+          }`}
+        >
+          {getButtonIcon()}
+          <MapPin className="w-4 h-4" />
+          <span className="font-medium">
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+          </span>
+          {propiedadParcelsCount > 0 && (
+            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
+              {propiedadParcelsCount}
+            </span>
+          )}
+        </Button>
+      </AlertDialogTrigger>
+      
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-orange-600" />
+            Confirmar Sincronización Catastral
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>
+              ¿Estás seguro de que deseas sincronizar {propiedadParcelsCount} parcelas PROPIEDAD?
+            </p>
+            <p className="text-sm text-gray-600">
+              Esta acción creará automáticamente nuevos lotes basados en las parcelas catastrales marcadas como PROPIEDAD. 
+              Los lotes existentes no se verán afectados.
+            </p>
+            {lastSyncResult && lastSyncResult.success && lastSyncResult.lots_created > 0 && (
+              <p className="text-xs text-green-600 mt-2">
+                Última sincronización: {lastSyncResult.lots_created} lotes creados
+              </p>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSync} className="bg-orange-600 hover:bg-orange-700">
+            Sincronizar Ahora
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 
   return (
@@ -136,11 +179,9 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
             <div>
               <p className="font-medium">Generar lotes automáticamente</p>
               <p className="text-sm">Crea lotes basados en {propiedadParcelsCount} parcelas PROPIEDAD</p>
-              {lastSyncResult && lastSyncResult.success && lastSyncResult.lots_created > 0 && (
-                <p className="text-xs text-green-600 mt-1">
-                  Última sincronización: {lastSyncResult.lots_created} lotes creados
-                </p>
-              )}
+              <p className="text-xs text-orange-600 mt-1">
+                ⚠️ Requiere confirmación para evitar clicks accidentales
+              </p>
             </div>
           ) : (
             <div>
