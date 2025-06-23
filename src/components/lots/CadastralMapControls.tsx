@@ -68,7 +68,7 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <PropertySelector
             properties={properties}
             selectedPropertyId={selectedPropertyId}
@@ -81,20 +81,19 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
             onStatusChange={onStatusFilterChange}
           />
           
-          <div className="flex space-x-2">
-            <Button 
-              onClick={onToggleUpload}
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Importar XML/KML</span>
-            </Button>
-            
-            {onParcelsDeleted && (
-              <DeleteAllParcelsButton onDeleted={onParcelsDeleted} />
-            )}
-          </div>
+          <Button 
+            onClick={onToggleUpload}
+            variant="outline"
+            size="sm"
+            className="h-10 flex items-center space-x-2"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Importar XML/KML</span>
+          </Button>
+          
+          {onParcelsDeleted && (
+            <DeleteAllParcelsButton onDeleted={onParcelsDeleted} />
+          )}
         </div>
 
         {showUpload && (

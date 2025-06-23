@@ -14,6 +14,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DeleteAllParcelsButtonProps {
@@ -50,40 +56,49 @@ const DeleteAllParcelsButton: React.FC<DeleteAllParcelsButtonProps> = ({ onDelet
   };
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button 
-          variant="destructive" 
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <Trash2 className="w-4 h-4" />
-          Eliminar Todas las Parcelas
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-            Confirmar Eliminación Total
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción eliminará TODAS las parcelas catastrales de la base de datos. 
-            Esta acción no se puede deshacer. ¿Estás seguro de que deseas continuar?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={handleDeleteAll}
-            disabled={isDeleting}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            {isDeleting ? 'Eliminando...' : 'Sí, Eliminar Todo'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <TooltipProvider>
+      <Tooltip>
+        <AlertDialog>
+          <TooltipTrigger asChild>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                className="h-10 w-10 p-0"
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Eliminar Todas las Parcelas</p>
+          </TooltipContent>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                Confirmar Eliminación Total
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción eliminará TODAS las parcelas catastrales de la base de datos. 
+                Esta acción no se puede deshacer. ¿Estás seguro de que deseas continuar?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteAll}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isDeleting ? 'Eliminando...' : 'Sí, Eliminar Todo'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
