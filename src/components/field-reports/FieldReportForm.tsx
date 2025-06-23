@@ -38,7 +38,13 @@ const FieldReportForm = ({ onSuccess }: FieldReportFormProps) => {
   const [entries, setEntries] = useState<any[]>([]);
   
   const { mutate: createFieldReport, isPending } = useCreateFieldReport();
-  const { data: animalNames } = useAnimalNames();
+  const { animalNamesMap } = useAnimalNames();
+
+  // Convert animalNamesMap to array format for the components
+  const animalNames = Object.entries(animalNamesMap || {}).map(([id, name]) => ({
+    id,
+    name: name as string
+  }));
 
   const form = useForm<FieldReportFormData>({
     resolver: zodResolver(fieldReportSchema),
@@ -52,19 +58,24 @@ const FieldReportForm = ({ onSuccess }: FieldReportFormProps) => {
   });
 
   const onSubmit = (data: FieldReportFormData) => {
-    createFieldReport(
-      {
-        ...data,
-        entries,
+    // Ensure all required fields are present
+    const reportData = {
+      title: data.title,
+      report_type: data.report_type,
+      weather_conditions: data.weather_conditions,
+      temperature: data.temperature,
+      location_coordinates: data.location_coordinates,
+      notes: data.notes,
+      entries,
+    };
+
+    createFieldReport(reportData, {
+      onSuccess: () => {
+        form.reset();
+        setEntries([]);
+        onSuccess();
       },
-      {
-        onSuccess: () => {
-          form.reset();
-          setEntries([]);
-          onSuccess();
-        },
-      }
-    );
+    });
   };
 
   const addEntry = (entry: any) => {
@@ -169,19 +180,19 @@ const FieldReportForm = ({ onSuccess }: FieldReportFormProps) => {
           </TabsList>
 
           <TabsContent value="general">
-            <GeneralSection onAddEntry={addEntry} animals={animalNames || []} />
+            <GeneralSection onAddEntry={addEntry} animals={animalNames} />
           </TabsContent>
 
           <TabsContent value="pregnancy">
-            <PregnancyBirthSection onAddEntry={addEntry} animals={animalNames || []} />
+            <PregnancyBirthSection onAddEntry={addEntry} animals={animalNames} />
           </TabsContent>
 
           <TabsContent value="veterinary">
-            <VeterinarySection onAddEntry={addEntry} animals={animalNames || []} />
+            <VeterinarySection onAddEntry={addEntry} animals={animalNames} />
           </TabsContent>
 
           <TabsContent value="health">
-            <HealthObservationsSection onAddEntry={addEntry} animals={animalNames || []} />
+            <HealthObservationsSection onAddEntry={addEntry} animals={animalNames} />
           </TabsContent>
 
           <TabsContent value="infrastructure">

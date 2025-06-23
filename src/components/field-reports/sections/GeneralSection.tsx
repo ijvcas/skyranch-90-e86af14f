@@ -65,7 +65,7 @@ const GeneralSection = ({ onAddEntry, animals }: GeneralSectionProps) => {
                 <SelectValue placeholder="Seleccionar animal o dejar vacío" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Ninguno - Actividad General</SelectItem>
+                <SelectItem value="none">Ninguno - Actividad General</SelectItem>
                 {animals.map((animal) => (
                   <SelectItem key={animal.id} value={animal.id}>
                     {animal.name}
