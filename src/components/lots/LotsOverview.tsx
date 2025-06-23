@@ -64,7 +64,7 @@ const LotsOverview: React.FC<LotsOverviewProps> = ({
         
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <LotStatistics lots={lots} />
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-3">
             <CadastralSyncButton 
               onSyncComplete={handleSyncComplete} 
               propiedadParcelsCount={propiedadParcelsCount}
