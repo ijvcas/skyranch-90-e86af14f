@@ -1,60 +1,76 @@
-
 import React from 'react';
-import { type Lot } from '@/stores/lotStore';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import LotStatistics from './LotStatistics';
 import LotsGrid from './LotsGrid';
-
-interface PolygonData {
-  lotId: string;
-  areaHectares?: number;
-}
+import AnimalListEmptyState from '../animals/AnimalListEmptyState';
+import LoadingState from '../LoadingState';
+import PermissionGuard from '../PermissionGuard';
+import { type Lot } from '@/stores/lotStore';
+import CadastralSyncButton from './CadastralSyncButton';
 
 interface LotsOverviewProps {
   lots: Lot[];
   isLoading: boolean;
   onLotSelect: (lotId: string) => void;
   onCreateLot: () => void;
-  onDeleteLot?: (lotId: string) => void;
-  polygonData?: PolygonData[];
+  onDeleteLot: (lotId: string) => void;
+  polygonData: Array<{lotId: string; areaHectares?: number}>;
 }
 
-const LotsOverview = ({ lots, isLoading, onLotSelect, onCreateLot, onDeleteLot, polygonData }: LotsOverviewProps) => {
-  // Sort lots alphabetically by name
-  const sortedLots = [...lots].sort((a, b) => {
-    return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
-  });
+const LotsOverview: React.FC<LotsOverviewProps> = ({
+  lots,
+  isLoading,
+  onLotSelect,
+  onCreateLot,
+  onDeleteLot,
+  polygonData
+}) => {
+  const totalLots = lots.length;
+  const activeLots = lots.filter(lot => lot.status === 'active').length;
+  const inactiveLots = lots.filter(lot => lot.status === 'inactive').length;
+  const maintenanceLots = lots.filter(lot => lot.status === 'maintenance').length;
+  const restingLots = lots.filter(lot => lot.status === 'resting').length;
 
-  // Merge polygon data with sorted lots for display
-  const enhancedLots = sortedLots.map(lot => {
-    const polygon = polygonData?.find(p => p.lotId === lot.id);
-    if (polygon && polygon.areaHectares && (!lot.sizeHectares || polygon.areaHectares !== lot.sizeHectares)) {
-      return {
-        ...lot,
-        calculatedAreaHectares: polygon.areaHectares
-      };
-    }
-    return lot;
-  });
+  const handleSyncComplete = () => {
+    // The parent component should reload lots data
+    window.location.reload();
+  };
+
+  if (isLoading) {
+    return <LoadingState message="Cargando lotes..." />;
+  }
 
   return (
     <div className="space-y-6">
-      <LotStatistics lots={enhancedLots} polygonData={polygonData} />
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Lotes ({enhancedLots.length})
-        </h3>
-        <p className="text-sm text-gray-500">
-          Ordenados alfabéticamente por nombre
-        </p>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <LotStatistics lots={lots} />
+        <div className="flex gap-2">
+          <CadastralSyncButton onSyncComplete={handleSyncComplete} />
+          <PermissionGuard permission="lots_manage">
+            <Button onClick={onCreateLot} className="flex items-center space-x-2">
+              <Plus className="w-4 h-4" />
+              <span>Crear Lote</span>
+            </Button>
+          </PermissionGuard>
+        </div>
       </div>
-      <LotsGrid 
-        lots={enhancedLots}
-        isLoading={isLoading}
-        onLotSelect={onLotSelect}
-        onCreateLot={onCreateLot}
-        onDeleteLot={onDeleteLot}
-        polygonData={polygonData}
-      />
+
+      {lots.length === 0 ? (
+        <AnimalListEmptyState 
+          title="No hay lotes registrados"
+          description="Crea tu primer lote o sincroniza con datos catastrales para comenzar"
+          actionLabel="Crear Lote"
+          onAction={onCreateLot}
+        />
+      ) : (
+        <LotsGrid 
+          lots={lots}
+          onLotSelect={onLotSelect}
+          onDeleteLot={onDeleteLot}
+          polygonData={polygonData}
+        />
+      )}
     </div>
   );
 };

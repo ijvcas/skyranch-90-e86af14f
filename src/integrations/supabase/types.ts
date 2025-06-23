@@ -701,6 +701,7 @@ export type Database = {
       }
       lots: {
         Row: {
+          auto_generated: boolean
           capacity: number | null
           created_at: string
           description: string | null
@@ -712,11 +713,13 @@ export type Database = {
           name: string
           next_rotation_date: string | null
           size_hectares: number | null
+          source_parcel_id: string | null
           status: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          auto_generated?: boolean
           capacity?: number | null
           created_at?: string
           description?: string | null
@@ -728,11 +731,13 @@ export type Database = {
           name: string
           next_rotation_date?: string | null
           size_hectares?: number | null
+          source_parcel_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          auto_generated?: boolean
           capacity?: number | null
           created_at?: string
           description?: string | null
@@ -744,11 +749,20 @@ export type Database = {
           name?: string
           next_rotation_date?: string | null
           size_hectares?: number | null
+          source_parcel_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lots_source_parcel_id_fkey"
+            columns: ["source_parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -987,6 +1001,15 @@ export type Database = {
       sync_auth_users_to_app_users: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      sync_propiedad_parcels_to_lots: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          action: string
+          lot_id: string
+          parcel_id: string
+          lot_name: string
+        }[]
       }
     }
     Enums: {
