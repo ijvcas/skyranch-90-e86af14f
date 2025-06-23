@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Property, CadastralParcel } from '@/services/cadastralService';
 import { ParcelStatus } from '@/utils/cadastral/types';
-import { initializeMap } from './cadastral-map/MapInitializer';
 import { ParcelRenderer } from './cadastral-map/ParcelRenderer';
 
 interface CadastralMapProps {
@@ -15,6 +14,37 @@ interface CadastralMapProps {
   onParcelClick: (parcel: CadastralParcel) => void;
 }
 
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBo7e7hBrnCCtJDSaftXEFHP4qi-KiKXzI';
+
+const loadGoogleMapsScript = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Check if Google Maps is already loaded
+    if (window.google?.maps) {
+      resolve();
+      return;
+    }
+
+    // Check if script is already being loaded
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve());
+      existingScript.addEventListener('error', reject);
+      return;
+    }
+
+    // Create and load the script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=geometry`;
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = () => resolve();
+    script.onerror = reject;
+    
+    document.head.appendChild(script);
+  });
+};
+
 const CadastralMap: React.FC<CadastralMapProps> = ({
   isLoaded,
   selectedProperty,
@@ -25,35 +55,60 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 }) => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const parcelRendererRef = useRef<ParcelRenderer | null>(null);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
   const [parcelsRendered, setParcelsRendered] = useState(false);
 
+  // Load Google Maps API
   useEffect(() => {
-    if (isLoaded && selectedProperty && !mapRef.current) {
+    loadGoogleMapsScript()
+      .then(() => {
+        console.log('✅ Google Maps API loaded successfully');
+        setIsGoogleMapsLoaded(true);
+      })
+      .catch((error) => {
+        console.error('❌ Failed to load Google Maps API:', error);
+      });
+  }, []);
+
+  // Initialize map once Google Maps is loaded and we have a property
+  useEffect(() => {
+    if (isGoogleMapsLoaded && selectedProperty && !mapRef.current) {
       console.log('🗺️ Initializing map with coordinates:', selectedProperty.centerLat, selectedProperty.centerLng);
       
-      const map = initializeMap(selectedProperty, 'cadastral-map', onMapReady);
-      if (map) {
+      const mapElement = document.getElementById('cadastral-map');
+      if (mapElement) {
+        const map = new google.maps.Map(mapElement, {
+          center: { lat: selectedProperty.centerLat, lng: selectedProperty.centerLng },
+          zoom: selectedProperty.zoomLevel || 18,
+          mapTypeId: google.maps.MapTypeId.SATELLITE,
+          mapTypeControl: true,
+          zoomControl: true,
+          streetViewControl: false,
+          fullscreenControl: true,
+          gestureHandling: 'greedy'
+        });
+
         mapRef.current = map;
         parcelRendererRef.current = new ParcelRenderer(map, onParcelClick);
         
         // Wait for map to be ready
         google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
           console.log('✅ Map tiles loaded');
-          setTimeout(() => {
-            setInitialLoadComplete(true);
-          }, 500);
+          setIsMapInitialized(true);
+          onMapReady(map);
         });
       }
     }
-  }, [isLoaded, selectedProperty, onMapReady, onParcelClick]);
+  }, [isGoogleMapsLoaded, selectedProperty, onMapReady, onParcelClick]);
 
+  // Render parcels when map is ready and we have parcels
   useEffect(() => {
-    if (mapRef.current && parcelRendererRef.current && cadastralParcels.length > 0 && initialLoadComplete) {
+    if (mapRef.current && parcelRendererRef.current && cadastralParcels.length > 0 && isMapInitialized) {
       console.log(`🎯 Rendering ${cadastralParcels.length} parcels`);
       displayCadastralParcels();
     }
-  }, [cadastralParcels, statusFilter, initialLoadComplete]);
+  }, [cadastralParcels, statusFilter, isMapInitialized]);
 
   const displayCadastralParcels = () => {
     if (!parcelRendererRef.current || !mapRef.current) {
@@ -109,9 +164,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
           style={{ minHeight: '600px' }}
         />
         {/* Status indicator */}
-        {initialLoadComplete && (
+        {isMapInitialized && (
           <div className="absolute bottom-4 left-4 bg-white p-2 rounded shadow text-sm">
-            {parcelsRendered ? (
+            {!isGoogleMapsLoaded ? (
+              <span className="text-blue-600">🔄 Cargando Google Maps...</span>
+            ) : !isMapInitialized ? (
+              <span className="text-orange-600">🗺️ Inicializando mapa...</span>
+            ) : parcelsRendered ? (
               <span className="text-green-600">
                 ✅ {cadastralParcels.length} parcelas cargadas
               </span>
