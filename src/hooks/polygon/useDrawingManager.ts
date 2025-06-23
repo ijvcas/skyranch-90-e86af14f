@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 interface UseDrawingManagerOptions {
   lots: Lot[];
   getLotColor: (lot: Lot) => string;
-  onPolygonComplete: (polygon: google.maps.Polygon, selectedLotId: string) => void;
+  onPolygonComplete: (polygon: google.maps.Polygon, lotId: string) => void;
 }
 
 export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseDrawingManagerOptions) => {
@@ -54,9 +54,9 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     setSelectedLotId(lotId);
     setIsDrawing(true);
 
-    // Get the color from the lot status
-    const color = getLotColor(lot);
-    console.log('Using color:', color, 'for lot status:', lot.status);
+    // Get the color from the lot status - pasture lots are green
+    const color = '#10B981'; // Green for pasture lots
+    console.log('Using color:', color, 'for lot:', lot.name);
 
     // Remove existing listener
     if (polygonCompleteListener.current) {
@@ -68,7 +68,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
       drawingManager.current, 
       'polygoncomplete', 
       (polygon: google.maps.Polygon) => {
-        console.log('Polygon completed for lot:', lotId, 'with color:', color);
+        console.log('Polygon completed for lot:', lotId);
         onPolygonComplete(polygon, lotId);
         stopDrawing();
         toast.success(`Polígono creado para lote: ${lot.name}`);
@@ -79,9 +79,10 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     drawingManager.current.setOptions({
       polygonOptions: {
         fillColor: color,
-        strokeColor: color === '#f3f4f6' ? '#9ca3af' : color, // Gray stroke for light gray polygons
-        fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35, // Higher opacity for light gray
-        strokeWeight: color === '#f3f4f6' ? 3 : 2, // Thicker stroke for light gray
+        strokeColor: color,
+        fillOpacity: 0.3,
+        strokeWeight: 2,
+        strokeOpacity: 0.9,
         clickable: true,
         editable: true,
       }
@@ -96,9 +97,9 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
       mapDiv.style.cursor = 'crosshair';
     }
     
-    console.log('Drawing mode activated for lot:', lotId, 'with color:', color);
+    console.log('Drawing mode activated for lot:', lotId);
     toast.info(`Dibuja el polígono para: ${lot.name}`);
-  }, [lots, getLotColor, onPolygonComplete]);
+  }, [lots, onPolygonComplete]);
 
   const stopDrawing = useCallback(() => {
     if (drawingManager.current) {
@@ -118,6 +119,7 @@ export const useDrawingManager = ({ lots, getLotColor, onPolygonComplete }: UseD
     }
     
     setIsDrawing(false);
+    setSelectedLotId('');
     console.log('Drawing mode deactivated');
   }, []);
 

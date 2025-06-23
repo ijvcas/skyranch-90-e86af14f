@@ -226,6 +226,12 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     });
   };
 
+  // Handle starting drawing for a specific lot
+  const handleStartDrawing = (lotId: string) => {
+    console.log('🎯 Starting drawing for lot:', lotId);
+    startDrawing(lotId);
+  };
+
   // Calculate polygon count from Map
   const polygonCount = polygons.size;
 
@@ -285,6 +291,8 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
               }}
               polygonCount={polygonCount}
               lots={lots}
+              onStartDrawing={handleStartDrawing}
+              isDrawing={isDrawing}
             />
           </div>
           
