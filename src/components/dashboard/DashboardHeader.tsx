@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import FieldReportButton from '@/components/field-reports/FieldReportButton';
 
 interface DashboardHeaderProps {
   userEmail?: string;
@@ -13,9 +14,12 @@ const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardH
   return (
     <div className="mb-8 flex justify-between items-start">
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-          Panel de Control
-        </h1>
+        <div className="flex items-center gap-4 mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+            Panel de Control
+          </h1>
+          <FieldReportButton />
+        </div>
         <p className="text-lg text-gray-600">
           Bienvenido, {userEmail} - SkyRanch
         </p>

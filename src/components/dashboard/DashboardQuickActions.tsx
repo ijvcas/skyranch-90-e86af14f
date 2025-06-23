@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, Settings, PlusCircle } from 'lucide-react';
-import FieldReportButton from '@/components/field-reports/FieldReportButton';
 
 const DashboardQuickActions = () => {
   const navigate = useNavigate();
@@ -36,11 +35,6 @@ const DashboardQuickActions = () => {
 
   return (
     <div className="space-y-6">
-      {/* Field Report Button - Prominent placement */}
-      <div className="flex justify-center">
-        <FieldReportButton />
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {quickActions.map((action, index) => (
           <Card key={index} className="shadow-lg hover:shadow-xl transition-all duration-300 relative">
