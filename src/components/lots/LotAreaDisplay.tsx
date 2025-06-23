@@ -5,10 +5,11 @@ import { usePolygonUtils } from '@/hooks/polygon/usePolygonUtils';
 
 interface LotAreaDisplayProps {
   lot: Lot;
-  calculatedArea?: number;
+  polygonArea?: number;
+  showPolygonHint?: boolean;
 }
 
-const LotAreaDisplay = ({ lot, calculatedArea }: LotAreaDisplayProps) => {
+const LotAreaDisplay = ({ lot, polygonArea, showPolygonHint = false }: LotAreaDisplayProps) => {
   const { formatArea } = usePolygonUtils();
   
   // Safety check to prevent undefined errors
@@ -20,24 +21,24 @@ const LotAreaDisplay = ({ lot, calculatedArea }: LotAreaDisplayProps) => {
     );
   }
   
-  // Use the calculated area if available and different from the stored area
-  const hasCalculatedArea = calculatedArea !== undefined && calculatedArea > 0;
+  // Use the polygon area if available and different from the stored area
+  const hasPolygonArea = polygonArea !== undefined && polygonArea > 0;
   const hasStoredArea = lot.sizeHectares !== undefined && lot.sizeHectares > 0;
-  const areasMatch = hasCalculatedArea && hasStoredArea && 
-    Math.abs(calculatedArea - lot.sizeHectares!) < 0.01; // Allow small differences
+  const areasMatch = hasPolygonArea && hasStoredArea && 
+    Math.abs(polygonArea - lot.sizeHectares!) < 0.01; // Allow small differences
   
   // Style for highlighted calculated area (when different from stored)
-  const calculatedAreaStyle = hasCalculatedArea && hasStoredArea && !areasMatch
+  const calculatedAreaStyle = hasPolygonArea && hasStoredArea && !areasMatch
     ? "font-medium text-amber-600"
     : "font-medium text-gray-600";
     
   return (
     <div className="text-sm space-y-1">
-      {/* Show only one area display - prioritize calculated area if available */}
-      {hasCalculatedArea ? (
+      {/* Show only one area display - prioritize polygon area if available */}
+      {hasPolygonArea ? (
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Área:</span>
-          <span className={calculatedAreaStyle}>{formatArea(calculatedArea)}</span>
+          <span className={calculatedAreaStyle}>{formatArea(polygonArea)}</span>
         </div>
       ) : hasStoredArea ? (
         <div className="flex items-center justify-between">
@@ -48,6 +49,12 @@ const LotAreaDisplay = ({ lot, calculatedArea }: LotAreaDisplayProps) => {
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Área:</span>
           <span className="text-gray-400 italic">No definida</span>
+        </div>
+      )}
+      
+      {showPolygonHint && !hasPolygonArea && (
+        <div className="text-xs text-gray-400 italic">
+          Dibuja un polígono para calcular el área
         </div>
       )}
     </div>

@@ -16,10 +16,6 @@ const LotsGrid: React.FC<LotsGridProps> = ({
   onDeleteLot,
   polygonData = []
 }) => {
-  const getPolygonDataForLot = (lotId: string): {lotId: string; areaHectares?: number} | undefined => {
-    return polygonData.find(p => p.lotId === lotId);
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {lots.map((lot) => (
@@ -32,7 +28,7 @@ const LotsGrid: React.FC<LotsGridProps> = ({
           }}
           onSelect={onLotSelect}
           onDelete={onDeleteLot}
-          polygonData={getPolygonDataForLot(lot.id)}
+          polygonData={polygonData}
         />
       ))}
     </div>
