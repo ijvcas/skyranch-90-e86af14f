@@ -112,30 +112,56 @@ export const getCadastralParcels = async (propertyId?: string): Promise<Cadastra
 
     console.log('Loaded cadastral parcels:', data?.length || 0);
     
-    // Map database fields to interface
-    return (data || []).map(parcel => ({
-      id: parcel.id,
-      propertyId: parcel.property_id,
-      parcelId: parcel.parcel_id,
-      displayName: parcel.display_name,
-      lotNumber: parcel.lot_number,
-      classification: parcel.classification,
-      ownerInfo: parcel.owner_info,
-      notes: parcel.notes,
-      importedFromFile: parcel.imported_from_file,
-      boundaryCoordinates: parcel.boundary_coordinates,
-      areaHectares: parcel.area_hectares,
-      status: parcel.status,
-      createdAt: parcel.created_at,
-      updatedAt: parcel.updated_at,
-      // New financial fields
-      totalCost: parcel.total_cost,
-      costPerSquareMeter: parcel.cost_per_square_meter,
-      sellerName: parcel.seller_name,
-      acquisitionDate: parcel.acquisition_date,
-      acquisitionNotes: parcel.acquisition_notes,
-      contractReference: parcel.contract_reference,
-    }));
+    // Map database fields to interface with proper boundary coordinates parsing
+    return (data || []).map(parcel => {
+      let boundaryCoordinates: { lat: number; lng: number }[] = [];
+      
+      // Safely parse boundary coordinates
+      try {
+        if (typeof parcel.boundary_coordinates === 'string') {
+          boundaryCoordinates = JSON.parse(parcel.boundary_coordinates);
+        } else if (Array.isArray(parcel.boundary_coordinates)) {
+          boundaryCoordinates = parcel.boundary_coordinates;
+        } else if (parcel.boundary_coordinates && typeof parcel.boundary_coordinates === 'object') {
+          // Handle case where it's already a parsed object
+          boundaryCoordinates = Array.isArray(parcel.boundary_coordinates) 
+            ? parcel.boundary_coordinates 
+            : [];
+        }
+        
+        // Ensure it's always an array
+        if (!Array.isArray(boundaryCoordinates)) {
+          boundaryCoordinates = [];
+        }
+      } catch (e) {
+        console.error('Error parsing boundary coordinates for parcel:', parcel.id, e);
+        boundaryCoordinates = [];
+      }
+
+      return {
+        id: parcel.id,
+        propertyId: parcel.property_id,
+        parcelId: parcel.parcel_id,
+        displayName: parcel.display_name,
+        lotNumber: parcel.lot_number,
+        classification: parcel.classification,
+        ownerInfo: parcel.owner_info,
+        notes: parcel.notes,
+        importedFromFile: parcel.imported_from_file,
+        boundaryCoordinates,
+        areaHectares: parcel.area_hectares,
+        status: parcel.status,
+        createdAt: parcel.created_at,
+        updatedAt: parcel.updated_at,
+        // New financial fields
+        totalCost: parcel.total_cost,
+        costPerSquareMeter: parcel.cost_per_square_meter,
+        sellerName: parcel.seller_name,
+        acquisitionDate: parcel.acquisition_date,
+        acquisitionNotes: parcel.acquisition_notes,
+        contractReference: parcel.contract_reference,
+      };
+    });
   } catch (error) {
     console.error('Error loading cadastral parcels:', error);
     return [];

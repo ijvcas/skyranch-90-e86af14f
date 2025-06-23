@@ -46,12 +46,13 @@ export class ParcelRenderer {
   }
 
   renderParcel(parcel: CadastralParcel, bounds: google.maps.LatLngBounds, index: number = 0): boolean {
-    if (!parcel.boundaryCoordinates || parcel.boundaryCoordinates.length < 3) {
-      console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates`);
+    // Ensure boundaryCoordinates exists and is an array
+    if (!parcel.boundaryCoordinates || !Array.isArray(parcel.boundaryCoordinates) || parcel.boundaryCoordinates.length < 3) {
+      console.warn(`❌ Parcel ${parcel.parcelId} has no valid boundary coordinates or insufficient coordinates`);
       return false;
     }
 
-    // Use coordinates EXACTLY as stored - no transformations
+    // Use coordinates EXACTLY as stored - no transformations, but filter invalid ones
     const coordinates = parcel.boundaryCoordinates.filter(coord => 
       coord && 
       typeof coord.lat === 'number' && 
