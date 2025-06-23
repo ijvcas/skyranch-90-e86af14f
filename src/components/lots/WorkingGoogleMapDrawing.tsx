@@ -61,12 +61,12 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
 
     // Create or update lot labels
     lots.forEach(lot => {
-      // Skip if no polygon
-      const lotPolygon = polygons.find(p => p.lotId === lot.id);
+      // Skip if no polygon - convert Map to check if polygon exists for this lot
+      const lotPolygon = polygons.get(lot.id);
       if (!lotPolygon) return;
       
       // Calculate centroid of polygon
-      const path = lotPolygon.polygon.getPath();
+      const path = lotPolygon.getPath();
       let lat = 0, lng = 0;
       
       for (let i = 0; i < path.getLength(); i++) {
@@ -105,9 +105,9 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       }
     });
     
-    // Remove labels for deleted polygons
+    // Remove labels for deleted polygons - iterate through Map keys
     Object.keys(labelsRef.current).forEach(lotId => {
-      if (!polygons.find(p => p.lotId === lotId)) {
+      if (!polygons.has(lotId)) {
         labelsRef.current[lotId].setMap(null);
         delete labelsRef.current[lotId];
       }
@@ -172,6 +172,9 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
     }
   };
 
+  // Calculate polygon count from Map
+  const polygonCount = polygons.size;
+
   return (
     <div className="relative w-full h-[48rem] rounded-lg overflow-hidden bg-gray-100">
       {/* Loading overlay */}
@@ -205,18 +208,17 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       {isMapReady && (
         <>
           <SimplifiedPolygonControls
-            lots={lots}
+            onClearAll={() => {
+              // Clear all polygons logic here
+              polygons.forEach(polygon => polygon.setMap(null));
+            }}
             selectedLotId={selectedLotId}
-            isDrawing={isDrawing}
-            polygons={polygons.map(p => ({ 
-              lotId: p.lotId, 
-              color: p.color,
-              areaHectares: p.areaHectares 
-            }))}
-            onStartDrawing={startDrawing}
-            onStopDrawing={stopDrawing}
-            onDeletePolygon={handleDeletePolygon}
-            getLotColor={getLotColor}
+            onDeleteSelected={() => {
+              if (selectedLotId) {
+                handleDeletePolygon(selectedLotId);
+              }
+            }}
+            polygonCount={polygonCount}
           />
           
           <MapLotLabelsControl

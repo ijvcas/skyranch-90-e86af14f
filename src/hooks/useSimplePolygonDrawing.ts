@@ -40,11 +40,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
     handlePolygonComplete,
     deletePolygon,
     loadSavedPolygons
-  } = usePolygonManager({
-    lots,
-    onLotSelect,
-    getLotColor
-  });
+  } = usePolygonManager(mapInstance.current, onLotSelect);
 
   // Drawing manager
   const {
@@ -94,7 +90,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
           console.log('Loading polygons from database...');
           const savedData = await loadPolygonsFromStorage();
           if (savedData && savedData.length > 0) {
-            await loadSavedPolygons(map, savedData);
+            await loadSavedPolygons(lots);
           }
           
           // Ensure polygon areas are synced with lots
@@ -109,7 +105,7 @@ export const useSimplePolygonDrawing = ({ lots, onLotSelect }: UseSimplePolygonD
     };
 
     initMap();
-  }, [initializeDrawingManager, loadPolygonsFromStorage, loadSavedPolygons]);
+  }, [initializeDrawingManager, loadPolygonsFromStorage, loadSavedPolygons, lots]);
 
   return {
     mapRef,
