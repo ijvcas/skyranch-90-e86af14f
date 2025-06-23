@@ -7,15 +7,12 @@ import LotForm from '@/components/lots/LotForm';
 import LotMapView from '@/components/lots/LotMapView';
 import LotsOverview from '@/components/lots/LotsOverview';
 import CadastralMapView from '@/components/lots/CadastralMapView';
-import PermissionGuard from '@/components/PermissionGuard';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
+  DialogTitle,
   DialogClose
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -31,7 +28,6 @@ const Lots = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [lotToDelete, setLotToDelete] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   // Load lots and polygon data
   useEffect(() => {
@@ -165,15 +161,13 @@ const Lots = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Create Lot Dialog with Permission Guard */}
+        {/* Create Lot Dialog */}
         <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Crear Nuevo Lote Manual</DialogTitle>
             </DialogHeader>
-            <PermissionGuard permission="lots_manage">
-              <LotForm onClose={handleFormClose} />
-            </PermissionGuard>
+            <LotForm onClose={handleFormClose} />
           </DialogContent>
         </Dialog>
         
@@ -193,14 +187,12 @@ const Lots = () => {
               <DialogClose asChild>
                 <Button variant="outline">Cancelar</Button>
               </DialogClose>
-              <PermissionGuard permission="lots_manage">
-                <Button 
-                  variant="destructive" 
-                  onClick={confirmDeleteLot}
-                >
-                  Eliminar
-                </Button>
-              </PermissionGuard>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteLot}
+              >
+                Eliminar
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

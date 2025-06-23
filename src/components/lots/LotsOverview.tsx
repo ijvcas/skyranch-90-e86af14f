@@ -6,7 +6,6 @@ import LotStatistics from './LotStatistics';
 import LotsGrid from './LotsGrid';
 import EnhancedLotsEmptyState from './EnhancedLotsEmptyState';
 import LoadingState from '../ui/loading-state';
-import PermissionGuard from '../PermissionGuard';
 import WorkflowGuide from './WorkflowGuide';
 import SyncStatusCard from './SyncStatusCard';
 import CadastralSyncButton from './CadastralSyncButton';
@@ -70,16 +69,14 @@ const LotsOverview: React.FC<LotsOverviewProps> = ({
               propiedadParcelsCount={propiedadParcelsCount}
               size="default"
             />
-            <PermissionGuard permission="lots_manage">
-              <Button 
-                onClick={onCreateLot} 
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Crear Lote Manual</span>
-              </Button>
-            </PermissionGuard>
+            <Button 
+              onClick={onCreateLot} 
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Crear Lote Manual</span>
+            </Button>
           </div>
         </div>
       </div>

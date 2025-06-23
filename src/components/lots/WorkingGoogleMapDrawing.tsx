@@ -61,7 +61,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
 
     // Create or update lot labels
     lots.forEach(lot => {
-      // Skip if no polygon - convert Map to check if polygon exists for this lot
+      // Skip if no polygon - check if polygon exists for this lot
       const lotPolygon = polygons.get(lot.id);
       if (!lotPolygon) return;
       
@@ -105,7 +105,7 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
       }
     });
     
-    // Remove labels for deleted polygons - iterate through Map keys
+    // Remove labels for deleted polygons
     Object.keys(labelsRef.current).forEach(lotId => {
       if (!polygons.has(lotId)) {
         labelsRef.current[lotId].setMap(null);
