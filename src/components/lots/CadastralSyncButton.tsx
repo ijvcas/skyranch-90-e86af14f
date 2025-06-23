@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, MapPin, Zap, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { syncCadastralParcelsToLots, type SyncResult } from '@/services/cadastralLotSyncService';
+import { syncCadastralParcelsToLots, type SimpleSyncResult } from '@/services/cadastralLotSyncService';
 import {
   Tooltip,
   TooltipContent,
@@ -27,7 +27,7 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
   variant = "default"
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncResult, setLastSyncResult] = useState<SyncResult[] | null>(null);
+  const [lastSyncResult, setLastSyncResult] = useState<SimpleSyncResult | null>(null);
 
   const canSync = propiedadParcelsCount > 0;
 
@@ -40,37 +40,26 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
     setIsSyncing(true);
     
     try {
-      console.log('🚀 User clicked sync button - starting sync process...');
+      console.log('🚀 User clicked sync button - starting simple sync process...');
       toast.info(`Iniciando sincronización de ${propiedadParcelsCount} parcelas PROPIEDAD...`);
       
-      const results = await syncCadastralParcelsToLots();
-      console.log('🎯 Sync completed, processing results:', results);
+      const result = await syncCadastralParcelsToLots();
+      console.log('🎯 Sync completed, processing result:', result);
       
-      setLastSyncResult(results);
+      setLastSyncResult(result);
       
-      if (results.length === 0) {
-        toast.info('✅ No se encontraron cambios. Todas las parcelas PROPIEDAD ya están sincronizadas.');
-        console.log('ℹ️ No changes needed - all parcels already synced');
-      } else {
-        const created = results.filter(r => r.action === 'CREATED').length;
-        const updated = results.filter(r => r.action === 'UPDATED').length;
-        const deleted = results.filter(r => r.action === 'DELETED').length;
-        
-        let message = '🎉 Sincronización completada exitosamente';
-        const details = [];
-        if (created > 0) details.push(`${created} lotes creados`);
-        if (updated > 0) details.push(`${updated} lotes actualizados`);
-        if (deleted > 0) details.push(`${deleted} lotes eliminados`);
-        
-        if (details.length > 0) {
-          message += `: ${details.join(', ')}`;
+      if (result.success) {
+        if (result.lots_created === 0) {
+          toast.info('✅ No se encontraron nuevas parcelas para sincronizar. Todas las parcelas PROPIEDAD ya tienen lotes.');
+        } else {
+          toast.success(`🎉 Sincronización completada: ${result.lots_created} lotes creados exitosamente`, {
+            duration: 5000,
+          });
         }
         
-        toast.success(message, {
-          duration: 5000,
-        });
-        
-        console.log('🎉 Sync results summary:', { created, updated, deleted, total: results.length });
+        console.log('🎉 Sync successful:', result);
+      } else {
+        toast.error(`Error: ${result.message}`);
       }
       
       // Always call onSyncComplete to refresh the UI
@@ -102,7 +91,7 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
     if (isSyncing) {
       return <RefreshCw className="w-4 h-4 animate-spin" />;
     }
-    if (lastSyncResult && lastSyncResult.length > 0) {
+    if (lastSyncResult && lastSyncResult.success && lastSyncResult.lots_created > 0) {
       return <CheckCircle className="w-4 h-4 text-green-600" />;
     }
     if (!canSync) {
@@ -119,8 +108,8 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
       size={size}
       className={`flex items-center space-x-2 ${className} ${
         canSync 
-          ? 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white' 
-          : 'opacity-50'
+          ? 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0' 
+          : 'opacity-50 border-gray-300'
       }`}
     >
       {getButtonIcon()}
@@ -147,9 +136,9 @@ const CadastralSyncButton: React.FC<CadastralSyncButtonProps> = ({
             <div>
               <p className="font-medium">Generar lotes automáticamente</p>
               <p className="text-sm">Crea lotes basados en {propiedadParcelsCount} parcelas PROPIEDAD</p>
-              {lastSyncResult && lastSyncResult.length > 0 && (
+              {lastSyncResult && lastSyncResult.success && lastSyncResult.lots_created > 0 && (
                 <p className="text-xs text-green-600 mt-1">
-                  Última sincronización: {lastSyncResult.length} operaciones
+                  Última sincronización: {lastSyncResult.lots_created} lotes creados
                 </p>
               )}
             </div>

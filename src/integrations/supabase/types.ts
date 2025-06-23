@@ -989,6 +989,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_lots_from_propiedad_parcels: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          lots_created: number
+          success: boolean
+          message: string
+        }[]
+      }
       get_auth_users: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1001,15 +1009,6 @@ export type Database = {
       sync_auth_users_to_app_users: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      sync_propiedad_parcels_to_lots: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          action: string
-          lot_id: string
-          parcel_id: string
-          lot_name: string
-        }[]
       }
     }
     Enums: {

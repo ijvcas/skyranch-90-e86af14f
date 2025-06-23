@@ -1,15 +1,15 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
-export interface SyncResult {
-  action: string;
-  lot_id: string;
-  parcel_id: string;
-  lot_name: string;
+export interface SimpleSyncResult {
+  lots_created: number;
+  success: boolean;
+  message: string;
 }
 
-export const syncCadastralParcelsToLots = async (): Promise<SyncResult[]> => {
+export const syncCadastralParcelsToLots = async (): Promise<SimpleSyncResult> => {
   try {
-    console.log('🔄 Starting sync of PROPIEDAD parcels to lots...');
+    console.log('🔄 Starting simple sync of PROPIEDAD parcels to lots...');
     
     // First check if we have any PROPIEDAD parcels
     const { data: parcelsCheck, error: parcelsError } = await supabase
@@ -26,55 +26,37 @@ export const syncCadastralParcelsToLots = async (): Promise<SyncResult[]> => {
     
     if (!parcelsCheck || parcelsCheck.length === 0) {
       console.warn('⚠️ No PROPIEDAD parcels found to sync');
-      return [];
+      return {
+        lots_created: 0,
+        success: true,
+        message: 'No PROPIEDAD parcels found to sync'
+      };
     }
     
-    // Call the database function
-    const { data, error } = await supabase.rpc('sync_propiedad_parcels_to_lots');
+    // Call the new simple database function
+    const { data, error } = await supabase.rpc('create_lots_from_propiedad_parcels');
     
     if (error) {
       console.error('❌ Database function error:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
       throw error;
     }
     
     console.log(`✅ Sync function executed successfully. Results:`, data);
-    console.log(`📈 Number of operations performed: ${data?.length || 0}`);
     
-    // Log each result for debugging and map returned_lot_id to lot_id for compatibility
+    // Return the first (and only) result from the function
     if (data && data.length > 0) {
-      const mappedResults = data.map((result: any, index: number) => {
-        console.log(`📋 Operation ${index + 1}:`, {
-          action: result.action,
-          lot_id: result.returned_lot_id,
-          parcel_id: result.parcel_id,
-          lot_name: result.lot_name
-        });
-        
-        // Map returned_lot_id to lot_id for backward compatibility
-        return {
-          action: result.action,
-          lot_id: result.returned_lot_id,
-          parcel_id: result.parcel_id,
-          lot_name: result.lot_name
-        } as SyncResult;
-      });
-      
-      return mappedResults;
+      const result = data[0];
+      console.log(`📈 Created ${result.lots_created} lots successfully`);
+      return result;
     }
     
-    return [];
+    return {
+      lots_created: 0,
+      success: true,
+      message: 'No lots were created'
+    };
   } catch (error) {
     console.error('❌ Unexpected error in syncCadastralParcelsToLots:', error);
-    if (error instanceof Error) {
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error stack:', error.stack);
-    }
     throw error;
   }
 };
