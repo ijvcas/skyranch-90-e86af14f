@@ -66,8 +66,12 @@ const Lots = () => {
   };
 
   const handleCreateLot = () => {
-    console.log('🔄 Opening lot creation form...');
+    console.log('🔄 Opening manual lot creation form...');
     setShowCreateForm(true);
+  };
+
+  const handleNavigateToCadastral = () => {
+    setActiveTab('cadastral');
   };
 
   const handleDeleteLot = (lotId: string) => {
@@ -115,11 +119,6 @@ const Lots = () => {
             <h1 className="text-2xl font-bold tracking-tight">Gestión de Lotes</h1>
             <p className="text-gray-500">Administra los lotes de tu finca y datos catastrales</p>
           </div>
-          <PermissionGuard permission="lots_manage">
-            <Button onClick={handleCreateLot} className="mt-4 md:mt-0">
-              Crear Lote
-            </Button>
-          </PermissionGuard>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -137,6 +136,7 @@ const Lots = () => {
               onLotSelect={handleLotSelect}
               onCreateLot={handleCreateLot}
               onDeleteLot={handleDeleteLot}
+              onNavigateToCadastral={handleNavigateToCadastral}
               polygonData={polygonData}
             />
           </TabsContent>
@@ -169,7 +169,7 @@ const Lots = () => {
         <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Lote</DialogTitle>
+              <DialogTitle>Crear Nuevo Lote Manual</DialogTitle>
             </DialogHeader>
             <PermissionGuard permission="lots_manage">
               <LotForm onClose={handleFormClose} />

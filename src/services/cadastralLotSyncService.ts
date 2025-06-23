@@ -19,7 +19,7 @@ export const syncCadastralParcelsToLots = async (): Promise<SyncResult[]> => {
       throw error;
     }
     
-    console.log(`✅ Sync completed. Results:`, data);
+    console.log(`✅ Sync completed successfully. Results:`, data);
     return data || [];
   } catch (error) {
     console.error('❌ Unexpected error in syncCadastralParcelsToLots:', error);
