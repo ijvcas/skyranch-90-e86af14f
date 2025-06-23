@@ -51,7 +51,8 @@ export const getPolygonDataForLots = async () => {
     
     return polygons.map(polygon => ({
       lotId: polygon.lot_id,
-      areaHectares: polygon.area_hectares
+      areaHectares: polygon.area_hectares,
+      coordinates: polygon.coordinates
     }));
   } catch (error) {
     console.error('Error retrieving polygon data for lots:', error);

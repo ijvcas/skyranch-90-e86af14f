@@ -49,7 +49,7 @@ const CleanGoogleMapWithDrawing: React.FC<CleanGoogleMapWithDrawingProps> = ({
   };
 
   // Use drawing manager - only enable in pasture modes
-  const { drawingManager } = useDrawingManager(
+  const drawingManagerHook = useDrawingManager(
     map, 
     handlePolygonComplete,
     mapMode === 'pasture' || mapMode === 'combined' // Only enable drawing for pasture lots
@@ -137,7 +137,6 @@ const CleanGoogleMapWithDrawing: React.FC<CleanGoogleMapWithDrawingProps> = ({
       
       {map && mapMode !== 'property' && (
         <SimplifiedPolygonControls
-          drawingManager={drawingManager}
           onClearAll={clearAllPolygons}
           selectedLotId={selectedLotId}
           onDeleteSelected={() => {

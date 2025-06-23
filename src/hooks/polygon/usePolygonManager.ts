@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { saveLotPolygon, deleteLotPolygon, getPolygonDataForLots } from '@/services/lotPolygonService';
+import { saveLotPolygon, deleteLotPolygon, getLotPolygons } from '@/services/polygonService';
 import { useLotStore } from '@/stores/lotStore';
 import { toast } from 'sonner';
 
@@ -78,10 +78,10 @@ export const usePolygonManager = (
 
     try {
       console.log('🔄 Loading saved polygons for lots...');
-      const polygonData = await getPolygonDataForLots();
+      const polygonData = await getLotPolygons();
       
       lots.forEach((lot) => {
-        const data = polygonData.find(p => p.lotId === lot.id);
+        const data = polygonData.find(p => p.lot_id === lot.id);
         if (!data?.coordinates) return;
 
         try {
