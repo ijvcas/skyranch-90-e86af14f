@@ -88,8 +88,8 @@ const LotCard: React.FC<LotCardProps> = ({ lot, onSelect, onDelete, polygonData 
         <div className="flex items-center text-sm text-gray-600">
           <MapPin className="w-4 h-4 mr-2" />
           <LotAreaDisplay 
-            lotSizeHectares={lot.sizeHectares} 
-            polygonAreaHectares={polygonData?.areaHectares}
+            lot={lot} 
+            calculatedArea={polygonData?.areaHectares}
           />
         </div>
 

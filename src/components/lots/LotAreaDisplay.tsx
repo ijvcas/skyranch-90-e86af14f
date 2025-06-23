@@ -11,6 +11,15 @@ interface LotAreaDisplayProps {
 const LotAreaDisplay = ({ lot, calculatedArea }: LotAreaDisplayProps) => {
   const { formatArea } = usePolygonUtils();
   
+  // Safety check to prevent undefined errors
+  if (!lot) {
+    return (
+      <div className="text-sm text-gray-400 italic">
+        Área: No definida
+      </div>
+    );
+  }
+  
   // Use the calculated area if available and different from the stored area
   const hasCalculatedArea = calculatedArea !== undefined && calculatedArea > 0;
   const hasStoredArea = lot.sizeHectares !== undefined && lot.sizeHectares > 0;

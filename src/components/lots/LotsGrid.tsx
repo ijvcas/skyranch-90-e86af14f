@@ -1,3 +1,4 @@
+
 import React from 'react';
 import LotCard from './LotCard';
 import { type Lot } from '@/stores/lotStore';
@@ -15,9 +16,8 @@ const LotsGrid: React.FC<LotsGridProps> = ({
   onDeleteLot,
   polygonData = []
 }) => {
-  const getPolygonArea = (lotId: string): number | undefined => {
-    const polygon = polygonData.find(p => p.lotId === lotId);
-    return polygon?.areaHectares;
+  const getPolygonDataForLot = (lotId: string): {lotId: string; areaHectares?: number} | undefined => {
+    return polygonData.find(p => p.lotId === lotId);
   };
 
   return (
@@ -32,7 +32,7 @@ const LotsGrid: React.FC<LotsGridProps> = ({
           }}
           onSelect={onLotSelect}
           onDelete={onDeleteLot}
-          polygonArea={getPolygonArea(lot.id)}
+          polygonData={getPolygonDataForLot(lot.id)}
         />
       ))}
     </div>
