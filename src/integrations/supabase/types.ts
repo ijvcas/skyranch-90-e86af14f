@@ -538,6 +538,113 @@ export type Database = {
           },
         ]
       }
+      field_report_entries: {
+        Row: {
+          animal_id: string | null
+          category: string | null
+          completion_date: string | null
+          cost: number | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          entry_type: string
+          field_report_id: string
+          id: string
+          metadata: Json | null
+          photo_urls: string[] | null
+          quantity: number | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          animal_id?: string | null
+          category?: string | null
+          completion_date?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          entry_type: string
+          field_report_id: string
+          id?: string
+          metadata?: Json | null
+          photo_urls?: string[] | null
+          quantity?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          animal_id?: string | null
+          category?: string | null
+          completion_date?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          entry_type?: string
+          field_report_id?: string
+          id?: string
+          metadata?: Json | null
+          photo_urls?: string[] | null
+          quantity?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_report_entries_field_report_id_fkey"
+            columns: ["field_report_id"]
+            isOneToOne: false
+            referencedRelation: "field_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_reports: {
+        Row: {
+          created_at: string
+          id: string
+          location_coordinates: string | null
+          notes: string | null
+          report_type: string
+          status: string
+          temperature: number | null
+          title: string
+          updated_at: string
+          user_id: string
+          weather_conditions: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location_coordinates?: string | null
+          notes?: string | null
+          report_type?: string
+          status?: string
+          temperature?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+          weather_conditions?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location_coordinates?: string | null
+          notes?: string | null
+          report_type?: string
+          status?: string
+          temperature?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weather_conditions?: string | null
+        }
+        Relationships: []
+      }
       health_records: {
         Row: {
           animal_id: string

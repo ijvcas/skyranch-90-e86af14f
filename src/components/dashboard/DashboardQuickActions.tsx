@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, Settings, PlusCircle } from 'lucide-react';
+import FieldReportButton from '@/components/field-reports/FieldReportButton';
 
 const DashboardQuickActions = () => {
   const navigate = useNavigate();
@@ -34,39 +35,46 @@ const DashboardQuickActions = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {quickActions.map((action, index) => (
-        <Card key={index} className="shadow-lg hover:shadow-xl transition-all duration-300 relative">
-          <CardHeader className="pb-4">
-            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-lg ${action.color} flex items-center justify-center mb-4 shadow-md`}>
-              <action.icon className="w-7 h-7 md:w-8 md:h-8 text-white" />
-            </div>
-            <CardTitle className="text-xl md:text-2xl font-semibold text-gray-900">
-              {action.title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-gray-600 text-base md:text-lg mb-6">{action.description}</p>
-            <div className="flex gap-2">
-              <Button 
-                onClick={action.action}
-                className={`flex-1 h-12 text-base font-semibold ${action.color} text-white transition-colors duration-200`}
-              >
-                Acceder
-              </Button>
-              {action.showAddButton && (
-                <Button
-                  onClick={() => navigate('/animals/new')}
-                  className="h-12 px-4 bg-green-600 hover:bg-green-700 text-white transition-colors duration-200"
-                  title="Agregar nuevo animal"
+    <div className="space-y-6">
+      {/* Field Report Button - Prominent placement */}
+      <div className="flex justify-center">
+        <FieldReportButton />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {quickActions.map((action, index) => (
+          <Card key={index} className="shadow-lg hover:shadow-xl transition-all duration-300 relative">
+            <CardHeader className="pb-4">
+              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-lg ${action.color} flex items-center justify-center mb-4 shadow-md`}>
+                <action.icon className="w-7 h-7 md:w-8 md:h-8 text-white" />
+              </div>
+              <CardTitle className="text-xl md:text-2xl font-semibold text-gray-900">
+                {action.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-gray-600 text-base md:text-lg mb-6">{action.description}</p>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={action.action}
+                  className={`flex-1 h-12 text-base font-semibold ${action.color} text-white transition-colors duration-200`}
                 >
-                  <PlusCircle className="w-5 h-5" />
+                  Acceder
                 </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                {action.showAddButton && (
+                  <Button
+                    onClick={() => navigate('/animals/new')}
+                    className="h-12 px-4 bg-green-600 hover:bg-green-700 text-white transition-colors duration-200"
+                    title="Agregar nuevo animal"
+                  >
+                    <PlusCircle className="w-5 h-5" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

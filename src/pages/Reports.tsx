@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { BarChart3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageLayout from '@/components/ui/page-layout';
 import ReportsDashboard from '@/components/ReportsDashboard';
+import FieldReportsLog from '@/components/field-reports/FieldReportsLog';
 
 const Reports: React.FC = () => {
   return (
@@ -13,7 +15,26 @@ const Reports: React.FC = () => {
           <h1 className="text-3xl font-bold">Reportes y Análisis</h1>
         </div>
 
-        <ReportsDashboard />
+        <Tabs defaultValue="analytics" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analytics" className="flex items-center">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Análisis y Estadísticas
+            </TabsTrigger>
+            <TabsTrigger value="field-reports" className="flex items-center">
+              <FileText className="w-4 h-4 mr-2" />
+              Reportes de Campo
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="analytics" className="mt-6">
+            <ReportsDashboard />
+          </TabsContent>
+          
+          <TabsContent value="field-reports" className="mt-6">
+            <FieldReportsLog />
+          </TabsContent>
+        </Tabs>
       </div>
     </PageLayout>
   );
