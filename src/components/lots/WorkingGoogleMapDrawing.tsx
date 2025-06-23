@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { type Lot } from '@/stores/lotStore';
 import { useSimplePolygonDrawing } from '@/hooks/useSimplePolygonDrawing';
@@ -257,10 +258,10 @@ const WorkingGoogleMapDrawing = ({ lots, onLotSelect }: WorkingGoogleMapDrawingP
         </div>
       )}
       
-      {/* Controls overlay - positioned at top-center to avoid Google controls */}
+      {/* Controls overlay - thin lot count banner at top-right */}
       {isMapReady && (
         <>
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="absolute top-4 right-4 z-10">
             <SimplifiedPolygonControls
               onClearAll={handleClearPastureLots}
               selectedLotId={selectedLotId}
