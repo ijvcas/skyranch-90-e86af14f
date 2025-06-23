@@ -108,8 +108,11 @@ const CadastralMapView: React.FC = () => {
         <div>
           {selectedProperty && (
             <CadastralMap
-              properties={[selectedProperty]}
-              parcels={filteredParcels}
+              isLoaded={true}
+              selectedProperty={selectedProperty}
+              cadastralParcels={filteredParcels}
+              statusFilter={statusFilter}
+              onMapReady={() => {}}
               onParcelClick={handleParcelClick}
             />
           )}
