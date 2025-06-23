@@ -98,7 +98,7 @@ export class ParcelRenderer {
       this.onParcelClick(parcel);
     });
 
-    // Create label with correct parcel number
+    // Create label with correct parcel number and smaller font size
     const center = this.calculatePolygonCenter(coordinates);
     
     const label = new google.maps.Marker({
@@ -113,7 +113,7 @@ export class ParcelRenderer {
       label: {
         text: displayNumber,
         color: '#FFFFFF',
-        fontSize: '18px',
+        fontSize: '12px',
         fontWeight: 'bold',
         fontFamily: 'Arial, sans-serif'
       },
