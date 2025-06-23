@@ -18,7 +18,6 @@ const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardH
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
             Panel de Control
           </h1>
-          <FieldReportButton />
         </div>
         <p className="text-lg text-gray-600">
           Bienvenido, {userEmail} - SkyRanch
@@ -42,14 +41,18 @@ const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardH
           </div>
         )}
       </div>
-      <Button
-        variant="outline"
-        onClick={onForceRefresh}
-        className="flex items-center gap-2"
-      >
-        <RefreshCw className="w-4 h-4" />
-        Actualizar
-      </Button>
+      
+      <div className="flex items-center gap-4">
+        <FieldReportButton />
+        <Button
+          variant="outline"
+          onClick={onForceRefresh}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Actualizar
+        </Button>
+      </div>
     </div>
   );
 };
