@@ -4,20 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ChevronDown, ChevronUp, Minimize2, MapPin, Layers } from 'lucide-react';
+import { ChevronDown, ChevronUp, Minimize2, MapPin, Layers, Building, Leaf } from 'lucide-react';
 
 interface MapLotLabelsControlProps {
   showLabels: boolean;
   onToggleLabels: (show: boolean) => void;
   showPropertyName: boolean;
   onTogglePropertyName: (show: boolean) => void;
+  showPropertyLots: boolean;
+  onTogglePropertyLots: (show: boolean) => void;
+  showPastureLots: boolean;
+  onTogglePastureLots: (show: boolean) => void;
 }
 
 const MapLotLabelsControl = ({
   showLabels,
   onToggleLabels,
   showPropertyName,
-  onTogglePropertyName
+  onTogglePropertyName,
+  showPropertyLots,
+  onTogglePropertyLots,
+  showPastureLots,
+  onTogglePastureLots
 }: MapLotLabelsControlProps) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMinimized, setIsMinimized] = useState(true);
@@ -71,13 +79,25 @@ const MapLotLabelsControl = ({
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <MapPin className="w-4 h-4 text-green-600" />
-              <Label htmlFor="show-lot-labels">Nombres de Lotes</Label>
+              <Building className="w-4 h-4 text-gray-500" />
+              <Label htmlFor="show-property-lots">Lotes de Propiedad</Label>
             </div>
             <Switch 
-              id="show-lot-labels" 
-              checked={showLabels} 
-              onCheckedChange={onToggleLabels} 
+              id="show-property-lots" 
+              checked={showPropertyLots} 
+              onCheckedChange={onTogglePropertyLots} 
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Leaf className="w-4 h-4 text-green-600" />
+              <Label htmlFor="show-pasture-lots">Lotes de Pastoreo</Label>
+            </div>
+            <Switch 
+              id="show-pasture-lots" 
+              checked={showPastureLots} 
+              onCheckedChange={onTogglePastureLots} 
             />
           </div>
           
