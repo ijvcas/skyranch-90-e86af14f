@@ -48,12 +48,22 @@ const CleanGoogleMapWithDrawing: React.FC<CleanGoogleMapWithDrawingProps> = ({
     }
   };
 
+  // Get color based on lot status
+  const getLotColor = (lot: Lot) => {
+    switch (lot.status) {
+      case 'active': return '#10b981';
+      case 'resting': return '#f59e0b';
+      case 'maintenance': return '#ef4444';
+      default: return '#6b7280';
+    }
+  };
+
   // Use drawing manager - only enable in pasture modes
-  const drawingManagerHook = useDrawingManager(
-    map, 
-    handlePolygonComplete,
-    mapMode === 'pasture' || mapMode === 'combined' // Only enable drawing for pasture lots
-  );
+  const drawingManagerHook = useDrawingManager({
+    lots: lots || [],
+    getLotColor,
+    onPolygonComplete: handlePolygonComplete
+  });
 
   // Initialize map
   useEffect(() => {
