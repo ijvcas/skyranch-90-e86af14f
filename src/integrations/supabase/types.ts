@@ -710,6 +710,7 @@ export type Database = {
           id: string
           last_rotation_date: string | null
           location_coordinates: string | null
+          lot_type: string | null
           name: string
           next_rotation_date: string | null
           size_hectares: number | null
@@ -728,6 +729,7 @@ export type Database = {
           id?: string
           last_rotation_date?: string | null
           location_coordinates?: string | null
+          lot_type?: string | null
           name: string
           next_rotation_date?: string | null
           size_hectares?: number | null
@@ -746,6 +748,7 @@ export type Database = {
           id?: string
           last_rotation_date?: string | null
           location_coordinates?: string | null
+          lot_type?: string | null
           name?: string
           next_rotation_date?: string | null
           size_hectares?: number | null

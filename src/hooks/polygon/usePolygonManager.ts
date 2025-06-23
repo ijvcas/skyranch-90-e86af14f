@@ -1,200 +1,184 @@
 
 import { useState, useCallback } from 'react';
-import { type Lot } from '@/stores/lotStore';
-import { usePolygonUtils } from './usePolygonUtils';
-import { usePolygonStorage } from './usePolygonStorage';
+import { saveLotPolygon, deleteLotPolygon, getPolygonDataForLots } from '@/services/lotPolygonService';
+import { useLotStore } from '@/stores/lotStore';
+import { toast } from 'sonner';
 
-interface PolygonData {
-  lotId: string;
-  polygon: google.maps.Polygon;
-  color: string;
-  coordinates: { lat: number; lng: number }[];
-  areaHectares?: number;
-}
+export const usePolygonManager = (
+  map: google.maps.Map | null,
+  onPolygonClick?: (lotId: string) => void
+) => {
+  const [polygons, setPolygons] = useState<Map<string, google.maps.Polygon>>(new Map());
+  const { addLot } = useLotStore();
 
-interface UsePolygonManagerOptions {
-  lots: Lot[];
-  onLotSelect: (lotId: string) => void;
-  getLotColor: (lot: Lot) => string;
-}
+  const calculatePolygonArea = useCallback((polygon: google.maps.Polygon): number => {
+    const area = google.maps.geometry.spherical.computeArea(polygon.getPath());
+    return area / 10000; // Convert from m² to hectares
+  }, []);
 
-export const usePolygonManager = ({ lots, onLotSelect, getLotColor }: UsePolygonManagerOptions) => {
-  const [polygons, setPolygons] = useState<PolygonData[]>([]);
-  const { calculatePolygonArea, formatArea } = usePolygonUtils();
-  const { savePolygonsToStorage, deletePolygonFromStorage, loadPolygonsFromStorage } = usePolygonStorage();
+  const handlePolygonComplete = useCallback(async (
+    polygon: google.maps.Polygon, 
+    lotName: string,
+    lotType: 'property' | 'pasture' = 'pasture'
+  ) => {
+    if (!map) return;
 
-  const handlePolygonComplete = useCallback(async (polygon: google.maps.Polygon, selectedLotId: string) => {
-    console.log('handlePolygonComplete called with selectedLotId:', selectedLotId);
-    
-    if (!selectedLotId) {
-      console.log('No lot selected, removing polygon');
-      polygon.setMap(null);
-      return;
-    }
+    try {
+      console.log(`🎯 Creating ${lotType} polygon for lot:`, lotName);
+      
+      const area = calculatePolygonArea(polygon);
+      console.log(`📏 Calculated area: ${area.toFixed(2)} hectares`);
 
-    const lot = lots.find(l => l.id === selectedLotId);
-    if (!lot) {
-      console.log('Lot not found, removing polygon');
-      polygon.setMap(null);
-      return;
-    }
+      // Create the lot with specified type
+      const success = await addLot({
+        name: lotName,
+        description: lotType === 'property' ? 'Lote de propiedad fijo' : 'Lote de pastoreo',
+        sizeHectares: area,
+        status: 'active',
+        grassCondition: 'good',
+        lotType
+      });
 
-    console.log('Processing polygon for lot:', lot.name);
+      if (success) {
+        // Set polygon style based on lot type
+        const polygonOptions = lotType === 'property' ? {
+          fillColor: '#E5E7EB',
+          fillOpacity: 0.15,
+          strokeColor: '#6B7280',
+          strokeWeight: 2,
+          strokeOpacity: 0.8,
+          editable: false,
+          clickable: true
+        } : {
+          fillColor: '#10B981',
+          fillOpacity: 0.3,
+          strokeColor: '#059669',
+          strokeWeight: 2,
+          strokeOpacity: 0.9,
+          editable: true,
+          clickable: true
+        };
 
-    // Get coordinates
-    const path = polygon.getPath();
-    const coordinates = path.getArray().map(point => ({
-      lat: point.lat(),
-      lng: point.lng()
-    }));
-
-    // Calculate area
-    const areaHectares = calculatePolygonArea(polygon);
-    console.log('Calculated area:', areaHectares, 'hectares');
-
-    // Get the color from the lot status
-    const color = getLotColor(lot);
-    console.log('Setting polygon color to:', color, 'for lot status:', lot.status);
-
-    // Set polygon style with the selected color
-    polygon.setOptions({
-      fillColor: color,
-      strokeColor: color === '#f3f4f6' ? '#9ca3af' : color,
-      fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35,
-      strokeWeight: color === '#f3f4f6' ? 3 : 2,
-      clickable: true,
-      editable: true,
-    });
-
-    // Add click listener for lot selection
-    polygon.addListener('click', () => {
-      console.log('Polygon clicked for lot:', lot.id);
-      onLotSelect(lot.id);
-    });
-
-    // Remove existing polygon for this lot first
-    setPolygons(prev => {
-      const existing = prev.find(p => p.lotId === selectedLotId);
-      if (existing) {
-        console.log('Removing existing polygon for lot:', selectedLotId);
-        existing.polygon.setMap(null);
+        polygon.setOptions(polygonOptions);
+        
+        toast.success(`Lote ${lotType === 'property' ? 'de propiedad' : 'de pastoreo'} "${lotName}" creado exitosamente`);
+      } else {
+        polygon.setMap(null);
+        toast.error('Error al crear el lote');
       }
-      return prev.filter(p => p.lotId !== selectedLotId);
-    });
+    } catch (error) {
+      console.error('❌ Error creating polygon:', error);
+      polygon.setMap(null);
+      toast.error('Error al crear el lote');
+    }
+  }, [map, addLot, calculatePolygonArea]);
 
-    // Create polygon data
-    const polygonData: PolygonData = {
-      lotId: selectedLotId,
-      polygon,
-      color,
-      coordinates,
-      areaHectares
-    };
+  const loadSavedPolygons = useCallback(async (lots: any[], customOptions?: any) => {
+    if (!map || !lots.length) return;
 
-    console.log('Adding new polygon data:', polygonData);
+    try {
+      console.log('🔄 Loading saved polygons for lots...');
+      const polygonData = await getPolygonDataForLots();
+      
+      lots.forEach((lot) => {
+        const data = polygonData.find(p => p.lotId === lot.id);
+        if (!data?.coordinates) return;
 
-    // Save to database immediately
-    await savePolygonsToStorage([polygonData]);
+        try {
+          const coordinates = typeof data.coordinates === 'string' 
+            ? JSON.parse(data.coordinates) 
+            : data.coordinates;
 
-    // Update state
-    setPolygons(prev => {
-      const updated = [...prev, polygonData];
-      console.log('Updated polygons array:', updated);
-      return updated;
-    });
-  }, [lots, onLotSelect, savePolygonsToStorage, calculatePolygonArea, getLotColor]);
+          if (!Array.isArray(coordinates) || coordinates.length === 0) return;
+
+          const path = coordinates.map((coord: any) => ({
+            lat: parseFloat(coord.lat || coord.latitude || coord[0]),
+            lng: parseFloat(coord.lng || coord.longitude || coord[1])
+          }));
+
+          // Determine styling based on lot type or use custom options
+          const isPropertyLot = lot.lotType === 'property';
+          const polygonOptions = customOptions || (isPropertyLot ? {
+            fillColor: '#E5E7EB',
+            fillOpacity: 0.15,
+            strokeColor: '#6B7280',
+            strokeWeight: 2,
+            strokeOpacity: 0.8,
+            editable: false,
+            clickable: true
+          } : {
+            fillColor: '#10B981',
+            fillOpacity: 0.3,
+            strokeColor: '#059669',
+            strokeWeight: 2,
+            strokeOpacity: 0.9,
+            editable: true,
+            clickable: true
+          });
+
+          const polygon = new google.maps.Polygon({
+            paths: path,
+            map: map,
+            ...polygonOptions
+          });
+
+          // Add click listener
+          if (onPolygonClick) {
+            polygon.addListener('click', () => {
+              console.log(`🖱️ Polygon clicked for lot: ${lot.name}`);
+              onPolygonClick(lot.id);
+            });
+          }
+
+          setPolygons(prev => new Map(prev.set(lot.id, polygon)));
+          console.log(`✅ Loaded polygon for ${lot.lotType || 'pasture'} lot: ${lot.name}`);
+        } catch (error) {
+          console.error(`❌ Error parsing coordinates for lot ${lot.name}:`, error);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error loading saved polygons:', error);
+    }
+  }, [map, onPolygonClick]);
 
   const deletePolygon = useCallback(async (lotId: string) => {
-    console.log('Deleting polygon for lot:', lotId);
-    
-    // Delete from database
-    await deletePolygonFromStorage(lotId);
-    
-    // Update local state
-    setPolygons(prev => {
-      const polygonData = prev.find(p => p.lotId === lotId);
-      if (polygonData) {
-        polygonData.polygon.setMap(null);
+    const polygon = polygons.get(lotId);
+    if (polygon) {
+      polygon.setMap(null);
+      setPolygons(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(lotId);
+        return newMap;
+      });
+
+      try {
+        await deleteLotPolygon(lotId);
+        console.log(`🗑️ Deleted polygon for lot: ${lotId}`);
+      } catch (error) {
+        console.error('❌ Error deleting polygon from database:', error);
       }
-      return prev.filter(p => p.lotId !== lotId);
-    });
-  }, [deletePolygonFromStorage]);
-
-  const loadSavedPolygons = useCallback(async (map: google.maps.Map, savedData?: any[]) => {
-    const loadedPolygons: PolygonData[] = [];
-
-    // If no savedData provided, load from database via storage hook
-    let dataToLoad = savedData;
-    if (!dataToLoad) {
-      dataToLoad = await loadPolygonsFromStorage();
     }
+  }, [polygons]);
 
-    console.log('Loading saved polygons:', dataToLoad);
+  const clearAllPolygons = useCallback(() => {
+    console.log('🧹 Clearing all polygons from map...');
+    polygons.forEach(polygon => polygon.setMap(null));
+    setPolygons(new Map());
+  }, [polygons]);
 
-    if (!dataToLoad || !dataToLoad.length) {
-      console.log('No polygon data to load');
-      return;
+  const updatePolygonVisibility = useCallback((lotId: string, visible: boolean) => {
+    const polygon = polygons.get(lotId);
+    if (polygon) {
+      polygon.setVisible(visible);
     }
-
-    dataToLoad.forEach((item: any) => {
-      const lot = lots.find(l => l.id === item.lotId);
-      if (lot && item.coordinates && Array.isArray(item.coordinates)) {
-        try {
-          // Use current lot status color
-          const color = getLotColor(lot);
-          
-          // Ensure coordinates are properly formed
-          const validCoordinates = item.coordinates.filter((coord: any) => 
-            coord && typeof coord.lat === 'number' && typeof coord.lng === 'number'
-          );
-          
-          if (validCoordinates.length < 3) {
-            console.warn('Invalid polygon coordinates for lot:', lot.id, 'Not enough valid points');
-            return;
-          }
-          
-          const polygon = new google.maps.Polygon({
-            paths: validCoordinates,
-            fillColor: color,
-            strokeColor: color === '#f3f4f6' ? '#9ca3af' : color,
-            fillOpacity: color === '#f3f4f6' ? 0.8 : 0.35,
-            strokeWeight: color === '#f3f4f6' ? 3 : 2,
-            clickable: true,
-            editable: true,
-          });
-
-          polygon.setMap(map);
-          
-          // Add click listener for lot selection
-          polygon.addListener('click', () => onLotSelect(lot.id));
-          
-          // Calculate area if not stored or recalculate for accuracy
-          const areaHectares = item.areaHectares || calculatePolygonArea(polygon);
-          
-          loadedPolygons.push({
-            lotId: item.lotId,
-            polygon,
-            color,
-            coordinates: validCoordinates,
-            areaHectares
-          });
-        } catch (error) {
-          console.error('Error creating polygon for lot:', lot.id, error);
-        }
-      } else {
-        console.warn('Invalid polygon data or missing lot:', item);
-      }
-    });
-
-    console.log('Loaded polygons from database:', loadedPolygons);
-    setPolygons(loadedPolygons);
-  }, [lots, getLotColor, onLotSelect, calculatePolygonArea, loadPolygonsFromStorage]);
+  }, [polygons]);
 
   return {
     polygons,
-    setPolygons,
     handlePolygonComplete,
+    loadSavedPolygons,
     deletePolygon,
-    loadSavedPolygons
+    clearAllPolygons,
+    updatePolygonVisibility
   };
 };
