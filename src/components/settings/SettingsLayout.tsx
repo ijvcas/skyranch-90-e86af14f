@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Database, Shield, Settings as SettingsIcon } from 'lucide-react';
+import { Users, Database, Shield, Settings as SettingsIcon, Rocket } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface SettingsLayoutProps {
@@ -23,7 +23,7 @@ const SettingsLayout = ({ activeTab, onTabChange, children }: SettingsLayoutProp
         tabs.push('users');
       }
       if (await checkPermission('system_settings')) {
-        tabs.push('backup', 'permissions', 'system');
+        tabs.push('backup', 'permissions', 'versions', 'system');
       }
       
       setAvailableTabs(tabs);
@@ -49,7 +49,7 @@ const SettingsLayout = ({ activeTab, onTabChange, children }: SettingsLayoutProp
         </div>
 
         <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             {availableTabs.includes('users') && (
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -66,6 +66,12 @@ const SettingsLayout = ({ activeTab, onTabChange, children }: SettingsLayoutProp
               <TabsTrigger value="permissions" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 Permisos
+              </TabsTrigger>
+            )}
+            {availableTabs.includes('versions') && (
+              <TabsTrigger value="versions" className="flex items-center gap-2">
+                <Rocket className="w-4 h-4" />
+                Versiones
               </TabsTrigger>
             )}
             {availableTabs.includes('system') && (
