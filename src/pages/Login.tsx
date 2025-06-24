@@ -6,9 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Users, AlertCircle, Settings } from 'lucide-react';
+import { Users, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import AdminPasswordReset from '@/components/AdminPasswordReset';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,7 +18,6 @@ const Login = () => {
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAdminTools, setShowAdminTools] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -59,19 +57,10 @@ const Login = () => {
         
         if (error.message === 'Invalid login credentials') {
           errorMessage = "Email o contraseña incorrectos. Verifica tus credenciales.";
-          
-          // Special handling for problematic user
-          if (formData.email === 'jvcas@mac.com') {
-            errorMessage += " Si sigues teniendo problemas, usa las herramientas de admin para resetear tu cuenta.";
-            setShowAdminTools(true);
-          }
         } else if (error.message?.includes('Email not confirmed')) {
           errorMessage = "Por favor confirma tu email antes de iniciar sesión.";
         } else if (error.message?.includes('network')) {
           errorMessage = "Error de conexión. Verifica tu internet.";
-        } else if (error.message?.includes('session')) {
-          errorMessage = "Sesión corrupta detectada. Limpia la sesión y vuelve a intentar.";
-          setShowAdminTools(true);
         }
         
         toast({
@@ -117,111 +106,102 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4 px-6">
-      <div className="w-full max-w-4xl flex gap-6 justify-center">
-        {/* Main Login Card */}
-        <Card className="w-full max-w-md shadow-2xl">
-          <CardHeader className="text-center pb-6">
-            <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Users className="w-10 h-10 text-white" />
-            </div>
-            <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
-              SkyRanch
-            </CardTitle>
-            <p className="text-gray-600 text-lg">
-              Inicia sesión para gestionar tus animales
-            </p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="tu@correo.com"
-                  required
-                  className="mt-2 h-12 text-base"
-                  disabled={isSubmitting}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="password" className="text-base font-medium">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  placeholder="Tu contraseña"
-                  required
-                  className="mt-2 h-12 text-base"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <Button
-                type="submit"
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="text-center pb-6">
+          <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Users className="w-10 h-10 text-white" />
+          </div>
+          <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
+            SkyRanch
+          </CardTitle>
+          <p className="text-gray-600 text-lg">
+            Inicia sesión para gestionar tus animales
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="email" className="text-base font-medium">Correo Electrónico</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="tu@correo.com"
+                required
+                className="mt-2 h-12 text-base"
                 disabled={isSubmitting}
-                className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-semibold mt-8"
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Iniciando sesión...
-                  </div>
-                ) : (
-                  "Iniciar Sesión"
-                )}
-              </Button>
-            </form>
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="password" className="text-base font-medium">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="Tu contraseña"
+                required
+                className="mt-2 h-12 text-base"
+                disabled={isSubmitting}
+              />
+            </div>
 
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start space-x-2">
-                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">¿No puedes iniciar sesión?</p>
-                  <p>Asegúrate de usar las credenciales correctas. Si no tienes cuenta, regístrate primero.</p>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-semibold mt-8"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Iniciando sesión...
                 </div>
+              ) : (
+                "Iniciar Sesión"
+              )}
+            </Button>
+          </form>
+
+          {/* Forgot Password Link */}
+          <div className="mt-4 text-center">
+            <Button
+              variant="link"
+              onClick={() => navigate('/forgot-password')}
+              className="text-gray-600 hover:text-green-600 text-sm"
+              disabled={isSubmitting}
+            >
+              ¿Olvidaste tu contraseña?
+            </Button>
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">¿No puedes iniciar sesión?</p>
+                <p>Asegúrate de usar las credenciales correctas. Si no tienes cuenta, regístrate primero.</p>
               </div>
             </div>
+          </div>
 
-            <div className="mt-6 text-center">
-              <p className="text-base text-gray-600">
-                ¿No tienes cuenta?{' '}
-                <Button 
-                  variant="link" 
-                  className="p-0 text-green-600 text-base font-semibold"
-                  onClick={() => navigate('/register')}
-                  disabled={isSubmitting}
-                >
-                  Registrarse
-                </Button>
-              </p>
-            </div>
-
-            {/* Admin Tools Toggle */}
-            <div className="mt-4 text-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAdminTools(!showAdminTools)}
-                className="text-gray-500 text-sm"
+          <div className="mt-6 text-center">
+            <p className="text-base text-gray-600">
+              ¿No tienes cuenta?{' '}
+              <Button 
+                variant="link" 
+                className="p-0 text-green-600 text-base font-semibold"
+                onClick={() => navigate('/register')}
+                disabled={isSubmitting}
               >
-                <Settings className="w-4 h-4 mr-1" />
-                {showAdminTools ? 'Ocultar' : 'Mostrar'} Herramientas Admin
+                Registrarse
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Admin Tools Panel */}
-        {showAdminTools && (
-          <AdminPasswordReset />
-        )}
-      </div>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
