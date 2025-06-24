@@ -8,7 +8,6 @@ import { MapPin, ExternalLink, Globe, Copy, Check } from 'lucide-react';
 import SupportInfoSettings from './SupportInfoSettings';
 import DashboardBannerSettings from './DashboardBannerSettings';
 import TimezoneSettings from '@/components/TimezoneSettings';
-import DatabaseVersionDisplay from '@/components/app-info/DatabaseVersionDisplay';
 import PermissionGuard from '@/components/PermissionGuard';
 import { toast } from 'sonner';
 
@@ -107,9 +106,6 @@ const SystemSettings = () => {
       
       {/* Timezone Settings */}
       <TimezoneSettings />
-      
-      {/* Database Version Display - manual version system with description field */}
-      <DatabaseVersionDisplay />
     </div>
   );
 };
