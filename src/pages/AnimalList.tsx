@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAllAnimals } from '@/services/animalService';
+import { getAllAnimals } from '@/services/animal/animalQueries';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAnimalFiltering } from '@/hooks/useAnimalFiltering';
@@ -30,8 +30,9 @@ const AnimalList = () => {
     animalName: ''
   });
   
+  // Updated query key to reflect farm-wide animals instead of user-specific
   const { data: animals = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['animals', 'all-users'],
+    queryKey: ['animals', 'farm-wide'],
     queryFn: getAllAnimals,
     enabled: !!user,
     staleTime: 0,

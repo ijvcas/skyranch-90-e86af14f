@@ -12,10 +12,10 @@ export const getAllAnimals = async (): Promise<Animal[]> => {
       return [];
     }
 
+    // Remove user_id filter - all authenticated users can see all animals
     const { data, error } = await supabase
       .from('animals')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -70,11 +70,11 @@ export const getAnimal = async (id: string): Promise<Animal | null> => {
       return null;
     }
 
+    // Remove user_id filter - all authenticated users can see all animals
     const { data, error } = await supabase
       .from('animals')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user.id)
       .single();
 
     if (error) {
