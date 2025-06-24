@@ -88,6 +88,7 @@ const VersionControlPanel = () => {
 
   const criteria = unifiedVersionManager.getVersionCriteria();
   const suggestion = unifiedVersionManager.getIncrementSuggestion();
+  const nextVersionPreview = unifiedVersionManager.getNextVersionPreview(versionType);
 
   if (!currentVersion) {
     return (
@@ -240,7 +241,7 @@ const VersionControlPanel = () => {
               ) : (
                 <>
                   <Rocket className="w-4 h-4 mr-2" />
-                  Publicar v{unifiedVersionManager.incrementVersion ? 'X.X.X' : 'Nueva Versión'}
+                  Publicar {nextVersionPreview}
                 </>
               )}
             </Button>

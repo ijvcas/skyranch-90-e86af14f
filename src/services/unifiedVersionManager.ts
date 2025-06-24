@@ -1,3 +1,4 @@
+
 export interface UnifiedVersionInfo {
   version: string;
   buildNumber: number;
@@ -57,7 +58,7 @@ class UnifiedVersionManager {
     };
   }
 
-  private incrementVersion(currentVersion: string, type: 'major' | 'minor' | 'patch'): string {
+  public incrementVersion(currentVersion: string, type: 'major' | 'minor' | 'patch'): string {
     const { major, minor, patch } = this.parseVersion(currentVersion);
     
     switch (type) {
@@ -196,6 +197,13 @@ class UnifiedVersionManager {
     if (patch >= 10) return 'minor';
     
     return 'patch';
+  }
+
+  public getNextVersionPreview(type: 'major' | 'minor' | 'patch'): string {
+    const current = this.getCurrentVersion();
+    if (!current) return 'v0.0.1';
+    
+    return `v${this.incrementVersion(current.version, type)}`;
   }
 }
 
