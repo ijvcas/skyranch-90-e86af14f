@@ -1,15 +1,16 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export interface SimpleSyncResult {
+export interface BidirectionalSyncResult {
   lots_created: number;
+  lots_deleted: number;
   success: boolean;
   message: string;
 }
 
-export const syncCadastralParcelsToLots = async (): Promise<SimpleSyncResult> => {
+export const syncCadastralParcelsToLots = async (): Promise<BidirectionalSyncResult> => {
   try {
-    console.log('🔄 Starting simple sync of PROPIEDAD parcels to property lots...');
+    console.log('🔄 Starting bidirectional sync of PROPIEDAD parcels to property lots...');
     
     // First check if we have any PROPIEDAD parcels
     const { data: parcelsCheck, error: parcelsError } = await supabase
@@ -24,16 +25,7 @@ export const syncCadastralParcelsToLots = async (): Promise<SimpleSyncResult> =>
     
     console.log(`📊 Found ${parcelsCheck?.length || 0} PROPIEDAD parcels before sync`);
     
-    if (!parcelsCheck || parcelsCheck.length === 0) {
-      console.warn('⚠️ No PROPIEDAD parcels found to sync');
-      return {
-        lots_created: 0,
-        success: true,
-        message: 'No PROPIEDAD parcels found to sync'
-      };
-    }
-    
-    // Call the database function to create property lots
+    // Call the database function to create/cleanup property lots
     const { data, error } = await supabase.rpc('create_lots_from_propiedad_parcels');
     
     if (error) {
@@ -41,19 +33,20 @@ export const syncCadastralParcelsToLots = async (): Promise<SimpleSyncResult> =>
       throw error;
     }
     
-    console.log(`✅ Sync function executed successfully. Results:`, data);
+    console.log(`✅ Bidirectional sync function executed successfully. Results:`, data);
     
     // Return the first (and only) result from the function
     if (data && data.length > 0) {
       const result = data[0];
-      console.log(`📈 Created ${result.lots_created} property lots successfully`);
+      console.log(`📈 Sync completed: ${result.lots_created} lots created, ${result.lots_deleted} lots deleted`);
       return result;
     }
     
     return {
       lots_created: 0,
+      lots_deleted: 0,
       success: true,
-      message: 'No property lots were created'
+      message: 'No changes were needed'
     };
   } catch (error) {
     console.error('❌ Unexpected error in syncCadastralParcelsToLots:', error);

@@ -1121,6 +1121,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           lots_created: number
+          lots_deleted: number
           success: boolean
           message: string
         }[]
