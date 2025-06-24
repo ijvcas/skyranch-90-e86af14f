@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -19,6 +20,7 @@ import Reports from '@/pages/Reports';
 import Lots from '@/pages/Lots';
 import Notifications from '@/pages/Notifications';
 import Settings from '@/pages/Settings';
+import AdminSettings from '@/pages/AdminSettings';
 import HealthRecords from '@/pages/HealthRecords';
 import NotFound from '@/pages/NotFound';
 import './App.css';
@@ -102,6 +104,11 @@ function App() {
               <Route path="/settings" element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <AdminSettings />
                 </ProtectedRoute>
               } />
               <Route path="/health-records" element={
