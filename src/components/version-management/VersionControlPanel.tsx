@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RefreshCw, Rocket, GitBranch, Clock, Plus, History, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { unifiedVersionManager, type UnifiedVersionInfo } from '@/services/unifiedVersionManager';
+import { unifiedVersionManager, type UnifiedVersionInfo } from '@/services/version-management';
 
 const VersionControlPanel = () => {
   const { toast } = useToast();

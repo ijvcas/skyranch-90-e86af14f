@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { History, Calendar, GitBranch, User, AlertCircle, Plus, CheckCircle } from 'lucide-react';
-import { unifiedVersionManager, type VersionHistory } from '@/services/unifiedVersionManager';
+import { unifiedVersionManager, type VersionHistory } from '@/services/version-management';
 
 const VersionHistoryPanel = () => {
   const [versionHistory, setVersionHistory] = useState<VersionHistory[]>([]);
