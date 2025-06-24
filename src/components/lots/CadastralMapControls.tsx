@@ -2,9 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
-import PropertySelector from './PropertySelector';
 import CadastralFileUpload from './CadastralFileUpload';
-import ParcelStatusFilter from './ParcelStatusFilter';
 import CadastralSettingsDropdown from './CadastralSettingsDropdown';
 import type { Property, CadastralParcel } from '@/services/cadastralService';
 import type { ParcelStatus } from '@/utils/cadastral/types';
@@ -25,16 +23,11 @@ interface CadastralMapControlsProps {
 }
 
 const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
-  properties,
   selectedPropertyId,
-  onPropertyChange,
-  isLoading,
   showUpload,
   onToggleUpload,
   onFileUploadSuccess,
   onCancelUpload,
-  statusFilter,
-  onStatusFilterChange,
   onParcelsDeleted,
   parcels = []
 }) => {
@@ -55,39 +48,24 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <MapPin className="w-5 h-5" />
-            <span>Mapa Cadastral</span>
+            <span>Mapa Catastral</span>
           </CardTitle>
-          {totalPropiedadArea > 0 && (
-            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
-              <span className="text-sm font-semibold">
-                Total Área Propiedad: {totalPropiedadArea.toFixed(4)} ha
-              </span>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          <PropertySelector
-            properties={properties}
-            selectedPropertyId={selectedPropertyId}
-            onPropertyChange={onPropertyChange}
-            isLoading={isLoading}
-          />
-          
-          <ParcelStatusFilter
-            selectedStatus={statusFilter}
-            onStatusChange={onStatusFilterChange}
-          />
-          
-          <div className="md:col-span-2 flex justify-end">
+          <div className="flex items-center space-x-4">
+            {totalPropiedadArea > 0 && (
+              <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg">
+                <span className="text-lg font-bold">
+                  Área Total en Propiedad: {totalPropiedadArea.toFixed(4)} ha
+                </span>
+              </div>
+            )}
             <CadastralSettingsDropdown
               onToggleUpload={onToggleUpload}
               onParcelsDeleted={onParcelsDeleted}
             />
           </div>
         </div>
-
+      </CardHeader>
+      <CardContent>
         {showUpload && (
           <CadastralFileUpload
             propertyId={selectedPropertyId}
