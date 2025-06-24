@@ -269,6 +269,42 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_metadata: {
+        Row: {
+          backup_date: string
+          backup_name: string
+          backup_version: string
+          categories_included: string[]
+          checksum: string | null
+          created_at: string
+          id: string
+          total_records: number
+          user_id: string | null
+        }
+        Insert: {
+          backup_date?: string
+          backup_name: string
+          backup_version?: string
+          categories_included: string[]
+          checksum?: string | null
+          created_at?: string
+          id?: string
+          total_records?: number
+          user_id?: string | null
+        }
+        Update: {
+          backup_date?: string
+          backup_name?: string
+          backup_version?: string
+          categories_included?: string[]
+          checksum?: string | null
+          created_at?: string
+          id?: string
+          total_records?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       breeding_records: {
         Row: {
           actual_birth_date: string | null

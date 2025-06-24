@@ -6,19 +6,42 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Download, Upload, Database, Users, FileText, Calendar, Shield } from 'lucide-react';
+import { Download, Upload, Database, Users, FileText, Calendar, Shield, MapPin, Heart, Clipboard, Bell, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { getAllUsers } from '@/services/userService';
 import { getAllAnimals } from '@/services/animalService';
+import { 
+  getAllFieldReports, 
+  getAllLots, 
+  getAllCadastralData, 
+  getAllHealthRecords, 
+  getAllBreedingData, 
+  getAllCalendarData, 
+  getAllNotifications, 
+  getAllReports,
+  importFieldReports,
+  importLots,
+  importCadastralData,
+  importHealthRecords,
+  importBreedingData,
+  importCalendarData,
+  importNotifications,
+  importReports,
+  type ComprehensiveBackupData
+} from '@/services/comprehensiveBackupService';
 
 interface BackupData {
   users: boolean;
   animals: boolean;
+  fieldReports: boolean;
   lots: boolean;
+  cadastralData: boolean;
   healthRecords: boolean;
   breedingRecords: boolean;
   calendarEvents: boolean;
+  notifications: boolean;
+  reports: boolean;
 }
 
 const SystemBackupManager: React.FC = () => {
@@ -30,30 +53,148 @@ const SystemBackupManager: React.FC = () => {
   const [selectedData, setSelectedData] = useState<BackupData>({
     users: true,
     animals: true,
+    fieldReports: true,
     lots: true,
+    cadastralData: true,
     healthRecords: true,
     breedingRecords: true,
     calendarEvents: true,
+    notifications: true,
+    reports: true,
   });
 
-  // Get data for export
+  // Get data for export with actual counts
   const { data: users = [] } = useQuery({
-    queryKey: ['app-users'],
+    queryKey: ['backup-users'],
     queryFn: getAllUsers,
+    enabled: selectedData.users,
   });
 
   const { data: animals = [] } = useQuery({
-    queryKey: ['animals'],
+    queryKey: ['backup-animals'],
     queryFn: getAllAnimals,
+    enabled: selectedData.animals,
+  });
+
+  const { data: fieldReports = [] } = useQuery({
+    queryKey: ['backup-field-reports'],
+    queryFn: getAllFieldReports,
+    enabled: selectedData.fieldReports,
+  });
+
+  const { data: lotsData } = useQuery({
+    queryKey: ['backup-lots'],
+    queryFn: getAllLots,
+    enabled: selectedData.lots,
+  });
+
+  const { data: cadastralData } = useQuery({
+    queryKey: ['backup-cadastral'],
+    queryFn: getAllCadastralData,
+    enabled: selectedData.cadastralData,
+  });
+
+  const { data: healthRecords = [] } = useQuery({
+    queryKey: ['backup-health'],
+    queryFn: getAllHealthRecords,
+    enabled: selectedData.healthRecords,
+  });
+
+  const { data: breedingData } = useQuery({
+    queryKey: ['backup-breeding'],
+    queryFn: getAllBreedingData,
+    enabled: selectedData.breedingRecords,
+  });
+
+  const { data: calendarData } = useQuery({
+    queryKey: ['backup-calendar'],
+    queryFn: getAllCalendarData,
+    enabled: selectedData.calendarEvents,
+  });
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['backup-notifications'],
+    queryFn: getAllNotifications,
+    enabled: selectedData.notifications,
+  });
+
+  const { data: reports = [] } = useQuery({
+    queryKey: ['backup-reports'],
+    queryFn: getAllReports,
+    enabled: selectedData.reports,
   });
 
   const backupCategories = [
-    { key: 'users', label: 'Usuarios', icon: Users, description: 'Cuentas de usuario y configuraciones' },
-    { key: 'animals', label: 'Animales', icon: Database, description: 'Registro de animales y genealogía' },
-    { key: 'lots', label: 'Lotes', icon: Shield, description: 'Lotes y polígonos del terreno' },
-    { key: 'healthRecords', label: 'Registros de Salud', icon: FileText, description: 'Historial médico y tratamientos' },
-    { key: 'breedingRecords', label: 'Registros de Reproducción', icon: Database, description: 'Apareamientos y crías' },
-    { key: 'calendarEvents', label: 'Eventos del Calendario', icon: Calendar, description: 'Eventos programados y recordatorios' },
+    { 
+      key: 'users', 
+      label: 'Usuarios', 
+      icon: Users, 
+      description: 'Cuentas de usuario y configuraciones',
+      count: users.length
+    },
+    { 
+      key: 'animals', 
+      label: 'Animales', 
+      icon: Database, 
+      description: 'Registro de animales y genealogía',
+      count: animals.length
+    },
+    { 
+      key: 'fieldReports', 
+      label: 'Reportes de Campo', 
+      icon: Clipboard, 
+      description: 'Reportes de campo y observaciones',
+      count: fieldReports.length
+    },
+    { 
+      key: 'lots', 
+      label: 'Lotes y Terrenos', 
+      icon: MapPin, 
+      description: 'Lotes, polígonos y asignaciones de animales',
+      count: lotsData ? (lotsData.lots?.length || 0) + (lotsData.polygons?.length || 0) : 0
+    },
+    { 
+      key: 'cadastralData', 
+      label: 'Datos Catastrales', 
+      icon: Shield, 
+      description: 'Parcelas catastrales y propiedades',
+      count: cadastralData ? (cadastralData.parcels?.length || 0) + (cadastralData.properties?.length || 0) : 0
+    },
+    { 
+      key: 'healthRecords', 
+      label: 'Registros de Salud', 
+      icon: Heart, 
+      description: 'Historial médico y tratamientos',
+      count: healthRecords.length
+    },
+    { 
+      key: 'breedingRecords', 
+      label: 'Registros de Reproducción', 
+      icon: FileText, 
+      description: 'Apareamientos, crías y descendencia',
+      count: breedingData ? (breedingData.breedingRecords?.length || 0) + (breedingData.offspring?.length || 0) : 0
+    },
+    { 
+      key: 'calendarEvents', 
+      label: 'Eventos del Calendario', 
+      icon: Calendar, 
+      description: 'Eventos programados y recordatorios',
+      count: calendarData ? (calendarData.events?.length || 0) + (calendarData.eventNotifications?.length || 0) : 0
+    },
+    { 
+      key: 'notifications', 
+      label: 'Notificaciones', 
+      icon: Bell, 
+      description: 'Historial de notificaciones del sistema',
+      count: notifications.length
+    },
+    { 
+      key: 'reports', 
+      label: 'Reportes Guardados', 
+      icon: BarChart3, 
+      description: 'Reportes personalizados guardados',
+      count: reports.length
+    },
   ];
 
   const handleDataSelectionChange = (category: keyof BackupData, checked: boolean) => {
@@ -87,45 +228,64 @@ const SystemBackupManager: React.FC = () => {
     }, 200);
   };
 
+  const calculateTotalRecords = (): number => {
+    let total = 0;
+    if (selectedData.users) total += users.length;
+    if (selectedData.animals) total += animals.length;
+    if (selectedData.fieldReports) total += fieldReports.length;
+    if (selectedData.lots && lotsData) {
+      total += (lotsData.lots?.length || 0) + (lotsData.polygons?.length || 0) + 
+               (lotsData.assignments?.length || 0) + (lotsData.rotations?.length || 0);
+    }
+    if (selectedData.cadastralData && cadastralData) {
+      total += (cadastralData.parcels?.length || 0) + (cadastralData.properties?.length || 0);
+    }
+    if (selectedData.healthRecords) total += healthRecords.length;
+    if (selectedData.breedingRecords && breedingData) {
+      total += (breedingData.breedingRecords?.length || 0) + (breedingData.offspring?.length || 0);
+    }
+    if (selectedData.calendarEvents && calendarData) {
+      total += (calendarData.events?.length || 0) + (calendarData.eventNotifications?.length || 0);
+    }
+    if (selectedData.notifications) total += notifications.length;
+    if (selectedData.reports) total += reports.length;
+    return total;
+  };
+
   const handleExport = () => {
     setIsExporting(true);
     
     simulateProgress(() => {
       try {
-        const backupData: any = {
+        const totalRecords = calculateTotalRecords();
+        const selectedCategories = Object.keys(selectedData).filter(key => selectedData[key as keyof BackupData]);
+        
+        const backupData: ComprehensiveBackupData = {
           metadata: {
             exportDate: new Date().toISOString(),
-            version: '1.0.0',
-            selectedCategories: Object.keys(selectedData).filter(key => selectedData[key as keyof BackupData])
+            version: '2.0.0',
+            selectedCategories,
+            totalRecords
           }
         };
 
-        // Add selected data categories
-        if (selectedData.users) {
-          backupData.users = users;
-        }
-        if (selectedData.animals) {
-          backupData.animals = animals;
-        }
-        if (selectedData.lots) {
-          backupData.lots = []; // Would come from lot service
-        }
-        if (selectedData.healthRecords) {
-          backupData.healthRecords = []; // Would come from health records service
-        }
-        if (selectedData.breedingRecords) {
-          backupData.breedingRecords = []; // Would come from breeding service
-        }
-        if (selectedData.calendarEvents) {
-          backupData.calendarEvents = []; // Would come from calendar service
-        }
+        // Add selected data categories with actual data
+        if (selectedData.users) backupData.users = users;
+        if (selectedData.animals) backupData.animals = animals;
+        if (selectedData.fieldReports) backupData.fieldReports = fieldReports;
+        if (selectedData.lots && lotsData) backupData.lots = lotsData;
+        if (selectedData.cadastralData && cadastralData) backupData.cadastralParcels = cadastralData;
+        if (selectedData.healthRecords) backupData.healthRecords = healthRecords;
+        if (selectedData.breedingRecords && breedingData) backupData.breedingRecords = breedingData;
+        if (selectedData.calendarEvents && calendarData) backupData.calendarEvents = calendarData;
+        if (selectedData.notifications) backupData.notifications = notifications;
+        if (selectedData.reports) backupData.reports = reports;
 
         const dataStr = JSON.stringify(backupData, null, 2);
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         
         const timestamp = new Date().toISOString().split('T')[0];
-        const selectedCategories = Object.keys(selectedData).filter(key => selectedData[key as keyof BackupData]);
-        const exportFileName = `farm_backup_${timestamp}_${selectedCategories.join('_')}.json`;
+        const exportFileName = `farm_comprehensive_backup_${timestamp}_${totalRecords}records.json`;
 
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri);
@@ -136,7 +296,7 @@ const SystemBackupManager: React.FC = () => {
 
         toast({
           title: "Backup Completado",
-          description: `Backup exportado exitosamente como ${exportFileName}`,
+          description: `Backup exportado exitosamente: ${totalRecords} registros en ${exportFileName}`,
         });
       } catch (error) {
         console.error('Error during export:', error);
@@ -166,41 +326,73 @@ const SystemBackupManager: React.FC = () => {
     simulateProgress(async () => {
       try {
         const text = await importFile.text();
-        const backupData = JSON.parse(text);
+        const backupData: ComprehensiveBackupData = JSON.parse(text);
 
         // Validate backup structure
         if (!backupData.metadata || !backupData.metadata.version) {
           throw new Error("Archivo de backup inválido - falta metadata");
         }
 
-        console.log('📦 Importing backup data:', backupData.metadata);
+        console.log('📦 Importing comprehensive backup data:', backupData.metadata);
 
-        // Process each data category
-        let importCount = 0;
-        
-        if (backupData.users && selectedData.users) {
-          console.log(`👥 Importing ${backupData.users.length} users`);
-          importCount += backupData.users.length;
-          // Here you would call the actual import functions
-        }
+        let totalImported = 0;
 
-        if (backupData.animals && selectedData.animals) {
-          console.log(`🐄 Importing ${backupData.animals.length} animals`);
-          importCount += backupData.animals.length;
+        // Import each data category based on selection
+        if (backupData.fieldReports && selectedData.fieldReports) {
+          const count = await importFieldReports(backupData.fieldReports);
+          totalImported += count;
+          console.log(`📋 Imported ${count} field reports`);
         }
 
         if (backupData.lots && selectedData.lots) {
-          console.log(`🏞️ Importing ${backupData.lots.length} lots`);
-          importCount += backupData.lots.length;
+          const count = await importLots(backupData.lots);
+          totalImported += count;
+          console.log(`🏞️ Imported ${count} lots and related data`);
+        }
+
+        if (backupData.cadastralParcels && selectedData.cadastralData) {
+          const count = await importCadastralData(backupData.cadastralParcels);
+          totalImported += count;
+          console.log(`🗺️ Imported ${count} cadastral data records`);
+        }
+
+        if (backupData.healthRecords && selectedData.healthRecords) {
+          const count = await importHealthRecords(backupData.healthRecords);
+          totalImported += count;
+          console.log(`❤️ Imported ${count} health records`);
+        }
+
+        if (backupData.breedingRecords && selectedData.breedingRecords) {
+          const count = await importBreedingData(backupData.breedingRecords);
+          totalImported += count;
+          console.log(`🐄 Imported ${count} breeding records`);
+        }
+
+        if (backupData.calendarEvents && selectedData.calendarEvents) {
+          const count = await importCalendarData(backupData.calendarEvents);
+          totalImported += count;
+          console.log(`📅 Imported ${count} calendar events`);
+        }
+
+        if (backupData.notifications && selectedData.notifications) {
+          const count = await importNotifications(backupData.notifications);
+          totalImported += count;
+          console.log(`🔔 Imported ${count} notifications`);
+        }
+
+        if (backupData.reports && selectedData.reports) {
+          const count = await importReports(backupData.reports);
+          totalImported += count;
+          console.log(`📊 Imported ${count} saved reports`);
         }
 
         toast({
           title: "Importación Completada",
-          description: `Se han importado ${importCount} registros exitosamente.`,
+          description: `Se han importado ${totalImported} registros exitosamente de todas las categorías seleccionadas.`,
         });
 
       } catch (error: any) {
-        console.error("Error importing backup:", error);
+        console.error("Error importing comprehensive backup:", error);
         toast({
           title: "Error en Importación",
           description: `Error al importar: ${error.message}`,
@@ -213,21 +405,32 @@ const SystemBackupManager: React.FC = () => {
     });
   };
 
+  const getTotalSelectedRecords = (): number => {
+    return backupCategories
+      .filter(category => selectedData[category.key as keyof BackupData])
+      .reduce((total, category) => total + category.count, 0);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="w-5 h-5" />
-            Backup y Restauración del Sistema
+            Sistema de Backup Integral y Restauración
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Data Selection */}
           <div className="space-y-4">
-            <Label className="text-base font-medium">Seleccionar Datos para Backup/Restauración</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-medium">Seleccionar Datos para Backup/Restauración</Label>
+              <div className="text-sm text-gray-600">
+                Total seleccionado: <span className="font-semibold">{getTotalSelectedRecords()}</span> registros
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {backupCategories.map(({ key, label, icon: Icon, description }) => (
+              {backupCategories.map(({ key, label, icon: Icon, description, count }) => (
                 <div key={key} className="flex items-start space-x-3 p-3 border rounded-lg">
                   <Checkbox
                     id={key}
@@ -235,9 +438,14 @@ const SystemBackupManager: React.FC = () => {
                     onCheckedChange={(checked) => handleDataSelectionChange(key as keyof BackupData, !!checked)}
                   />
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <Icon className="w-4 h-4" />
-                      <Label htmlFor={key} className="font-medium">{label}</Label>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Icon className="w-4 h-4" />
+                        <Label htmlFor={key} className="font-medium">{label}</Label>
+                      </div>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        {count} registros
+                      </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">{description}</p>
                   </div>
@@ -250,7 +458,7 @@ const SystemBackupManager: React.FC = () => {
           {(isExporting || isImporting) && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>{isExporting ? 'Exportando...' : 'Importando...'}</span>
+                <span>{isExporting ? 'Exportando datos completos...' : 'Importando y restaurando datos...'}</span>
                 <span>{progress}%</span>
               </div>
               <Progress value={progress} className="w-full" />
@@ -261,8 +469,8 @@ const SystemBackupManager: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base font-medium">Exportar Datos</Label>
-                <p className="text-sm text-gray-500">Crear un backup completo de los datos seleccionados</p>
+                <Label className="text-base font-medium">Exportar Datos Completos</Label>
+                <p className="text-sm text-gray-500">Crear un backup integral de todas las categorías seleccionadas</p>
               </div>
               <Button
                 onClick={handleExport}
@@ -277,7 +485,7 @@ const SystemBackupManager: React.FC = () => {
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    Exportar Backup
+                    Exportar Backup Integral
                   </>
                 )}
               </Button>
@@ -287,8 +495,8 @@ const SystemBackupManager: React.FC = () => {
           {/* Import Section */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-base font-medium">Importar Datos</Label>
-              <p className="text-sm text-gray-500">Restaurar datos desde un archivo de backup</p>
+              <Label className="text-base font-medium">Restaurar Sistema Completo</Label>
+              <p className="text-sm text-gray-500">Restaurar completamente el sistema desde un archivo de backup integral</p>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -308,23 +516,25 @@ const SystemBackupManager: React.FC = () => {
                 {isImporting ? (
                   <>
                     <Upload className="w-4 h-4 animate-pulse" />
-                    Importando...
+                    Restaurando...
                   </>
                 ) : (
                   <>
                     <Upload className="w-4 h-4" />
-                    Importar Backup
+                    Restaurar Sistema
                   </>
                 )}
               </Button>
             </div>
           </div>
 
-          {/* Warning */}
+          {/* Enhanced Warning */}
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              <strong>Advertencia:</strong> La importación de datos puede sobrescribir información existente. 
-              Se recomienda crear un backup actual antes de importar datos externos.
+              <strong>Advertencia:</strong> Este sistema de backup integral permite la restauración completa 
+              de todos los datos del sistema, incluyendo reportes de campo, lotes, datos catastrales, y toda 
+              la información operacional. La importación puede sobrescribir información existente. 
+              Se recomienda crear un backup actual antes de restaurar datos externos.
             </p>
           </div>
         </CardContent>
