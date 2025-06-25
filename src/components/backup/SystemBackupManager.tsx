@@ -11,8 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { getAllUsers } from '@/services/userService';
 import { getAllAnimals } from '@/services/animalService';
+import { getAllFieldReports, importFieldReports } from '@/services/fieldReportBackupService';
 import { 
-  getAllFieldReports, 
   getAllLots, 
   getAllCadastralData, 
   getAllHealthRecords, 
@@ -20,7 +20,6 @@ import {
   getAllCalendarData, 
   getAllNotifications, 
   getAllReports,
-  importFieldReports,
   importLots,
   importCadastralData,
   importHealthRecords,
@@ -273,11 +272,11 @@ const SystemBackupManager: React.FC = () => {
         if (selectedData.users) backupData.users = users;
         if (selectedData.animals) backupData.animals = animals;
         if (selectedData.fieldReports) backupData.fieldReports = fieldReports;
-        if (selectedData.lots && lotsData) backupData.lots = lotsData;
-        if (selectedData.cadastralData && cadastralData) backupData.cadastralParcels = cadastralData;
+        if (selectedData.lots && lotsData) backupData.lots = [lotsData];
+        if (selectedData.cadastralData && cadastralData) backupData.cadastralParcels = [cadastralData];
         if (selectedData.healthRecords) backupData.healthRecords = healthRecords;
-        if (selectedData.breedingRecords && breedingData) backupData.breedingRecords = breedingData;
-        if (selectedData.calendarEvents && calendarData) backupData.calendarEvents = calendarData;
+        if (selectedData.breedingRecords && breedingData) backupData.breedingRecords = [breedingData];
+        if (selectedData.calendarEvents && calendarData) backupData.calendarEvents = [calendarData];
         if (selectedData.notifications) backupData.notifications = notifications;
         if (selectedData.reports) backupData.reports = reports;
 
@@ -344,14 +343,14 @@ const SystemBackupManager: React.FC = () => {
           console.log(`📋 Imported ${count} field reports`);
         }
 
-        if (backupData.lots && selectedData.lots) {
-          const count = await importLots(backupData.lots);
+        if (backupData.lots && selectedData.lots && Array.isArray(backupData.lots) && backupData.lots.length > 0) {
+          const count = await importLots(backupData.lots[0]);
           totalImported += count;
           console.log(`🏞️ Imported ${count} lots and related data`);
         }
 
-        if (backupData.cadastralParcels && selectedData.cadastralData) {
-          const count = await importCadastralData(backupData.cadastralParcels);
+        if (backupData.cadastralParcels && selectedData.cadastralData && Array.isArray(backupData.cadastralParcels) && backupData.cadastralParcels.length > 0) {
+          const count = await importCadastralData(backupData.cadastralParcels[0]);
           totalImported += count;
           console.log(`🗺️ Imported ${count} cadastral data records`);
         }
@@ -362,14 +361,14 @@ const SystemBackupManager: React.FC = () => {
           console.log(`❤️ Imported ${count} health records`);
         }
 
-        if (backupData.breedingRecords && selectedData.breedingRecords) {
-          const count = await importBreedingData(backupData.breedingRecords);
+        if (backupData.breedingRecords && selectedData.breedingRecords && Array.isArray(backupData.breedingRecords) && backupData.breedingRecords.length > 0) {
+          const count = await importBreedingData(backupData.breedingRecords[0]);
           totalImported += count;
           console.log(`🐄 Imported ${count} breeding records`);
         }
 
-        if (backupData.calendarEvents && selectedData.calendarEvents) {
-          const count = await importCalendarData(backupData.calendarEvents);
+        if (backupData.calendarEvents && selectedData.calendarEvents && Array.isArray(backupData.calendarEvents) && backupData.calendarEvents.length > 0) {
+          const count = await importCalendarData(backupData.calendarEvents[0]);
           totalImported += count;
           console.log(`📅 Imported ${count} calendar events`);
         }
