@@ -9,17 +9,26 @@ import VersionHistoryItem from './components/VersionHistoryItem';
 const VersionHistoryPanel = () => {
   const [versionHistory, setVersionHistory] = useState<VersionHistory[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadHistory = () => {
-      const history = unifiedVersionManager.getVersionHistory();
-      setVersionHistory(history);
+    const loadHistory = async () => {
+      try {
+        setIsLoading(true);
+        const history = await unifiedVersionManager.getVersionHistory();
+        setVersionHistory(history);
+        console.log('📚 Loaded version history:', history);
+      } catch (error) {
+        console.error('Error loading version history:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadHistory();
 
-    const handleVersionUpdate = () => {
-      loadHistory();
+    const handleVersionUpdate = async () => {
+      await loadHistory();
     };
 
     window.addEventListener('unified-version-updated', handleVersionUpdate);
@@ -37,7 +46,7 @@ const VersionHistoryPanel = () => {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <History className="w-5 h-5 mr-2" />
-            Historial de Versiones
+            Historial de Versiones (Base de Datos)
           </div>
           {versionHistory.length > 10 && (
             <Button
@@ -51,9 +60,13 @@ const VersionHistoryPanel = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {versionHistory.length === 0 ? (
+        {isLoading ? (
           <p className="text-gray-500 text-center py-4">
-            No hay historial de versiones disponible.
+            Cargando historial desde la base de datos...
+          </p>
+        ) : versionHistory.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">
+            No hay historial de versiones disponible en la base de datos.
           </p>
         ) : (
           <div className="space-y-4">
