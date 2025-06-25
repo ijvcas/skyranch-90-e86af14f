@@ -8,7 +8,7 @@ import { DatabaseVersionManager } from './databaseVersionManager';
 export class UnifiedVersionManager {
   private storage: VersionStorage;
   private historyManager: VersionHistoryManager;
-  private databaseManager: DatabaseVersionManager;
+  public databaseManager: DatabaseVersionManager;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -21,19 +21,20 @@ export class UnifiedVersionManager {
     if (this.isInitialized) return;
     
     try {
+      console.log('🚀 Initializing unified version system...');
+      
       // Get current version from database (this is the source of truth)
       const dbVersion = await this.databaseManager.getCurrentVersion();
       
       if (dbVersion) {
-        console.log(`🔄 Initialized with database version: v${dbVersion.version}`);
-        // No reset! Just use what's in the database
+        console.log(`✅ Initialized with database version: v${dbVersion.version} (Build #${dbVersion.buildNumber})`);
       } else {
-        console.log('⚠️ No database version found, keeping cached version');
+        console.log('⚠️ No database version found');
       }
       
       this.isInitialized = true;
     } catch (error) {
-      console.error('Error initializing version system:', error);
+      console.error('❌ Error initializing version system:', error);
       this.isInitialized = true; // Don't block the app
     }
   }
@@ -86,5 +87,19 @@ export class UnifiedVersionManager {
     if (!current) return 'v0.0.1';
     
     return `v${this.incrementVersion(current.version, type)}`;
+  }
+
+  // Add method to force refresh from database
+  public async forceRefreshFromDatabase(): Promise<UnifiedVersionInfo | null> {
+    console.log('🔄 Force refreshing version system from database...');
+    return this.databaseManager.forceRefresh();
+  }
+
+  // Add method to clear all caches
+  public clearCaches(): void {
+    console.log('🗑️ Clearing all version caches...');
+    this.databaseManager.clearCache();
+    // Clear local storage version data
+    this.storage = new VersionStorage();
   }
 }

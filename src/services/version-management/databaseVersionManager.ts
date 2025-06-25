@@ -11,6 +11,7 @@ export class DatabaseVersionManager {
       const dbVersion = await databaseVersionService.getCurrentVersion();
       
       if (dbVersion) {
+        console.log('📊 Database version found:', dbVersion);
         const unifiedVersion: UnifiedVersionInfo = {
           version: dbVersion.version,
           buildNumber: dbVersion.build_number,
@@ -20,15 +21,22 @@ export class DatabaseVersionManager {
           publishedBy: 'Database'
         };
         
-        // Cache it locally
+        // Clear any stale cache and update with fresh data
+        this.clearCache();
         this.cacheVersion(unifiedVersion);
+        console.log('✅ Version cached and returning:', unifiedVersion);
         return unifiedVersion;
       }
       
-      // Fallback to cached version if database fails
-      return this.getCachedVersion();
+      console.log('⚠️ No database version found, checking cache...');
+      const cached = this.getCachedVersion();
+      if (cached) {
+        console.log('📦 Using cached version:', cached);
+      }
+      return cached;
     } catch (error) {
-      console.error('Error fetching database version:', error);
+      console.error('❌ Error fetching database version:', error);
+      console.log('📦 Falling back to cached version');
       return this.getCachedVersion();
     }
   }
@@ -56,9 +64,25 @@ export class DatabaseVersionManager {
   private cacheVersion(version: UnifiedVersionInfo): void {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(version));
+      console.log('💾 Version cached successfully');
     } catch (error) {
       console.error('Error caching version:', error);
     }
+  }
+
+  public clearCache(): void {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+      console.log('🗑️ Version cache cleared');
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  }
+
+  public async forceRefresh(): Promise<UnifiedVersionInfo | null> {
+    console.log('🔄 Force refreshing version from database...');
+    this.clearCache();
+    return await this.getCurrentVersion();
   }
 
   async publishNewVersion(
@@ -67,6 +91,7 @@ export class DatabaseVersionManager {
     publishedBy?: string
   ): Promise<UnifiedVersionInfo | null> {
     try {
+      console.log('🚀 Publishing new version to database...');
       const dbVersion = await databaseVersionService.incrementVersion(notes);
       
       if (dbVersion) {
@@ -79,6 +104,8 @@ export class DatabaseVersionManager {
           publishedBy: publishedBy || 'Usuario'
         };
         
+        // Clear cache and update with new version
+        this.clearCache();
         this.cacheVersion(unifiedVersion);
         
         // Dispatch event to notify components
@@ -99,9 +126,10 @@ export class DatabaseVersionManager {
 
   async getVersionHistory() {
     try {
+      console.log('📚 Fetching version history from database...');
       const dbVersions = await databaseVersionService.getVersionHistory();
       
-      return dbVersions.map((dbVersion, index) => ({
+      const history = dbVersions.map((dbVersion, index) => ({
         id: dbVersion.id,
         version: dbVersion.version,
         buildNumber: dbVersion.build_number,
@@ -111,6 +139,9 @@ export class DatabaseVersionManager {
         publishedBy: 'Database',
         isCurrent: index === 0 // First item is current
       }));
+      
+      console.log('📚 Version history loaded:', history);
+      return history;
     } catch (error) {
       console.error('Error fetching version history:', error);
       return [];
