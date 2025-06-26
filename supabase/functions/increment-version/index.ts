@@ -6,6 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Version utility functions
+function parseVersion(version: string): { major: number; minor: number; patch: number } {
+  const parts = version.split('.').map(Number);
+  return {
+    major: parts[0] || 0,
+    minor: parts[1] || 0,
+    patch: parts[2] || 0
+  };
+}
+
+function incrementVersion(currentVersion: string, type: 'major' | 'minor' | 'patch'): string {
+  const { major, minor, patch } = parseVersion(currentVersion);
+  
+  switch (type) {
+    case 'major':
+      return `${major + 1}.0.0`;
+    case 'minor':
+      return `${major}.${minor + 1}.0`;
+    case 'patch':
+    default:
+      return `${major}.${minor}.${patch + 1}`;
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -19,7 +43,9 @@ Deno.serve(async (req) => {
     )
 
     // Get the request body
-    const { notes } = await req.json()
+    const { notes, versionType = 'patch' } = await req.json()
+
+    console.log(`🚀 Incrementing version with type: ${versionType}`)
 
     // Get current version
     const { data: currentVersion, error: fetchError } = await supabaseClient
@@ -36,11 +62,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Parse version and increment patch number
-    const versionParts = currentVersion.version.split('.')
-    const newPatch = parseInt(versionParts[2] || '0', 10) + 1
-    const newVersion = `${versionParts[0]}.${versionParts[1]}.${newPatch}`
+    // Calculate new version based on type
+    const newVersion = incrementVersion(currentVersion.version, versionType)
     const newBuildNumber = currentVersion.build_number + 1
+
+    console.log(`📈 Version increment: ${currentVersion.version} → ${newVersion} (${versionType})`)
 
     // Get user from JWT token
     const authHeader = req.headers.get('Authorization')
@@ -73,7 +99,7 @@ Deno.serve(async (req) => {
         version: newVersion,
         build_number: newBuildNumber,
         created_by: userId,
-        notes: notes || 'Nueva versión publicada',
+        notes: notes || `Nueva versión ${versionType} publicada`,
         is_current: true
       })
       .select()
@@ -87,12 +113,13 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`🚀 Version incremented to v${newVersion} (Build #${newBuildNumber})`)
+    console.log(`🚀 Version incremented to v${newVersion} (Build #${newBuildNumber}) - Type: ${versionType}`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        version: newVersionData 
+        version: newVersionData,
+        versionType: versionType
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

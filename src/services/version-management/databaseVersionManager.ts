@@ -1,4 +1,3 @@
-
 import { databaseVersionService, type DatabaseVersion } from '@/services/databaseVersionService';
 import type { UnifiedVersionInfo } from './types';
 
@@ -91,14 +90,16 @@ export class DatabaseVersionManager {
     publishedBy?: string
   ): Promise<UnifiedVersionInfo | null> {
     try {
-      console.log('🚀 Publishing new version to database...');
-      const dbVersion = await databaseVersionService.incrementVersion(notes);
+      console.log(`🚀 Publishing new ${type} version to database...`);
+      
+      // Pass the version type to the database service
+      const dbVersion = await databaseVersionService.incrementVersion(notes, type);
       
       if (dbVersion) {
         const unifiedVersion: UnifiedVersionInfo = {
           version: dbVersion.version,
           buildNumber: dbVersion.build_number,
-          versionType: type,
+          versionType: type, // Use the selected type, not derived
           releaseDate: dbVersion.created_at,
           notes: dbVersion.notes || notes,
           publishedBy: publishedBy || 'Usuario'
@@ -113,7 +114,7 @@ export class DatabaseVersionManager {
           detail: unifiedVersion 
         }));
         
-        console.log(`🚀 Version published to database: v${unifiedVersion.version} (Build #${unifiedVersion.buildNumber})`);
+        console.log(`🚀 ${type.toUpperCase()} version published to database: v${unifiedVersion.version} (Build #${unifiedVersion.buildNumber})`);
         return unifiedVersion;
       }
       

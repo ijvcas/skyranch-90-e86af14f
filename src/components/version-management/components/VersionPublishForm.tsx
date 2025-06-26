@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, Plus } from 'lucide-react';
+import { RefreshCw, Plus, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { unifiedVersionManager } from '@/services/version-management';
 
@@ -19,6 +19,16 @@ const VersionPublishForm: React.FC<VersionPublishFormProps> = ({ onSuccess, onCa
   const [notes, setNotes] = useState('');
   const [versionType, setVersionType] = useState<'major' | 'minor' | 'patch'>('patch');
   const [isPublishing, setIsPublishing] = useState(false);
+  const [nextVersionPreview, setNextVersionPreview] = useState('');
+
+  // Update version preview when type changes
+  useEffect(() => {
+    const updatePreview = async () => {
+      const preview = await unifiedVersionManager.getNextVersionPreview(versionType);
+      setNextVersionPreview(preview);
+    };
+    updatePreview();
+  }, [versionType]);
 
   const handleSubmit = async () => {
     if (!notes.trim()) {
@@ -33,6 +43,8 @@ const VersionPublishForm: React.FC<VersionPublishFormProps> = ({ onSuccess, onCa
     setIsPublishing(true);
     
     try {
+      console.log(`🚀 Publishing ${versionType} version with preview: ${nextVersionPreview}`);
+      
       const newVersion = await unifiedVersionManager.publishNewVersion(
         versionType,
         notes.trim(),
@@ -41,8 +53,8 @@ const VersionPublishForm: React.FC<VersionPublishFormProps> = ({ onSuccess, onCa
 
       if (newVersion) {
         toast({
-          title: "¡Versión publicada exitosamente!",
-          description: `Nueva versión v${newVersion.version} publicada en la base de datos`,
+          title: `¡Versión ${versionType.toUpperCase()} publicada exitosamente!`,
+          description: `Nueva versión v${newVersion.version} (Build #${newVersion.buildNumber}) publicada en la base de datos`,
         });
         
         setNotes('');
@@ -78,11 +90,20 @@ const VersionPublishForm: React.FC<VersionPublishFormProps> = ({ onSuccess, onCa
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="patch">Patch (corrección, v2.5.0 → v2.5.1)</SelectItem>
-              <SelectItem value="minor">Minor (nueva funcionalidad, v2.5.0 → v2.6.0)</SelectItem>
-              <SelectItem value="major">Major (cambios importantes, v2.5.0 → v3.0.0)</SelectItem>
+              <SelectItem value="patch">Patch (corrección, v2.3.21 → v2.3.22)</SelectItem>
+              <SelectItem value="minor">Minor (nueva funcionalidad, v2.3.21 → v2.4.0)</SelectItem>
+              <SelectItem value="major">Major (cambios importantes, v2.3.21 → v3.0.0)</SelectItem>
             </SelectContent>
           </Select>
+          
+          {nextVersionPreview && (
+            <div className="bg-blue-50 p-3 rounded-lg flex items-center gap-2">
+              <Info className="w-4 h-4 text-blue-600" />
+              <p className="text-sm text-blue-800">
+                <strong>Próxima versión:</strong> {nextVersionPreview}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -105,12 +126,12 @@ const VersionPublishForm: React.FC<VersionPublishFormProps> = ({ onSuccess, onCa
             {isPublishing ? (
               <>
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Publicando en BD...
+                Publicando {versionType.toUpperCase()}...
               </>
             ) : (
               <>
                 <Plus className="w-4 h-4 mr-2" />
-                Publicar en Base de Datos
+                Publicar {versionType.toUpperCase()} en BD
               </>
             )}
           </Button>
@@ -124,10 +145,12 @@ const VersionPublishForm: React.FC<VersionPublishFormProps> = ({ onSuccess, onCa
           </Button>
         </div>
 
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Base de Datos Integrada:</strong> Las versiones ahora se guardan directamente 
-            en la base de datos y se mantienen persistentes entre sesiones. No más resets automáticos.
+        <div className="bg-green-50 p-3 rounded-lg">
+          <p className="text-sm text-green-800">
+            <strong>Tipos de versión:</strong><br/>
+            • <strong>PATCH:</strong> Correcciones y mejoras menores<br/>
+            • <strong>MINOR:</strong> Nuevas funcionalidades compatibles<br/>
+            • <strong>MAJOR:</strong> Cambios importantes o incompatibles
           </p>
         </div>
       </CardContent>

@@ -53,10 +53,10 @@ class DatabaseVersionService {
     }
   }
 
-  public async incrementVersion(notes?: string): Promise<DatabaseVersion | null> {
+  public async incrementVersion(notes?: string, versionType: 'major' | 'minor' | 'patch' = 'patch'): Promise<DatabaseVersion | null> {
     try {
       const { data, error } = await supabase.functions.invoke('increment-version', {
-        body: { notes }
+        body: { notes, versionType }
       });
 
       if (error) {
