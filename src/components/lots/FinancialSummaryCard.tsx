@@ -93,7 +93,7 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
                   <span className="text-sm font-medium text-orange-800">Costo/m²</span>
                 </div>
                 <p className="text-lg font-bold text-orange-900">
-                  {formatNumber(avgCostPerSqm, 2)}
+                  {formatCurrency(avgCostPerSqm)}
                 </p>
               </div>
             </div>

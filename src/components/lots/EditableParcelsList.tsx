@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import type { CadastralParcel } from '@/services/cadastralService';
 import { ParcelStatus, PARCEL_STATUS_LABELS, PARCEL_STATUS_COLORS } from '@/utils/cadastral/types';
 import ParcelAcquisitionForm from './ParcelAcquisitionForm';
+import { useTimezone } from '@/hooks/useTimezone';
 
 interface EditableParcelProps {
   parcels: CadastralParcel[];
@@ -21,6 +23,7 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
   onParcelUpdate,
   onParcelClick
 }) => {
+  const { formatCurrency } = useTimezone();
   const [editingParcel, setEditingParcel] = useState<string | null>(null);
   const [detailEditingParcel, setDetailEditingParcel] = useState<CadastralParcel | null>(null);
   const [editValues, setEditValues] = useState<{
@@ -85,13 +88,11 @@ const EditableParcelsList: React.FC<EditableParcelProps> = ({
     return match ? match[0] : parcel.parcelId;
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+  const formatNumber = (num: number, decimals: number = 2) => {
+    return new Intl.NumberFormat('es-ES', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(num);
   };
 
   const hasFinancialInfo = (parcel: CadastralParcel) => {
