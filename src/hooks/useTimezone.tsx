@@ -6,10 +6,13 @@ interface TimezoneHook {
   setTimezone: (tz: string) => void;
   dateFormat: string;
   setDateFormat: (format: string) => void;
+  currency: string;
+  setCurrency: (currency: string) => void;
   formatDate: (date: Date | string) => string;
   formatDateTime: (date: Date | string) => string;
   formatDateInput: (date: string) => string;
   parseDateInput: (input: string) => string;
+  formatCurrency: (amount: number) => string;
 }
 
 export const useTimezone = (): TimezoneHook => {
@@ -23,6 +26,12 @@ export const useTimezone = (): TimezoneHook => {
     // Load from localStorage or use dd/mm/yyyy as default
     const saved = localStorage.getItem('selectedDateFormat');
     return saved || 'dd/mm/yyyy';
+  });
+
+  const [currency, setCurrencyState] = useState<string>(() => {
+    // Load from localStorage or use EUR as default
+    const saved = localStorage.getItem('selectedCurrency');
+    return saved || 'EUR';
   });
 
   const setTimezone = (tz: string) => {
@@ -60,6 +69,26 @@ export const useTimezone = (): TimezoneHook => {
         console.log('📅 Updated app settings date format:', format);
       } catch (error) {
         console.error('Error updating app settings date format:', error);
+      }
+    }
+  };
+
+  const setCurrency = (curr: string) => {
+    console.log('💰 Setting currency to:', curr);
+    setCurrencyState(curr);
+    localStorage.setItem('selectedCurrency', curr);
+    
+    // Also update the app settings for consistency
+    const currentSettings = localStorage.getItem('appSettings');
+    if (currentSettings) {
+      try {
+        const settings = JSON.parse(currentSettings);
+        if (!settings.system) settings.system = {};
+        settings.system.currency = curr;
+        localStorage.setItem('appSettings', JSON.stringify(settings));
+        console.log('💰 Updated app settings currency:', curr);
+      } catch (error) {
+        console.error('Error updating app settings currency:', error);
       }
     }
   };
@@ -161,14 +190,39 @@ export const useTimezone = (): TimezoneHook => {
     }
   };
 
+  const formatCurrency = (amount: number): string => {
+    try {
+      const currencyMap = {
+        'EUR': { code: 'EUR', locale: 'es-ES' },
+        'USD': { code: 'USD', locale: 'en-US' },
+        'COP': { code: 'COP', locale: 'es-CO' },
+        'MXN': { code: 'MXN', locale: 'es-MX' }
+      };
+
+      const currencyInfo = currencyMap[currency as keyof typeof currencyMap] || currencyMap.EUR;
+
+      return new Intl.NumberFormat(currencyInfo.locale, {
+        style: 'currency',
+        currency: currencyInfo.code,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount);
+    } catch (error) {
+      console.error('Error formatting currency:', error);
+      return `€${amount.toLocaleString()}`;
+    }
+  };
+
   // Load settings on mount
   useEffect(() => {
     const savedTimezone = localStorage.getItem('selectedTimezone');
     const savedDateFormat = localStorage.getItem('selectedDateFormat');
+    const savedCurrency = localStorage.getItem('selectedCurrency');
     const savedSettings = localStorage.getItem('appSettings');
     
     let timezoneToUse = timezone;
     let dateFormatToUse = dateFormat;
+    let currencyToUse = currency;
     
     if (savedSettings) {
       try {
@@ -179,12 +233,16 @@ export const useTimezone = (): TimezoneHook => {
         if (settings.system?.dateFormat) {
           dateFormatToUse = settings.system.dateFormat;
         }
+        if (settings.system?.currency) {
+          currencyToUse = settings.system.currency;
+        }
       } catch (error) {
         console.error('Error parsing app settings:', error);
       }
     } else {
       if (savedTimezone) timezoneToUse = savedTimezone;
       if (savedDateFormat) dateFormatToUse = savedDateFormat;
+      if (savedCurrency) currencyToUse = savedCurrency;
     }
     
     if (timezoneToUse !== timezone) {
@@ -196,6 +254,11 @@ export const useTimezone = (): TimezoneHook => {
       console.log('📅 Loading date format from storage:', dateFormatToUse);
       setDateFormatState(dateFormatToUse);
     }
+
+    if (currencyToUse !== currency) {
+      console.log('💰 Loading currency from storage:', currencyToUse);
+      setCurrencyState(currencyToUse);
+    }
   }, []);
 
   return {
@@ -203,9 +266,12 @@ export const useTimezone = (): TimezoneHook => {
     setTimezone,
     dateFormat,
     setDateFormat,
+    currency,
+    setCurrency,
     formatDate,
     formatDateTime,
     formatDateInput,
-    parseDateInput
+    parseDateInput,
+    formatCurrency
   };
 };

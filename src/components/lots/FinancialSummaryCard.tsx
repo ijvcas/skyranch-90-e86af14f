@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, MapPin, Calculator } from 'lucide-react';
+import { useTimezone } from '@/hooks/useTimezone';
 import type { CadastralParcel } from '@/services/cadastralService';
 
 interface FinancialSummaryCardProps {
@@ -9,6 +10,8 @@ interface FinancialSummaryCardProps {
 }
 
 const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) => {
+  const { formatCurrency } = useTimezone();
+  
   const propiedadParcels = parcels.filter(p => p.status === 'PROPIEDAD');
   const negotiatingParcels = parcels.filter(p => p.status === 'NEGOCIANDO');
   
@@ -25,17 +28,8 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
   const potentialInvestment = negotiatingParcels.reduce((sum, p) => sum + (p.totalCost || 0), 0);
   const potentialArea = negotiatingParcels.reduce((sum, p) => sum + (p.areaHectares || 0), 0);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
   const formatNumber = (num: number, decimals: number = 2) => {
-    return new Intl.NumberFormat('es-CO', {
+    return new Intl.NumberFormat('es-ES', {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
     }).format(num);
@@ -99,7 +93,7 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
                   <span className="text-sm font-medium text-orange-800">Costo/m²</span>
                 </div>
                 <p className="text-lg font-bold text-orange-900">
-                  ${formatNumber(avgCostPerSqm, 0)}
+                  {formatNumber(avgCostPerSqm, 2)}
                 </p>
               </div>
             </div>
