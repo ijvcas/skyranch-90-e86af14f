@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTimezone } from '@/hooks/useTimezone';
-import { Clock, Calendar } from 'lucide-react';
-import { euro } from 'lucide-react';
+import { Clock, Calendar, Euro } from 'lucide-react';
 
 const TimezoneSettings = () => {
   const { timezone, setTimezone, dateFormat, setDateFormat, currency, setCurrency } = useTimezone();
@@ -80,7 +79,7 @@ const TimezoneSettings = () => {
 
         <div>
           <Label htmlFor="currency" className="flex items-center gap-2">
-            <euro className="w-4 h-4" />
+            <Euro className="w-4 h-4" />
             Moneda
           </Label>
           <Select value={currency} onValueChange={setCurrency}>
