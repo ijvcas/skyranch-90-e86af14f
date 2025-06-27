@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Euro, TrendingUp, MapPin, Calculator } from 'lucide-react';
@@ -15,30 +14,65 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
   const propiedadParcels = parcels.filter(p => p.status === 'PROPIEDAD');
   const negotiatingParcels = parcels.filter(p => p.status === 'NEGOCIANDO');
   
-  // Calculate totals for owned properties
-  const totalInvestment = propiedadParcels.reduce((sum, p) => sum + (p.totalCost || 0), 0);
-  const totalOwnedArea = propiedadParcels.reduce((sum, p) => sum + (p.areaHectares || 0), 0);
+  // Filter parcels that have both cost and area data for accurate calculation
+  const validParcelsForCalculation = propiedadParcels.filter(p => 
+    p.totalCost && p.totalCost > 0 && p.areaHectares && p.areaHectares > 0
+  );
+  
+  // Calculate totals for owned properties (only valid parcels)
+  const totalInvestment = validParcelsForCalculation.reduce((sum, p) => sum + (p.totalCost || 0), 0);
+  const totalOwnedArea = validParcelsForCalculation.reduce((sum, p) => sum + (p.areaHectares || 0), 0);
   const totalOwnedAreaSqm = totalOwnedArea * 10000;
   
-  // Debug logging for cost per m² calculation
-  console.log('🔍 Financial Summary Debug:', {
+  // Detailed debugging for each parcel
+  console.log('🔍 Detailed Parcel Breakdown for Cost/m² Calculation:');
+  validParcelsForCalculation.forEach((parcel, index) => {
+    const parcelAreaSqm = (parcel.areaHectares || 0) * 10000;
+    const parcelCostPerSqm = parcelAreaSqm > 0 ? (parcel.totalCost || 0) / parcelAreaSqm : 0;
+    console.log(`📊 Parcel ${index + 1} (${parcel.lotNumber || parcel.parcelId}):`, {
+      lotNumber: parcel.lotNumber,
+      parcelId: parcel.parcelId,
+      totalCost: parcel.totalCost,
+      areaHectares: parcel.areaHectares,
+      areaSqm: parcelAreaSqm,
+      costPerSqm: parcelCostPerSqm,
+      costPerSqmFormatted: formatCurrency(parcelCostPerSqm)
+    });
+  });
+  
+  // Summary calculation debug
+  const avgCostPerSqm = totalOwnedAreaSqm > 0 ? totalInvestment / totalOwnedAreaSqm : 0;
+  
+  console.log('💰 Summary Calculation Debug:', {
+    validParcelsCount: validParcelsForCalculation.length,
+    totalParcelsCount: propiedadParcels.length,
+    excludedParcels: propiedadParcels.length - validParcelsForCalculation.length,
     totalInvestment,
     totalOwnedArea,
     totalOwnedAreaSqm,
-    propiedadParcelsCount: propiedadParcels.length,
-    parcelsWithCost: propiedadParcels.filter(p => p.totalCost).length,
-    parcelsWithArea: propiedadParcels.filter(p => p.areaHectares).length
+    avgCostPerSqm,
+    avgCostPerSqmFormatted: formatCurrency(avgCostPerSqm),
+    calculationFormula: `${totalInvestment} ÷ ${totalOwnedAreaSqm} = ${avgCostPerSqm}`
   });
+  
+  // Check for data integrity issues
+  const parcelsWithoutCost = propiedadParcels.filter(p => !p.totalCost || p.totalCost <= 0);
+  const parcelsWithoutArea = propiedadParcels.filter(p => !p.areaHectares || p.areaHectares <= 0);
+  
+  if (parcelsWithoutCost.length > 0) {
+    console.warn('⚠️ Parcels without cost data (excluded from calculation):', 
+      parcelsWithoutCost.map(p => ({ lotNumber: p.lotNumber, parcelId: p.parcelId, cost: p.totalCost }))
+    );
+  }
+  
+  if (parcelsWithoutArea.length > 0) {
+    console.warn('⚠️ Parcels without area data (excluded from calculation):', 
+      parcelsWithoutArea.map(p => ({ lotNumber: p.lotNumber, parcelId: p.parcelId, area: p.areaHectares }))
+    );
+  }
   
   // Calculate averages with validation
   const avgCostPerHectare = totalOwnedArea > 0 ? totalInvestment / totalOwnedArea : 0;
-  const avgCostPerSqm = totalOwnedAreaSqm > 0 ? totalInvestment / totalOwnedAreaSqm : 0;
-  
-  console.log('💰 Cost calculations:', {
-    avgCostPerHectare,
-    avgCostPerSqm,
-    avgCostPerSqmFormatted: formatCurrency(avgCostPerSqm)
-  });
   
   // Potential investment (negotiating parcels)
   const potentialInvestment = negotiatingParcels.reduce((sum, p) => sum + (p.totalCost || 0), 0);
@@ -130,7 +164,12 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
             </div>
 
             <div className="text-sm text-gray-600">
-              <p>📊 {propiedadParcels.length} parcela(s) en propiedad</p>
+              <p>📊 {validParcelsForCalculation.length} de {propiedadParcels.length} parcela(s) incluidas en cálculo</p>
+              {validParcelsForCalculation.length !== propiedadParcels.length && (
+                <p className="text-amber-600">
+                  ⚠️ {propiedadParcels.length - validParcelsForCalculation.length} parcela(s) excluidas por falta de datos de costo o área
+                </p>
+              )}
             </div>
           </div>
         )}
