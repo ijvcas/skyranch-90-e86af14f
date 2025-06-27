@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, MapPin, Calculator } from 'lucide-react';
+import { Euro, TrendingUp, MapPin, Calculator } from 'lucide-react';
 import { useTimezone } from '@/hooks/useTimezone';
 import type { CadastralParcel } from '@/services/cadastralService';
 
@@ -20,9 +20,25 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
   const totalOwnedArea = propiedadParcels.reduce((sum, p) => sum + (p.areaHectares || 0), 0);
   const totalOwnedAreaSqm = totalOwnedArea * 10000;
   
-  // Calculate averages
+  // Debug logging for cost per m² calculation
+  console.log('🔍 Financial Summary Debug:', {
+    totalInvestment,
+    totalOwnedArea,
+    totalOwnedAreaSqm,
+    propiedadParcelsCount: propiedadParcels.length,
+    parcelsWithCost: propiedadParcels.filter(p => p.totalCost).length,
+    parcelsWithArea: propiedadParcels.filter(p => p.areaHectares).length
+  });
+  
+  // Calculate averages with validation
   const avgCostPerHectare = totalOwnedArea > 0 ? totalInvestment / totalOwnedArea : 0;
   const avgCostPerSqm = totalOwnedAreaSqm > 0 ? totalInvestment / totalOwnedAreaSqm : 0;
+  
+  console.log('💰 Cost calculations:', {
+    avgCostPerHectare,
+    avgCostPerSqm,
+    avgCostPerSqmFormatted: formatCurrency(avgCostPerSqm)
+  });
   
   // Potential investment (negotiating parcels)
   const potentialInvestment = negotiatingParcels.reduce((sum, p) => sum + (p.totalCost || 0), 0);
@@ -35,6 +51,21 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
     }).format(num);
   };
 
+  // Format cost per square meter with more precision for small values
+  const formatCostPerSqm = (cost: number) => {
+    if (cost === 0) return formatCurrency(0);
+    if (cost < 1) {
+      // For values less than 1, show more decimal places
+      return new Intl.NumberFormat('es-ES', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4
+      }).format(cost);
+    }
+    return formatCurrency(cost);
+  };
+
   if (propiedadParcels.length === 0 && negotiatingParcels.length === 0) {
     return null;
   }
@@ -43,7 +74,7 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-green-600" />
+          <Euro className="w-5 h-5 text-green-600" />
           Resumen Financiero de Tierras
         </CardTitle>
       </CardHeader>
@@ -56,7 +87,7 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-4 h-4 text-green-600" />
+                  <Euro className="w-4 h-4 text-green-600" />
                   <span className="text-sm font-medium text-green-800">Inversión Total</span>
                 </div>
                 <p className="text-xl font-bold text-green-900">
@@ -93,7 +124,7 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
                   <span className="text-sm font-medium text-orange-800">Costo/m²</span>
                 </div>
                 <p className="text-lg font-bold text-orange-900">
-                  {formatCurrency(avgCostPerSqm)}
+                  {formatCostPerSqm(avgCostPerSqm)}
                 </p>
               </div>
             </div>
@@ -112,7 +143,7 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-yellow-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-4 h-4 text-yellow-600" />
+                  <Euro className="w-4 h-4 text-yellow-600" />
                   <span className="text-sm font-medium text-yellow-800">Inversión Potencial</span>
                 </div>
                 <p className="text-lg font-bold text-yellow-900">
