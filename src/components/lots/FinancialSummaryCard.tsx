@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Euro, TrendingUp, MapPin, Calculator } from 'lucide-react';
@@ -74,9 +75,42 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
   // Calculate averages with validation
   const avgCostPerHectare = totalOwnedArea > 0 ? totalInvestment / totalOwnedArea : 0;
   
-  // Potential investment (negotiating parcels)
-  const potentialInvestment = negotiatingParcels.reduce((sum, p) => sum + (p.totalCost || 0), 0);
-  const potentialArea = negotiatingParcels.reduce((sum, p) => sum + (p.areaHectares || 0), 0);
+  // Enhanced potential investment calculation
+  let potentialInvestment = 0;
+  let confirmedPotentialInvestment = 0;
+  let estimatedPotentialInvestment = 0;
+  let potentialArea = 0;
+  let hasEstimatedCosts = false;
+  
+  negotiatingParcels.forEach(parcel => {
+    if (parcel.areaHectares) {
+      potentialArea += parcel.areaHectares;
+      
+      if (parcel.totalCost && parcel.totalCost > 0) {
+        // Use actual cost if available
+        confirmedPotentialInvestment += parcel.totalCost;
+        console.log(`💰 Confirmed cost for ${parcel.lotNumber || parcel.parcelId}: ${formatCurrency(parcel.totalCost)}`);
+      } else if (avgCostPerSqm > 0) {
+        // Estimate cost using average cost per m²
+        const parcelAreaSqm = parcel.areaHectares * 10000;
+        const estimatedCost = parcelAreaSqm * avgCostPerSqm;
+        estimatedPotentialInvestment += estimatedCost;
+        hasEstimatedCosts = true;
+        console.log(`📊 Estimated cost for ${parcel.lotNumber || parcel.parcelId}: ${formatCurrency(estimatedCost)} (${parcel.areaHectares} ha × ${formatCurrency(avgCostPerSqm)}/m²)`);
+      }
+    }
+  });
+  
+  potentialInvestment = confirmedPotentialInvestment + estimatedPotentialInvestment;
+  
+  console.log('🔮 Potential Investment Breakdown:', {
+    confirmedPotentialInvestment,
+    estimatedPotentialInvestment,
+    totalPotentialInvestment: potentialInvestment,
+    potentialArea,
+    avgCostPerSqmUsed: avgCostPerSqm,
+    hasEstimatedCosts
+  });
 
   const formatNumber = (num: number, decimals: number = 2) => {
     return new Intl.NumberFormat('es-ES', {
@@ -183,11 +217,18 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
               <div className="bg-yellow-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Euro className="w-4 h-4 text-yellow-600" />
-                  <span className="text-sm font-medium text-yellow-800">Inversión Potencial</span>
+                  <span className="text-sm font-medium text-yellow-800">
+                    {hasEstimatedCosts ? 'Inversión Potencial (Estimada)' : 'Inversión Potencial'}
+                  </span>
                 </div>
                 <p className="text-lg font-bold text-yellow-900">
                   {formatCurrency(potentialInvestment)}
                 </p>
+                {hasEstimatedCosts && avgCostPerSqm > 0 && (
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Basado en {formatCostPerSqm(avgCostPerSqm)}/m²
+                  </p>
+                )}
               </div>
 
               <div className="bg-amber-50 p-4 rounded-lg">
@@ -207,6 +248,27 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({ parcels }) 
                 </p>
               </div>
             </div>
+
+            {/* Breakdown of confirmed vs estimated costs */}
+            {(confirmedPotentialInvestment > 0 || estimatedPotentialInvestment > 0) && (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-800 mb-2">Desglose de Inversión Potencial:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  {confirmedPotentialInvestment > 0 && (
+                    <div>
+                      <span className="text-blue-600">Confirmada:</span>
+                      <span className="font-semibold ml-1">{formatCurrency(confirmedPotentialInvestment)}</span>
+                    </div>
+                  )}
+                  {estimatedPotentialInvestment > 0 && (
+                    <div>
+                      <span className="text-blue-600">Estimada:</span>
+                      <span className="font-semibold ml-1">{formatCurrency(estimatedPotentialInvestment)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
