@@ -15,14 +15,16 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
     formData,
     animals,
     motherSpecies,
-    createMutation,
+    isSubmitting,
     handleInputChange,
     submitForm
   } = useBreedingForm(onSuccess);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    submitForm();
+    if (!isSubmitting) {
+      submitForm();
+    }
   };
 
   return (
@@ -45,7 +47,7 @@ const BreedingForm: React.FC<BreedingFormProps> = ({ onSuccess }) => {
       />
 
       <BreedingFormActions
-        isSubmitting={createMutation.isPending}
+        isSubmitting={isSubmitting}
         onSubmit={submitForm}
       />
     </form>

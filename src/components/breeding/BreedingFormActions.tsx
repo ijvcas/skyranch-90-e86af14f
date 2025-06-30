@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 interface BreedingFormActionsProps {
   isSubmitting: boolean;
@@ -17,9 +18,21 @@ const BreedingFormActions: React.FC<BreedingFormActionsProps> = ({
         type="submit"
         className="flex-1"
         disabled={isSubmitting}
-        onClick={onSubmit}
+        onClick={(e) => {
+          e.preventDefault();
+          if (!isSubmitting) {
+            onSubmit();
+          }
+        }}
       >
-        {isSubmitting ? 'Guardando...' : 'Crear Registro'}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Guardando...
+          </>
+        ) : (
+          'Crear Registro'
+        )}
       </Button>
     </div>
   );

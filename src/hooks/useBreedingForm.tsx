@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { createBreedingRecord } from '@/services/breedingService';
@@ -24,6 +24,8 @@ export interface BreedingFormData {
 export const useBreedingForm = (onSuccess: () => void) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [formData, setFormData] = useState<BreedingFormData>({
     motherId: '',
@@ -56,6 +58,7 @@ export const useBreedingForm = (onSuccess: () => void) => {
         title: "Registro Creado",
         description: "El registro de apareamiento ha sido creado exitosamente.",
       });
+      resetForm();
       onSuccess();
     },
     onError: (error) => {
@@ -65,6 +68,9 @@ export const useBreedingForm = (onSuccess: () => void) => {
         description: "No se pudo crear el registro de apareamiento.",
         variant: "destructive"
       });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
     }
   });
 
@@ -84,6 +90,25 @@ export const useBreedingForm = (onSuccess: () => void) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const resetForm = () => {
+    setFormData({
+      motherId: '',
+      fatherId: '',
+      breedingDate: '',
+      breedingMethod: 'natural' as const,
+      actualBirthDate: '',
+      pregnancyConfirmed: false,
+      pregnancyConfirmationDate: '',
+      pregnancyMethod: '' as const,
+      offspringCount: 0,
+      breedingNotes: '',
+      veterinarian: '',
+      cost: '',
+      status: 'planned' as const
+    });
+    setMotherSpecies('');
+  };
+
   const validateForm = (): boolean => {
     if (!formData.motherId || !formData.fatherId || !formData.breedingDate) {
       toast({
@@ -96,8 +121,22 @@ export const useBreedingForm = (onSuccess: () => void) => {
     return true;
   };
 
-  const submitForm = () => {
+  const debouncedSubmit = useCallback(() => {
+    // Clear any existing timeout
+    if (submissionTimeoutRef.current) {
+      clearTimeout(submissionTimeoutRef.current);
+    }
+
+    // Prevent multiple submissions
+    if (isSubmitting || createMutation.isPending) {
+      console.log('⚠️ Submission already in progress, ignoring duplicate request');
+      return;
+    }
+
     if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    console.log('📝 Starting breeding record creation...');
 
     const submitData = {
       motherId: formData.motherId,
@@ -116,14 +155,32 @@ export const useBreedingForm = (onSuccess: () => void) => {
     };
 
     createMutation.mutate(submitData);
-  };
+  }, [formData, isSubmitting, createMutation.isPending, validateForm, createMutation, toast]);
+
+  const submitForm = useCallback(() => {
+    // Debounce submission to prevent rapid clicks
+    submissionTimeoutRef.current = setTimeout(() => {
+      debouncedSubmit();
+    }, 100);
+  }, [debouncedSubmit]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (submissionTimeoutRef.current) {
+        clearTimeout(submissionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return {
     formData,
     animals,
     motherSpecies,
     createMutation,
+    isSubmitting: isSubmitting || createMutation.isPending,
     handleInputChange,
-    submitForm
+    submitForm,
+    resetForm
   };
 };
