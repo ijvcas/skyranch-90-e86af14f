@@ -52,11 +52,18 @@ export const useBreedingForm = (onSuccess: () => void) => {
 
   const createMutation = useMutation({
     mutationFn: createBreedingRecord,
-    onSuccess: () => {
+    onSuccess: (recordId) => {
       queryClient.invalidateQueries({ queryKey: ['breeding-records'] });
+      queryClient.invalidateQueries({ queryKey: ['animals'] }); // Refresh animals list too
+      
+      // Enhanced success message based on whether offspring were created
+      const hasOffspring = formData.actualBirthDate && formData.offspringCount > 0;
+      
       toast({
         title: "Registro Creado",
-        description: "El registro de apareamiento ha sido creado exitosamente.",
+        description: hasOffspring 
+          ? `El registro de apareamiento ha sido creado exitosamente. Se han generado automáticamente ${formData.offspringCount} registro${formData.offspringCount > 1 ? 's' : ''} de animal${formData.offspringCount > 1 ? 'es' : ''} para las crías.`
+          : "El registro de apareamiento ha sido creado exitosamente.",
       });
       resetForm();
       onSuccess();

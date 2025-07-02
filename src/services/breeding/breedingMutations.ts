@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { pregnancyNotificationService } from '@/services/pregnancyNotificationService';
 import { BreedingRecordInput, BreedingRecordUpdate } from './types';
+import { createOffspringAnimals } from './offspringAnimalService';
 
 export const deleteBreedingRecord = async (id: string): Promise<boolean> => {
   const { error } = await supabase
@@ -55,6 +56,44 @@ export const updateBreedingRecord = async (
   if (error) {
     console.error('Error updating breeding record:', error);
     return false;
+  }
+
+  // Auto-create offspring animals if birth is confirmed and offspring count > 0
+  if (updatedData.actualBirthDate && (updatedData.offspringCount || 0) > 0) {
+    try {
+      console.log('🍼 Birth confirmed with offspring, creating animal records...');
+      
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user for animal creation');
+      } else {
+        // Get the breeding record to access parent IDs
+        const { data: breedingRecord } = await supabase
+          .from('breeding_records')
+          .select('mother_id, father_id')
+          .eq('id', id)
+          .single();
+
+        if (breedingRecord) {
+          const animalIds = await createOffspringAnimals({
+            breedingRecordId: id,
+            motherId: breedingRecord.mother_id,
+            fatherId: breedingRecord.father_id,
+            actualBirthDate: updatedData.actualBirthDate,
+            offspringCount: updatedData.offspringCount || 0,
+            userId: user.id
+          });
+
+          if (animalIds.length > 0) {
+            console.log(`✅ Successfully created ${animalIds.length} offspring animal records`);
+          }
+        }
+      }
+    } catch (animalCreationError) {
+      console.error('Error creating offspring animals:', animalCreationError);
+      // Don't fail the breeding record update if animal creation fails
+    }
   }
 
   // Handle notification logic based on changes
@@ -129,6 +168,29 @@ export const createBreedingRecord = async (
   }
 
   const recordId = data.id;
+
+  // Auto-create offspring animals if birth date is provided and offspring count > 0 on creation
+  if (recordData.actualBirthDate && (recordData.offspringCount || 0) > 0) {
+    try {
+      console.log('🍼 New breeding record with birth confirmed, creating animal records...');
+      
+      const animalIds = await createOffspringAnimals({
+        breedingRecordId: recordId,
+        motherId: recordData.motherId,
+        fatherId: recordData.fatherId,
+        actualBirthDate: recordData.actualBirthDate,
+        offspringCount: recordData.offspringCount || 0,
+        userId: user.id
+      });
+
+      if (animalIds.length > 0) {
+        console.log(`✅ Successfully created ${animalIds.length} offspring animal records on creation`);
+      }
+    } catch (animalCreationError) {
+      console.error('Error creating offspring animals on creation:', animalCreationError);
+      // Don't fail the breeding record creation if animal creation fails
+    }
+  }
 
   // Check if pregnancy is confirmed on creation and no birth date
   if (recordData.pregnancyConfirmed && !recordData.actualBirthDate) {
