@@ -122,6 +122,23 @@
     select {
       font-size: 16px;
     }
+    
+    /* Mobile-specific button optimizations */
+    .mobile-tap-target {
+      min-height: 40px;
+      min-width: 40px;
+    }
+    
+    /* Ensure proper spacing for mobile cards */
+    .mobile-card-spacing {
+      margin-bottom: 1rem;
+    }
+    
+    /* Better text scaling for small screens */
+    .mobile-text-scale {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
   }
 
   /* Background logo watermark */

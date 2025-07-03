@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -129,10 +130,10 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen">
       {/* Full-width banner matching System Settings layout */}
-      <div className="w-full px-4 py-6 bg-gradient-to-br from-green-50 to-blue-50">
+      <div className="w-full px-3 md:px-4 py-4 md:py-6 bg-gradient-to-br from-green-50 to-blue-50">
         <div className="max-w-7xl mx-auto">
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <ImageUpload
                 currentImage={bannerImage}
                 onImageChange={() => {}} // Read-only mode
@@ -144,8 +145,8 @@ const Dashboard = () => {
       </div>
       
       {/* Main content */}
-      <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-8 pb-20 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="bg-gradient-to-br from-green-50 to-blue-50 pt-6 md:pt-8 pb-20 min-h-screen">
+        <div className="max-w-7xl mx-auto px-3 md:px-4">
           <DashboardHeader 
             userEmail={user?.email}
             totalAnimals={totalAnimals}

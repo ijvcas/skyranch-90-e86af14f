@@ -27,16 +27,16 @@ const MobileNavigation = () => {
   return (
     <>
       {/* Top Bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-14">
-        <div className="flex justify-between items-center h-full px-6">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-14 safe-area-pt">
+        <div className="flex justify-between items-center h-full px-4">
           {/* Logo */}
-          <div className="flex items-center flex-shrink-0 min-w-0 mr-4 h-full">
+          <div className="flex items-center flex-shrink-0 min-w-0 mr-3 h-full">
             <img 
               src="/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png" 
               alt="SkyRanch" 
-              className="h-10 w-10 flex-shrink-0"
+              className="h-8 w-8 flex-shrink-0"
             />
-            <span className="ml-4 text-lg font-bold text-gray-900 whitespace-nowrap leading-none">SkyRanch</span>
+            <span className="ml-3 text-base font-bold text-gray-900 whitespace-nowrap leading-none">SkyRanch</span>
           </div>
 
           {/* Right side buttons */}
@@ -46,7 +46,7 @@ const MobileNavigation = () => {
             </div>
             <NavLink
               to="/animals/new"
-              className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium h-8"
+              className="flex items-center px-2.5 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium h-8 mobile-tap-target"
             >
               <PlusCircle className="w-4 h-4" />
             </NavLink>
@@ -55,7 +55,7 @@ const MobileNavigation = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-pb">
         <div className="grid grid-cols-5 h-16">
           {navItems.map((item) => (
             <NavLink
@@ -63,7 +63,7 @@ const MobileNavigation = () => {
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center justify-center px-1 text-xs font-medium transition-colors h-full',
+                  'flex flex-col items-center justify-center px-1 text-xs font-medium transition-colors h-full mobile-tap-target touch-manipulation',
                   isActive
                     ? 'text-green-600 bg-green-50'
                     : 'text-gray-600'
@@ -80,7 +80,7 @@ const MobileNavigation = () => {
       {/* Floating Action Button for Notifications on Mobile */}
       <NavLink
         to="/notifications"
-        className="md:hidden fixed bottom-20 right-4 bg-blue-600 text-white rounded-full p-3 shadow-lg z-40 flex items-center justify-center"
+        className="md:hidden fixed bottom-20 right-4 bg-blue-600 text-white rounded-full p-3 shadow-lg z-40 flex items-center justify-center mobile-tap-target touch-manipulation"
       >
         <Bell className="w-6 h-6" />
       </NavLink>
