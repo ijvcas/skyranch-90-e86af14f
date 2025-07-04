@@ -19,8 +19,8 @@ const SyncStatusCard: React.FC<SyncStatusCardProps> = ({
   return (
     <Card className="border-l-4 border-l-blue-500">
       <CardContent className="pt-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+        <div className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-3 md:space-y-0">
             <div className="flex items-center space-x-2">
               <MapPin className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium">Parcelas PROPIEDAD:</span>
