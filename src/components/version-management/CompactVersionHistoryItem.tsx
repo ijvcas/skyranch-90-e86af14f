@@ -26,30 +26,34 @@ const CompactVersionHistoryItem: React.FC<CompactVersionHistoryItemProps> = ({ v
       <CollapsibleTrigger asChild>
         <Button 
           variant="ghost" 
-          className="w-full justify-between p-2 h-auto hover:bg-gray-50"
+          className="w-full justify-between p-3 h-auto hover:bg-gray-50"
         >
-          <div className="flex items-center gap-3 text-left">
-            <div className="flex items-center gap-1">
-              {isOpen ? (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-left min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {isOpen ? (
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+              <span className="font-mono text-sm font-medium flex-shrink-0">v{version.version}</span>
+              <span className={`text-xs uppercase font-medium flex-shrink-0 ${getVersionTypeColor(version.versionType)}`}>
+                {version.versionType}
+              </span>
+              {version.isCurrent && (
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200 flex-shrink-0">
+                  Actual
+                </Badge>
               )}
             </div>
-            <span className="font-mono text-sm font-medium">v{version.version}</span>
-            <span className={`text-xs uppercase font-medium ${getVersionTypeColor(version.versionType)}`}>
-              {version.versionType}
-            </span>
-            <span className="text-xs text-gray-500">Build #{version.buildNumber}</span>
-            {version.isCurrent && (
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
-                Actual
-              </Badge>
-            )}
+            <div className="flex items-center gap-2 text-xs text-gray-500 sm:ml-auto">
+              <span className="hidden sm:inline">Build #{version.buildNumber}</span>
+              <span>
+                {new Date(version.releaseDate).toLocaleDateString('es-ES')}
+              </span>
+            </div>
           </div>
-          <span className="text-xs text-gray-500">
-            {new Date(version.releaseDate).toLocaleDateString('es-ES')}
-          </span>
         </Button>
       </CollapsibleTrigger>
       

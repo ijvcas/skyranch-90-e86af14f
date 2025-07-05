@@ -135,11 +135,7 @@ const UserManagement = () => {
   return (
     <div className="space-y-6">
       <UserManagementHeader
-        isFetching={isFetching}
-        onRefresh={handleRefresh}
         onToggleAddForm={() => setShowAddForm(!showAddForm)}
-        onSyncUsers={handleSyncUsers}
-        isSyncing={syncUsersMutation.isPending}
       />
 
       {showAddForm && (

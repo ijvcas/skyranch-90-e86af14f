@@ -132,12 +132,12 @@ const UsersTable: React.FC<UsersTableProps> = ({
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1 min-w-0">
                       <Button
                         onClick={() => onEditUser(user)}
                         variant="ghost"
                         size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 min-w-[2rem] h-8"
                         title="Editar usuario"
                       >
                         <Edit className="w-4 h-4" />
@@ -147,7 +147,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
                         variant="ghost"
                         size="sm"
                         disabled={currentUser?.id === user.id || isDeleting}
-                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 min-w-[2rem] h-8"
                         title="Eliminar de la app (puede reaparecer)"
                       >
                         <UserMinus className="w-4 h-4" />
@@ -157,7 +157,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
                         variant="ghost"
                         size="sm"
                         disabled={currentUser?.id === user.id || isCompleteDeleting}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 min-w-[2rem] h-8"
                         title="Eliminar completamente (permanente)"
                       >
                         <Trash2 className="w-4 h-4" />
