@@ -41,66 +41,38 @@ const SystemSettings = () => {
       {/* Support Info Panel at the top */}
       <SupportInfoSettings isAdmin={isAdmin} />
       
-      {/* Navigation Cards Section */}
+      {/* Project URL Card */}
       <div className="grid gap-4">
-        <h3 className="text-lg font-semibold">Gestión del Sistema</h3>
+        <h3 className="text-lg font-semibold">Información del Sistema</h3>
         
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Lots Management Card */}
-          <PermissionGuard permission="lots_manage" showError={false}>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-green-600" />
-                  Gestión de Lotes y Parcelas
-                </CardTitle>
-                <CardDescription>
-                  Administra los lotes de la finca y visualiza las parcelas catastrales importadas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={handleNavigateToLots}
-                  className="w-full justify-between"
-                  variant="outline"
-                >
-                  <span>Ir a Gestión de Lotes</span>
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          </PermissionGuard>
-
-          {/* Project Live View URL Card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5 text-blue-600" />
-                URL del Proyecto
-              </CardTitle>
-              <CardDescription>
-                URL en vivo del proyecto para compartir y acceso directo
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="p-3 bg-gray-50 rounded border">
-                <code className="text-sm text-gray-700">{projectUrl}</code>
-              </div>
-              <Button 
-                onClick={handleCopyUrl}
-                className="w-full justify-between"
-                variant="outline"
-              >
-                <span>Copiar URL</span>
-                {copied ? (
-                  <Check className="w-4 h-4 text-green-600" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-blue-600" />
+              URL del Proyecto
+            </CardTitle>
+            <CardDescription>
+              URL en vivo del proyecto para compartir y acceso directo
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="p-3 bg-gray-50 rounded border">
+              <code className="text-sm text-gray-700 break-all">{projectUrl}</code>
+            </div>
+            <Button 
+              onClick={handleCopyUrl}
+              className="w-full justify-between"
+              variant="outline"
+            >
+              <span>Copiar URL</span>
+              {copied ? (
+                <Check className="w-4 h-4 text-green-600" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
       
       {/* Dashboard Banner Settings */}

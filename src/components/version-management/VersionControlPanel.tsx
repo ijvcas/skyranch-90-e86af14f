@@ -108,33 +108,19 @@ const VersionControlPanel = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Rocket className="w-5 h-5 mr-2" />
-            Control de Versiones Unificado (Base de Datos)
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleForceRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Actualizando...' : 'Actualizar'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPublishForm(!showPublishForm)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              {showPublishForm ? 'Cancelar' : 'Publicar Versión'}
-            </Button>
-          </div>
+        <CardTitle className="flex items-center gap-2 mb-4">
+          <Rocket className="w-5 h-5" />
+          Control de Versiones
         </CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPublishForm(!showPublishForm)}
+          className="flex items-center gap-2 w-fit"
+        >
+          <Plus className="w-4 h-4" />
+          {showPublishForm ? 'Cancelar' : 'Publicar Versión'}
+        </Button>
       </CardHeader>
       <CardContent>
         <VersionInfoDisplay currentVersion={currentVersion} />
@@ -146,21 +132,6 @@ const VersionControlPanel = () => {
           />
         )}
 
-        <div className="bg-green-50 p-3 rounded-lg mt-6">
-          <p className="text-sm text-green-800">
-            <strong>Sistema Integrado con Base de Datos:</strong> Este panel ahora se sincroniza 
-            directamente con la base de datos. Las versiones se mantienen persistentes y no se 
-            resetean automáticamente.
-          </p>
-        </div>
-
-        {/* Debug Info */}
-        <div className="bg-gray-50 p-3 rounded-lg mt-4">
-          <p className="text-xs text-gray-600">
-            <strong>Debug:</strong> Versión actual v{currentVersion.version} - Build #{currentVersion.buildNumber} | 
-            Fuente: Base de datos | Última actualización: {new Date(currentVersion.releaseDate).toLocaleString('es-ES')}
-          </p>
-        </div>
       </CardContent>
     </Card>
   );
