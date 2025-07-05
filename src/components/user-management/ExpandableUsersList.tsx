@@ -117,18 +117,6 @@ const ExpandableUsersList: React.FC<ExpandableUsersListProps> = ({
                         )}
                         <div className="flex-1 text-left">
                           <div className="font-medium text-sm break-words">{user.name}</div>
-                          <div className="text-xs text-gray-500 truncate">{user.email}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge className={`text-xs ${getRoleBadgeColor(user.role)}`}>
-                          {getRoleLabel(user.role)}
-                        </Badge>
-                        <div className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
-                          <span className="text-xs text-gray-600">
-                            {user.is_active ? 'Activo' : 'Inactivo'}
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -152,6 +140,20 @@ const ExpandableUsersList: React.FC<ExpandableUsersListProps> = ({
                         <span className="text-gray-600">
                           Registrado: {new Date(user.created_at).toLocaleDateString()}
                         </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Rol:</span>
+                          <Badge className={`text-xs ${getRoleBadgeColor(user.role)}`}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className={`w-2 h-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                          <span className="text-xs text-gray-600">
+                            {user.is_active ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
