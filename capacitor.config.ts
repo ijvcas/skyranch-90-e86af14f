@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.farmika.app',
-  appName: 'Farmika',
+  appId: 'com.skyranch.app',
+  appName: 'SkyRanch Management',
   webDir: 'dist',
   server: {
     url: 'https://4851015c-86a1-4ff3-9df4-bdfbbabf459a.lovableproject.com?forceHideBadge=true',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'farmika-v1';
+const CACHE_NAME = 'skyranch-v1';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -59,7 +59,7 @@ async function syncData() {
 // Push notifications
 self.addEventListener('push', (event) => {
   const options = {
-    body: event.data ? event.data.text() : 'Nueva notificación de Farmika',
+    body: event.data ? event.data.text() : 'Nueva notificación de SkyRanch',
     icon: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
     badge: '/lovable-uploads/953e2699-9daf-4fea-86c8-e505a1e54eb3.png',
     vibrate: [100, 50, 100],
@@ -70,7 +70,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Farmika', options)
+    self.registration.showNotification('SkyRanch', options)
   );
 });
 
