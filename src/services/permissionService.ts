@@ -10,6 +10,7 @@ export type Permission =
 export type UserRole = 'admin' | 'manager' | 'worker';
 
 // Permission mappings for each role
+// New rule: Everyone can see everything, but only admin can access system settings
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
     'animals_view', 'animals_edit', 'animals_delete', 'animals_create',
@@ -17,11 +18,14 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'users_manage', 'system_settings'
   ],
   manager: [
-    'animals_view', 'animals_edit', 'animals_create',
-    'lots_manage', 'health_records', 'breeding_records', 'calendar_manage'
+    'animals_view', 'animals_edit', 'animals_delete', 'animals_create',
+    'lots_manage', 'health_records', 'breeding_records', 'calendar_manage',
+    'users_manage'
   ],
   worker: [
-    'animals_view', 'animals_edit', 'health_records', 'breeding_records'
+    'animals_view', 'animals_edit', 'animals_delete', 'animals_create',
+    'lots_manage', 'health_records', 'breeding_records', 'calendar_manage',
+    'users_manage'
   ]
 };
 

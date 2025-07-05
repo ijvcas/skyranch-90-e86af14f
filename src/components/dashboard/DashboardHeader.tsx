@@ -22,9 +22,6 @@ const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardH
         <p className="text-lg text-gray-600">
           Bienvenido, {userEmail} - SkyRanch
         </p>
-        <div className="text-sm text-gray-500 mt-1">
-          Total de animales en el sistema: {totalAnimals}
-        </div>
         {totalAnimals === 0 && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-800">
