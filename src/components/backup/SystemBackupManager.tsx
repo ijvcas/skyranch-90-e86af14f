@@ -467,15 +467,15 @@ const SystemBackupManager: React.FC = () => {
 
           {/* Export Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex-1">
                 <Label className="text-base font-medium">Exportar Datos Completos</Label>
                 <p className="text-sm text-gray-500">Crear un backup integral de todas las categorías seleccionadas</p>
               </div>
               <Button
                 onClick={handleExport}
                 disabled={isExporting || isImporting || !Object.values(selectedData).some(Boolean)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full md:w-auto flex-shrink-0"
               >
                 {isExporting ? (
                   <>
