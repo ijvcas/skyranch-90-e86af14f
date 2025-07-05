@@ -116,7 +116,7 @@ const ExpandableUsersList: React.FC<ExpandableUsersListProps> = ({
                           <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         )}
                         <div className="min-w-0 flex-1 text-left">
-                          <div className="font-medium text-sm truncate">{user.name}</div>
+                          <div className="font-medium text-sm line-clamp-2">{user.name}</div>
                           <div className="text-xs text-gray-500 truncate">{user.email}</div>
                         </div>
                       </div>
