@@ -16,7 +16,7 @@ const Reports: React.FC = () => {
         </div>
 
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="flex flex-col w-full md:grid md:grid-cols-2">
             <TabsTrigger value="analytics" className="flex items-center">
               <BarChart3 className="w-4 h-4 mr-2" />
               Análisis y Estadísticas

@@ -15,9 +15,9 @@ export const NotificationActions = ({
   onClearAll
 }: NotificationActionsProps) => {
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
       {unreadCount > 0 && (
-        <Button onClick={onMarkAllAsRead} variant="outline" size="sm">
+        <Button onClick={onMarkAllAsRead} variant="outline" size="sm" className="w-full md:w-auto">
           <CheckCircle className="w-4 h-4 mr-2" />
           Marcar todas como leídas
         </Button>
@@ -27,7 +27,7 @@ export const NotificationActions = ({
         onClick={onClearAll} 
         variant="outline" 
         size="sm"
-        className="text-red-600 hover:text-red-700"
+        className="text-red-600 hover:text-red-700 w-full md:w-auto"
       >
         <Trash2 className="w-4 h-4 mr-2" />
         Limpiar todo

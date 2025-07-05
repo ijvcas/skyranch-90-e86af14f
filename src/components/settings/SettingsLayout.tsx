@@ -49,7 +49,7 @@ const SettingsLayout = ({ activeTab, onTabChange, children }: SettingsLayoutProp
         </div>
 
         <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="flex flex-col w-full md:grid md:grid-cols-5 md:h-10">
             {availableTabs.includes('users') && (
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
