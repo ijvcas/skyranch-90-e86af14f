@@ -88,86 +88,88 @@ const UsersTable: React.FC<UsersTableProps> = ({
           <CardTitle>Usuarios del Sistema ({users.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha Registro</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-gray-600">{formatPhone(user.phone)}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                      {getRoleLabel(user.role)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={user.is_active}
-                        onCheckedChange={() => onToggleStatus(user.id, user.name)}
-                        disabled={currentUser?.id === user.id || isToggling}
-                      />
-                      <span className="text-sm">
-                        {user.is_active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-1 min-w-0">
-                      <Button
-                        onClick={() => onEditUser(user)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 min-w-[2rem] h-8"
-                        title="Editar usuario"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => onDeleteUser(user.id, user.name)}
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentUser?.id === user.id || isDeleting}
-                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 min-w-[2rem] h-8"
-                        title="Eliminar de la app (puede reaparecer)"
-                      >
-                        <UserMinus className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => handleCompleteDeleteClick(user.id, user.name)}
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentUser?.id === user.id || isCompleteDeleting}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 min-w-[2rem] h-8"
-                        title="Eliminar completamente (permanente)"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[200px]">Usuario</TableHead>
+                  <TableHead className="min-w-[120px]">Teléfono</TableHead>
+                  <TableHead className="min-w-[100px]">Rol</TableHead>
+                  <TableHead className="min-w-[120px]">Estado</TableHead>
+                  <TableHead className="min-w-[120px]">Fecha Registro</TableHead>
+                  <TableHead className="min-w-[120px]">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{user.name}</div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">{formatPhone(user.phone)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                        {getRoleLabel(user.role)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={user.is_active}
+                          onCheckedChange={() => onToggleStatus(user.id, user.name)}
+                          disabled={currentUser?.id === user.id || isToggling}
+                        />
+                        <span className="text-sm">
+                          {user.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        <Button
+                          onClick={() => onEditUser(user)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-8 h-8 p-0"
+                          title="Editar usuario"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => onDeleteUser(user.id, user.name)}
+                          variant="ghost"
+                          size="sm"
+                          disabled={currentUser?.id === user.id || isDeleting}
+                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 w-8 h-8 p-0"
+                          title="Eliminar de la app (puede reaparecer)"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleCompleteDeleteClick(user.id, user.name)}
+                          variant="ghost"
+                          size="sm"
+                          disabled={currentUser?.id === user.id || isCompleteDeleting}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 p-0"
+                          title="Eliminar completamente (permanente)"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
