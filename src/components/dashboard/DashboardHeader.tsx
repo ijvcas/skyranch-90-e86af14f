@@ -20,7 +20,7 @@ const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardH
           </h1>
         </div>
         <p className="text-lg text-gray-600">
-          Bienvenido, {userEmail} - SkyRanch
+          Bienvenido, {userEmail}
         </p>
         {totalAnimals === 0 && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">

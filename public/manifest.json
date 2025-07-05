@@ -1,8 +1,8 @@
 
 {
-  "name": "SkyRanch - Gestión de Animales",
-  "short_name": "SkyRanch",
-  "description": "Aplicación para gestionar animales de granja",
+  "name": "Farmika - Gestión de Granja",
+  "short_name": "Farmika",
+  "description": "Aplicación profesional para gestionar animales y operaciones de granja",
   "theme_color": "#16a34a",
   "background_color": "#f0fdf4",
   "display": "standalone",

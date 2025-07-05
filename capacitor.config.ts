@@ -1,12 +1,11 @@
-
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.4851015cb1c043d19c9f6d125b0fd71b',
-  appName: 'SkyRanch',
+  appId: 'com.farmika.app',
+  appName: 'Farmika',
   webDir: 'dist',
   server: {
-    url: 'https://4851015c-b1c0-43d1-9c9f-6d125b0fd71b.lovableproject.com?forceHideBadge=true',
+    url: 'https://4851015c-86a1-4ff3-9df4-bdfbbabf459a.lovableproject.com?forceHideBadge=true',
     cleartext: true
   },
   bundledWebRuntime: false,
@@ -23,6 +22,9 @@ const config: CapacitorConfig = {
       showSpinner: false
     },
     CapacitorHttp: {
+      enabled: true
+    },
+    CapacitorPreferences: {
       enabled: true
     }
   }
