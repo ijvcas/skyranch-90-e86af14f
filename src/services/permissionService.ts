@@ -24,8 +24,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   worker: [
     'animals_view', 'animals_edit', 'animals_delete', 'animals_create',
-    'lots_manage', 'health_records', 'breeding_records', 'calendar_manage',
-    'users_manage'
+    'lots_manage', 'health_records', 'breeding_records', 'calendar_manage'
   ]
 };
 

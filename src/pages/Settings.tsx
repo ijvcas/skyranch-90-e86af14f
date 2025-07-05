@@ -12,31 +12,33 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState('users');
 
   return (
-    <SettingsLayout activeTab={activeTab} onTabChange={setActiveTab}>
-      <TabsContent value="users">
-        <PermissionGuard permission="users_manage">
-          <UserSettings />
-        </PermissionGuard>
-      </TabsContent>
-      
-      <TabsContent value="backup">
-        <PermissionGuard permission="system_settings">
-          <BackupSettings />
-        </PermissionGuard>
-      </TabsContent>
-      
-      <TabsContent value="permissions">
-        <PermissionGuard permission="system_settings">
-          <PermissionsSettings />
-        </PermissionGuard>
-      </TabsContent>
-      
-      <TabsContent value="system">
-        <PermissionGuard permission="system_settings">
-          <SystemSettings />
-        </PermissionGuard>
-      </TabsContent>
-    </SettingsLayout>
+    <PermissionGuard permission="system_settings">
+      <SettingsLayout activeTab={activeTab} onTabChange={setActiveTab}>
+        <TabsContent value="users">
+          <PermissionGuard permission="users_manage">
+            <UserSettings />
+          </PermissionGuard>
+        </TabsContent>
+        
+        <TabsContent value="backup">
+          <PermissionGuard permission="system_settings">
+            <BackupSettings />
+          </PermissionGuard>
+        </TabsContent>
+        
+        <TabsContent value="permissions">
+          <PermissionGuard permission="system_settings">
+            <PermissionsSettings />
+          </PermissionGuard>
+        </TabsContent>
+        
+        <TabsContent value="system">
+          <PermissionGuard permission="system_settings">
+            <SystemSettings />
+          </PermissionGuard>
+        </TabsContent>
+      </SettingsLayout>
+    </PermissionGuard>
   );
 };
 
