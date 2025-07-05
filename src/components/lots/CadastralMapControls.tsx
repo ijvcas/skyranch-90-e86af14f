@@ -45,14 +45,21 @@ const CadastralMapControls: React.FC<CadastralMapControlsProps> = ({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <MapPin className="w-5 h-5" />
-            <span>Mapa Catastral</span>
-          </CardTitle>
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col space-y-2">
+            <CardTitle className="flex items-center space-x-2">
+              <MapPin className="w-5 h-5" />
+              <span>Mapa Catastral</span>
+            </CardTitle>
             {totalPropiedadArea > 0 && (
-              <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg">
+              <div className="text-sm font-medium text-green-700 bg-green-50 px-3 py-1 rounded-md inline-block md:hidden">
+                Área Total: {totalPropiedadArea.toFixed(4)} ha
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            {totalPropiedadArea > 0 && (
+              <div className="hidden md:block bg-green-100 text-green-800 px-4 py-2 rounded-lg">
                 <span className="text-lg font-bold">
                   Área Total en Propiedad: {totalPropiedadArea.toFixed(4)} ha
                 </span>

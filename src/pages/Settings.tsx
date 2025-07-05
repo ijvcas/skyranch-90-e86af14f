@@ -5,7 +5,6 @@ import UserSettings from '@/components/settings/UserSettings';
 import BackupSettings from '@/components/settings/BackupSettings';
 import PermissionsSettings from '@/components/settings/PermissionsSettings';
 import SystemSettings from '@/components/settings/SystemSettings';
-import VersionSettings from '@/components/settings/VersionSettings';
 import PermissionGuard from '@/components/PermissionGuard';
 import { TabsContent } from '@/components/ui/tabs';
 
@@ -29,12 +28,6 @@ const Settings = () => {
       <TabsContent value="permissions">
         <PermissionGuard permission="system_settings">
           <PermissionsSettings />
-        </PermissionGuard>
-      </TabsContent>
-      
-      <TabsContent value="versions">
-        <PermissionGuard permission="system_settings">
-          <VersionSettings />
         </PermissionGuard>
       </TabsContent>
       

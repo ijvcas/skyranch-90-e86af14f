@@ -9,6 +9,8 @@ import SupportInfoSettings from './SupportInfoSettings';
 import DashboardBannerSettings from './DashboardBannerSettings';
 import TimezoneSettings from '@/components/TimezoneSettings';
 import PermissionGuard from '@/components/PermissionGuard';
+import VersionControlPanel from '@/components/version-management/VersionControlPanel';
+import VersionHistoryPanel from '@/components/version-management/VersionHistoryPanel';
 import { toast } from 'sonner';
 
 const SystemSettings = () => {
@@ -106,6 +108,15 @@ const SystemSettings = () => {
       
       {/* Timezone Settings */}
       <TimezoneSettings />
+      
+      {/* Version Management Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Gestión de Versiones</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <VersionControlPanel />
+          <VersionHistoryPanel />
+        </div>
+      </div>
     </div>
   );
 };
