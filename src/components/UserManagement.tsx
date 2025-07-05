@@ -10,13 +10,16 @@ import EditUserDialog from './EditUserDialog';
 import UserManagementHeader from './user-management/UserManagementHeader';
 import AddUserForm from './user-management/AddUserForm';
 import UsersTable from './user-management/UsersTable';
+import ExpandableUsersList from './user-management/ExpandableUsersList';
 import { useUserManagement } from './user-management/useUserManagement';
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const UserManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const isMobile = useIsMobile();
   
   const {
     showAddForm,
@@ -148,17 +151,31 @@ const UserManagement = () => {
         />
       )}
 
-      <UsersTable
-        users={users}
-        currentUser={currentUser}
-        onEditUser={setEditingUser}
-        onDeleteUser={handleDeleteUser}
-        onCompleteDeleteUser={handleCompleteDeleteUser}
-        onToggleStatus={handleToggleStatus}
-        isToggling={toggleStatusMutation.isPending}
-        isDeleting={deleteUserMutation.isPending}
-        isCompleteDeleting={deleteUserCompleteMutation.isPending}
-      />
+      {isMobile ? (
+        <ExpandableUsersList
+          users={users}
+          currentUser={currentUser}
+          onEditUser={setEditingUser}
+          onDeleteUser={handleDeleteUser}
+          onCompleteDeleteUser={handleCompleteDeleteUser}
+          onToggleStatus={handleToggleStatus}
+          isToggling={toggleStatusMutation.isPending}
+          isDeleting={deleteUserMutation.isPending}
+          isCompleteDeleting={deleteUserCompleteMutation.isPending}
+        />
+      ) : (
+        <UsersTable
+          users={users}
+          currentUser={currentUser}
+          onEditUser={setEditingUser}
+          onDeleteUser={handleDeleteUser}
+          onCompleteDeleteUser={handleCompleteDeleteUser}
+          onToggleStatus={handleToggleStatus}
+          isToggling={toggleStatusMutation.isPending}
+          isDeleting={deleteUserMutation.isPending}
+          isCompleteDeleting={deleteUserCompleteMutation.isPending}
+        />
+      )}
 
       {editingUser && (
         <EditUserDialog

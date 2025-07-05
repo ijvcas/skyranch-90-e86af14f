@@ -422,31 +422,32 @@ const SystemBackupManager: React.FC = () => {
         <CardContent className="space-y-6">
           {/* Data Selection */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <Label className="text-base font-medium">Seleccionar Datos para Backup/Restauración</Label>
               <div className="text-sm text-gray-600">
-                Total seleccionado: <span className="font-semibold">{getTotalSelectedRecords()}</span> registros
+                Total: <span className="font-semibold">{getTotalSelectedRecords()}</span> registros
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3">
               {backupCategories.map(({ key, label, icon: Icon, description, count }) => (
                 <div key={key} className="flex items-start space-x-3 p-3 border rounded-lg">
                   <Checkbox
                     id={key}
                     checked={selectedData[key as keyof BackupData]}
                     onCheckedChange={(checked) => handleDataSelectionChange(key as keyof BackupData, !!checked)}
+                    className="mt-0.5 flex-shrink-0"
                   />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Icon className="w-4 h-4" />
-                        <Label htmlFor={key} className="font-medium">{label}</Label>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <Label htmlFor={key} className="font-medium text-sm sm:text-base">{label}</Label>
                       </div>
-                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                        {count} registros
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded flex-shrink-0">
+                        {count}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{description}</p>
+                    <p className="text-xs text-gray-500 mt-1 hidden sm:block">{description}</p>
                   </div>
                 </div>
               ))}
