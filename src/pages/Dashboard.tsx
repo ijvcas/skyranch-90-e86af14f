@@ -14,6 +14,7 @@ import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
 import DashboardLoadingState from '@/components/dashboard/DashboardLoadingState';
 import DashboardErrorState from '@/components/dashboard/DashboardErrorState';
+import DashboardSupportInfo from '@/components/dashboard/DashboardSupportInfo';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -159,6 +160,8 @@ const Dashboard = () => {
           />
 
           <DashboardQuickActions />
+          
+          <DashboardSupportInfo />
         </div>
       </div>
     </div>
