@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllAnimals } from '@/services/animalService';
 import { checkPermission } from '@/services/permissionService';
+import { getCurrentUser } from '@/services/userService';
 import { dashboardBannerService } from '@/services/dashboardBannerService';
 import { Card, CardContent } from '@/components/ui/card';
 import ImageUpload from '@/components/ImageUpload';
@@ -22,8 +23,9 @@ const Dashboard = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [bannerImage, setBannerImage] = useState<string>('/lovable-uploads/d3c33c19-f7cd-441e-884f-371ed6481179.png');
+  const [userName, setUserName] = useState<string>('');
   
-  // Load banner image
+  // Load banner image and user data
   useEffect(() => {
     const loadBanner = async () => {
       try {
@@ -36,7 +38,21 @@ const Dashboard = () => {
         // Keep default fallback image
       }
     };
+    
+    const loadUserData = async () => {
+      try {
+        const userData = await getCurrentUser();
+        if (userData?.name) {
+          setUserName(userData.name);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Fallback to email if name not available
+      }
+    };
+    
     loadBanner();
+    loadUserData();
   }, []);
   
   // Enhanced query with better error handling and permission checking
@@ -150,6 +166,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-3 md:px-4">
           <DashboardHeader 
             userEmail={user?.email}
+            userName={userName}
             totalAnimals={totalAnimals}
             onForceRefresh={handleForceRefresh}
           />

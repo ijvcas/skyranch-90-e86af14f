@@ -6,11 +6,12 @@ import FieldReportButton from '@/components/field-reports/FieldReportButton';
 
 interface DashboardHeaderProps {
   userEmail?: string;
+  userName?: string;
   totalAnimals: number;
   onForceRefresh: () => void;
 }
 
-const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardHeaderProps) => {
+const DashboardHeader = ({ userEmail, userName, totalAnimals, onForceRefresh }: DashboardHeaderProps) => {
   return (
     <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
       <div className="flex-1">
@@ -20,7 +21,7 @@ const DashboardHeader = ({ userEmail, totalAnimals, onForceRefresh }: DashboardH
           </h1>
         </div>
         <p className="text-lg text-gray-600">
-          Bienvenido, {userEmail}
+          Bienvenido, {userName || userEmail}
         </p>
         {totalAnimals === 0 && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">

@@ -99,13 +99,13 @@ const AnimalDetail = () => {
           {/* Main Information */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="general">Información General</TabsTrigger>
-                <TabsTrigger value="health">
+              <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 h-auto">
+                <TabsTrigger value="general" className="w-full">Información General</TabsTrigger>
+                <TabsTrigger value="health" className="w-full">
                   <Activity className="w-4 h-4 mr-2" />
                   Salud
                 </TabsTrigger>
-                <TabsTrigger value="pedigree">Pedigrí</TabsTrigger>
+                <TabsTrigger value="pedigree" className="w-full">Pedigrí</TabsTrigger>
               </TabsList>
               
               <TabsContent value="general" className="space-y-6">
