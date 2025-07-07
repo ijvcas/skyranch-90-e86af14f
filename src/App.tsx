@@ -21,7 +21,7 @@ import Lots from '@/pages/Lots';
 import Notifications from '@/pages/Notifications';
 import Settings from '@/pages/Settings';
 import HealthRecords from '@/pages/HealthRecords';
-import TestAnimals from '@/pages/TestAnimals';
+
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -46,7 +46,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/auth/gmail/callback" element={<GmailCallback />} />
-              <Route path="/test-animals" element={<TestAnimals />} />
+              
               <Route path="/" element={
                 <ProtectedRoute useCustomLayout={true}>
                   <Dashboard />
