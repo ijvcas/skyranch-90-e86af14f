@@ -204,6 +204,20 @@ const Dashboard = () => {
 
           <DashboardQuickActions />
           
+          {/* Temporary test link */}
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h3 className="font-semibold text-yellow-800 mb-2">🧪 Test Animals Data</h3>
+            <p className="text-yellow-700 text-sm mb-3">
+              Test the animals functionality without authentication barriers:
+            </p>
+            <a 
+              href="/test-animals" 
+              className="inline-block px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
+            >
+              Go to Test Animals Page
+            </a>
+          </div>
+          
           <DashboardSupportInfo />
         </div>
       </div>
