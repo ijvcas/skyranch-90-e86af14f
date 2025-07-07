@@ -66,9 +66,9 @@ const Register = () => {
       } else {
         toast({
           title: "Registro exitoso",
-          description: "Cuenta creada correctamente. Configuremos tu finca.",
+          description: "Cuenta creada correctamente. Bienvenido a SkyRanch.",
         });
-        navigate('/setup-farm');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -104,7 +104,7 @@ const Register = () => {
             Crear Cuenta
           </CardTitle>
           <p className="text-gray-600 text-lg">
-            Únete a FARMIKA
+            Únete a SkyRanch
           </p>
         </CardHeader>
         <CardContent>

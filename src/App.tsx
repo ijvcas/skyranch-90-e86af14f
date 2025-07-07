@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import ProtectedFarmRoute from '@/components/ProtectedFarmRoute';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -22,9 +21,6 @@ import Lots from '@/pages/Lots';
 import Notifications from '@/pages/Notifications';
 import Settings from '@/pages/Settings';
 import HealthRecords from '@/pages/HealthRecords';
-import Welcome from '@/pages/Welcome';
-import SetupFarm from '@/pages/SetupFarm';
-import JoinFarm from '@/pages/JoinFarm';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -44,105 +40,76 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
-              <Route path="/welcome" element={<Welcome />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/setup-farm" element={<SetupFarm />} />
-              <Route path="/join-farm" element={<JoinFarm />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/auth/gmail/callback" element={<GmailCallback />} />
               
               <Route path="/" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute useCustomLayout={true}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute useCustomLayout={true}>
+                  <Dashboard />
+                </ProtectedRoute>
               } />
               <Route path="/dashboard" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute useCustomLayout={true}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute useCustomLayout={true}>
+                  <Dashboard />
+                </ProtectedRoute>
               } />
               <Route path="/animals" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <AnimalList />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <AnimalList />
+                </ProtectedRoute>
               } />
               <Route path="/animals/:id" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <AnimalDetail />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <AnimalDetail />
+                </ProtectedRoute>
               } />
               <Route path="/animals/:id/edit" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <AnimalEdit />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <AnimalEdit />
+                </ProtectedRoute>
               } />
               <Route path="/animals/new" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <AnimalForm />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <AnimalForm />
+                </ProtectedRoute>
               } />
               <Route path="/breeding" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <Breeding />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <Breeding />
+                </ProtectedRoute>
               } />
               <Route path="/calendar" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <Calendar />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <Calendar />
+                </ProtectedRoute>
               } />
               <Route path="/reports" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <Reports />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <Reports />
+                </ProtectedRoute>
               } />
               <Route path="/lots" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <Lots />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <Lots />
+                </ProtectedRoute>
               } />
               <Route path="/notifications" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <Notifications />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
               } />
               <Route path="/settings" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
               } />
               <Route path="/health-records" element={
-                <ProtectedFarmRoute>
-                  <ProtectedRoute>
-                    <HealthRecords />
-                  </ProtectedRoute>
-                </ProtectedFarmRoute>
+                <ProtectedRoute>
+                  <HealthRecords />
+                </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
