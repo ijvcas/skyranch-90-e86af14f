@@ -21,7 +21,7 @@ import Lots from '@/pages/Lots';
 import Notifications from '@/pages/Notifications';
 import Settings from '@/pages/Settings';
 import HealthRecords from '@/pages/HealthRecords';
-
+import Welcome from '@/pages/Welcome';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -41,6 +41,7 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
+              <Route path="/welcome" element={<Welcome />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
