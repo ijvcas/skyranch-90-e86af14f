@@ -8,4 +8,25 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    }
+  }
+});
+
+// Test connection on initialization
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('🔴 Supabase connection error:', error);
+  } else {
+    console.log('🟢 Supabase connected successfully');
+  }
+}).catch(err => {
+  console.error('🔴 Failed to connect to Supabase:', err);
+});

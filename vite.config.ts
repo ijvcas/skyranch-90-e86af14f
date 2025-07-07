@@ -14,8 +14,13 @@ const buildId = Math.random().toString(36).substring(2, 8);
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8080,
+    cors: true,
+    strictPort: false,
+    fs: {
+      strict: false
+    }
   },
   plugins: [
     react(),

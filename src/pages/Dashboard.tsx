@@ -8,6 +8,7 @@ import { getAllAnimals } from '@/services/animalService';
 import { checkPermission } from '@/services/permissionService';
 import { getCurrentUser } from '@/services/userService';
 import { dashboardBannerService } from '@/services/dashboardBannerService';
+import { networkDiagnostics } from '@/utils/networkDiagnostics';
 import { Card, CardContent } from '@/components/ui/card';
 import ImageUpload from '@/components/ImageUpload';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -27,6 +28,26 @@ const Dashboard = () => {
   
   // Load banner image and user data
   useEffect(() => {
+    // Run network diagnostics on component mount
+    networkDiagnostics.runDiagnostics().then(({ network, supabase }) => {
+      if (!network) {
+        console.error('🔴 Network connectivity issues detected');
+        toast({
+          title: "Problema de Conexión",
+          description: "Se detectaron problemas de conectividad de red",
+          variant: "destructive"
+        });
+      }
+      if (!supabase) {
+        console.error('🔴 Supabase connectivity issues detected');
+        toast({
+          title: "Problema de Base de Datos",
+          description: "No se puede conectar a la base de datos",
+          variant: "destructive"
+        });
+      }
+    });
+    
     const loadBanner = async () => {
       try {
         const bannerData = await dashboardBannerService.getBanner();
@@ -53,7 +74,7 @@ const Dashboard = () => {
     
     loadBanner();
     loadUserData();
-  }, []);
+  }, [toast]);
   
   // Enhanced query with better error handling and permission checking
   const { data: allAnimals = [], isLoading, error, refetch } = useQuery({
@@ -98,6 +119,11 @@ const Dashboard = () => {
   // Force a complete refresh of all data
   const handleForceRefresh = () => {
     console.log('🔄 Force refreshing all data...');
+    
+    // Clear cache and run diagnostics
+    networkDiagnostics.clearCache();
+    networkDiagnostics.runDiagnostics();
+    
     queryClient.clear();
     refetch();
     toast({
