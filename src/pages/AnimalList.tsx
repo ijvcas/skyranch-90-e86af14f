@@ -16,6 +16,7 @@ import AnimalListStats from '@/components/animal-list/AnimalListStats';
 import AnimalDeleteDialog from '@/components/AnimalDeleteDialog';
 
 const AnimalList = () => {
+  console.log('🔧 AnimalList component starting...');
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -43,6 +44,7 @@ const AnimalList = () => {
     refetchOnWindowFocus: true,
   });
 
+  console.log('🔧 About to call useAnimalFiltering with animals:', animals?.length);
   const {
     searchTerm,
     setSearchTerm,
