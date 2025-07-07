@@ -12,8 +12,7 @@ const Welcome = () => {
   };
 
   const handleJoinExistingFarm = () => {
-    // For now, redirect to register - can be enhanced later
-    navigate('/register');
+    navigate('/join-farm');
   };
 
   const handleSignIn = () => {
