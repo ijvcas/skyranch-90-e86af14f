@@ -114,7 +114,7 @@ const Breeding: React.FC = () => {
 
   return (
     <div className="page-with-logo">
-      <div className="container mx-auto px-4 pt-4 pb-8 space-y-6">
+      <div className="container mx-auto px-4 pt-2 pb-8 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center space-x-2">
             <Heart className="w-8 h-8 text-red-500" />
