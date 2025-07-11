@@ -118,16 +118,16 @@ const Breeding: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center space-x-2">
             <Heart className="w-8 h-8 text-red-500" />
-            <h1 className="text-3xl font-bold">Gestión de Apareamientos</h1>
+            <h1 className="text-2xl font-bold">Gestión de Apareamientos</h1>
           </div>
           <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            <Button variant="outline" onClick={handleTestNotifications} className="w-full md:w-auto">
+            <Button variant="outline" size="sm" onClick={handleTestNotifications} className="w-full md:w-auto">
               <Bell className="w-4 h-4 mr-2" />
               Probar Notificaciones
             </Button>
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button className="w-full md:w-auto">
+                <Button size="sm" className="w-full md:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Nuevo Apareamiento
                 </Button>
